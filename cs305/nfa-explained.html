@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFA Explained - A Student-Friendly Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+
+  /* Slide system */
+  .slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+  .slide.active { display: flex; flex-direction: column; justify-content: center; }
+  .slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+
+  /* Navigation */
+  .nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+  .nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+  .nav button:hover { background: #475569; }
+  .nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+
+  /* Typography */
+  h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+  h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+  h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+  p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+  .subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+
+  /* Layout helpers */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .center { text-align: center; }
+  .mt { margin-top: 20px; }
+  .mb { margin-bottom: 20px; }
+
+  /* Code / diagram blocks */
+  .diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+  .diagram.small { font-size: 0.85em; }
+
+  /* Highlight boxes */
+  .key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+  .key-idea h3 { margin-bottom: 8px; }
+  .warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+  .warning h3 { color: #fbbf24; }
+  .analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+  .analogy h3 { color: #34d399; }
+
+  /* Table */
+  table { border-collapse: collapse; margin: 16px 0; width: auto; }
+  th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+  th { background: #334155; color: #93c5fd; font-weight: 600; }
+  td { background: #1e293b; color: #e2e8f0; }
+  tr.highlight td { background: rgba(59,130,246,0.2); }
+
+  /* Animations */
+  .fade-in { animation: fadeIn 0.5s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Step-by-step reveal */
+  .step { opacity: 0.25; transition: opacity 0.4s; margin: 8px 0; padding: 8px 12px; border-radius: 8px; }
+  .step.revealed { opacity: 1; background: rgba(59,130,246,0.08); }
+
+  .emoji { font-size: 1.5em; margin-right: 8px; }
+
+  ul { padding-left: 24px; }
+  ul li { margin-bottom: 8px; }
+
+  .vs-box { display: flex; gap: 30px; align-items: stretch; margin: 20px 0; }
+  .vs-card { flex: 1; background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
+  .vs-card h3 { text-align: center; }
+  .vs-card.dfa { border-color: #3b82f6; }
+  .vs-card.nfa { border-color: #8b5cf6; }
+
+  .arrow-chain { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; font-family: monospace; font-size: 1.1em; }
+  .arrow-chain .state { background: #334155; padding: 6px 14px; border-radius: 20px; color: #93c5fd; }
+  .arrow-chain .state.accept { border: 2px solid #10b981; color: #34d399; }
+  .arrow-chain .state.start { border: 2px solid #f59e0b; color: #fbbf24; }
+  .arrow-chain .label { color: #f59e0b; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>Nondeterministic Finite Automata (NFA)</h1>
+    <p class="subtitle">A step-by-step guide to understanding NFAs, Subset Construction, and epsilon-transitions</p>
+    <div style="margin-top: 40px; color: #64748b;">
+      <p>Based on CS154/CS305 lecture materials (Ullman)</p>
+      <p style="margin-top:20px; font-size: 0.9em;">Use <b>Arrow Keys</b> or the buttons below to navigate. Press <b>S</b> to step through animations.</p>
+    </div>
+  </div>
+  <div class="slide-number">1</div>
+</div>
+
+<!-- ==================== SLIDE 2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h1>The Big Picture</h1>
+  <p class="subtitle">Where does this lecture fit?</p>
+  <div class="diagram">
+                     All recognize the SAME languages!
+                        (the Regular Languages)
+
+   +---------+        +---------+        +-----------+
+   |   DFA   | &lt;----&gt; |   NFA   | &lt;----&gt; |  epsilon-  |
+   |         |        |         |        |    NFA     |
+   +---------+        +---------+        +-----------+
+       ^                                       ^
+       |                                       |
+  Only one that        "Free" transitions      |
+  can actually         (no input consumed)     |
+  be executed                                  |
+  on a computer       Easiest to design -------+
+
+  This lecture teaches you HOW to convert between them.
+  </div>
+  <div class="key-idea">
+    <h3>Why care?</h3>
+    <p>NFAs are <b>much easier to design</b> (fewer states, more flexibility). But computers can only <b>run DFAs</b> (one state at a time). So we need a way to convert NFA -> DFA. That's the <b>Subset Construction</b>.</p>
+  </div>
+  <div class="slide-number">2</div>
+</div>
+
+<!-- ==================== SLIDE 3: DFA RECAP ==================== -->
+<div class="slide" id="s3">
+  <h1>Quick Recap: What's a DFA?</h1>
+  <p class="subtitle">Before we learn NFAs, let's remember DFAs</p>
+  <div class="two-col">
+    <div>
+      <p>A <b>DFA</b> (Deterministic Finite Automaton) has:</p>
+      <ul>
+        <li><b>Exactly one</b> current state at any time</li>
+        <li>For each state + input symbol, there is <b>exactly one</b> next state</li>
+        <li>No choices, no ambiguity</li>
+      </ul>
+      <div class="diagram">
+  Input: "01"
+
+  Step 0: in state A          (start)
+  Step 1: read '0' -> go to B (only option)
+  Step 2: read '1' -> go to C (only option)
+  Done: C is accept? -> YES or NO
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Following GPS</h3>
+        <p>A DFA is like following GPS directions. At every intersection, you're told <b>exactly one</b> way to turn. There are no choices -- you just follow the instructions.</p>
+      </div>
+      <div class="diagram">
+       ----0---&gt;         ----1---&gt;
+  --&gt;( A )         ( B )         (( C ))
+       &lt;---1----         &lt;---0----
+
+  start state: A
+  accept state: C (double circle)
+  Every state has exactly one arrow per symbol.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">3</div>
+</div>
+
+<!-- ==================== SLIDE 4: WHAT IS AN NFA ==================== -->
+<div class="slide" id="s4">
+  <h1>So What's an NFA?</h1>
+  <p class="subtitle">The key difference: CHOICE</p>
+  <div class="two-col">
+    <div>
+      <p>An <b>NFA</b> (Nondeterministic Finite Automaton) changes two rules:</p>
+      <ul>
+        <li>From one state on one input, there can be <b>zero, one, or MANY</b> possible next states</li>
+        <li>The NFA can be in <b>several states at once</b> (or conceptually, it explores all paths simultaneously)</li>
+      </ul>
+      <div class="key-idea">
+        <h3>Acceptance Rule</h3>
+        <p>An NFA accepts a string if <b>ANY</b> sequence of choices leads to a final state. It only needs <b>one</b> successful path.</p>
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: A Maze</h3>
+        <p>Imagine you're in a maze with forking paths. A DFA is like a maze where every junction has exactly one door. An NFA is like a maze where junctions can have <b>multiple doors</b> (or even zero doors!).</p>
+        <p style="margin-top:10px">The NFA "accepts" if there <b>exists</b> some path through the maze from start to exit. It's as if you can clone yourself at every fork and explore all paths at once.</p>
+      </div>
+      <div class="diagram">
+        NFA: "guesses right"
+
+  --&gt;( q0 )---0---&gt;( q0 )   (stay)
+        |
+        +---0---&gt;( q1 )---1---&gt;(( q2 ))
+
+  On input '0' from q0:
+    choice 1: stay in q0
+    choice 2: move to q1
+  Both happen simultaneously!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">4</div>
+</div>
+
+<!-- ==================== SLIDE 5: DFA vs NFA SIDE BY SIDE ==================== -->
+<div class="slide" id="s5">
+  <h1>DFA vs NFA: Side by Side</h1>
+  <div class="vs-box">
+    <div class="vs-card dfa">
+      <h3 style="color: #60a5fa;">DFA (Deterministic)</h3>
+      <div class="diagram" style="font-size: 0.85em;">
+  delta(q, a) = ONE state
+
+  "From state q, reading symbol a,
+   go to exactly ONE state."
+      </div>
+      <ul>
+        <li>Always in <b>exactly one</b> state</li>
+        <li>Every state has <b>exactly one</b> transition per input symbol</li>
+        <li>No dead ends (total function)</li>
+        <li><b>Easy to simulate</b> on a computer</li>
+      </ul>
+    </div>
+    <div class="vs-card nfa">
+      <h3 style="color: #a78bfa;">NFA (Nondeterministic)</h3>
+      <div class="diagram" style="font-size: 0.85em;">
+  delta(q, a) = SET of states
+
+  "From state q, reading symbol a,
+   go to any of THESE states."
+  (could be 0, 1, or many states)
+      </div>
+      <ul>
+        <li>Can be in <b>multiple states</b> simultaneously</li>
+        <li>A state may have <b>0 or many</b> transitions per symbol</li>
+        <li>Dead ends allowed (just kills that path)</li>
+        <li><b>Easier to design</b> (more compact)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="warning">
+    <h3>The Punchline</h3>
+    <p>Despite looking more powerful, NFAs recognize <b>exactly the same languages</b> as DFAs -- the regular languages. NFAs are just a more convenient notation. We can always convert NFA -> DFA.</p>
+  </div>
+  <div class="slide-number">5</div>
+</div>
+
+<!-- ==================== SLIDE 6: FORMAL DEFINITION ==================== -->
+<div class="slide" id="s6">
+  <h1>Formal Definition of an NFA</h1>
+  <p class="subtitle">The 5-tuple: same components as a DFA, one key difference</p>
+  <div class="two-col">
+    <div>
+      <p>An NFA is a 5-tuple <b>(Q, &Sigma;, &delta;, q<sub>0</sub>, F)</b>:</p>
+      <table>
+        <tr><th>Symbol</th><th>Meaning</th><th>Same as DFA?</th></tr>
+        <tr><td><b>Q</b></td><td>Finite set of states</td><td>Yes</td></tr>
+        <tr><td><b>&Sigma;</b></td><td>Input alphabet</td><td>Yes</td></tr>
+        <tr><td><b>&delta;</b></td><td>Transition function</td><td style="color:#f59e0b;">DIFFERENT!</td></tr>
+        <tr><td><b>q<sub>0</sub></b></td><td>Start state (one state)</td><td>Yes</td></tr>
+        <tr><td><b>F</b></td><td>Set of final/accept states</td><td>Yes</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>The Key Difference: &delta;</h3>
+        <p><b>DFA:</b> &delta;(q, a) = <b>one state</b> (a single state p)</p>
+        <p><b>NFA:</b> &delta;(q, a) = <b>a SET of states</b> (like {p, r, s} or even {} )</p>
+        <p style="margin-top:10px">That's it! The only formal difference is that &delta; returns a <b>set</b> instead of a single state.</p>
+      </div>
+      <div class="diagram" style="font-size: 0.9em;">
+  DFA:  delta(q0, 'a') = q1      (one answer)
+  NFA:  delta(q0, 'a') = {q1,q3} (multiple answers)
+  NFA:  delta(q2, 'b') = {}      (no answer = dead end)
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">6</div>
+</div>
+
+<!-- ==================== SLIDE 7: CHESSBOARD EXAMPLE INTRO ==================== -->
+<div class="slide" id="s7">
+  <h1>Example: Moves on a Chessboard</h1>
+  <p class="subtitle">The slides' first example -- let's break it down carefully</p>
+  <div class="two-col">
+    <div>
+      <h3>The Setup</h3>
+      <p>Imagine a 3x3 chessboard. The squares alternate in color (like a real chessboard):</p>
+      <div class="diagram">
+   +-----+-----+-----+
+   |  1  |  2  |  3  |
+   | red | BLK | red |
+   +-----+-----+-----+
+   |  4  |  5  |  6  |
+   | BLK | red | BLK |
+   +-----+-----+-----+
+   |  7  |  8  |  9  |
+   | red | BLK | red |
+   +-----+-----+-----+
+      </div>
+    </div>
+    <div>
+      <h3>Building the NFA</h3>
+      <ul>
+        <li><b>States</b> = the 9 squares (1 through 9)</li>
+        <li><b>Alphabet</b> = {r, b}
+          <ul>
+            <li><b>r</b> = "move to an adjacent <b>red</b> square"</li>
+            <li><b>b</b> = "move to an adjacent <b>black</b> square"</li>
+          </ul>
+        </li>
+        <li><b>Start state</b> = square 1 (top-left)</li>
+        <li><b>Accept state</b> = square 9 (bottom-right, opposite corner)</li>
+      </ul>
+      <div class="key-idea">
+        <h3>Why is this an NFA?</h3>
+        <p>From square 5 (center), reading 'r', you could move to 1, 3, 7, or 9. That's <b>four choices</b> -- impossible in a DFA, natural in an NFA!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">7</div>
+</div>
+
+<!-- ==================== SLIDE 8: CHESSBOARD TRANSITION TABLE ==================== -->
+<div class="slide" id="s8">
+  <h1>Chessboard: The Transition Table</h1>
+  <p class="subtitle">Where can you go from each square?</p>
+  <div class="two-col">
+    <div>
+      <p>"Adjacent" = shares an edge or corner (king's moves in chess).</p>
+      <table>
+        <tr><th>State</th><th>&delta;(_, r)</th><th>&delta;(_, b)</th></tr>
+        <tr><td><b>-> 1</b></td><td>{2, 4}</td><td>{5}</td></tr>
+        <tr><td>2</td><td>{4, 6}</td><td>{1, 3, 5}</td></tr>
+        <tr><td>3</td><td>{2, 6}</td><td>{5}</td></tr>
+        <tr><td>4</td><td>{2, 8}</td><td>{1, 5, 7}</td></tr>
+        <tr><td>5</td><td>{2, 4, 6, 8}</td><td>{1, 3, 7, 9}</td></tr>
+        <tr><td>6</td><td>{2, 8}</td><td>{3, 5, 9}</td></tr>
+        <tr><td>7</td><td>{4, 8}</td><td>{5}</td></tr>
+        <tr><td>8</td><td>{4, 6}</td><td>{5, 7, 9}</td></tr>
+        <tr class="highlight"><td><b>* 9</b></td><td>{6, 8}</td><td>{5}</td></tr>
+      </table>
+      <p style="font-size:0.9em; color:#94a3b8;">-> = start, * = accept</p>
+    </div>
+    <div>
+      <h3>Reading the table</h3>
+      <p>Row "5", column "b" says <b>{1,3,7,9}</b>. This means: "from center square 5, if you move to an adjacent <b>black</b> square, you could go to any corner."</p>
+
+      <h3 style="margin-top:20px;">Does the NFA accept "rbb"?</h3>
+      <div class="diagram" style="font-size: 0.9em;">
+  Start: {1}
+
+  Read 'r': from 1, go to {2, 4}
+
+  Read 'b': from 2, go to {1,3,5}
+            from 4, go to {1,5,7}
+            union = {1, 3, 5, 7}
+
+  Read 'b': from 1->{5}, 3->{5},
+            5->{1,3,7,9}, 7->{5}
+            union = {1, 3, 5, 7, 9}
+
+  9 is in the final set, and 9 is
+  an accept state. So: ACCEPT!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">8</div>
+</div>
+
+<!-- ==================== SLIDE 9: EXTENDED TRANSITION FUNCTION ==================== -->
+<div class="slide" id="s9">
+  <h1>Extended Transition Function</h1>
+  <p class="subtitle">How &delta; works on entire strings, not just single symbols</p>
+  <div class="two-col">
+    <div>
+      <p>We need to extend &delta;(q, a) -- which handles one symbol -- to &delta;(q, w) -- which handles an entire string w.</p>
+      <h3>The definition (by induction):</h3>
+      <div class="key-idea">
+        <p><b>Base case:</b> &delta;(q, &epsilon;) = {q}</p>
+        <p style="color:#94a3b8;">"Reading the empty string from q, you're still just at q."</p>
+        <p style="margin-top:12px;"><b>Inductive case:</b> &delta;(q, wa) = &Union; &delta;(p, a) for all p in &delta;(q, w)</p>
+        <p style="color:#94a3b8;">"To process string wa: first process w to get a set of states S. Then, from each state in S, follow the transition on symbol a. Union all results."</p>
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Spreading Water</h3>
+        <p>Think of the NFA as a network of pipes. You pour water in at the start state. At each symbol, water flows through all possible transitions. The water "spreads" to all reachable states simultaneously. At the end, if water reaches any accept state, the string is accepted.</p>
+      </div>
+      <h3>Language of an NFA</h3>
+      <p>A string w is <b>accepted</b> if &delta;(q<sub>0</sub>, w) contains <b>at least one</b> final state.</p>
+      <p>The <b>language</b> L(N) = { w | &delta;(q<sub>0</sub>, w) &cap; F &ne; &empty; }</p>
+    </div>
+  </div>
+  <div class="slide-number">9</div>
+</div>
+
+<!-- ==================== SLIDE 10: EQUIVALENCE INTRO ==================== -->
+<div class="slide" id="s10">
+  <h1>NFAs and DFAs are Equivalent!</h1>
+  <p class="subtitle">The most important theorem of this lecture</p>
+  <div class="key-idea">
+    <h3>Theorem</h3>
+    <p>For every NFA, there exists a DFA that accepts <b>exactly the same language</b>. And vice versa.</p>
+  </div>
+  <h3>Direction 1: DFA -> NFA (trivial)</h3>
+  <p>Every DFA is already an NFA! Just wrap the single next-state in a set:</p>
+  <div class="diagram" style="font-size: 0.95em;">
+  If the DFA has:   delta_D(q, a) = p        (single state)
+  Make the NFA:     delta_N(q, a) = {p}      (set containing one state)
+
+  The NFA always has sets of size 1, so it behaves identically to the DFA.
+  </div>
+  <h3 style="margin-top: 20px;">Direction 2: NFA -> DFA (the hard part!)</h3>
+  <p>This requires the <b>Subset Construction</b> -- the central algorithm of this lecture.</p>
+  <div class="warning">
+    <h3>Heads up: exponential blowup</h3>
+    <p>If the NFA has <b>n</b> states, the equivalent DFA can have up to <b>2<sup>n</sup></b> states! (one for each subset of NFA states). In practice it's usually much less, but the worst case is real.</p>
+  </div>
+  <div class="slide-number">10</div>
+</div>
+
+<!-- ==================== SLIDE 11: SUBSET CONSTRUCTION IDEA ==================== -->
+<div class="slide" id="s11">
+  <h1>Subset Construction: The Idea</h1>
+  <p class="subtitle">The core insight behind converting NFA to DFA</p>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Core Insight</h3>
+        <p>An NFA can be in a <b>set</b> of states at once. A DFA must be in <b>one</b> state at a time. Solution: make each DFA state <b>represent a set of NFA states</b>!</p>
+      </div>
+      <div class="diagram">
+  NFA is in states {q1, q3, q5}
+         |
+         | becomes ONE DFA state
+         v
+  DFA state named "{q1,q3,q5}"
+      </div>
+      <p>Each DFA state is <b>named</b> by a set, but it IS a single state in the DFA. Don't confuse the name with multiple states!</p>
+    </div>
+    <div>
+      <h3>The Construction Recipe</h3>
+      <p>Given NFA (Q, &Sigma;, &delta;<sub>N</sub>, q<sub>0</sub>, F), build DFA:</p>
+      <table>
+        <tr><th>DFA component</th><th>How to build it</th></tr>
+        <tr><td>States</td><td>2<sup>Q</sup> = all subsets of Q</td></tr>
+        <tr><td>Alphabet</td><td>Same &Sigma;</td></tr>
+        <tr><td>Start state</td><td>{q<sub>0</sub>}</td></tr>
+        <tr><td>Accept states</td><td>Any subset containing a member of F</td></tr>
+        <tr><td>&delta;<sub>D</sub>(S, a)</td><td>Union of &delta;<sub>N</sub>(q, a) for all q in S</td></tr>
+      </table>
+      <div class="warning">
+        <h3>Critical point</h3>
+        <p>{p, q} is a <b>single DFA state</b> whose <b>name</b> happens to be a set. Don't think of it as "being in two places."</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">11</div>
+</div>
+
+<!-- ==================== SLIDE 12: SUBSET CONSTRUCTION WALKTHROUGH ==================== -->
+<div class="slide" id="s12">
+  <h1>Subset Construction: Step by Step</h1>
+  <p class="subtitle">Let's convert the chessboard NFA to a DFA (lazy construction)</p>
+  <div class="two-col">
+    <div>
+      <h3>NFA Transition Table (reference)</h3>
+      <table style="font-size: 0.85em;">
+        <tr><th></th><th>r</th><th>b</th></tr>
+        <tr><td>-> 1</td><td>2,4</td><td>5</td></tr>
+        <tr><td>2</td><td>4,6</td><td>1,3,5</td></tr>
+        <tr><td>3</td><td>2,6</td><td>5</td></tr>
+        <tr><td>4</td><td>2,8</td><td>1,5,7</td></tr>
+        <tr><td>5</td><td>2,4,6,8</td><td>1,3,7,9</td></tr>
+        <tr><td>6</td><td>2,8</td><td>3,5,9</td></tr>
+        <tr><td>7</td><td>4,8</td><td>5</td></tr>
+        <tr><td>8</td><td>4,6</td><td>5,7,9</td></tr>
+        <tr><td>*9</td><td>6,8</td><td>5</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Building the DFA (lazy -- only states we need)</h3>
+      <div class="diagram small">
+Step 1: Start state = {1}
+  {1} --r--> union of delta(1,r) = {2,4}       NEW
+  {1} --b--> union of delta(1,b) = {5}         NEW
+
+Step 2: Process {2,4}
+  {2,4} --r--> delta(2,r) U delta(4,r)
+             = {4,6} U {2,8} = {2,4,6,8}       NEW
+  {2,4} --b--> {1,3,5} U {1,5,7} = {1,3,5,7}  NEW
+
+Step 3: Process {5}
+  {5} --r--> {2,4,6,8}                    (seen)
+  {5} --b--> {1,3,7,9}                         NEW
+
+Step 4: Process {2,4,6,8}
+  --r--> {4,6}U{2,8}U{2,8}U{4,6} = {2,4,6,8}  (self-loop!)
+  --b--> {1,3,5}U{1,5,7}U{3,5,9}U{5,7,9}
+       = {1,3,5,7,9}                            NEW
+
+Step 5: Process {1,3,5,7}
+  --r--> {2,4}U{2,6}U{2,4,6,8}U{4,8}
+       = {2,4,6,8}                         (seen)
+  --b--> {5}U{5}U{1,3,7,9}U{5}
+       = {1,3,5,7,9}                       (seen)
+
+...continue until no new states appear.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">12</div>
+</div>
+
+<!-- ==================== SLIDE 13: COMPLETED DFA TABLE ==================== -->
+<div class="slide" id="s13">
+  <h1>Chessboard: Completed DFA</h1>
+  <p class="subtitle">The final result after subset construction</p>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>DFA State</th><th>r</th><th>b</th></tr>
+        <tr><td>-> {1}</td><td>{2,4}</td><td>{5}</td></tr>
+        <tr><td>{2,4}</td><td>{2,4,6,8}</td><td>{1,3,5,7}</td></tr>
+        <tr><td>{5}</td><td>{2,4,6,8}</td><td>{1,3,7,9}</td></tr>
+        <tr><td>{2,4,6,8}</td><td>{2,4,6,8}</td><td>{1,3,5,7,9}</td></tr>
+        <tr><td>{1,3,5,7}</td><td>{2,4,6,8}</td><td>{1,3,5,7,9}</td></tr>
+        <tr class="highlight"><td>* {1,3,7,9}</td><td>{2,4,6,8}</td><td>{5}</td></tr>
+        <tr class="highlight"><td>* {1,3,5,7,9}</td><td>{2,4,6,8}</td><td>{1,3,5,7,9}</td></tr>
+      </table>
+      <p style="font-size: 0.9em; margin-top: 10px;">* = accept (contains state 9)</p>
+    </div>
+    <div>
+      <h3>Observations</h3>
+      <ul>
+        <li>The NFA had <b>9 states</b>. Worst case DFA: 2<sup>9</sup> = 512 states!</li>
+        <li>But lazy construction found only <b>7 reachable states</b>. Much better!</li>
+        <li>Accept states are those whose set contains <b>9</b> (the NFA's accept state)</li>
+        <li>Notice {2,4,6,8} loops to itself on 'r' -- all even-numbered squares lead to even-numbered squares via red moves</li>
+      </ul>
+      <div class="analogy">
+        <h3>"Lazy" vs "Full" construction</h3>
+        <p>We only built states we could actually <b>reach</b> from {1}. The "full" construction would enumerate all 512 subsets -- most would be unreachable waste!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">13</div>
+</div>
+
+<!-- ==================== SLIDE 14: SIMPLER EXAMPLE ==================== -->
+<div class="slide" id="s14">
+  <h1>Simpler Example: NFA for "string ends with 01"</h1>
+  <p class="subtitle">A cleaner example to solidify the idea</p>
+  <div class="two-col">
+    <div>
+      <h3>NFA Definition</h3>
+      <ul>
+        <li>Alphabet: {0, 1}</li>
+        <li>States: {q0, q1, q2}</li>
+        <li>Start: q0 &nbsp;|&nbsp; Accept: {q2}</li>
+      </ul>
+      <div class="diagram">
+  Transitions:
+    q0 --0--> {q0, q1}   "see 0: stay OR guess this is the final 01"
+    q0 --1--> {q0}        "see 1: keep waiting"
+    q1 --1--> {q2}        "saw 0, now see 1: accept!"
+    q1 --0--> {}          "saw 0, see 0: dead end"
+    q2 --0--> {}          "already accepted, dead end"
+    q2 --1--> {}          "already accepted, dead end"
+
+           0                1
+  -->(q0)----->(q0)   -->(q0)----->(q0)
+       \
+        0
+         \       1
+         (q1)---------->((q2))
+      </div>
+    </div>
+    <div>
+      <h3>The NFA's "guessing" strategy</h3>
+      <p>On seeing a 0, state q0 has a <b>choice</b>:</p>
+      <ol>
+        <li>"This 0 might not be the second-to-last character" -> stay in q0</li>
+        <li>"This 0 might BE the second-to-last character!" -> also go to q1</li>
+      </ol>
+      <p style="margin-top: 10px;">It pursues <b>both</b> guesses simultaneously. If the guess was wrong (q1 doesn't see a '1' next), that branch dies. If right, it reaches q2!</p>
+      <div class="key-idea">
+        <h3>Why this is hard as a DFA</h3>
+        <p>A DFA can't "guess." It has to somehow remember it saw a 0 while also continuing to process more input. The subset construction handles this automatically.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">14</div>
+</div>
+
+<!-- ==================== SLIDE 15: SIMPLER EXAMPLE SUBSET CONSTRUCTION ==================== -->
+<div class="slide" id="s15">
+  <h1>Subset Construction for "ends with 01"</h1>
+  <p class="subtitle">Converting the 3-state NFA to a DFA</p>
+  <div class="two-col">
+    <div>
+      <h3>NFA transitions (reference)</h3>
+      <table>
+        <tr><th></th><th>0</th><th>1</th></tr>
+        <tr><td>-> q0</td><td>{q0, q1}</td><td>{q0}</td></tr>
+        <tr><td>q1</td><td>{}</td><td>{q2}</td></tr>
+        <tr><td>* q2</td><td>{}</td><td>{}</td></tr>
+      </table>
+      <h3 style="margin-top: 20px;">Subset Construction</h3>
+      <div class="diagram" style="font-size: 0.9em;">
+Start: {q0}
+
+{q0}:
+  --0--> delta(q0,0) = {q0,q1}      NEW
+  --1--> delta(q0,1) = {q0}         (self)
+
+{q0,q1}:
+  --0--> delta(q0,0) U delta(q1,0)
+       = {q0,q1} U {} = {q0,q1}     (self)
+  --1--> delta(q0,1) U delta(q1,1)
+       = {q0} U {q2} = {q0,q2}      NEW
+
+{q0,q2}: (ACCEPT -- contains q2)
+  --0--> {q0,q1} U {} = {q0,q1}     (seen)
+  --1--> {q0} U {} = {q0}           (seen)
+
+DONE! No new states discovered.
+      </div>
+    </div>
+    <div>
+      <h3>Resulting DFA</h3>
+      <table>
+        <tr><th>DFA State</th><th>0</th><th>1</th></tr>
+        <tr><td>-> {q0}</td><td>{q0,q1}</td><td>{q0}</td></tr>
+        <tr><td>{q0,q1}</td><td>{q0,q1}</td><td>{q0,q2}</td></tr>
+        <tr class="highlight"><td>* {q0,q2}</td><td>{q0,q1}</td><td>{q0}</td></tr>
+      </table>
+      <div class="diagram">
+  Visually:
+
+        0           1           0
+  -->[{q0}] ---> [{q0,q1}] ---> [{q0,q1}]
+       ^    &lt;---     |      &lt;---    |
+       |      1      |        0     |
+       |             v 1            |
+       +--------[*{q0,q2}]&lt;--------+
+                  |  ^
+                  +--+ (b goes to {q0,q1})
+      </div>
+      <div class="key-idea">
+        <h3>Result</h3>
+        <p>Only 3 DFA states (out of 2<sup>3</sup>=8 possible). The empty set {} and states like {q1}, {q2}, {q1,q2}, {q0,q1,q2} are all <b>unreachable</b> from {q0}.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">15</div>
+</div>
+
+<!-- ==================== SLIDE 16: PROOF SKETCH ==================== -->
+<div class="slide" id="s16">
+  <h1>Why Does Subset Construction Work?</h1>
+  <p class="subtitle">Proof sketch (by induction on string length)</p>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>What we need to show</h3>
+        <p>For any string w: &delta;<sub>N</sub>(q<sub>0</sub>, w) = &delta;<sub>D</sub>({q<sub>0</sub>}, w)</p>
+        <p style="color:#94a3b8;">"The set of NFA states after reading w equals the single DFA state (which is named by that set) after reading w."</p>
+      </div>
+      <h3>Base Case: w = &epsilon; (empty string)</h3>
+      <p>&delta;<sub>N</sub>(q<sub>0</sub>, &epsilon;) = {q<sub>0</sub>} = &delta;<sub>D</sub>({q<sub>0</sub>}, &epsilon;)</p>
+      <p>Both just stay at the start.</p>
+    </div>
+    <div>
+      <h3>Inductive Step: w = xa (string x then symbol a)</h3>
+      <p>Assume it works for x: &delta;<sub>N</sub>(q<sub>0</sub>, x) = &delta;<sub>D</sub>({q<sub>0</sub>}, x) = S</p>
+      <p>Then for w = xa:</p>
+      <div class="diagram" style="font-size: 0.9em;">
+  NFA side:
+    delta_N(q0, xa) = Union of delta_N(p, a)
+                      for all p in S
+
+  DFA side:
+    delta_D({q0}, xa) = delta_D(S, a)
+                      = Union of delta_N(p, a)
+                        for all p in S
+
+  They're computed the same way!
+      </div>
+      <div class="analogy">
+        <h3>In plain English</h3>
+        <p>The DFA state after reading w literally IS the set of all NFA states after reading w. The DFA's transition function was <b>defined</b> to make this true. So of course it works!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">16</div>
+</div>
+
+<!-- ==================== SLIDE 17: EPSILON-NFA INTRO ==================== -->
+<div class="slide" id="s17">
+  <h1>Epsilon-NFA (&epsilon;-NFA)</h1>
+  <p class="subtitle">Adding "free" transitions that consume no input</p>
+  <div class="two-col">
+    <div>
+      <h3>What's new?</h3>
+      <p>An &epsilon;-NFA has everything an NFA has, <b>plus</b> transitions on the special symbol &epsilon; (epsilon).</p>
+      <div class="key-idea">
+        <h3>&epsilon;-transitions</h3>
+        <p>An &epsilon;-transition lets the automaton move from one state to another <b>without reading any input</b>. It's a "free move" -- spontaneous, no input consumed.</p>
+      </div>
+      <div class="analogy">
+        <h3>Analogy: Secret Passages</h3>
+        <p>Think of &epsilon;-transitions as <b>secret passages</b> in a maze. You can walk through them at any time without using a key (input symbol). They're like hidden shortcuts between rooms.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Example &epsilon;-NFA</h3>
+      <div class="diagram">
+             epsilon         epsilon
+  -->(A)---------->(B)---------->(C)
+      |             |              |
+      | 0           | 1           | 1
+      v             v              v
+     (E)           (C)           ((D))
+      |                            ^
+      | 0                         /
+      v                          / 0
+     (F)-------->(D)------------
+            0
+
+  A can "teleport" to B or C via epsilon!
+  No input needed for those moves.
+      </div>
+      <p>The transition table now has an extra <b>&epsilon; column</b>:</p>
+      <table style="font-size: 0.85em;">
+        <tr><th></th><th>0</th><th>1</th><th>&epsilon;</th></tr>
+        <tr><td>-> A</td><td>{E}</td><td>{B}</td><td>&empty;</td></tr>
+        <tr><td>B</td><td>&empty;</td><td>{C}</td><td>{D}</td></tr>
+        <tr><td>C</td><td>&empty;</td><td>{D}</td><td>&empty;</td></tr>
+        <tr><td>* D</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>E</td><td>{F}</td><td>&empty;</td><td>{B,C}</td></tr>
+        <tr><td>F</td><td>{D}</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number">17</div>
+</div>
+
+<!-- ==================== SLIDE 18: EPSILON CLOSURE ==================== -->
+<div class="slide" id="s18">
+  <h1>Epsilon-Closure: CL(q)</h1>
+  <p class="subtitle">The set of states reachable from q using ONLY &epsilon;-transitions</p>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p><b>CL(q)</b> = the set of all states you can reach from q by following <b>zero or more &epsilon;-transitions</b>.</p>
+        <p style="margin-top:8px">Note: q itself is always in CL(q) (zero &epsilon;-transitions = stay put).</p>
+      </div>
+      <div class="diagram">
+             epsilon         epsilon
+  -->(A)---------->(B)---------->(C)
+      |             |              |
+      | 0          | 1           | 1
+      v             v              v
+     (E)           (C)           ((D))
+      |
+      | 0           epsilon
+      v            /
+     (F)---0--->(D)
+
+  From the diagram above:
+      </div>
+    </div>
+    <div>
+      <h3>Computing closures for our example</h3>
+      <table>
+        <tr><th>State q</th><th>CL(q)</th><th>Why?</th></tr>
+        <tr><td>A</td><td>{A}</td><td>No &epsilon;-transitions out of A</td></tr>
+        <tr><td>B</td><td>{B, D}</td><td>B --&epsilon;--> D</td></tr>
+        <tr><td>C</td><td>{C}</td><td>No &epsilon;-transitions out of C</td></tr>
+        <tr><td>D</td><td>{D}</td><td>No &epsilon;-transitions out of D</td></tr>
+        <tr><td>E</td><td>{E, B, C, D}</td><td>E --&epsilon;--> B,C; then B --&epsilon;--> D</td></tr>
+        <tr><td>F</td><td>{F}</td><td>No &epsilon;-transitions out of F</td></tr>
+      </table>
+      <div class="warning">
+        <h3>Follow the chain!</h3>
+        <p>CL(E) isn't just {E, B, C}. Since B has its own &epsilon;-transition to D, you must follow that too! CL(E) = {E} &cup; {B,C} &cup; CL(B) &cup; CL(C) = {E, B, C, D}.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">18</div>
+</div>
+
+<!-- ==================== SLIDE 19: EXTENDED DELTA FOR EPSILON NFA ==================== -->
+<div class="slide" id="s19">
+  <h1>Extended &delta; for &epsilon;-NFA</h1>
+  <p class="subtitle">Processing strings in an &epsilon;-NFA means accounting for "free moves" at every step</p>
+  <div class="two-col">
+    <div>
+      <h3>The algorithm: &delta;-hat(q, w)</h3>
+      <div class="key-idea">
+        <p><b>Base:</b> &delta;&#770;(q, &epsilon;) = CL(q)</p>
+        <p style="color:#94a3b8;">"Before reading anything, you can already be in any state reachable via &epsilon;-transitions."</p>
+        <p style="margin-top:12px;"><b>Induction:</b> &delta;&#770;(q, xa) is computed:</p>
+        <ol>
+          <li>Compute S = &delta;&#770;(q, x) &nbsp; [states after reading x]</li>
+          <li>For each state p in S, look up &delta;(p, a) &nbsp; [follow real transition on 'a']</li>
+          <li>Take the <b>closure</b> of each result &nbsp; [follow &epsilon;-transitions after]</li>
+          <li>Union everything</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <h3>Worked example: &delta;&#770;(A, "01")</h3>
+      <div class="diagram" style="font-size: 0.9em;">
+Step 0: Start
+  delta-hat(A, epsilon) = CL(A) = {A}
+
+Step 1: Read '0'
+  From A, delta(A, 0) = {E}
+  Take closure: CL({E}) = {E, B, C, D}
+  So delta-hat(A, "0") = {B, C, D, E}
+
+Step 2: Read '1'
+  From B: delta(B, 1) = {C}, CL = {C}
+  From C: delta(C, 1) = {D}, CL = {D}
+  From D: delta(D, 1) = {},  CL = {}
+  From E: delta(E, 1) = {},  CL = {}
+  Union = {C, D}
+  So delta-hat(A, "01") = {C, D}
+
+  D is an accept state => "01" is ACCEPTED!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">19</div>
+</div>
+
+<!-- ==================== SLIDE 20: EPSILON-NFA TO NFA ==================== -->
+<div class="slide" id="s20">
+  <h1>Converting &epsilon;-NFA to ordinary NFA</h1>
+  <p class="subtitle">Eliminating &epsilon;-transitions by "baking them in"</p>
+  <div class="two-col">
+    <div>
+      <h3>The recipe</h3>
+      <p>Given &epsilon;-NFA with transition function &delta;<sub>E</sub>, build an ordinary NFA with &delta;<sub>N</sub>:</p>
+      <div class="key-idea">
+        <p><b>Same states, same alphabet, same start state.</b></p>
+        <p style="margin-top:8px;"><b>New transitions:</b> &delta;<sub>N</sub>(q, a) = </p>
+        <ol>
+          <li>Start with CL(q) -- everywhere you can be before reading 'a'</li>
+          <li>From each state in CL(q), follow the real transition on 'a'</li>
+          <li>Union all results (but do NOT take closure after -- that will be handled by the next step's closure)</li>
+        </ol>
+        <p style="margin-top:8px;"><b>New accept states F':</b> any state q where CL(q) contains a state in F.</p>
+        <p style="color:#94a3b8;">(If you can reach an accept state via &epsilon; alone, you're accepting too.)</p>
+      </div>
+    </div>
+    <div>
+      <h3>Example result</h3>
+      <div class="two-col" style="gap: 20px;">
+        <div>
+          <p style="font-size: 0.85em;"><b>&epsilon;-NFA</b></p>
+          <table style="font-size: 0.8em;">
+            <tr><th></th><th>0</th><th>1</th><th>&epsilon;</th></tr>
+            <tr><td>->A</td><td>{E}</td><td>{B}</td><td>&empty;</td></tr>
+            <tr><td>B</td><td>&empty;</td><td>{C}</td><td>{D}</td></tr>
+            <tr><td>C</td><td>&empty;</td><td>{D}</td><td>&empty;</td></tr>
+            <tr><td>*D</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+            <tr><td>E</td><td>{F}</td><td>&empty;</td><td>{B,C}</td></tr>
+            <tr><td>F</td><td>{D}</td><td>&empty;</td><td>&empty;</td></tr>
+          </table>
+        </div>
+        <div>
+          <p style="font-size: 0.85em;"><b>Ordinary NFA</b></p>
+          <table style="font-size: 0.8em;">
+            <tr><th></th><th>0</th><th>1</th></tr>
+            <tr><td>->A</td><td>{E}</td><td>{B}</td></tr>
+            <tr><td>*B</td><td>&empty;</td><td>{C}</td></tr>
+            <tr><td>C</td><td>&empty;</td><td>{D}</td></tr>
+            <tr><td>*D</td><td>&empty;</td><td>&empty;</td></tr>
+            <tr><td>*E</td><td>{F}</td><td>{C,D}</td></tr>
+            <tr><td>F</td><td>{D}</td><td>&empty;</td></tr>
+          </table>
+        </div>
+      </div>
+      <p style="margin-top: 12px; font-size: 0.95em;"><b>What changed?</b></p>
+      <ul style="font-size: 0.9em;">
+        <li>&epsilon; column removed entirely</li>
+        <li>E on '1': CL(E)={E,B,C,D}. B--1-->{C}, C--1-->{D}. So &delta;<sub>N</sub>(E,1)={C,D}</li>
+        <li>B and E become accept states (CL(B)={B,D} and CL(E)={E,B,C,D} both contain D)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-number">20</div>
+</div>
+
+<!-- ==================== SLIDE 21: SUMMARY ==================== -->
+<div class="slide" id="s21">
+  <h1>Summary: The Complete Picture</h1>
+  <p class="subtitle">Everything connects</p>
+  <div class="diagram" style="font-size: 1em; text-align: center;">
+   +------------------+    subset      +------------------+     eliminate    +------------------+
+   |                  | construction   |                  |   epsilon-trans  |                  |
+   |       DFA        |&lt;-------------- |       NFA        |&lt;--------------- |   epsilon-NFA    |
+   |                  |                |                  |                 |                  |
+   | (1 state at a    |  (may blow up  | (multiple states | (use closure    | (free moves +    |
+   |  time, easy to   |   to 2^n       |  at once, more   |  to absorb      |  real moves)     |
+   |  implement)      |   states)      |  compact)        |  epsilon-moves) |                  |
+   +------------------+                +------------------+                 +------------------+
+           |                                   ^                                    ^
+           |        trivial (just wrap          |           trivial (it's a          |
+           +---------in singleton sets)---------+           special case)  ----------+
+  </div>
+  <div class="key-idea" style="margin-top: 20px;">
+    <h3>Key Takeaways</h3>
+    <ul>
+      <li><b>DFA, NFA, and &epsilon;-NFA all recognize the same class of languages: the regular languages.</b></li>
+      <li>NFAs/&epsilon;-NFAs are often <b>much easier to design</b> and can have exponentially fewer states than the equivalent DFA.</li>
+      <li>But only DFAs can be directly <b>implemented</b> (executed) on a computer.</li>
+      <li>The <b>Subset Construction</b> is the practical algorithm to convert NFA -> DFA.</li>
+      <li>&epsilon;-closure lets us eliminate &epsilon;-transitions systematically.</li>
+    </ul>
+  </div>
+  <div class="slide-number">21</div>
+</div>
+
+<!-- ==================== SLIDE 22: CHEAT SHEET ==================== -->
+<div class="slide" id="s22">
+  <h1>Cheat Sheet</h1>
+  <p class="subtitle">Quick reference for exams</p>
+  <div class="two-col">
+    <div>
+      <h3>Subset Construction (NFA -> DFA)</h3>
+      <div class="diagram small">
+1. DFA start state = {q0}  (NFA start in a set)
+2. For each new DFA state S = {p1,...,pk}:
+   For each symbol a:
+     delta_D(S, a) = Union of delta_N(pi, a)
+                     for i = 1..k
+3. DFA accept states = any S containing
+   a member of F
+4. Repeat until no new states appear
+   (use lazy construction -- only reachable states)
+      </div>
+      <h3>&epsilon;-NFA -> NFA</h3>
+      <div class="diagram small">
+1. Same states Q, alphabet Sigma, start q0
+2. delta_N(q, a) = Union of delta_E(p, a)
+                   for all p in CL(q)
+3. F' = { q | CL(q) intersects F }
+   (any state that can epsilon-reach an
+    accept state becomes accepting)
+      </div>
+    </div>
+    <div>
+      <h3>&epsilon;-Closure</h3>
+      <div class="diagram small">
+CL(q) = {q} union
+  { all states reachable from q
+    by following only epsilon-arrows }
+
+To compute: BFS/DFS following only
+epsilon-edges from q.
+
+CL(set S) = Union of CL(q) for q in S
+      </div>
+      <h3>Common Mistakes to Avoid</h3>
+      <div class="warning" style="margin-top: 8px;">
+        <ul style="font-size: 0.9em;">
+          <li>Don't forget: {p,q} is ONE DFA state, not two</li>
+          <li>CL() is transitive -- follow the full chain</li>
+          <li>NFA accepts if ANY path succeeds</li>
+          <li>DFA might need the &empty; (dead) state</li>
+          <li>In &epsilon;-NFA->NFA, update accept states F' too!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">22</div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 22;
+let current = 1;
+
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) {
+    slide.classList.add('active');
+    slide.classList.add('fade-in');
+  }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) {
+    current = next;
+    showSlide(current);
+  }
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault();
+    changeSlide(1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    changeSlide(-1);
+  } else if (e.key === 's' || e.key === 'S') {
+    // Reveal next step on current slide
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+
+showSlide(1);
+</script>
+</body>
+</html>

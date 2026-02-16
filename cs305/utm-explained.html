@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Turing Machines &amp; Undecidability — CS305</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: Title -->
+<!-- ============================================================ -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>Universal Turing Machines<br>&amp; Undecidability</h1>
+    <p class="subtitle">CS305 &mdash; Formal Language Theory</p>
+    <div class="diagram" style="display:inline-block; text-align:left; font-size:0.85em;">
+  "Can a machine predict what every      +---------+
+   other machine will do?"          ---> | ???     |
+                                         | HALT?   |
+   Spoiler: No. And the proof is         | LOOP?   |
+   one of the most beautiful in          +---------+
+   all of computer science.
+    </div>
+    <p style="color:#64748b; margin-top:30px;">Use arrow keys or buttons to navigate</p>
+  </div>
+  <div class="slide-number">1 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: Big Picture -->
+<!-- ============================================================ -->
+<div class="slide" id="s2">
+  <h1>The Big Picture</h1>
+  <p class="subtitle">We've climbed the Chomsky hierarchy. Now we hit the ceiling.</p>
+
+  <div class="diagram">
+  The Chomsky Hierarchy of Power:
+
+  Regular  -->  Context-Free  -->  Context-Sensitive  -->  Recursively Enumerable
+   (DFA)          (PDA)              (LBA)                     (TM)
+    |               |                  |                         |
+    v               v                  v                         v
+  Least          More               Even more              MOST POWERFUL
+  powerful       powerful           powerful               machine possible
+                                                                 |
+                                                                 v
+                                                       But is it ALL-powerful?
+                                                       Can it solve EVERYTHING?
+  </div>
+
+  <div class="key-idea">
+    <h3>Key Question</h3>
+    <p>Turing machines are the most powerful computational model we know. But are there problems that even TMs <strong>cannot</strong> solve? The shocking answer is <strong>yes</strong> &mdash; and in fact, <em>most</em> problems are unsolvable.</p>
+  </div>
+
+  <div class="slide-number">2 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: Encoding Turing Machines -->
+<!-- ============================================================ -->
+<div class="slide" id="s3">
+  <h1>Encoding Turing Machines</h1>
+  <p class="subtitle">Any TM can be written down as a finite binary string.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Idea</h3>
+      <p>A Turing machine M is defined by a finite set of components:</p>
+      <ul>
+        <li>States: q0, q1, ..., qn</li>
+        <li>Tape alphabet: 0, 1, B</li>
+        <li>Transitions: (state, symbol) -> (state, symbol, direction)</li>
+        <li>Start, accept, reject states</li>
+      </ul>
+      <p class="mt">All of this is <strong>finite</strong>, so we can encode it as a binary string &lt;M&gt;.</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  Turing Machine M:
+  +-----------------------+
+  | States: {q0,q1,q2}   |
+  | Start:  q0            |
+  | Accept: q2            |
+  | Transitions:          |
+  |  (q0,0)->(q1,1,R)    |
+  |  (q1,1)->(q2,0,L)    |
+  |  ...                  |
+  +-----------------------+
+          |
+          | encode
+          v
+  &lt;M&gt; = 1101001110100111...
+          |
+          | It's just a string!
+          v
+  Every TM is a string.
+  Every string is a potential TM.
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy</h3>
+    <p>Think of source code. A Python program is just a text file &mdash; a string of characters. Similarly, a Turing machine is just a string of bits. <strong>Programs are data.</strong> This is the insight that changes everything.</p>
+  </div>
+
+  <div class="slide-number">3 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: The Universal Turing Machine -->
+<!-- ============================================================ -->
+<div class="slide" id="s4">
+  <h1>The Universal Turing Machine</h1>
+  <p class="subtitle">One machine to simulate them all.</p>
+
+  <div class="diagram">
+                        +=======================================+
+                        |      UNIVERSAL TURING MACHINE (U)     |
+                        |                                       |
+   Input:               |   1. Read &lt;M&gt; to understand M's      |
+   +--------+--------+  |      transition function              |    Output:
+   | &lt;M&gt;    |   w    |---->                                    |--> accept / reject
+   | (code   | (input |  |   2. Simulate M step-by-step        |    (same as M on w)
+   |  of M)  |  to M) |  |      on input w                     |
+   +--------+--------+  |                                       |
+                        |   3. If M accepts w, U accepts        |
+                        |      If M rejects w, U rejects        |
+                        |      If M loops, U loops too          |
+                        +=======================================+
+  </div>
+
+  <div class="key-idea">
+    <h3>Key Idea</h3>
+    <p>The UTM U takes two inputs: the <strong>code of a TM</strong> &lt;M&gt; and an <strong>input string</strong> w. It then simulates M running on w. Whatever M would do, U does the same thing. It is a <strong>universal simulator</strong>.</p>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy</h3>
+    <p>The UTM is an <strong>interpreter</strong>. Just like the Python interpreter reads a .py file and executes it, the UTM reads the encoding of a TM and executes it. Or think of it as an <strong>emulator</strong> &mdash; like running a Game Boy game on your PC.</p>
+  </div>
+
+  <div class="slide-number">4 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: How the UTM Works -->
+<!-- ============================================================ -->
+<div class="slide" id="s5">
+  <h1>How the UTM Works</h1>
+  <p class="subtitle">Three-tape simulation, step by step.</p>
+
+  <div class="diagram">
+  TAPE 1: M's work tape (simulated)
+  +---+---+---+---+---+---+---+---+---+
+  | a | b | b | a | _ | _ | _ | _ | _ |   &lt;-- contents of M's tape
+  +---+---+---+---+---+---+---+---+---+
+                ^
+                |  head position
+
+  TAPE 2: M's transition table (read-only)
+  +---------------------------------------------------+
+  | (q0,a)->( q1,a,R); (q1,b)->(q1,b,R); (q1,_)...  |   &lt;-- description of M
+  +---------------------------------------------------+
+
+  TAPE 3: M's current state
+  +------+
+  |  q1  |   &lt;-- tracks which state M is in
+  +------+
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>Simulation Loop</h3>
+      <ol style="padding-left:24px;">
+        <li>Read current state from Tape 3</li>
+        <li>Read current symbol from Tape 1 (at head position)</li>
+        <li>Look up (state, symbol) in Tape 2 to find the transition</li>
+        <li>Write new symbol on Tape 1</li>
+        <li>Move head on Tape 1 (L or R)</li>
+        <li>Update state on Tape 3</li>
+        <li>If new state is accept/reject, halt accordingly. Otherwise, repeat.</li>
+      </ol>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Important Detail</h3>
+        <p>The UTM uses 3 tapes for clarity, but we know any multi-tape TM can be converted to a single-tape TM. So a UTM can be a <strong>single-tape</strong> machine. It's just slower.</p>
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The UTM is itself a Turing machine &mdash; it has a finite number of states and a finite transition function. The "program" it runs is on its <em>tape</em>, not in its states.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">5 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: UTM = Programmable Computer -->
+<!-- ============================================================ -->
+<div class="slide" id="s6">
+  <h1>UTM = Programmable Computer</h1>
+  <p class="subtitle">The birth of the stored-program concept.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram small">
+  BEFORE UTM: one machine per task
+
+  +----------+      +----------+
+  | Machine  |      | Machine  |
+  | for task |      | for task |
+  |    A     |      |    B     |
+  +----------+      +----------+
+  (need new hardware for each task)
+
+
+  AFTER UTM: one machine, many programs
+
+  +========================+
+  |   UNIVERSAL MACHINE    |
+  |                        |
+  |  Load program A  -->   |-- does task A
+  |  Load program B  -->   |-- does task B
+  |  Load program C  -->   |-- does task C
+  |                        |
+  +========================+
+  (same hardware, different software)
+      </div>
+    </div>
+    <div>
+      <h3>Historical Significance</h3>
+      <p>Alan Turing described the UTM in <strong>1936</strong>, over a decade before real computers existed.</p>
+      <p>The UTM is the theoretical foundation of:</p>
+      <ul>
+        <li><strong>Stored-program computers</strong> (von Neumann architecture)</li>
+        <li>The <strong>software/hardware distinction</strong></li>
+        <li><strong>Interpreters and compilers</strong></li>
+        <li><strong>Operating systems</strong> (they load and run arbitrary programs)</li>
+      </ul>
+
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The UTM tells us: <strong>you only need one machine</strong>. You don't need different hardware for every task. One universal machine + different programs = all computable functions.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">6 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: Diagonalization Counting Argument -->
+<!-- ============================================================ -->
+<div class="slide" id="s7">
+  <h1>Diagonalization: The Counting Argument</h1>
+  <p class="subtitle">There are more problems than programs. Way more.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Turing Machines are Countable</h3>
+      <p>Every TM is a finite binary string. We can list all binary strings in order:</p>
+      <div class="diagram small">
+  String #1:  0
+  String #2:  1
+  String #3:  00
+  String #4:  01
+  String #5:  10
+  String #6:  11
+  String #7:  000
+  ...
+
+  Some are valid TM encodings,
+  some are garbage. Either way:
+  COUNTABLY many TMs.
+
+  |TMs| = |N| = aleph-0
+      </div>
+    </div>
+    <div>
+      <h3>Languages are Uncountable</h3>
+      <p>A language over {0,1} is any subset of {0,1}*. Each language corresponds to a function f: {0,1}* -> {yes, no}.</p>
+      <div class="diagram small">
+  For each string, independently
+  choose IN or OUT:
+
+  String:  0  1  00 01 10 11 ...
+  Lang A:  Y  N  Y  N  Y  N  ...
+  Lang B:  N  N  N  Y  Y  Y  ...
+  Lang C:  Y  Y  Y  Y  N  N  ...
+  ...
+
+  Each row is an infinite binary
+  sequence. By Cantor's argument:
+  UNCOUNTABLY many languages.
+
+  |Languages| = |R| = 2^(aleph-0)
+      </div>
+    </div>
+  </div>
+
+  <div class="warning">
+    <h3>The Devastating Conclusion</h3>
+    <p>Countably many TMs, uncountably many languages. So <strong>most languages have no TM that recognizes them</strong>. Almost all problems are unsolvable! The solvable problems are a vanishingly tiny fraction of all problems.</p>
+  </div>
+
+  <div class="slide-number">7 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: The Diagonalization Language L_d -->
+<!-- ============================================================ -->
+<div class="slide" id="s8">
+  <h1>The Diagonalization Language L<sub>d</sub></h1>
+  <p class="subtitle">A specific language that NO Turing machine can recognize.</p>
+
+  <p>Enumerate all TMs as M1, M2, M3, ... and all strings as w1, w2, w3, ...</p>
+  <p>Build a table: entry (i, j) = 1 if Mi accepts wj, and 0 otherwise.</p>
+
+  <div class="diagram">
+             w1    w2    w3    w4    w5    w6   ...
+        +-------+-----+-----+-----+-----+-----+---
+   M1   | [1]   |  0  |  1  |  0  |  1  |  1  | ...    &lt;-- L(M1)
+        +-------+-----+-----+-----+-----+-----+---
+   M2   |  1    | [0] |  0  |  1  |  0  |  1  | ...    &lt;-- L(M2)
+        +-------+-----+-----+-----+-----+-----+---
+   M3   |  0    |  1  | [1] |  1  |  0  |  0  | ...    &lt;-- L(M3)
+        +-------+-----+-----+-----+-----+-----+---
+   M4   |  1    |  0  |  0  | [0] |  1  |  1  | ...    &lt;-- L(M4)
+        +-------+-----+-----+-----+-----+-----+---
+   M5   |  0    |  1  |  1  |  0  | [1] |  0  | ...    &lt;-- L(M5)
+        +-------+-----+-----+-----+-----+-----+---
+   ...  |  ...                                          ...
+
+  DIAGONAL:     1     0     1     0     1   ...
+  FLIP IT:      0     1     0     1     0   ...  &lt;-- This defines L_d!
+
+  L_d = { wi | Mi does NOT accept wi }
+      </div>
+
+  <div class="key-idea">
+    <h3>Key Idea</h3>
+    <p>L<sub>d</sub> is defined by looking at the <strong>diagonal</strong> of the table and <strong>flipping</strong> every bit. String w<sub>i</sub> is in L<sub>d</sub> if and only if machine M<sub>i</sub> does <strong>not</strong> accept w<sub>i</sub>. This is the same trick Cantor used to prove the reals are uncountable!</p>
+  </div>
+
+  <div class="slide-number">8 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: L_d is Not RE -->
+<!-- ============================================================ -->
+<div class="slide" id="s9">
+  <h1>L<sub>d</sub> is Not Recursively Enumerable</h1>
+  <p class="subtitle">No TM can even recognize L<sub>d</sub> &mdash; not even if we allow it to loop forever on non-members.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Proof by Contradiction</h3>
+      <ol style="padding-left:24px;">
+        <li><strong>Assume</strong> some TM M<sub>j</sub> recognizes L<sub>d</sub>.</li>
+        <li>Then M<sub>j</sub> appears somewhere in our enumeration &mdash; it's the j-th machine.</li>
+        <li><strong>Ask:</strong> Is w<sub>j</sub> in L<sub>d</sub>?</li>
+        <li><strong>Case 1:</strong> w<sub>j</sub> is in L<sub>d</sub>
+          <ul><li>By definition of L<sub>d</sub>: M<sub>j</sub> does NOT accept w<sub>j</sub></li>
+          <li>But M<sub>j</sub> recognizes L<sub>d</sub>, so it should accept w<sub>j</sub></li>
+          <li><strong>Contradiction!</strong></li></ul>
+        </li>
+        <li><strong>Case 2:</strong> w<sub>j</sub> is NOT in L<sub>d</sub>
+          <ul><li>By definition of L<sub>d</sub>: M<sub>j</sub> DOES accept w<sub>j</sub></li>
+          <li>But M<sub>j</sub> recognizes L<sub>d</sub>, so it should not accept w<sub>j</sub></li>
+          <li><strong>Contradiction!</strong></li></ul>
+        </li>
+      </ol>
+    </div>
+    <div>
+      <div class="diagram small">
+  If Mj recognizes L_d:
+
+  wj in L_d?
+      |
+      +-- YES --> Mj does NOT accept wj
+      |           (by def of L_d)
+      |           But Mj recognizes L_d,
+      |           so Mj SHOULD accept wj
+      |           CONTRADICTION!
+      |
+      +-- NO  --> Mj DOES accept wj
+                  (by def of L_d)
+                  But Mj recognizes L_d,
+                  so Mj should NOT accept wj
+                  CONTRADICTION!
+
+  Both cases lead to contradiction.
+  Therefore, no such Mj exists.
+      </div>
+
+      <div class="warning">
+        <h3>What This Means</h3>
+        <p>L<sub>d</sub> is not just undecidable &mdash; it is not even <strong>recognizable</strong>. No TM of any kind can recognize it, even one that is allowed to loop forever on strings not in the language.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">9 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: The Halting Problem -->
+<!-- ============================================================ -->
+<div class="slide" id="s10">
+  <h1>The Halting Problem</h1>
+  <p class="subtitle">The most famous undecidable problem in computer science.</p>
+
+  <div class="key-idea">
+    <h3>Definition</h3>
+    <p>The <strong>Halting Problem</strong> is the language:<br>
+    <strong>HALT = { &lt;M, w&gt; | M is a TM and M halts on input w }</strong><br>
+    That is: given a program and an input, does the program eventually stop?</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram small">
+   +--------+--------+
+   |  &lt;M&gt;   |   w    |
+   | (code) | (input)|
+   +--------+--------+
+        |
+        v
+   +----------+
+   |  HALT    |    Does M halt on w?
+   | DECIDER  |
+   |   ???    |
+   +----------+
+     /      \
+    v        v
+  "YES"    "NO"
+  M halts  M loops
+  on w     forever
+      </div>
+    </div>
+    <div>
+      <h3>Why It Matters</h3>
+      <p>If we could solve the Halting Problem, we could:</p>
+      <ul>
+        <li>Build a <strong>perfect debugger</strong> that catches all infinite loops</li>
+        <li>Verify that <strong>any program terminates</strong></li>
+        <li>Solve <strong>Goldbach's conjecture</strong> and many open math problems</li>
+        <li>Build a <strong>perfect virus scanner</strong></li>
+      </ul>
+      <p class="mt">But we <strong>cannot</strong>. And the proof is elegant.</p>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy</h3>
+    <p>Imagine you're a fortune teller who claims to predict the future of any machine. Someone hands you a description of a machine designed specifically to <strong>do the opposite of whatever you predict</strong>. You're stuck &mdash; you can't be right no matter what you say.</p>
+  </div>
+
+  <div class="slide-number">10 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: Proving the Halting Problem is Undecidable -->
+<!-- ============================================================ -->
+<div class="slide" id="s11">
+  <h1>Proof: Halting is Undecidable</h1>
+  <p class="subtitle">A careful, step-by-step proof by contradiction.</p>
+
+  <h3>Step 1: Assume HALT is decidable</h3>
+  <p>Suppose there exists a TM H that decides HALT. That is, H(&lt;M, w&gt;) = accept if M halts on w, and H(&lt;M, w&gt;) = reject if M loops on w. H <strong>always halts</strong> with the correct answer.</p>
+
+  <div class="diagram small">
+   &lt;M, w&gt; ----> +-----+
+                | H   |----> "accept" (M halts on w)
+                |     |----> "reject" (M loops on w)
+                +-----+
+                H always halts. H is never wrong. (assumption)
+  </div>
+
+  <h3>Step 2: Build a new machine D (the "Diagonal" machine)</h3>
+  <p>Using H as a subroutine, construct D that takes input &lt;M&gt; (the code of a TM) and does:</p>
+
+  <div class="diagram small">
+  D(&lt;M&gt;):
+    1. Run H(&lt;M, &lt;M&gt;&gt;)         -- ask "does M halt when given its own code as input?"
+    2. If H says "accept":      -- M halts on &lt;M&gt;
+         D enters an infinite loop (D does NOT halt)
+    3. If H says "reject":      -- M loops on &lt;M&gt;
+         D halts and accepts
+  </div>
+
+  <div class="key-idea">
+    <h3>Key Insight</h3>
+    <p>D does the <strong>opposite</strong> of what M does on its own code. If M halts on &lt;M&gt;, then D loops. If M loops on &lt;M&gt;, then D halts. This is the setup for the contradiction on the next slide.</p>
+  </div>
+
+  <div class="slide-number">11 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: The Paradox Machine -->
+<!-- ============================================================ -->
+<div class="slide" id="s12">
+  <h1>The Paradox: D on Its Own Code</h1>
+  <p class="subtitle">What happens when we feed D its own encoding?</p>
+
+  <h3>Step 3: Run D(&lt;D&gt;) &mdash; feed D to itself</h3>
+
+  <div class="diagram">
+  D(&lt;D&gt;):
+    1. Run H(&lt;D, &lt;D&gt;&gt;)         -- "Does D halt on &lt;D&gt;?"
+    2. If H says "accept":      -- H claims D halts on &lt;D&gt;
+         D loops forever         -- but then D does NOT halt! H was WRONG!
+    3. If H says "reject":      -- H claims D loops on &lt;D&gt;
+         D halts and accepts     -- but then D DOES halt! H was WRONG!
+
+  +==========================================================+
+  |                                                          |
+  |   CASE A: D halts on &lt;D&gt;                                |
+  |     --> H says "accept"                                  |
+  |     --> D enters infinite loop                           |
+  |     --> D does NOT halt on &lt;D&gt;    CONTRADICTION!         |
+  |                                                          |
+  |   CASE B: D does not halt on &lt;D&gt;                        |
+  |     --> H says "reject"                                  |
+  |     --> D halts and accepts                              |
+  |     --> D DOES halt on &lt;D&gt;        CONTRADICTION!         |
+  |                                                          |
+  |   Both cases are impossible.                             |
+  |   Therefore our assumption that H exists must be FALSE.  |
+  |                                                          |
+  +==========================================================+
+  </div>
+
+  <div class="warning">
+    <h3>The Conclusion</h3>
+    <p>No TM H can decide the Halting Problem. It is <strong>undecidable</strong>. This is not a limitation of our current technology &mdash; it is a fundamental <strong>mathematical impossibility</strong>.</p>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy: The Barber Paradox</h3>
+    <p>"A barber shaves everyone who doesn't shave themselves." Who shaves the barber? If he does, he doesn't. If he doesn't, he does. Same structure: <strong>self-reference + negation = paradox</strong>.</p>
+  </div>
+
+  <div class="slide-number">12 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: Consequences of Undecidability -->
+<!-- ============================================================ -->
+<div class="slide" id="s13">
+  <h1>Consequences of Undecidability</h1>
+  <p class="subtitle">What we can NEVER build, no matter how smart we get.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Impossible Programs</h3>
+      <ul>
+        <li><strong>Perfect Debugger:</strong> No tool can detect all infinite loops in arbitrary programs</li>
+        <li><strong>Perfect Virus Scanner:</strong> Cannot determine if arbitrary code is malicious</li>
+        <li><strong>Perfect Optimizer:</strong> Cannot determine if two programs compute the same function</li>
+        <li><strong>Perfect Verifier:</strong> Cannot determine if a program meets an arbitrary specification</li>
+        <li><strong>Perfect Type Checker:</strong> Cannot determine all type errors in a sufficiently expressive language</li>
+      </ul>
+    </div>
+    <div>
+      <div class="diagram small">
+  Real-world impact:
+
+  Compiler: "Will this loop
+             terminate?"
+  Answer:   "Undecidable."
+
+  Antivirus: "Is this program
+              malicious?"
+  Answer:    "Undecidable in
+              general."
+
+  Verifier: "Does this code
+             match the spec?"
+  Answer:   "Undecidable in
+             general."
+      </div>
+      <div class="warning">
+        <h3>But We Still Write Debuggers!</h3>
+        <p>We can't solve these problems <em>in general</em>, but we CAN solve them for <em>specific cases</em>. Real tools use heuristics, approximations, and restricted inputs. They work <em>most of the time</em> but can never be <em>perfect</em>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">13 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: Reductions -->
+<!-- ============================================================ -->
+<div class="slide" id="s14">
+  <h1>Reductions</h1>
+  <p class="subtitle">Proving new problems undecidable by "reducing" from known undecidable problems.</p>
+
+  <div class="diagram">
+  THE IDEA: "If you could solve Problem B, you could solve Problem A."
+
+  If A is known to be undecidable, then B must be undecidable too!
+
+  +-------------------+          +-------------------+
+  | Problem A         |  reduce  | Problem B         |
+  | (known            | -------> | (want to prove    |
+  |  undecidable)     |          |  undecidable)     |
+  +-------------------+          +-------------------+
+        HALT                          New Problem
+
+  Reduction = a computable transformation:
+  instance of A  ---f--->  instance of B
+  such that: A says "yes"  iff  B says "yes"
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Proof Pattern</h3>
+        <ol style="padding-left:24px;">
+          <li>Want to prove problem B is undecidable</li>
+          <li>Assume (for contradiction) B is decidable</li>
+          <li>Show how to use a decider for B to decide HALT</li>
+          <li>But HALT is undecidable &mdash; contradiction!</li>
+          <li>Therefore B is undecidable</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  &lt;M, w&gt; ---> [ Transform ] ---> instance of B
+                                        |
+                                        v
+                               [ Decider for B ]
+                                        |
+                                        v
+                                   yes / no
+                                        |
+           This would decide HALT!      |
+           But HALT is undecidable!     |
+           CONTRADICTION!          &lt;----+
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">14 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: Reduction Example: E_TM -->
+<!-- ============================================================ -->
+<div class="slide" id="s15">
+  <h1>Reduction Example: Is L(M) Empty?</h1>
+  <p class="subtitle">E<sub>TM</sub> = { &lt;M&gt; | L(M) = empty set }. Is this decidable?</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Proof: E<sub>TM</sub> is Undecidable</h3>
+      <ol style="padding-left:24px;">
+        <li><strong>Assume</strong> we have a decider R for E<sub>TM</sub>.</li>
+        <li>Given &lt;M, w&gt;, build a <strong>new TM M'</strong>:
+          <div class="diagram small" style="margin:10px 0;">
+  M'(x):
+    1. Ignore x entirely
+    2. Run M on w
+    3. If M accepts w, accept x
+       (otherwise M' loops/rejects)
+          </div>
+        </li>
+        <li><strong>Observe:</strong>
+          <ul>
+            <li>If M accepts w: M' accepts everything, so L(M') = Sigma* (not empty)</li>
+            <li>If M does not accept w: M' accepts nothing, so L(M') = empty</li>
+          </ul>
+        </li>
+        <li>Run R(&lt;M'&gt;):
+          <ul>
+            <li>R says "L(M') is empty" iff M does not accept w</li>
+            <li>R says "L(M') is not empty" iff M accepts w</li>
+          </ul>
+        </li>
+        <li>This decides whether M accepts w &mdash; that's the Halting Problem!</li>
+      </ol>
+    </div>
+    <div>
+      <div class="diagram small">
+  Reduction: HALT ---> E_TM
+
+  &lt;M, w&gt;
+     |
+     | construct
+     v
+  +--------+
+  |   M'   |  M'(x): ignore x,
+  |        |         run M on w,
+  |        |         accept if M does
+  +--------+
+     |
+     | feed to assumed decider
+     v
+  +--------+
+  | R for  |
+  | E_TM   |
+  +--------+
+     |
+     v
+  R says "empty"  --> M doesn't accept w
+  R says "not empty" --> M accepts w
+
+  This solves HALT!
+  But HALT is undecidable!
+  CONTRADICTION!
+  Therefore E_TM is undecidable.
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">15 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: Rice's Theorem -->
+<!-- ============================================================ -->
+<div class="slide" id="s16">
+  <h1>Rice's Theorem</h1>
+  <p class="subtitle">The nuclear weapon of undecidability results.</p>
+
+  <div class="key-idea">
+    <h3>Rice's Theorem (1953)</h3>
+    <p>Every <strong>non-trivial</strong> property of the <strong>language recognized by a Turing machine</strong> is <strong>undecidable</strong>.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>What does "non-trivial" mean?</h3>
+      <p>A property P of languages is <strong>non-trivial</strong> if:</p>
+      <ul>
+        <li>At least one TM has a language satisfying P</li>
+        <li>At least one TM has a language NOT satisfying P</li>
+      </ul>
+      <p>In other words, the property is not always-true or always-false.</p>
+
+      <h3 class="mt">What does "property of the language" mean?</h3>
+      <p>It depends only on <strong>what the TM computes</strong> (its language), not <strong>how</strong> it computes it (its structure).</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  "Is L(M) ____?"
+
+  +---------------------------+--------+
+  | Property                  | Decide |
+  |                           | -able? |
+  +---------------------------+--------+
+  | L(M) is empty?            |   NO   |
+  | L(M) is finite?           |   NO   |
+  | L(M) is regular?          |   NO   |
+  | L(M) is context-free?     |   NO   |
+  | L(M) = Sigma*?            |   NO   |
+  | L(M) contains "hello"?    |   NO   |
+  | L(M) = some specific L?   |   NO   |
+  +---------------------------+--------+
+  | L(M) is RE?               |  YES*  |
+  |  (*trivial: always true!) |        |
+  +---------------------------+--------+
+
+  ANY interesting question about
+  what a TM computes is undecidable.
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy</h3>
+    <p>Imagine you're told: "You can never determine ANY interesting fact about what a program outputs, just by looking at the program." That's Rice's Theorem. You can ask about the code's <em>structure</em> (how many lines? what variables?), but you can't determine anything about its <em>behavior</em>.</p>
+  </div>
+
+  <div class="slide-number">16 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17: Rice's Theorem Examples -->
+<!-- ============================================================ -->
+<div class="slide" id="s17">
+  <h1>Rice's Theorem: Examples</h1>
+  <p class="subtitle">All of these questions are undecidable. All of them.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Undecidable (by Rice's)</h3>
+      <table>
+        <tr><th>Question</th><th>Property of L(M)?</th><th>Non-trivial?</th></tr>
+        <tr><td style="text-align:left;">Is L(M) = empty set?</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td style="text-align:left;">Is L(M) finite?</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td style="text-align:left;">Is L(M) regular?</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td style="text-align:left;">Is L(M) context-free?</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td style="text-align:left;">Is L(M) = {0^n 1^n}?</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td style="text-align:left;">Is L(M) = Sigma*?</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td style="text-align:left;">Does L(M) contain ""?</td><td>Yes</td><td>Yes</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>NOT covered by Rice's</h3>
+      <p>Rice's does NOT apply to:</p>
+      <ul>
+        <li>Properties of the <strong>TM itself</strong> (not its language):
+          <ul>
+            <li>"Does M have exactly 5 states?" (decidable)</li>
+            <li>"Does M ever move left?" (decidable)</li>
+          </ul>
+        </li>
+        <li><strong>Trivial</strong> properties:
+          <ul>
+            <li>"Is L(M) RE?" (trivially true for all TMs)</li>
+            <li>"Is L(M) a set of strings?" (trivially true)</li>
+          </ul>
+        </li>
+      </ul>
+
+      <div class="warning">
+        <h3>Common Mistake</h3>
+        <p>Rice's theorem says nothing about properties of the <em>machine</em>. "Does M have 100 states?" is about the machine's structure, not about L(M). That IS decidable &mdash; just look at the encoding!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">17 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18: The Hierarchy of Problems -->
+<!-- ============================================================ -->
+<div class="slide" id="s18">
+  <h1>The Hierarchy of Problems</h1>
+  <p class="subtitle">Not all unsolvable problems are equally unsolvable.</p>
+
+  <div class="diagram">
+  +====================================================================+
+  |                                                                    |
+  |                       ALL LANGUAGES                                |
+  |                  (uncountably many)                                |
+  |                                                                    |
+  |    +----------------------------------------------------------+    |
+  |    |                                                          |    |
+  |    |              co-RE  (complement is RE)                   |    |
+  |    |                                                          |    |
+  |    |    +----------------------------------------------+      |    |
+  |    |    |                                              |      |    |
+  |    |    |        RE  (recognizable by a TM)            |      |    |
+  |    |    |                                              |      |    |
+  |    |    |    +----------------------------------+      |      |    |
+  |    |    |    |                                  |      |      |    |
+  |    |    |    |    DECIDABLE (recursive)         |      |      |    |
+  |    |    |    |    TM always halts               |      |      |    |
+  |    |    |    |                                  |      |      |    |
+  |    |    |    |    Examples: {a^n b^n},          |      |      |    |
+  |    |    |    |    all CFLs, all regular langs   |      |      |    |
+  |    |    |    +----------------------------------+      |      |    |
+  |    |    |                                              |      |    |
+  |    |    |    RE but not decidable: HALT                |      |    |
+  |    |    |    (TM can say YES but may loop on NO)       |      |    |
+  |    |    +----------------------------------------------+      |    |
+  |    |                                                          |    |
+  |    |    co-RE but not RE: complement of HALT                  |    |
+  |    +----------------------------------------------------------+    |
+  |                                                                    |
+  |    Not RE and not co-RE:  L_d                                      |
+  |    (completely beyond TM power)                                    |
+  +====================================================================+
+  </div>
+
+  <div class="key-idea">
+    <h3>Key Insight</h3>
+    <p>A language is <strong>decidable</strong> iff it is both RE and co-RE. The decidable languages sit at the intersection. HALT is RE (we can simulate and say yes if it halts) but not co-RE (we can't detect non-halting). L<sub>d</sub> is neither RE nor co-RE.</p>
+  </div>
+
+  <div class="slide-number">18 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 19: Post's Correspondence Problem -->
+<!-- ============================================================ -->
+<div class="slide" id="s19">
+  <h1>Post's Correspondence Problem</h1>
+  <p class="subtitle">A surprisingly simple-looking problem that is undecidable.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Problem</h3>
+      <p>Given a set of "dominoes," each with a top string and bottom string:</p>
+
+      <div class="diagram small">
+  Domino 1:  [ b  ]     Domino 2:  [ a   ]
+             [ ca ]                [ ab  ]
+
+  Domino 3:  [ ca ]     Domino 4:  [ abc ]
+             [ a  ]                [ c   ]
+      </div>
+
+      <p>Can you arrange a sequence of dominoes (repeats allowed) so that the <strong>top strings concatenated</strong> equal the <strong>bottom strings concatenated</strong>?</p>
+
+      <div class="diagram small">
+  Example solution: Domino 1, 2, 1, 3
+
+  Top:    b  | a  | b  | ca  = "babca"
+  Bottom: ca | ab | ca | a   = "caabcaa"
+
+  Hmm, that doesn't match.
+  Finding a match (or proving
+  none exists) is UNDECIDABLE!
+      </div>
+    </div>
+    <div>
+      <h3>Why It Matters</h3>
+      <ul>
+        <li>PCP looks nothing like the Halting Problem</li>
+        <li>Yet it is <strong>undecidable</strong> (proven by reduction from HALT)</li>
+        <li>It is used as an <strong>intermediate step</strong> to prove many other problems undecidable</li>
+        <li>Shows undecidability isn't limited to questions about TMs &mdash; it appears in "ordinary" combinatorial problems too</li>
+      </ul>
+
+      <div class="diagram small">
+  Reduction chain:
+
+  HALT -----> PCP -----> CFG ambiguity
+                  \----> other problems
+
+  PCP is a useful "bridge" between
+  TM problems and grammar/language
+  problems.
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Undecidability is <strong>everywhere</strong>. It's not just about Turing machines &mdash; it infects combinatorics, logic, algebra, and even simple-looking puzzle problems.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">19 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 20: Summary & Cheat Sheet -->
+<!-- ============================================================ -->
+<div class="slide" id="s20">
+  <h1>Summary &amp; Cheat Sheet</h1>
+  <p class="subtitle">Everything you need to know, on one slide.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Big Results</h3>
+      <table style="font-size:0.95em;">
+        <tr><th>Concept</th><th>Key Point</th></tr>
+        <tr><td style="text-align:left;">TM Encoding</td><td style="text-align:left;">Every TM is a finite binary string</td></tr>
+        <tr><td style="text-align:left;">UTM</td><td style="text-align:left;">One TM simulates all others (= interpreter)</td></tr>
+        <tr><td style="text-align:left;">Counting</td><td style="text-align:left;">Countable TMs vs uncountable languages</td></tr>
+        <tr><td style="text-align:left;">L<sub>d</sub></td><td style="text-align:left;">Diag. language, not even RE</td></tr>
+        <tr><td style="text-align:left;">HALT</td><td style="text-align:left;">RE but not decidable</td></tr>
+        <tr><td style="text-align:left;">Reductions</td><td style="text-align:left;">Prove B undecidable via A &le; B</td></tr>
+        <tr><td style="text-align:left;">Rice's Thm</td><td style="text-align:left;">All non-trivial properties of L(M) undecidable</td></tr>
+        <tr><td style="text-align:left;">PCP</td><td style="text-align:left;">Undecidability beyond TM questions</td></tr>
+      </table>
+
+      <div class="key-idea mt">
+        <h3>The Halting Proof in 4 Lines</h3>
+        <p>1. Assume decider H for HALT exists<br>
+           2. Build D: run H(&lt;M,&lt;M&gt;&gt;); do opposite<br>
+           3. Run D(&lt;D&gt;): contradiction either way<br>
+           4. Therefore H cannot exist</p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  PROOF STRATEGY CHEAT SHEET:
+
+  To prove L is undecidable:
+  +---------------------------------+
+  | 1. "Assume L is decidable"      |
+  | 2. Show how to reduce HALT to L |
+  |    (use L's decider to solve    |
+  |     HALT)                       |
+  | 3. "But HALT is undecidable!"   |
+  | 4. "Contradiction. L is         |
+  |     undecidable."               |
+  +---------------------------------+
+
+  Or just use Rice's Theorem:
+  +---------------------------------+
+  | 1. Is it a property of L(M)?    |
+  |    (not the machine itself?)    |
+  | 2. Is it non-trivial?           |
+  |    (some TMs yes, some TMs no?) |
+  | 3. If both YES: UNDECIDABLE.    |
+  |    Done. That's it.             |
+  +---------------------------------+
+      </div>
+
+      <div class="warning">
+        <h3>Exam Tip</h3>
+        <p>When asked "is X decidable?", first check: is it a non-trivial property of L(M)? If yes, cite Rice's Theorem and you're done. Only do a full reduction proof if Rice's doesn't apply (e.g., the property involves the machine itself, or you need to show it's not RE).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">20 / 20</div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 20;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+</script>
+
+</body>
+</html>

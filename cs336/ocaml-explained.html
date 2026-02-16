@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCaml - A Functional Programming Crash Course for CS Theory</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; background: #1e293b; padding: 2px 7px; border-radius: 4px; font-size: 0.95em; color: #a5f3fc; }
+
+/* Feedback form styles */
+.radio-opt { display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:8px 16px; border-radius:8px; border:1px solid #334155; cursor:pointer; transition: all 0.2s; color:#cbd5e1; font-size:0.95em; }
+.radio-opt:hover { border-color:#3b82f6; }
+.radio-opt input[type="radio"] { accent-color:#3b82f6; }
+.radio-opt:has(input:checked) { border-color:#3b82f6; background:rgba(59,130,246,0.15); color:#93c5fd; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: Title -->
+<!-- ============================================================ -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>OCaml</h1>
+    <p class="subtitle">A Functional Programming Crash Course for CS Theory</p>
+    <div class="diagram" style="display:inline-block; text-align:left; font-size:0.85em;">
+   ___   ____                _
+  / _ \ / ___|__ _ _ __ ___ | |
+ | | | | |   / _` | '_ ` _ \| |
+ | |_| | |__| (_| | | | | | | |
+  \___/ \____\__,_|_| |_| |_|_|
+
+  CS305 / CS336 - Formal Languages &amp; Theory of Computation
+    </div>
+    <p style="margin-top: 30px; color: #64748b;">Use arrow keys or buttons to navigate. Press 'S' to reveal steps.</p>
+  </div>
+  <div class="slide-number">1 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: Why OCaml for Theory? -->
+<!-- ============================================================ -->
+<div class="slide" id="s2">
+  <h2>Why OCaml for Theory?</h2>
+  <p class="subtitle">Functional programming and formal languages are deeply connected</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Connections</h3>
+      <ul>
+        <li><strong>Pattern matching</strong> = state transitions in automata</li>
+        <li><strong>Recursive types</strong> = grammar productions in CFGs</li>
+        <li><strong>Immutability</strong> = mathematical functions (same input, same output)</li>
+        <li><strong>Recursive functions</strong> = recursive descent parsing</li>
+        <li><strong>Algebraic data types</strong> = abstract syntax trees</li>
+      </ul>
+    </div>
+    <div>
+      <div class="diagram small">
+  Theory Concept        OCaml Feature
+  ───────────────       ─────────────
+  DFA transitions  -->  match state, symbol with
+  CFG productions  -->  type expr = Add of expr * expr
+  Parse trees      -->  recursive data types
+  Language membership -> recursive functions
+  Math functions   -->  pure functions (no side effects)
+      </div>
+    </div>
+  </div>
+
+  <div class="key-idea">
+    <h3>Key Idea</h3>
+    <p>OCaml lets you write code that <strong>looks like the math</strong> you see in theory class. A DFA simulator in OCaml reads almost identically to the formal definition (Q, &Sigma;, &delta;, q0, F).</p>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy: Why Not Java/Python?</h3>
+    <p>Writing a DFA simulator in Java is like translating Shakespeare into emojis -- it works, but the beauty of the original structure is lost. OCaml preserves the mathematical elegance.</p>
+  </div>
+
+  <div class="slide-number">2 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: Getting Started -->
+<!-- ============================================================ -->
+<div class="slide" id="s3">
+  <h2>Getting Started</h2>
+  <p class="subtitle">Installing OCaml and your first interaction</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Installation</h3>
+      <div class="diagram small">
+# Install opam (OCaml package manager)
+$ brew install opam        # macOS
+$ sudo apt install opam    # Ubuntu/Debian
+
+# Initialize opam
+$ opam init
+$ eval $(opam env)
+
+# Install the REPL and build tools
+$ opam install utop dune
+      </div>
+
+      <h3 class="mt">Running Code</h3>
+      <ul>
+        <li><strong>utop</strong> -- interactive REPL (like Python shell)</li>
+        <li><strong>ocaml</strong> -- basic REPL (less fancy)</li>
+        <li><strong>dune</strong> -- build system for projects</li>
+        <li><strong>.ml</strong> -- OCaml source file extension</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Hello World in utop</h3>
+      <div class="diagram small">
+# print_endline "Hello, CS Theory!";;
+Hello, CS Theory!
+- : unit = ()
+
+# 2 + 3;;
+- : int = 5
+
+# "formal" ^ " languages";;
+- : string = "formal languages"
+      </div>
+
+      <div class="warning">
+        <h3>Important: The ;; Terminator</h3>
+        <p>In the REPL, every expression ends with <code>;;</code> to tell OCaml "evaluate this now." In source files (.ml), you typically do not need <code>;;</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">3 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: Basic Types and Values -->
+<!-- ============================================================ -->
+<div class="slide" id="s4">
+  <h2>Basic Types and Values</h2>
+  <p class="subtitle">OCaml's built-in types -- and the compiler figures them out for you</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Primitive Types</h3>
+      <table>
+        <tr><th>Type</th><th>Examples</th><th>Notes</th></tr>
+        <tr><td>int</td><td>42, -7, 0</td><td>No overflow warning</td></tr>
+        <tr><td>float</td><td>3.14, 2.0</td><td>Separate operators!</td></tr>
+        <tr><td>bool</td><td>true, false</td><td>Lowercase!</td></tr>
+        <tr><td>char</td><td>'a', 'Z'</td><td>Single quotes</td></tr>
+        <tr><td>string</td><td>"hello"</td><td>Double quotes</td></tr>
+        <tr><td>unit</td><td>()</td><td>Like void</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>REPL Examples</h3>
+      <div class="diagram small">
+# 42;;
+- : int = 42
+
+# 3.14;;
+- : float = 3.14
+
+# true;;
+- : bool = true
+
+# 'a';;
+- : char = 'a'
+
+# "hello";;
+- : string = "hello"
+
+# ();;
+- : unit = ()
+      </div>
+    </div>
+  </div>
+
+  <div class="warning">
+    <h3>Gotcha: int vs float arithmetic</h3>
+    <p>OCaml does NOT auto-convert between int and float. Use <code>+</code> for ints, <code>+.</code> for floats. <code>2 + 3</code> works, but <code>2 + 3.0</code> is a type error! Use <code>float_of_int</code> to convert.</p>
+  </div>
+
+  <div class="diagram small">
+# 2 + 3;;
+- : int = 5
+
+# 2.0 +. 3.0;;
+- : float = 5.0
+
+# 2 + 3.0;;        (* TYPE ERROR! *)
+Error: This expression has type float but an expression of type int was expected
+
+# float_of_int 2 +. 3.0;;
+- : float = 5.0
+  </div>
+
+  <div class="slide-number">4 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: Let Bindings -->
+<!-- ============================================================ -->
+<div class="slide" id="s5">
+  <h2>Let Bindings</h2>
+  <p class="subtitle">Naming values -- not assigning variables</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Top-Level Bindings</h3>
+      <div class="diagram small">
+# let x = 5;;
+val x : int = 5
+
+# let greeting = "hello";;
+val greeting : string = "hello"
+
+# let is_even n = (n mod 2 = 0);;
+val is_even : int -> bool = &lt;fun&gt;
+
+# x + 10;;
+- : int = 15
+      </div>
+
+      <h3 class="mt">Local Bindings with let...in</h3>
+      <div class="diagram small">
+# let area r =
+    let pi = 3.14159 in
+    let r_sq = r *. r in
+    pi *. r_sq;;
+val area : float -> float = &lt;fun&gt;
+
+# area 5.0;;
+- : float = 78.53975
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Mathematical Definitions</h3>
+        <p>In math, when we write "let x = 5," we mean x IS 5. We don't mean "put 5 in the box labeled x." There is no box. There is no mutation. <code>let</code> in OCaml works the same way.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Immutability by Default</h3>
+        <p>Once you bind a name, it <strong>cannot change</strong>. This is like how in math, once you define a variable in a proof, it stays fixed.</p>
+      </div>
+
+      <div class="diagram small">
+(* You CAN shadow a binding: *)
+# let x = 5;;
+val x : int = 5
+# let x = 10;;     (* new binding, old x is gone *)
+val x : int = 10
+
+(* But you CANNOT mutate: *)
+# x = 20;;   (* This is equality CHECK, not assignment! *)
+- : bool = false
+      </div>
+
+      <div class="warning">
+        <h3>Java/Python Gotcha</h3>
+        <p><code>=</code> is comparison in OCaml, not assignment. <code>let</code> is how you bind names. There is no <code>x = x + 1</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">5 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: Functions -->
+<!-- ============================================================ -->
+<div class="slide" id="s6">
+  <h2>Functions</h2>
+  <p class="subtitle">First-class citizens -- functions are values like any other</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Defining Functions</h3>
+      <div class="diagram small">
+(* Named function *)
+# let increment x = x + 1;;
+val increment : int -> int = &lt;fun&gt;
+
+(* Multi-parameter function *)
+# let add x y = x + y;;
+val add : int -> int -> int = &lt;fun&gt;
+
+(* Anonymous function (lambda) *)
+# (fun x -> x + 1) 5;;
+- : int = 6
+
+# let double = fun x -> x * 2;;
+val double : int -> int = &lt;fun&gt;
+      </div>
+
+      <h3 class="mt">Partial Application</h3>
+      <div class="diagram small">
+# let add x y = x + y;;
+val add : int -> int -> int = &lt;fun&gt;
+
+# let add5 = add 5;;
+val add5 : int -> int = &lt;fun&gt;
+
+# add5 3;;
+- : int = 8
+      </div>
+    </div>
+    <div>
+      <h3>Currying: How Multi-Arg Functions Really Work</h3>
+      <div class="diagram small">
+  add : int -> int -> int
+
+  This REALLY means:
+  add : int -> (int -> int)
+
+  "A function that takes an int and
+   returns a function that takes an int
+   and returns an int"
+
+  ┌─────┐    ┌─────┐    ┌─────┐
+  │  5  │───>│ add │───>│ f   │
+  └─────┘    │     │    │ (adds 5│
+             └─────┘    │to arg) │
+                        └───┬───┘
+                  ┌─────┐   │   ┌─────┐
+                  │  3  │───┘──>│  8  │
+                  └─────┘       └─────┘
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Every function in OCaml takes <strong>exactly one argument</strong>. Multi-argument functions are syntactic sugar for curried chains. <code>let add x y = ...</code> is really <code>let add = fun x -> fun y -> ...</code></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">6 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: Type Inference -->
+<!-- ============================================================ -->
+<div class="slide" id="s7">
+  <h2>Type Inference</h2>
+  <p class="subtitle">OCaml figures out the types so you don't have to write them</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Compiler as Detective</h3>
+      <div class="diagram small">
+# let mystery x y =
+    if x > 0 then y ^ "!" else y;;
+
+(* OCaml deduces:
+   x > 0       --> x must be int
+   y ^ "!"     --> y must be string
+   result      --> string
+*)
+val mystery : int -> string -> string = &lt;fun&gt;
+      </div>
+
+      <div class="diagram small">
+# let pick_first (a, b) = a;;
+val pick_first : 'a * 'b -> 'a = &lt;fun&gt;
+
+(* 'a and 'b are TYPE VARIABLES
+   This works for ANY types!
+   pick_first (1, "hi")  --> 1
+   pick_first (true, 42) --> true  *)
+      </div>
+
+      <h3 class="mt">Polymorphism (Generics)</h3>
+      <div class="diagram small">
+# let identity x = x;;
+val identity : 'a -> 'a = &lt;fun&gt;
+
+(* 'a means "any type" -- like
+   Java's &lt;T&gt; but automatic *)
+
+# identity 42;;
+- : int = 42
+# identity "hello";;
+- : string = "hello"
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Detective Work</h3>
+        <p>Type inference is like solving a mystery. The compiler sees clues: <code>x + 1</code> means x is an int. <code>y ^ "!"</code> means y is a string. It pieces together evidence to determine every type, without you writing a single annotation.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Hindley-Milner Type System</h3>
+        <p>OCaml uses the <strong>Hindley-Milner</strong> type inference algorithm. It can infer the most general type for any expression. This is a real CS theory result -- the algorithm is based on <strong>unification</strong>, the same technique used in logic programming and automated theorem proving.</p>
+      </div>
+
+      <div class="warning">
+        <h3>You CAN Add Type Annotations</h3>
+        <p>If you want to be explicit (or get better error messages):</p>
+      </div>
+      <div class="diagram small">
+# let add (x : int) (y : int) : int =
+    x + y;;
+val add : int -> int -> int = &lt;fun&gt;
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">7 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: If-Then-Else as Expressions -->
+<!-- ============================================================ -->
+<div class="slide" id="s8">
+  <h2>If-Then-Else as Expressions</h2>
+  <p class="subtitle">Everything in OCaml is an expression that returns a value</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Expressions, Not Statements</h3>
+      <div class="diagram small">
+(* if-then-else RETURNS a value *)
+# let abs x =
+    if x >= 0 then x else -x;;
+val abs : int -> int = &lt;fun&gt;
+
+# let max a b =
+    if a > b then a else b;;
+val max : 'a -> 'a -> 'a = &lt;fun&gt;
+
+(* You can use it inline *)
+# let msg = "You " ^
+    (if true then "win" else "lose");;
+val msg : string = "You win"
+      </div>
+
+      <div class="diagram small">
+(* Nested if-then-else *)
+# let classify n =
+    if n > 0 then "positive"
+    else if n < 0 then "negative"
+    else "zero";;
+val classify : int -> string = &lt;fun&gt;
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea: Both Branches Must Have the Same Type</h3>
+        <p>Since if-then-else is an expression that produces a value, both branches must produce the <strong>same type</strong>. This is like how a mathematical piecewise function must have a consistent codomain.</p>
+      </div>
+
+      <div class="warning">
+        <h3>Common Error: Type Mismatch</h3>
+      </div>
+      <div class="diagram small">
+# if true then 42 else "hello";;
+Error: This expression has type string
+  but an expression of type int was expected
+
+(* "then" branch is int, "else" is string
+   -- OCaml says NO! *)
+      </div>
+
+      <div class="warning">
+        <h3>Gotcha: if Without else</h3>
+      </div>
+      <div class="diagram small">
+(* Only valid when the result is unit *)
+# if true then print_endline "hi";;
+hi
+- : unit = ()
+
+(* This FAILS -- what would the else return? *)
+# if true then 42;;
+Error: This expression has type int
+  but an expression of type unit was expected
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">8 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: Recursion -->
+<!-- ============================================================ -->
+<div class="slide" id="s9">
+  <h2>Recursion</h2>
+  <p class="subtitle">No loops needed -- recursion is the way</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The <code>rec</code> Keyword</h3>
+      <div class="diagram small">
+(* MUST use "let rec" for recursion *)
+# let rec factorial n =
+    if n <= 0 then 1
+    else n * factorial (n - 1);;
+val factorial : int -> int = &lt;fun&gt;
+
+# factorial 5;;
+- : int = 120
+      </div>
+
+      <div class="diagram small">
+(* Fibonacci *)
+# let rec fib n =
+    if n <= 1 then n
+    else fib (n-1) + fib (n-2);;
+val fib : int -> int = &lt;fun&gt;
+
+# fib 10;;
+- : int = 55
+      </div>
+
+      <h3 class="mt">Tail Recursion (Optimized)</h3>
+      <div class="diagram small">
+# let factorial_tail n =
+    let rec aux acc n =
+      if n <= 0 then acc
+      else aux (acc * n) (n - 1)
+    in aux 1 n;;
+val factorial_tail : int -> int = &lt;fun&gt;
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  factorial 4
+  ├── 4 * factorial 3
+  │       ├── 3 * factorial 2
+  │       │       ├── 2 * factorial 1
+  │       │       │       ├── 1 * factorial 0
+  │       │       │       │       └── 1
+  │       │       │       └── 1 * 1 = 1
+  │       │       └── 2 * 1 = 2
+  │       └── 3 * 2 = 6
+  └── 4 * 6 = 24
+      </div>
+
+      <div class="warning">
+        <h3>Gotcha: Forgetting <code>rec</code></h3>
+        <p>If you write <code>let factorial n = ... factorial (n-1)</code> without <code>rec</code>, OCaml will look for a <em>previously defined</em> function called <code>factorial</code>, not the one you're defining. Always use <code>let rec</code> for recursive functions!</p>
+      </div>
+
+      <div class="analogy">
+        <h3>Analogy: Recursion = Induction</h3>
+        <p>Recursive functions mirror <strong>structural induction</strong> proofs from theory class. Base case = base case. Recursive call = inductive step. If you can write an inductive proof, you can write a recursive function.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">9 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: Tuples and Records -->
+<!-- ============================================================ -->
+<div class="slide" id="s10">
+  <h2>Tuples and Records</h2>
+  <p class="subtitle">Grouping data together</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Tuples -- Quick Grouping</h3>
+      <div class="diagram small">
+# (1, "hello", true);;
+- : int * string * bool = (1, "hello", true)
+
+# let point = (3.0, 4.0);;
+val point : float * float = (3.0, 4.0)
+
+(* Access via pattern matching *)
+# let (x, y) = point;;
+val x : float = 3.
+val y : float = 4.
+
+# let distance (x1,y1) (x2,y2) =
+    let dx = x2 -. x1 in
+    let dy = y2 -. y1 in
+    sqrt (dx *. dx +. dy *. dy);;
+val distance :
+  float * float -> float * float -> float
+  = &lt;fun&gt;
+
+# distance (0.0, 0.0) (3.0, 4.0);;
+- : float = 5.
+      </div>
+    </div>
+    <div>
+      <h3>Records -- Named Fields</h3>
+      <div class="diagram small">
+(* Define a record type first *)
+# type person = {
+    name : string;
+    age  : int;
+  };;
+type person = { name : string; age : int; }
+
+(* Create a record *)
+# let alice = { name = "Alice"; age = 20 };;
+val alice : person = {name = "Alice"; age = 20}
+
+(* Access fields *)
+# alice.name;;
+- : string = "Alice"
+
+(* Pattern match on records *)
+# let greet { name; age } =
+    Printf.printf "%s is %d\n" name age;;
+val greet : person -> unit = &lt;fun&gt;
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Idea: The * in Tuple Types</h3>
+        <p><code>int * string * bool</code> uses * because tuples are <strong>Cartesian products</strong> of types -- the same cross-product from set theory!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">10 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: Lists -->
+<!-- ============================================================ -->
+<div class="slide" id="s11">
+  <h2>Lists</h2>
+  <p class="subtitle">The fundamental data structure of functional programming</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Creating Lists</h3>
+      <div class="diagram small">
+# [1; 2; 3];;
+- : int list = [1; 2; 3]
+
+# ["hello"; "world"];;
+- : string list = ["hello"; "world"]
+
+# [];;
+- : 'a list = []    (* empty list *)
+
+(* :: is "cons" -- prepend an element *)
+# 1 :: [2; 3];;
+- : int list = [1; 2; 3]
+
+# 1 :: 2 :: 3 :: [];;
+- : int list = [1; 2; 3]
+
+(* @ is append -- concatenate lists *)
+# [1; 2] @ [3; 4];;
+- : int list = [1; 2; 3; 4]
+      </div>
+
+      <div class="warning">
+        <h3>Gotcha: Semicolons, Not Commas!</h3>
+        <p><code>[1; 2; 3]</code> is a list of three ints. <code>[1, 2, 3]</code> is a list of ONE tuple <code>(1,2,3)</code>. This trips up everyone coming from Python/Java.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Lists are Linked Lists</h3>
+      <div class="diagram small">
+  [1; 2; 3] is really:
+
+  ┌───┬───┐   ┌───┬───┐   ┌───┬───┐
+  │ 1 │  ─┼──>│ 2 │  ─┼──>│ 3 │ / │
+  └───┴───┘   └───┴───┘   └───┴───┘
+
+  1 :: (2 :: (3 :: []))
+
+  cons is O(1),  append is O(n)
+  head is O(1),  indexing is O(n)
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Idea: All Elements Must Be the Same Type</h3>
+        <p><code>[1; "hello"; true]</code> is a type error. Unlike Python lists, OCaml lists are <strong>homogeneous</strong>. Think of it as a formal language: the list type is the Kleene star of a single alphabet symbol.</p>
+      </div>
+
+      <div class="diagram small">
+(* List functions *)
+# List.length [1; 2; 3];;
+- : int = 3
+
+# List.hd [1; 2; 3];;
+- : int = 1
+
+# List.tl [1; 2; 3];;
+- : int list = [2; 3]
+
+# List.rev [1; 2; 3];;
+- : int list = [3; 2; 1]
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">11 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: Pattern Matching Part 1 -->
+<!-- ============================================================ -->
+<div class="slide" id="s12">
+  <h2>Pattern Matching (Part 1)</h2>
+  <p class="subtitle">The most powerful feature in OCaml -- your new best friend</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Basic Syntax</h3>
+      <div class="diagram small">
+# let describe_number n =
+    match n with
+    | 0 -> "zero"
+    | 1 -> "one"
+    | 2 -> "two"
+    | _ -> "many";;
+val describe_number : int -> string = &lt;fun&gt;
+
+# describe_number 1;;
+- : string = "one"
+# describe_number 99;;
+- : string = "many"
+      </div>
+
+      <h3 class="mt">Matching on Tuples</h3>
+      <div class="diagram small">
+# let and_gate a b =
+    match (a, b) with
+    | (true, true)   -> true
+    | (true, false)  -> false
+    | (false, true)  -> false
+    | (false, false) -> false;;
+val and_gate : bool -> bool -> bool = &lt;fun&gt;
+
+(* Shorter with wildcards: *)
+# let and_gate a b =
+    match (a, b) with
+    | (true, true) -> true
+    | _ -> false;;
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: DFA Transition Table!</h3>
+        <p>Pattern matching is structurally identical to a DFA's transition function &delta;(q, a):</p>
+      </div>
+      <div class="diagram small">
+  DFA transition table:     OCaml match:
+  ┌───────┬───┬───┐
+  │ State │ 0 │ 1 │        let delta state symbol =
+  ├───────┼───┼───┤          match (state, symbol) with
+  │  q0   │q0 │q1 │          | (Q0, '0') -> Q0
+  │  q1   │q2 │q0 │          | (Q0, '1') -> Q1
+  │  q2   │q1 │q2 │          | (Q1, '0') -> Q2
+  └───────┴───┴───┘          | (Q1, '1') -> Q0
+                              | (Q2, '0') -> Q1
+  Same structure!             | (Q2, '1') -> Q2
+      </div>
+
+      <div class="key-idea">
+        <h3>Exhaustiveness Checking</h3>
+        <p>OCaml <strong>warns you</strong> if your patterns don't cover all cases. This is like checking that your DFA transition function is <em>total</em> -- every (state, symbol) pair must have a transition!</p>
+      </div>
+
+      <div class="diagram small">
+# let bad n = match n with
+    | 0 -> "zero"
+    | 1 -> "one";;
+Warning: this pattern-matching is
+  not exhaustive.
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">12 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: Pattern Matching Part 2 -->
+<!-- ============================================================ -->
+<div class="slide" id="s13">
+  <h2>Pattern Matching (Part 2)</h2>
+  <p class="subtitle">Matching on lists -- recursive list processing</p>
+
+  <div class="two-col">
+    <div>
+      <h3>List Patterns</h3>
+      <div class="diagram small">
+# let describe_list lst =
+    match lst with
+    | []        -> "empty"
+    | [x]       -> "one element"
+    | [x; y]    -> "two elements"
+    | x :: rest -> "many elements";;
+val describe_list : 'a list -> string = &lt;fun&gt;
+
+(* x :: rest destructures the list:
+   x    = first element  (head)
+   rest = remaining list (tail) *)
+      </div>
+
+      <h3 class="mt">Recursive List Processing</h3>
+      <div class="diagram small">
+# let rec length lst =
+    match lst with
+    | []      -> 0
+    | _ :: tl -> 1 + length tl;;
+val length : 'a list -> int = &lt;fun&gt;
+
+# let rec sum lst =
+    match lst with
+    | []      -> 0
+    | x :: tl -> x + sum tl;;
+val sum : int list -> int = &lt;fun&gt;
+
+# sum [1; 2; 3; 4];;
+- : int = 10
+      </div>
+    </div>
+    <div>
+      <h3>Building Classic Functions</h3>
+      <div class="diagram small">
+# let rec map f lst =
+    match lst with
+    | []      -> []
+    | x :: tl -> (f x) :: (map f tl);;
+val map : ('a -> 'b) -> 'a list -> 'b list
+  = &lt;fun&gt;
+
+# map (fun x -> x * 2) [1; 2; 3];;
+- : int list = [2; 4; 6]
+
+# let rec filter pred lst =
+    match lst with
+    | []      -> []
+    | x :: tl ->
+        if pred x then x :: filter pred tl
+        else filter pred tl;;
+val filter : ('a -> bool) -> 'a list -> 'a list
+  = &lt;fun&gt;
+
+# filter (fun x -> x > 2) [1; 2; 3; 4];;
+- : int list = [3; 4]
+      </div>
+
+      <div class="key-idea">
+        <h3>The Pattern (pun intended)</h3>
+        <p>Every recursive list function follows the same template: <strong>base case</strong> for <code>[]</code>, <strong>recursive case</strong> splitting into <code>head :: tail</code>. This mirrors structural induction on list length!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">13 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: Algebraic Data Types -->
+<!-- ============================================================ -->
+<div class="slide" id="s14">
+  <h2>Algebraic Data Types (Variants)</h2>
+  <p class="subtitle">Custom types with constructors -- the heart of OCaml</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Defining Variant Types</h3>
+      <div class="diagram small">
+# type shape =
+    | Circle of float
+    | Rectangle of float * float
+    | Triangle of float * float * float;;
+type shape =
+    Circle of float
+  | Rectangle of float * float
+  | Triangle of float * float * float
+
+# let s1 = Circle 5.0;;
+val s1 : shape = Circle 5.
+
+# let s2 = Rectangle (3.0, 4.0);;
+val s2 : shape = Rectangle (3., 4.)
+      </div>
+
+      <h3 class="mt">Using Variants with Pattern Matching</h3>
+      <div class="diagram small">
+# let area s =
+    match s with
+    | Circle r -> 3.14159 *. r *. r
+    | Rectangle (w, h) -> w *. h
+    | Triangle (a, b, c) ->
+        let s = (a +. b +. c) /. 2.0 in
+        sqrt (s *.(s-.a)*.(s-.b)*.(s-.c));;
+val area : shape -> float = &lt;fun&gt;
+
+# area (Circle 5.0);;
+- : float = 78.53975
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Grammar Productions!</h3>
+        <p>Each variant constructor is like a <strong>production rule</strong> in a grammar:</p>
+      </div>
+      <div class="diagram small">
+  Grammar:                  OCaml:
+  ──────────                ──────
+
+  shape -> Circle float     type shape =
+         | Rect float float   | Circle of float
+         | Tri float float    | Rectangle of float * float
+              float           | Triangle of float * float
+                                        * float
+
+  Each "|" is an alternative production.
+  The "of ..." is the right-hand side
+  specifying what data the constructor
+  carries.
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Idea: Sum Types</h3>
+        <p>Variants are called <strong>sum types</strong> because a shape is a Circle OR a Rectangle OR a Triangle. The total possibilities are the SUM of all constructors. (Tuples are <strong>product types</strong> -- AND.) This is algebraic data types = algebra on types!</p>
+      </div>
+
+      <div class="diagram small">
+(* Simple enum-style variant *)
+# type color = Red | Green | Blue;;
+# type day = Mon|Tue|Wed|Thu|Fri|Sat|Sun;;
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">14 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: Recursive Types -->
+<!-- ============================================================ -->
+<div class="slide" id="s15">
+  <h2>Recursive Types</h2>
+  <p class="subtitle">Types that refer to themselves -- just like recursive grammars</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Binary Tree</h3>
+      <div class="diagram small">
+# type tree =
+    | Leaf
+    | Node of tree * int * tree;;
+
+# let my_tree =
+    Node (
+      Node (Leaf, 1, Leaf),
+      3,
+      Node (Leaf, 5, Leaf)
+    );;
+
+(*
+        3
+       / \
+      1   5
+     / \ / \
+    .  . .   .
+*)
+      </div>
+
+      <div class="diagram small">
+# let rec tree_sum t =
+    match t with
+    | Leaf -> 0
+    | Node (left, v, right) ->
+        tree_sum left + v + tree_sum right;;
+val tree_sum : tree -> int = &lt;fun&gt;
+
+# tree_sum my_tree;;
+- : int = 9
+      </div>
+    </div>
+    <div>
+      <h3>Arithmetic Expression AST</h3>
+      <div class="diagram small">
+# type expr =
+    | Num of int
+    | Add of expr * expr
+    | Mul of expr * expr;;
+
+(* This IS the CFG from class!
+   E -> n | E + E | E * E       *)
+
+# let e = Add (Num 1, Mul (Num 2, Num 3));;
+(* Represents: 1 + (2 * 3) *)
+      </div>
+
+      <div class="diagram small">
+# let rec eval e =
+    match e with
+    | Num n -> n
+    | Add (l, r) -> eval l + eval r
+    | Mul (l, r) -> eval l * eval r;;
+val eval : expr -> int = &lt;fun&gt;
+
+# eval (Add (Num 1, Mul (Num 2, Num 3)));;
+- : int = 7
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Idea: Types = Grammars, Values = Parse Trees</h3>
+        <p>The <code>type expr</code> definition IS a context-free grammar. Each value of type <code>expr</code> IS a parse tree. The <code>eval</code> function IS a recursive descent evaluator walking the parse tree. This is the <strong>exact same structure</strong> from your theory course!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">15 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: Option Type -->
+<!-- ============================================================ -->
+<div class="slide" id="s16">
+  <h2>The Option Type</h2>
+  <p class="subtitle">Safe handling of "maybe there's no value" -- no null pointer exceptions</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Definition</h3>
+      <div class="diagram small">
+(* Built into OCaml: *)
+type 'a option =
+  | None
+  | Some of 'a
+
+# Some 42;;
+- : int option = Some 42
+
+# None;;
+- : 'a option = None
+
+# Some "hello";;
+- : string option = Some "hello"
+      </div>
+
+      <h3 class="mt">Using Options</h3>
+      <div class="diagram small">
+# let safe_div a b =
+    if b = 0 then None
+    else Some (a / b);;
+val safe_div : int -> int -> int option = &lt;fun&gt;
+
+# safe_div 10 3;;
+- : int option = Some 3
+
+# safe_div 10 0;;
+- : int option = None
+      </div>
+    </div>
+    <div>
+      <h3>Pattern Matching on Options</h3>
+      <div class="diagram small">
+# let describe_result opt =
+    match opt with
+    | None   -> "no result"
+    | Some v -> "got: " ^ string_of_int v;;
+val describe_result : int option -> string
+  = &lt;fun&gt;
+
+(* Find in a list *)
+# let rec find_first pred lst =
+    match lst with
+    | []      -> None
+    | x :: tl ->
+        if pred x then Some x
+        else find_first pred tl;;
+val find_first :
+  ('a -> bool) -> 'a list -> 'a option = &lt;fun&gt;
+
+# find_first (fun x -> x > 3) [1;2;3;4;5];;
+- : int option = Some 4
+
+# find_first (fun x -> x > 10) [1;2;3];;
+- : int option = None
+      </div>
+
+      <div class="analogy">
+        <h3>Analogy: Java's null vs OCaml's Option</h3>
+        <p>In Java, any reference can be <code>null</code> and you only find out at runtime (NullPointerException). In OCaml, if a value might be absent, the <strong>type</strong> says <code>option</code>, and the compiler <strong>forces</strong> you to handle the <code>None</code> case. It's like the difference between an informal proof ("trust me, it's not null") and a formal proof (the type system guarantees it).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">16 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17: Higher-Order Functions -->
+<!-- ============================================================ -->
+<div class="slide" id="s17">
+  <h2>Higher-Order Functions</h2>
+  <p class="subtitle">Functions that take functions as arguments or return them</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Big Three: map, filter, fold</h3>
+      <div class="diagram small">
+(* map: transform every element *)
+# List.map (fun x -> x * x) [1;2;3;4];;
+- : int list = [1; 4; 9; 16]
+
+(* filter: keep elements matching predicate *)
+# List.filter (fun x -> x mod 2 = 0) [1;2;3;4];;
+- : int list = [2; 4]
+
+(* fold_left: accumulate a result *)
+# List.fold_left (fun acc x -> acc + x)
+    0 [1;2;3;4];;
+- : int = 10
+      </div>
+
+      <h3 class="mt">Function Composition</h3>
+      <div class="diagram small">
+# let compose f g x = f (g x);;
+val compose :
+  ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b = &lt;fun&gt;
+
+# let double_then_add1 =
+    compose (fun x -> x+1) (fun x -> x*2);;
+val double_then_add1 : int -> int = &lt;fun&gt;
+
+# double_then_add1 5;;
+- : int = 11   (* 5*2=10, 10+1=11 *)
+      </div>
+    </div>
+    <div>
+      <h3>Type Signatures Tell the Story</h3>
+      <div class="diagram small">
+  List.map :
+    ('a -> 'b) -> 'a list -> 'b list
+     ────────    ───────    ───────
+     function    input      output
+     to apply    list       list
+
+  List.filter :
+    ('a -> bool) -> 'a list -> 'a list
+     ──────────    ───────    ───────
+     predicate     input      filtered
+     (keep if      list       list
+      true)
+
+  List.fold_left :
+    ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
+     ──────────────    ───    ───────    ──
+     accumulator fn    init   input      final
+                       value  list       result
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Higher-order functions let you separate the <strong>what</strong> from the <strong>how</strong>. <code>map</code> says "transform each element" -- you just provide the transformation. This is <strong>abstraction</strong> at its finest, and it's why functional code is often shorter than imperative code.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">17 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18: Map and Filter with ASCII Diagrams -->
+<!-- ============================================================ -->
+<div class="slide" id="s18">
+  <h2>Map and Filter Visualized</h2>
+  <p class="subtitle">Data pipelines -- transform and select</p>
+
+  <h3>Map: Transform Every Element</h3>
+  <div class="diagram">
+  List.map (fun x -> x * x) [1; 2; 3; 4; 5]
+
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 1 │  │ 2 │  │ 3 │  │ 4 │  │ 5 │     input list
+  └─┬─┘  └─┬─┘  └─┬─┘  └─┬─┘  └─┬─┘
+    │      │      │      │      │
+    v      v      v      v      v
+  [x*x]  [x*x]  [x*x]  [x*x]  [x*x]    apply f to each
+    │      │      │      │      │
+    v      v      v      v      v
+  ┌───┐  ┌───┐  ┌───┐  ┌────┐ ┌────┐
+  │ 1 │  │ 4 │  │ 9 │  │ 16 │ │ 25 │    output list
+  └───┘  └───┘  └───┘  └────┘ └────┘
+  </div>
+
+  <h3>Filter: Keep Only Matching Elements</h3>
+  <div class="diagram">
+  List.filter (fun x -> x mod 2 = 0) [1; 2; 3; 4; 5; 6]
+
+  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐  ┌───┐
+  │ 1 │  │ 2 │  │ 3 │  │ 4 │  │ 5 │  │ 6 │    input list
+  └─┬─┘  └─┬─┘  └─┬─┘  └─┬─┘  └─┬─┘  └─┬─┘
+    │      │      │      │      │      │
+  even?  even?  even?  even?  even?  even?      test predicate
+    │      │      │      │      │      │
+   NO     YES    NO     YES    NO     YES
+    x      │      x      │      x      │       drop / keep
+           v             v             v
+         ┌───┐         ┌───┐         ┌───┐
+         │ 2 │         │ 4 │         │ 6 │      output list
+         └───┘         └───┘         └───┘
+  </div>
+
+  <div class="key-idea">
+    <h3>Chaining: The Pipeline Pattern</h3>
+    <p>You can chain map and filter to build data processing pipelines. This is just function composition!</p>
+  </div>
+  <div class="diagram small">
+(* "Get the squares of all even numbers in the list" *)
+# [1;2;3;4;5;6;7;8;9;10]
+  |> List.filter (fun x -> x mod 2 = 0)    (* keep evens: [2;4;6;8;10]       *)
+  |> List.map (fun x -> x * x);;            (* square:     [4;16;36;64;100]   *)
+- : int list = [4; 16; 36; 64; 100]
+
+(* |> is the "pipe" operator: x |> f  means  f x *)
+  </div>
+
+  <div class="slide-number">18 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 19: Fold -->
+<!-- ============================================================ -->
+<div class="slide" id="s19">
+  <h2>Fold: The Universal List Function</h2>
+  <p class="subtitle">Every list function can be written as a fold</p>
+
+  <div class="two-col">
+    <div>
+      <h3>fold_left: Accumulate Left to Right</h3>
+      <div class="diagram small">
+ List.fold_left f init [a; b; c]
+
+ Computes: f (f (f init a) b) c
+
+     init
+      │
+      v
+   ┌──────┐
+   │ f    a│──> result1
+   └──────┘
+      │
+      v
+   ┌──────┐
+   │ f    b│──> result2
+   └──────┘
+      │
+      v
+   ┌──────┐
+   │ f    c│──> FINAL
+   └──────┘
+      </div>
+      <div class="diagram small">
+ Example: sum via fold_left
+
+ fold_left (+) 0 [1; 2; 3]
+
+ Step 1: 0 + 1 = 1
+ Step 2: 1 + 2 = 3
+ Step 3: 3 + 3 = 6  --> result: 6
+      </div>
+    </div>
+    <div>
+      <h3>Everything is a Fold!</h3>
+      <div class="diagram small">
+(* Sum *)
+# let sum lst =
+    List.fold_left (+) 0 lst;;
+
+(* Length *)
+# let length lst =
+    List.fold_left
+      (fun acc _ -> acc + 1) 0 lst;;
+
+(* Reverse *)
+# let rev lst =
+    List.fold_left
+      (fun acc x -> x :: acc) [] lst;;
+
+(* Map via fold *)
+# let map f lst =
+    List.fold_right
+      (fun x acc -> f x :: acc) lst [];;
+
+(* Filter via fold *)
+# let filter pred lst =
+    List.fold_right
+      (fun x acc ->
+        if pred x then x :: acc else acc)
+      lst [];;
+
+(* Flatten *)
+# let flatten lst =
+    List.fold_right (@) lst [];;
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p><code>fold</code> is the <strong>universal list eliminator</strong>. Any function that consumes a list and produces a single result can be expressed as a fold. In theory terms: fold captures the <strong>catamorphism</strong> over the list type -- the unique function determined by the algebra of its constructors (<code>[]</code> and <code>::</code>).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">19 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 20: Connections to Theory -->
+<!-- ============================================================ -->
+<div class="slide" id="s20">
+  <h2>Connections to Theory</h2>
+  <p class="subtitle">A complete DFA simulator in OCaml -- tying it all together</p>
+
+  <div class="two-col">
+    <div>
+      <h3>DFA: Formal Definition</h3>
+      <div class="diagram small">
+  M = (Q, &Sigma;, &delta;, q0, F)
+
+  Example: accepts strings ending in "ab"
+
+  Q  = {q0, q1, q2}
+  &Sigma;  = {a, b}
+  q0 = q0
+  F  = {q2}
+
+  Transition table:
+  ┌───────┬────┬────┐
+  │ state │ a  │ b  │
+  ├───────┼────┼────┤
+  │  q0   │ q1 │ q0 │
+  │  q1   │ q1 │ q2 │
+  │  q2   │ q1 │ q0 │
+  └───────┴────┴────┘
+      </div>
+    </div>
+    <div>
+      <h3>DFA Simulator in OCaml</h3>
+      <div class="diagram small">
+(* Define states *)
+type state = Q0 | Q1 | Q2
+
+(* Transition function -- pattern matching! *)
+let delta state symbol =
+  match (state, symbol) with
+  | (Q0, 'a') -> Q1
+  | (Q0, 'b') -> Q0
+  | (Q1, 'a') -> Q1
+  | (Q1, 'b') -> Q2
+  | (Q2, 'a') -> Q1
+  | (Q2, 'b') -> Q0
+  | _          -> Q0  (* catch-all *)
+
+(* Accept states *)
+let is_accepting state =
+  match state with
+  | Q2 -> true
+  | _  -> false
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram small">
+(* Run the DFA on an input string *)
+let run_dfa input =
+  let chars = List.init (String.length input) (String.get input) in   (* string -> char list *)
+  let final_state = List.fold_left delta Q0 chars in                  (* process all symbols *)
+  is_accepting final_state                                            (* check acceptance *)
+
+(* Test it! *)
+# run_dfa "ab";;           - : bool = true     (* ends in "ab" *)
+# run_dfa "aab";;          - : bool = true     (* ends in "ab" *)
+# run_dfa "abb";;          - : bool = false    (* ends in "b", not "ab" *)
+# run_dfa "bababab";;      - : bool = true     (* ends in "ab" *)
+# run_dfa "";;             - : bool = false    (* empty string *)
+  </div>
+
+  <div class="key-idea">
+    <h3>Key Idea: The Code IS the Math</h3>
+    <p><code>delta</code> is literally &delta;. <code>fold_left delta Q0 chars</code> is literally &delta;*(q0, w). <code>is_accepting final_state</code> is literally "is &delta;*(q0, w) in F?" The OCaml code maps 1:1 to the formal definition. This is why OCaml is the natural language for automata theory.</p>
+  </div>
+
+  <div class="slide-number">20 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 21: Practical Tips -->
+<!-- ============================================================ -->
+<div class="slide" id="s21">
+  <h2>Practical Tips &amp; Common Errors</h2>
+  <p class="subtitle">Java/Python habits that will trip you up in OCaml</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Common Errors and Fixes</h3>
+
+      <div class="warning">
+        <h3>1. Forgetting <code>rec</code></h3>
+        <p><code>let f x = ... f x</code> --> "Unbound value f"<br>Fix: <code>let <strong>rec</strong> f x = ...</code></p>
+      </div>
+
+      <div class="warning">
+        <h3>2. Semicolons vs Double-Semicolons</h3>
+        <p><code>;;</code> = end of expression in REPL only<br>
+        <code>;</code> = sequence two unit expressions<br>
+        In .ml files, you rarely need <code>;;</code></p>
+      </div>
+
+      <div class="warning">
+        <h3>3. Type Mismatch Errors</h3>
+        <p><code>2 + 3.0</code> --> Error! Use <code>2.0 +. 3.0</code><br>
+        <code>if x then 1 else "no"</code> --> Error! Branches must match.</p>
+      </div>
+
+      <div class="warning">
+        <h3>4. Parentheses for Function Arguments</h3>
+        <p><code>f g x</code> means "call f with two args: g and x"<br>
+        <code>f (g x)</code> means "call g on x, pass result to f"</p>
+      </div>
+    </div>
+    <div>
+      <h3>Java/Python to OCaml Translation</h3>
+      <div class="diagram small">
+  Java/Python          OCaml
+  ───────────          ─────
+
+  int x = 5;          let x = 5
+  x = x + 1;          (* impossible! use recursion *)
+  for/while loop       let rec ... (recursion)
+  null                 None (option type)
+  x == y              x = y
+  x != y              x &lt;&gt; y
+  arr[i]              List.nth lst i
+  arr.length          List.length lst
+  return val          (just write the expression)
+  void                unit
+  System.out.println  print_endline
+  ArrayList           list (but immutable)
+  class Foo { ... }   type foo = ...
+      </div>
+
+      <div class="key-idea">
+        <h3>Golden Rules</h3>
+        <ul>
+          <li>No mutation: use recursion, not loops</li>
+          <li>No return: the last expression IS the result</li>
+          <li>No null: use <code>option</code> type</li>
+          <li>Read the types: they tell you everything</li>
+          <li>When in doubt, pattern match</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">21 / 22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 22: Summary & Cheat Sheet -->
+<!-- ============================================================ -->
+<div class="slide" id="s22">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <p class="subtitle">Quick reference for everything you need</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Syntax Quick Reference</h3>
+      <div class="diagram small">
+(* Values and bindings *)
+let x = 42
+let f x y = x + y
+let f = fun x -> fun y -> x + y
+
+(* Local binding *)
+let x = 5 in x + 1
+
+(* Recursion *)
+let rec f n = if n=0 then 1 else n * f(n-1)
+
+(* Pattern matching *)
+match x with
+| pattern1 -> expr1
+| pattern2 -> expr2
+| _        -> default
+
+(* Type definitions *)
+type color = Red | Green | Blue
+type shape = Circle of float
+           | Rect of float * float
+type 'a tree = Leaf
+             | Node of 'a tree * 'a * 'a tree
+
+(* Records *)
+type person = { name: string; age: int }
+let p = { name = "Alice"; age = 20 }
+
+(* Option *)
+type 'a option = None | Some of 'a
+      </div>
+    </div>
+    <div>
+      <h3>Common List Operations</h3>
+      <div class="diagram small">
+[]                    (* empty list *)
+x :: lst              (* prepend *)
+lst1 @ lst2           (* append *)
+List.length lst       (* length *)
+List.hd lst           (* first element *)
+List.tl lst           (* rest of list *)
+List.rev lst          (* reverse *)
+List.map f lst        (* transform each *)
+List.filter p lst     (* keep matching *)
+List.fold_left f i l  (* accumulate L->R *)
+List.fold_right f l i (* accumulate R->L *)
+List.mem x lst        (* membership check *)
+List.nth lst i        (* index access *)
+List.sort cmp lst     (* sort *)
+      </div>
+
+      <h3 class="mt">Theory-to-OCaml Mental Model</h3>
+      <div class="diagram small">
+  Theory           OCaml
+  ──────           ─────
+  &delta;(q, a) = q'    match (q, a) with ...
+  &delta;*(q0, w)       fold_left delta q0 w
+  CFG production   variant constructor
+  Parse tree       recursive data type
+  Language L       bool-returning function
+  w &isin; L            accepts w = true
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy" style="margin-top: 10px;">
+    <h3>You're Ready!</h3>
+    <p>You now have the OCaml toolkit to implement DFAs, NFAs, CFGs, parsers, and evaluators for your theory course. The key insight: <strong>the code mirrors the math</strong>. If you understand the formal definition, you can write the OCaml. Start with the types, then pattern match your way through.</p>
+  </div>
+
+  <div class="slide-number">22</div>
+</div>
+
+<!-- ==================== SLIDE 23: FEEDBACK ==================== -->
+<div class="slide" id="s23">
+  <h1>We'd Love Your Feedback!</h1>
+  <p class="subtitle">Help us improve these slides -- your responses go directly to a Google Sheet</p>
+
+  <div id="feedback-form-container" style="max-width: 700px; margin: 0 auto;">
+    <form id="feedbackForm" onsubmit="submitFeedback(event)">
+
+      <div style="margin-bottom: 20px;">
+        <label style="display:block; color:#93c5fd; font-size:1.1em; margin-bottom:8px; font-weight:600;">Overall, how helpful were these slides?</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <label class="radio-opt"><input type="radio" name="rating" value="5" required> <span>Excellent</span></label>
+          <label class="radio-opt"><input type="radio" name="rating" value="4"> <span>Good</span></label>
+          <label class="radio-opt"><input type="radio" name="rating" value="3"> <span>Okay</span></label>
+          <label class="radio-opt"><input type="radio" name="rating" value="2"> <span>Needs Work</span></label>
+          <label class="radio-opt"><input type="radio" name="rating" value="1"> <span>Not Helpful</span></label>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display:block; color:#93c5fd; font-size:1.1em; margin-bottom:8px; font-weight:600;">Did the ASCII diagrams help you understand concepts?</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <label class="radio-opt"><input type="radio" name="diagrams" value="Very helpful" required> <span>Very helpful</span></label>
+          <label class="radio-opt"><input type="radio" name="diagrams" value="Somewhat helpful"> <span>Somewhat</span></label>
+          <label class="radio-opt"><input type="radio" name="diagrams" value="Not really"> <span>Not really</span></label>
+          <label class="radio-opt"><input type="radio" name="diagrams" value="Preferred real graphics"> <span>Prefer real graphics</span></label>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display:block; color:#93c5fd; font-size:1.1em; margin-bottom:8px; font-weight:600;">Did you know these slides were made with help from Claude (AI)?</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <label class="radio-opt"><input type="radio" name="knew_ai" value="Yes" required> <span>Yes</span></label>
+          <label class="radio-opt"><input type="radio" name="knew_ai" value="No, surprised"> <span>No, surprised!</span></label>
+          <label class="radio-opt"><input type="radio" name="knew_ai" value="Suspected"> <span>Had a feeling</span></label>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display:block; color:#93c5fd; font-size:1.1em; margin-bottom:8px; font-weight:600;">Compared to the previous OCaml slides on eCampus, how useful are these new slides to you?</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <span style="color:#94a3b8; font-size:0.9em;">eCampus better</span>
+          <label class="radio-opt"><input type="radio" name="vs_ecampus" value="1" required> <span>1</span></label>
+          <label class="radio-opt"><input type="radio" name="vs_ecampus" value="2"> <span>2</span></label>
+          <label class="radio-opt"><input type="radio" name="vs_ecampus" value="3"> <span>3</span></label>
+          <label class="radio-opt"><input type="radio" name="vs_ecampus" value="4"> <span>4</span></label>
+          <label class="radio-opt"><input type="radio" name="vs_ecampus" value="5"> <span>5</span></label>
+          <span style="color:#94a3b8; font-size:0.9em;">These are better</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display:block; color:#93c5fd; font-size:1.1em; margin-bottom:8px; font-weight:600;">Which slide was most helpful? (optional)</label>
+        <input type="text" name="best_slide" placeholder="e.g., Slide 12 - Pattern Matching" style="width:100%; padding:10px 14px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:#e2e8f0; font-size:1em; outline:none;">
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <label style="display:block; color:#93c5fd; font-size:1.1em; margin-bottom:8px; font-weight:600;">Any suggestions or comments? (optional)</label>
+        <textarea name="comments" rows="3" placeholder="What would make these slides better?" style="width:100%; padding:10px 14px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:#e2e8f0; font-size:1em; outline:none; resize:vertical;"></textarea>
+      </div>
+
+      <button type="submit" id="submitBtn" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:white; border:none; padding:12px 36px; border-radius:8px; font-size:1.1em; cursor:pointer; font-weight:600; transition: opacity 0.2s;">Submit Feedback</button>
+    </form>
+
+    <div id="feedback-success" style="display:none; text-align:center; padding:40px;">
+      <h2 style="color:#34d399; font-size:2em; margin-bottom:16px;">Thank you!</h2>
+      <p style="font-size:1.2em;">Your feedback has been recorded. It helps us make better learning materials.</p>
+    </div>
+
+    <div id="feedback-error" style="display:none; text-align:center; padding:20px;">
+      <div class="warning">
+        <h3>Submission failed</h3>
+        <p id="error-msg">Please check the Google Sheet connection and try again.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="key-idea" style="margin-top:20px; max-width:700px; margin-left:auto; margin-right:auto;">
+    <h3>About these slides</h3>
+    <p>This slide deck was generated with the help of <b>Claude</b> (Anthropic's AI assistant) and reviewed by your instructor. We're curious what you think about AI-assisted teaching materials!</p>
+  </div>
+
+  <div class="slide-number">23</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- Navigation -->
+<!-- ============================================================ -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 23;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+
+// ===== GOOGLE SHEET FEEDBACK SUBMISSION =====
+// HOW TO SET UP -- see Apps Script code below this JS block
+// 1. Open your Google Sheet > Extensions > Apps Script
+// 2. Paste the Apps Script code (see below)
+// 3. Deploy > New Deployment > Web App (Execute as: Me, Access: Anyone)
+// 4. Copy the web app URL and paste it below:
+
+const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzJxN4Dd5W9QDKB7v23ieW-Lf1HgVuMue8HKkp9VFf7vGmGCCbXwRofx4227OaYClQ8Lw/exec';
+
+function submitFeedback(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Submitting...';
+  btn.style.opacity = '0.6';
+  btn.disabled = true;
+
+  const form = document.getElementById('feedbackForm');
+  const formData = new FormData(form);
+  const payload = {
+    topic: 'OCaml',
+    rating: formData.get('rating'),
+    diagrams: formData.get('diagrams'),
+    knew_ai: formData.get('knew_ai'),
+    vs_ecampus: formData.get('vs_ecampus'),
+    best_slide: formData.get('best_slide') || '',
+    comments: formData.get('comments') || ''
+  };
+
+  if (!GOOGLE_SHEET_URL) {
+    // Fallback: if no URL configured, show the data in an alert
+    alert('Feedback recorded locally (Google Sheet URL not configured yet):\\n\\n' + JSON.stringify(payload, null, 2));
+    document.getElementById('feedbackForm').style.display = 'none';
+    document.getElementById('feedback-success').style.display = 'block';
+    return;
+  }
+
+  fetch(GOOGLE_SHEET_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    document.getElementById('feedbackForm').style.display = 'none';
+    document.getElementById('feedback-success').style.display = 'block';
+  })
+  .catch(err => {
+    document.getElementById('feedback-error').style.display = 'block';
+    document.getElementById('error-msg').textContent = 'Error: ' + err.message;
+    btn.textContent = 'Submit Feedback';
+    btn.style.opacity = '1';
+    btn.disabled = false;
+  });
+}
+</script>
+
+</body>
+</html>

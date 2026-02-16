@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context-Free Grammars (CFG) - CS305</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+.deriv-step { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1.05em; color: #a5f3fc; padding: 4px 0; }
+.deriv-step .replaced { color: #f472b6; font-weight: bold; }
+.deriv-step .arrow { color: #64748b; margin: 0 8px; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide" id="s1">
+  <div class="center">
+    <h1>Context-Free Grammars (CFG)</h1>
+    <p class="subtitle">CS305 -- Formal Language Theory</p>
+    <div class="diagram" style="display:inline-block; text-align:left; font-size:0.85em;">
+   _____ ______ _____
+  / ____|  ____|/ ____|
+ | |    | |__ | |  __
+ | |    |  __|| | |_ |
+ | |____| |   | |__| |
+  \_____|_|    \_____|
+
+  "The grammar that builds languages
+   beyond the reach of finite automata."
+    </div>
+    <p style="margin-top:30px; color:#64748b;">Use arrow keys or buttons to navigate. Press S to reveal steps.</p>
+  </div>
+  <div class="slide-number">1 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 2: Chomsky Hierarchy ==================== -->
+<div class="slide" id="s2">
+  <h2>The Big Picture: Chomsky Hierarchy</h2>
+  <p>Where do context-free grammars fit in the world of formal languages?</p>
+  <div class="diagram">
+  +-----------------------------------------------------------+
+  |  Type 0: Recursively Enumerable (Turing Machines)         |
+  |                                                           |
+  |   +---------------------------------------------------+   |
+  |   |  Type 1: Context-Sensitive (Linear Bounded Auto.) |   |
+  |   |                                                   |   |
+  |   |   +-------------------------------------------+   |   |
+  |   |   |  Type 2: Context-Free  (Pushdown Auto.)   |   |   |
+  |   |   |                                           |   |   |
+  |   |   |   +-----------------------------------+   |   |   |
+  |   |   |   |  Type 3: Regular  (Finite Auto.)  |   |   |   |
+  |   |   |   |                                   |   |   |   |
+  |   |   |   |   a*, ab+, (a|b)*                 |   |   |   |
+  |   |   |   +-----------------------------------+   |   |   |
+  |   |   |                                           |   |   |
+  |   |   |   a^n b^n, balanced parens, palindromes   |   |   |
+  |   |   +-------------------------------------------+   |   |
+  |   |                                                   |   |
+  |   |   a^n b^n c^n                                     |   |
+  |   +---------------------------------------------------+   |
+  |                                                           |
+  |   { descriptions of Turing machines that halt }           |
+  +-----------------------------------------------------------+
+  </div>
+  <div class="key-idea">
+    <h3>Key Idea</h3>
+    <p>Each level is <strong>strictly more powerful</strong> than the one inside it. Today we jump from Type 3 (regular) to Type 2 (context-free). The new superpower: <strong>a stack</strong> (via pushdown automata) or equivalently, <strong>recursive production rules</strong>.</p>
+  </div>
+  <div class="slide-number">2 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 3: Motivation ==================== -->
+<div class="slide" id="s3">
+  <h2>Motivation: The Limits of Regular Languages</h2>
+  <div class="two-col">
+    <div>
+      <h3>What DFAs/NFAs CAN'T do</h3>
+      <p>The Pumping Lemma showed us these are NOT regular:</p>
+      <ul>
+        <li><strong>{ a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }</strong> -- equal counts of a's then b's</li>
+        <li><strong>Balanced parentheses</strong> -- (()(())), but not (()( </li>
+        <li><strong>Palindromes</strong> -- strings that read the same forwards and backwards</li>
+        <li><strong>Nested structures</strong> -- HTML tags, math expressions</li>
+      </ul>
+      <div class="warning">
+        <h3>Why DFAs fail</h3>
+        <p>Finite automata have <strong>finite memory</strong> (just the current state). They can't "count" unboundedly or "match" things seen earlier.</p>
+      </div>
+    </div>
+    <div>
+      <h3>The common pattern</h3>
+      <div class="diagram small">
+All these languages need NESTING:
+
+  a^n b^n :
+  aaaa....bbbb
+  |          |
+  +--match!--+
+
+  Balanced parens:
+  ( ( ) ( ( ) ) )
+  | |_| | |_| | |
+  |     |_____|_|
+  |_____________|
+
+  Palindromes:
+  a b c b a
+  |   |   |
+  +---+---+
+    match!
+      </div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>A DFA is like a person counting on their fingers -- they run out. A CFG is like a person with a <strong>notepad</strong>: they can write down what to remember and check it later.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">3 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 4: What is a Grammar? ==================== -->
+<div class="slide" id="s4">
+  <h2>What is a Grammar?</h2>
+  <div class="two-col">
+    <div>
+      <h3>Intuition: Grammars as Recipes</h3>
+      <p>A grammar is a set of <strong>rewriting rules</strong> that tell you how to build strings in a language, step by step.</p>
+      <div class="diagram small">
+Recipe for a SENTENCE:
+
+  SENTENCE  -->  SUBJECT  VERB  OBJECT
+  SUBJECT   -->  "the dog" | "a cat"
+  VERB      -->  "chased"  | "ate"
+  OBJECT    -->  "the ball" | "a fish"
+
+One derivation:
+  SENTENCE
+  => SUBJECT VERB OBJECT
+  => "the dog" VERB OBJECT
+  => "the dog" "chased" OBJECT
+  => "the dog" "chased" "the ball"
+      </div>
+    </div>
+    <div>
+      <h3>Key Terminology</h3>
+      <ul>
+        <li><strong>Variables</strong> (non-terminals): Placeholders that get replaced. Written in UPPERCASE. Examples: S, A, B, SENTENCE</li>
+        <li><strong>Terminals</strong>: The actual characters in the final string. Written in lowercase. Examples: a, b, 0, 1, +, (, )</li>
+        <li><strong>Productions</strong>: The rewriting rules. "A --> w" means "A can be replaced by w"</li>
+        <li><strong>Start symbol</strong>: Where every derivation begins (usually S)</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Think of variables as <strong>categories</strong> in a recipe book. "DESSERT" isn't something you eat -- it's a category that expands into "chocolate cake" or "apple pie." Terminals are the actual food you eat!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">4 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 5: Formal Definition ==================== -->
+<div class="slide" id="s5">
+  <h2>Formal Definition of a CFG</h2>
+  <div class="key-idea">
+    <h3>Definition</h3>
+    <p>A context-free grammar is a 4-tuple <strong>G = (V, T, P, S)</strong> where:</p>
+  </div>
+  <div class="two-col">
+    <div>
+      <table style="width:100%;">
+        <tr><th>Component</th><th>Description</th></tr>
+        <tr><td><strong>V</strong></td><td>A finite set of <em>variables</em> (non-terminals)</td></tr>
+        <tr><td><strong>T</strong></td><td>A finite set of <em>terminals</em> (the alphabet)</td></tr>
+        <tr><td><strong>P</strong></td><td>A finite set of <em>productions</em> of the form A &rarr; w, where A &isin; V and w &isin; (V &cup; T)*</td></tr>
+        <tr><td><strong>S</strong></td><td>The <em>start symbol</em>, S &isin; V</td></tr>
+      </table>
+      <div class="warning">
+        <h3>Why "Context-Free"?</h3>
+        <p>Every production has a <strong>single variable</strong> on the left side: A &rarr; w. The variable A can be replaced <strong>regardless of context</strong> (what's around it). In context-<em>sensitive</em> grammars, the surrounding symbols matter.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Example: { a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }</h3>
+      <div class="diagram">
+G = (V, T, P, S)
+
+V = { S }
+T = { a, b }
+P = { S &rarr; aSb,
+      S &rarr; &epsilon;   }
+Start = S
+      </div>
+      <p>Let's trace how this generates <strong>aabb</strong>:</p>
+      <div class="diagram small">
+S  ==>  aSb        (used S &rarr; aSb)
+   ==>  aaSbb      (used S &rarr; aSb)
+   ==>  aa&epsilon;bb     (used S &rarr; &epsilon;)
+   =    aabb
+      </div>
+      <p>The recursion in S &rarr; aSb "wraps" matching a's and b's around each other. That's the power regular languages don't have!</p>
+    </div>
+  </div>
+  <div class="slide-number">5 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 6: Derivations ==================== -->
+<div class="slide" id="s6">
+  <h2>Derivations: Leftmost vs. Rightmost</h2>
+  <p>A <strong>derivation</strong> is a sequence of rule applications that transforms S into a string of terminals.</p>
+  <div class="two-col">
+    <div>
+      <h3>Leftmost Derivation</h3>
+      <p>Always replace the <strong>leftmost variable</strong> first.</p>
+      <div class="diagram small">
+Grammar:
+  S &rarr; AB
+  A &rarr; aA | a
+  B &rarr; bB | b
+
+Derive "aabb" (leftmost):
+
+  S
+  ==> <span style="color:#f472b6">A</span>B       (S &rarr; AB)
+  ==> <span style="color:#f472b6">aA</span>B      (A &rarr; aA)
+  ==> <span style="color:#f472b6">aa</span>B      (A &rarr; a)
+  ==> aa<span style="color:#f472b6">bB</span>     (B &rarr; bB)
+  ==> aa<span style="color:#f472b6">bb</span>     (B &rarr; b)
+      </div>
+      <p style="color:#f472b6; font-style:italic;">Pink = variable being replaced</p>
+    </div>
+    <div>
+      <h3>Rightmost Derivation</h3>
+      <p>Always replace the <strong>rightmost variable</strong> first.</p>
+      <div class="diagram small">
+Grammar:
+  S &rarr; AB
+  A &rarr; aA | a
+  B &rarr; bB | b
+
+Derive "aabb" (rightmost):
+
+  S
+  ==> A<span style="color:#34d399">B</span>       (S &rarr; AB)
+  ==> A<span style="color:#34d399">bB</span>      (B &rarr; bB)
+  ==> A<span style="color:#34d399">bb</span>      (B &rarr; b)
+  ==> <span style="color:#34d399">aA</span>bb     (A &rarr; aA)
+  ==> <span style="color:#34d399">aa</span>bb     (A &rarr; a)
+      </div>
+      <p style="color:#34d399; font-style:italic;">Green = variable being replaced</p>
+    </div>
+  </div>
+  <div class="key-idea">
+    <h3>Key Idea</h3>
+    <p>For an <strong>unambiguous</strong> grammar, different derivation orders produce the <strong>same parse tree</strong>. The derivation order is just the order you visit the tree -- the tree itself is what matters.</p>
+  </div>
+  <div class="slide-number">6 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 7: Arithmetic Grammar ==================== -->
+<div class="slide" id="s7">
+  <h2>Classic Example: Simple Arithmetic Grammar</h2>
+  <div class="two-col">
+    <div>
+      <div class="diagram">
+Grammar for Arithmetic:
+
+  E &rarr; E + T  |  T
+  T &rarr; T * F  |  F
+  F &rarr; ( E )  |  id
+      </div>
+      <p><strong>E</strong> = Expression, <strong>T</strong> = Term, <strong>F</strong> = Factor</p>
+      <p>This grammar encodes <strong>precedence</strong>:</p>
+      <ul>
+        <li><strong>*</strong> binds tighter than <strong>+</strong> (multiplication first)</li>
+        <li>Both are <strong>left-associative</strong></li>
+        <li>Parentheses override everything</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Think of E, T, F as layers of "binding strength." F is the tightest (atoms and parens). T groups multiplications. E groups additions. Like layers of an onion -- inner layers bind first.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Derive: id + id * id</h3>
+      <div class="diagram small">
+Leftmost derivation:
+
+  <span style="color:#f472b6">E</span>
+  ==> <span style="color:#f472b6">E</span> + T            (E &rarr; E + T)
+  ==> <span style="color:#f472b6">T</span> + T            (E &rarr; T)
+  ==> <span style="color:#f472b6">F</span> + T            (T &rarr; F)
+  ==> <span style="color:#f472b6">id</span> + T           (F &rarr; id)
+  ==> id + <span style="color:#f472b6">T</span> * F      (T &rarr; T * F)
+  ==> id + <span style="color:#f472b6">F</span> * F      (T &rarr; F)
+  ==> id + <span style="color:#f472b6">id</span> * F     (F &rarr; id)
+  ==> id + id * <span style="color:#f472b6">id</span>   (F &rarr; id)
+      </div>
+      <div class="key-idea">
+        <h3>Notice!</h3>
+        <p>The grammar <strong>forces</strong> "id * id" to be grouped under T, while "+" connects at the E level. This gives multiplication <strong>higher precedence</strong> than addition.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">7 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 8: Parse Trees ==================== -->
+<div class="slide" id="s8">
+  <h2>Parse Trees</h2>
+  <p>A parse tree is a visual representation of a derivation. It shows the structure of how a string is generated.</p>
+  <div class="two-col">
+    <div>
+      <h3>Rules for Parse Trees</h3>
+      <ul>
+        <li><strong>Root</strong> = start symbol S</li>
+        <li><strong>Internal nodes</strong> = variables (non-terminals)</li>
+        <li><strong>Leaves</strong> = terminals (read left-to-right = the string)</li>
+        <li>Each internal node + its children = one production rule</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy: Family Tree</h3>
+        <p>A parse tree is like a family tree for strings. The start symbol S is the ancestor. Each production rule is a "parent has these children." The terminals at the bottom are the youngest generation -- the actual string!</p>
+      </div>
+    </div>
+    <div>
+      <h3>Example: S &rarr; aSb | &epsilon;</h3>
+      <p>Parse tree for <strong>aabb</strong>:</p>
+      <div class="diagram">
+           S
+          /|\
+         / | \
+        a  S  b
+          /|\
+         / | \
+        a  S  b
+           |
+           &epsilon;
+      </div>
+      <p>Reading the leaves left to right: <strong>a a &epsilon; b b = aabb</strong></p>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The tree structure shows the <strong>nesting</strong>. The outer S wraps a...b around the inner S. This is the recursive structure that DFAs cannot capture.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">8 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 9: Parse Tree for Arithmetic ==================== -->
+<div class="slide" id="s9">
+  <h2>Parse Tree: id + id * id</h2>
+  <p>Using the grammar: E &rarr; E+T | T, &nbsp; T &rarr; T*F | F, &nbsp; F &rarr; (E) | id</p>
+  <div class="diagram">
+                         E
+                       / | \
+                      /  |  \
+                     E   +   T
+                     |      /|\
+                     T     / | \
+                     |    T  *  F
+                     F    |     |
+                     |    F    id
+                    id    |
+                         id
+
+  Leaves (left to right):  id  +  id  *  id
+  </div>
+  <div class="two-col">
+    <div class="key-idea">
+      <h3>Why This Tree is Correct</h3>
+      <p>The <strong>*</strong> operation sits <strong>deeper</strong> in the tree (under T), so it is evaluated <strong>first</strong>. The <strong>+</strong> is at the top (under E), so it is evaluated <strong>last</strong>. This gives us: id + (id * id), which matches standard math precedence!</p>
+    </div>
+    <div class="analogy">
+      <h3>Reading the tree bottom-up</h3>
+      <p>Imagine evaluating from the leaves upward:</p>
+      <ul>
+        <li>Bottom-right: id * id = some value</li>
+        <li>Then: id + (that value)</li>
+      </ul>
+      <p>The tree <strong>is</strong> the computation order.</p>
+    </div>
+  </div>
+  <div class="slide-number">9 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 10: Ambiguity ==================== -->
+<div class="slide" id="s10">
+  <h2>Ambiguity: When One String Has Two Trees</h2>
+  <p>A grammar is <strong>ambiguous</strong> if some string has <strong>two or more distinct parse trees</strong>.</p>
+  <div class="two-col">
+    <div>
+      <h3>Ambiguous Grammar</h3>
+      <div class="diagram small">
+  E &rarr; E + E  |  E * E  |  ( E )  |  id
+      </div>
+      <p>This is simpler than the previous grammar, but it's <strong>ambiguous</strong>! For "id + id * id":</p>
+      <h3>Tree 1: (id + id) * id</h3>
+      <div class="diagram small">
+          E
+        / | \
+       E  *  E
+      /|\    |
+     E + E  id
+     |   |
+    id  id
+      </div>
+    </div>
+    <div>
+      <h3>Tree 2: id + (id * id)</h3>
+      <div class="diagram small">
+          E
+        / | \
+       E  +  E
+       |    /|\
+      id   E * E
+           |   |
+          id  id
+      </div>
+      <div class="warning">
+        <h3>The "Dangling Else" Problem</h3>
+        <div class="diagram small" style="font-size:0.8em;">
+S &rarr; if E then S else S
+S &rarr; if E then S
+S &rarr; other
+
+"if E then if E then other else other"
+
+Does "else" belong to the
+outer or inner "if"?
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">10 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 11: Why Ambiguity Matters ==================== -->
+<div class="slide" id="s11">
+  <h2>Why Ambiguity Matters</h2>
+  <p>Different parse trees mean <strong>different meanings</strong>. The tree defines the evaluation order!</p>
+  <div class="two-col">
+    <div>
+      <h3>Parsing: 2 + 3 * 4</h3>
+      <div class="diagram small">
+  Tree A:  (2 + 3) * 4          Tree B:  2 + (3 * 4)
+
+       E                              E
+      /|\                            /|\
+     E  *  E                        E  +  E
+    /|\    |                        |    /|\
+   E + E   4                        2  E * E
+   |   |                               |   |
+   2   3                               3   4
+
+  = 5 * 4                          = 2 + 12
+  = 20  <span style="color:#ef4444;">WRONG!</span>                    = 14  <span style="color:#22c55e;">CORRECT!</span>
+      </div>
+    </div>
+    <div>
+      <h3>Ambiguity = Multiple Interpretations</h3>
+      <ul>
+        <li>Compilers need <strong>exactly one</strong> parse tree per program</li>
+        <li>If two trees exist, the compiler might pick the wrong one</li>
+        <li>Different trees &rarr; different compiled code &rarr; different results</li>
+      </ul>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Ambiguity is a property of the <strong>grammar</strong>, not the <strong>language</strong>. A language might have an ambiguous grammar but also an unambiguous one. The fix: <strong>rewrite the grammar</strong> to enforce the intended structure.</p>
+      </div>
+      <div class="warning">
+        <h3>Caution</h3>
+        <p>You cannot "test" for ambiguity in general -- it is <strong>undecidable</strong> whether an arbitrary CFG is ambiguous!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">11 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 12: Eliminating Ambiguity ==================== -->
+<div class="slide" id="s12">
+  <h2>Eliminating Ambiguity</h2>
+  <p>Technique: Rewrite the grammar to <strong>encode precedence and associativity</strong> into the structure.</p>
+  <div class="two-col">
+    <div>
+      <h3>Ambiguous (flat) grammar:</h3>
+      <div class="diagram">
+E &rarr; E + E | E * E | ( E ) | id
+      </div>
+      <p>Problem: + and * are at the same "level," so the parser can group either one first.</p>
+      <h3>Unambiguous (layered) grammar:</h3>
+      <div class="diagram">
+E &rarr; E + T  |  T       <span style="color:#64748b;">// + is low precedence</span>
+T &rarr; T * F  |  F       <span style="color:#64748b;">// * is high precedence</span>
+F &rarr; ( E )  |  id      <span style="color:#64748b;">// atoms and grouping</span>
+      </div>
+    </div>
+    <div>
+      <h3>The Layering Trick</h3>
+      <div class="diagram small">
+Precedence Layers:
+
+  LOW   ------>  E handles +
+    |
+    v
+  HIGH  ------>  T handles *
+    |
+    v
+  ATOMS ------>  F handles id, (E)
+
+Each layer can only contain
+operators of its own precedence
+or call the NEXT layer down.
+      </div>
+      <div class="key-idea">
+        <h3>The Recipe</h3>
+        <ol>
+          <li>Create one variable per <strong>precedence level</strong></li>
+          <li>Lowest precedence at the <strong>top</strong> (start symbol)</li>
+          <li>Each level references the <strong>next tighter</strong> level</li>
+          <li>Left-recursive rules &rarr; <strong>left-associative</strong> operators</li>
+          <li>Right-recursive rules &rarr; <strong>right-associative</strong> operators</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">12 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 13: Chomsky Normal Form ==================== -->
+<div class="slide" id="s13">
+  <h2>Chomsky Normal Form (CNF)</h2>
+  <p>A restricted but equally powerful form of context-free grammars.</p>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>CNF Rules</h3>
+        <p>Every production must be one of exactly two forms:</p>
+        <ul>
+          <li><strong>A &rarr; BC</strong> &nbsp; (two variables, no terminals)</li>
+          <li><strong>A &rarr; a</strong> &nbsp;&nbsp;&nbsp; (exactly one terminal)</li>
+        </ul>
+        <p>Plus optionally: <strong>S &rarr; &epsilon;</strong> (only for the start symbol, only if &epsilon; is in the language)</p>
+      </div>
+      <div class="diagram">
+  CNF:             NOT CNF:
+  S &rarr; AB          S &rarr; AaB
+  A &rarr; BC          A &rarr; BCD
+  A &rarr; a           A &rarr; B
+  B &rarr; b           A &rarr; aB
+      </div>
+    </div>
+    <div>
+      <h3>Why CNF Matters</h3>
+      <ul>
+        <li><strong>CYK Algorithm</strong>: A parsing algorithm that works in O(n&sup3;) time -- but it <em>requires</em> the grammar to be in CNF</li>
+        <li><strong>Proofs</strong>: Many theoretical results are easier to prove when the grammar has a restricted form</li>
+        <li><strong>Binary trees</strong>: CNF guarantees every parse tree is a <em>binary</em> tree (each internal node has exactly 2 children)</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>CNF is like putting equations in "standard form" in algebra. It doesn't change what the equation describes -- it just reorganizes it into a form that's easier to work with systematically.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">13 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 14: Converting to CNF ==================== -->
+<div class="slide" id="s14">
+  <h2>Converting to CNF: The 4-Step Recipe</h2>
+  <div class="diagram small">
+  Step 1           Step 2           Step 3               Step 4
+  Remove           Remove           Break long           Replace lone
+  &epsilon;-prods        unit prods       productions          terminals
+  A &rarr; &epsilon;           A &rarr; B            A &rarr; BCD             A &rarr; aB
+
+     |                |                |                    |
+     v                v                v                    v
+
+  Propagate        Substitute       A &rarr; BX             A &rarr; T_a B
+  nullable         chains           X &rarr; CD             T_a &rarr; a
+  </div>
+  <div class="two-col">
+    <div>
+      <h3>Step 1: Remove &epsilon;-Productions</h3>
+      <ul>
+        <li>Find all <strong>nullable</strong> variables (those that can derive &epsilon;)</li>
+        <li>For each production with a nullable var on the right, add versions with and without it</li>
+        <li>Delete all A &rarr; &epsilon; rules (except possibly S &rarr; &epsilon;)</li>
+      </ul>
+      <h3>Step 2: Remove Unit Productions</h3>
+      <ul>
+        <li>A <strong>unit production</strong> is A &rarr; B (single variable)</li>
+        <li>If A &rarr; B and B &rarr; w, replace with A &rarr; w</li>
+        <li>Repeat until no unit productions remain</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Step 3: Fix Long Productions</h3>
+      <ul>
+        <li>If A &rarr; B<sub>1</sub>B<sub>2</sub>...B<sub>k</sub> where k > 2</li>
+        <li>Break into pairs using new variables:</li>
+        <li>A &rarr; B<sub>1</sub>C<sub>1</sub>, C<sub>1</sub> &rarr; B<sub>2</sub>C<sub>2</sub>, ..., C<sub>k-2</sub> &rarr; B<sub>k-1</sub>B<sub>k</sub></li>
+      </ul>
+      <h3>Step 4: Fix Terminal Mixing</h3>
+      <ul>
+        <li>If a production mixes terminals and variables like A &rarr; aB</li>
+        <li>Replace each terminal <em>a</em> with a new variable T<sub>a</sub></li>
+        <li>Add T<sub>a</sub> &rarr; a</li>
+      </ul>
+      <div class="warning">
+        <h3>Order matters!</h3>
+        <p>Do the steps in order (1 &rarr; 2 &rarr; 3 &rarr; 4). Each step can create situations the next step fixes.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">14 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 15: CNF Conversion Example ==================== -->
+<div class="slide" id="s15">
+  <h2>CNF Conversion: Worked Example</h2>
+  <div class="two-col">
+    <div>
+      <h3>Original Grammar</h3>
+      <div class="diagram small">
+S &rarr; ASB | &epsilon;
+A &rarr; aAS | a
+B &rarr; SbS | A | bb
+      </div>
+
+      <h3>Step 1: Remove &epsilon;-productions</h3>
+      <div class="diagram small">
+Nullable: S (since S &rarr; &epsilon;)
+
+S &rarr; ASB | AB | AS | SB
+      | A  | B  | S
+A &rarr; aAS | aA | aS | a
+B &rarr; SbS | bS | Sb | b
+      | A  | bb
+
+(Delete S &rarr; &epsilon;, add S &rarr; &epsilon; back only
+ if needed. Add new start S0 &rarr; S | &epsilon;)
+      </div>
+
+      <h3>Step 2: Remove unit prods</h3>
+      <div class="diagram small">
+Remove: S &rarr; A, S &rarr; B, S &rarr; S, B &rarr; A
+
+Replace S &rarr; A with S's own prods of A:
+  S &rarr; aAS | aA | aS | a
+
+Replace S &rarr; B with B's prods:
+  S &rarr; SbS | bS | Sb | b | bb
+
+Replace B &rarr; A with A's prods:
+  B &rarr; aAS | aA | aS | a
+      </div>
+    </div>
+    <div>
+      <h3>After Steps 1 & 2 (cleaned up)</h3>
+      <div class="diagram small">
+S0 &rarr; S | &epsilon;
+S  &rarr; ASB | AB | AS | SB
+       | aAS | aA | aS | a
+       | SbS | bS | Sb | b | bb
+A  &rarr; aAS | aA | aS | a
+B  &rarr; SbS | bS | Sb | b | bb
+       | aAS | aA | aS | a
+      </div>
+
+      <h3>Step 3: Break long productions</h3>
+      <div class="diagram small">
+S &rarr; ASB  becomes  S &rarr; AC1,  C1 &rarr; SB
+S &rarr; aAS  becomes  S &rarr; T_a C2, C2 &rarr; AS
+S &rarr; SbS  becomes  S &rarr; SC3,  C3 &rarr; T_b S
+(... similar for all length > 2 ...)
+      </div>
+
+      <h3>Step 4: Fix terminal mixing</h3>
+      <div class="diagram small">
+S &rarr; aA   becomes  S &rarr; T_a A
+S &rarr; aS   becomes  S &rarr; T_a S
+S &rarr; bS   becomes  S &rarr; T_b S
+S &rarr; bb   becomes  S &rarr; T_b T_b
+
+Add: T_a &rarr; a,  T_b &rarr; b
+      </div>
+      <div class="key-idea">
+        <h3>Result</h3>
+        <p>Every production is now A &rarr; BC or A &rarr; a. The grammar is in CNF!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">15 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 16: Context-Free Languages Properties ==================== -->
+<div class="slide" id="s16">
+  <h2>Properties of Context-Free Languages</h2>
+  <div class="two-col">
+    <div>
+      <h3>Closure Properties</h3>
+      <table>
+        <tr><th>Operation</th><th>Closed?</th></tr>
+        <tr><td>Union</td><td style="color:#22c55e;">YES</td></tr>
+        <tr><td>Concatenation</td><td style="color:#22c55e;">YES</td></tr>
+        <tr><td>Kleene Star</td><td style="color:#22c55e;">YES</td></tr>
+        <tr><td>Intersection</td><td style="color:#ef4444;">NO</td></tr>
+        <tr><td>Complement</td><td style="color:#ef4444;">NO</td></tr>
+        <tr><td>Intersection with Regular</td><td style="color:#22c55e;">YES</td></tr>
+      </table>
+      <div class="key-idea">
+        <h3>How to prove closure under union</h3>
+        <p>Given CFGs G<sub>1</sub> (start S<sub>1</sub>) and G<sub>2</sub> (start S<sub>2</sub>), create a new grammar with start S and rule: <strong>S &rarr; S<sub>1</sub> | S<sub>2</sub></strong>. Done!</p>
+      </div>
+    </div>
+    <div>
+      <h3>NOT Closed Under Intersection</h3>
+      <div class="diagram small">
+L1 = { a^n b^n c^m  |  n,m &ge; 0 }
+      (match a's and b's)     -- CFL!
+
+L2 = { a^m b^n c^n  |  n,m &ge; 0 }
+      (match b's and c's)     -- CFL!
+
+L1 &cap; L2 = { a^n b^n c^n | n &ge; 0 }
+
+This is NOT context-free!
+(Provable by CFL pumping lemma)
+      </div>
+      <div class="warning">
+        <h3>Consequence</h3>
+        <p>Since CFLs are closed under union but NOT under complement, and L<sub>1</sub> &cap; L<sub>2</sub> = complement(complement(L<sub>1</sub>) &cup; complement(L<sub>2</sub>)), closure under complement would imply closure under intersection. So both must fail!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">16 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 17: Inherently Ambiguous ==================== -->
+<div class="slide" id="s17">
+  <h2>Inherently Ambiguous Languages</h2>
+  <p>Some context-free languages are so "tangled" that <strong>every possible grammar</strong> for them is ambiguous.</p>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>A CFL L is <strong>inherently ambiguous</strong> if every CFG that generates L is ambiguous. There is no way to "fix" the grammar -- the ambiguity is built into the language itself.</p>
+      </div>
+      <h3>Classic Example</h3>
+      <div class="diagram">
+L = { a^i b^j c^k |
+       i=j  OR  j=k }
+
+In other words: either the
+a's match the b's, OR the
+b's match the c's (or both).
+      </div>
+    </div>
+    <div>
+      <h3>Why it's inherently ambiguous</h3>
+      <div class="diagram small">
+Consider: a^n b^n c^n
+
+This string is in L because:
+  - i=j=n (a's match b's)  YES
+  - j=k=n (b's match c's)  YES
+
+Any grammar must handle BOTH
+reasons separately, creating
+two parse trees for a^n b^n c^n.
+      </div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Imagine a language with two overlapping "reasons" a string can be included. When both reasons apply simultaneously, any grammar must use one path or the other -- giving two different trees. It's like a Venn diagram overlap that can't be un-overlapped.</p>
+      </div>
+      <div class="warning">
+        <h3>Important Distinction</h3>
+        <p>An ambiguous <strong>grammar</strong> might be fixable (rewrite it). An inherently ambiguous <strong>language</strong> cannot be fixed -- no grammar for it is unambiguous.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">17 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 18: CFG vs Regular ==================== -->
+<div class="slide" id="s18">
+  <h2>CFG vs. Regular: Head-to-Head Comparison</h2>
+  <table style="width:100%; margin-top:10px;">
+    <tr>
+      <th style="width:25%;">Feature</th>
+      <th style="width:37%;">Regular Languages</th>
+      <th style="width:38%;">Context-Free Languages</th>
+    </tr>
+    <tr>
+      <td><strong>Machine model</strong></td>
+      <td>DFA / NFA</td>
+      <td>Pushdown Automaton (PDA)</td>
+    </tr>
+    <tr>
+      <td><strong>Memory</strong></td>
+      <td>Finite (states only)</td>
+      <td>Infinite stack</td>
+    </tr>
+    <tr>
+      <td><strong>Described by</strong></td>
+      <td>Regular expressions</td>
+      <td>Context-free grammars</td>
+    </tr>
+    <tr>
+      <td><strong>Closure</strong></td>
+      <td>&cup;, &cap;, *, complement, concat</td>
+      <td>&cup;, *, concat (NOT &cap;, complement)</td>
+    </tr>
+    <tr>
+      <td><strong>Parsing</strong></td>
+      <td>O(n) -- linear scan</td>
+      <td>O(n&sup3;) CYK; O(n) for some subclasses</td>
+    </tr>
+    <tr>
+      <td><strong>Pumping lemma</strong></td>
+      <td>xy<sup>k</sup>z (one pump)</td>
+      <td>uv<sup>k</sup>xy<sup>k</sup>z (two pumps)</td>
+    </tr>
+    <tr>
+      <td><strong>Can do</strong></td>
+      <td>a*b*, (ab)*, keyword matching</td>
+      <td>a<sup>n</sup>b<sup>n</sup>, balanced parens, palindromes</td>
+    </tr>
+    <tr>
+      <td><strong>Can't do</strong></td>
+      <td>a<sup>n</sup>b<sup>n</sup>, matching, counting</td>
+      <td>a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>, cross-serial dependencies</td>
+    </tr>
+    <tr class="highlight">
+      <td><strong>Relationship</strong></td>
+      <td colspan="2" style="text-align:center;">Every regular language is context-free, but NOT vice versa</td>
+    </tr>
+  </table>
+  <div class="key-idea" style="margin-top:16px;">
+    <h3>Key Idea</h3>
+    <p>Regular languages are a <strong>proper subset</strong> of CFLs. A DFA is just a PDA that never uses its stack. So anything a DFA can do, a PDA can also do -- plus more.</p>
+  </div>
+  <div class="slide-number">18 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 19: Applications ==================== -->
+<div class="slide" id="s19">
+  <h2>Real-World Applications of CFGs</h2>
+  <div class="two-col">
+    <div>
+      <h3>Compilers & Programming Languages</h3>
+      <div class="diagram small">
+Source code:  if (x > 0) { y = x + 1; }
+
+        STATEMENT
+        /   |   \
+      IF   COND  BLOCK
+       |   / \     |
+      if  x > 0  ASSIGN
+                 / | \
+                y  =  EXPR
+                     / | \
+                    x  +  1
+      </div>
+      <p>Every programming language has a CFG (the "syntax") that defines what valid programs look like. Compilers use <strong>parsers</strong> (LL, LR, LALR) to build parse trees from source code.</p>
+
+      <h3>XML / HTML</h3>
+      <p>Nested tags are inherently context-free:</p>
+      <div class="diagram small">
+&lt;div&gt;&lt;p&gt;Hello &lt;b&gt;world&lt;/b&gt;&lt;/p&gt;&lt;/div&gt;
+      </div>
+    </div>
+    <div>
+      <h3>Natural Language Processing</h3>
+      <div class="diagram small">
+         SENTENCE
+          / \
+        NP    VP
+        |    / \
+       Det  V   NP
+        |   |   / \
+      "the" |  Det  N
+          "ate" |    |
+              "a"  "fish"
+      </div>
+      <p>Linguists use CFGs to model the structure of human language sentences.</p>
+
+      <h3>Other Applications</h3>
+      <ul>
+        <li><strong>JSON / YAML parsing</strong> -- nested data formats</li>
+        <li><strong>Mathematical expressions</strong> -- calculators, CAS</li>
+        <li><strong>DNA/RNA structure</strong> -- folding patterns modeled by stochastic CFGs</li>
+        <li><strong>Protocol specification</strong> -- BNF grammars in RFCs</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>CFGs are the <strong>blueprints</strong> of structured languages. Wherever you see nesting, hierarchy, or recursive structure, there's likely a CFG underneath.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">19 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 20: Summary & Cheat Sheet ==================== -->
+<div class="slide" id="s20">
+  <h2>Summary & Cheat Sheet</h2>
+  <div class="two-col">
+    <div>
+      <h3>The Big Ideas</h3>
+      <div class="diagram small">
+  CFG = (V, T, P, S)
+  =====================
+  V = variables       (non-terminals)
+  T = terminals       (alphabet)
+  P = productions     (rewrite rules)
+  S = start symbol
+
+  "Context-free" means:
+   Left side of every rule is a
+   SINGLE variable. No context needed.
+
+  Power:  Regular  &sub;  Context-Free
+  Machine: DFA     &sub;  PDA (+ stack)
+      </div>
+      <h3>What to Remember</h3>
+      <ul>
+        <li>CFGs can express <strong>nesting</strong> and <strong>matching</strong></li>
+        <li><strong>Parse trees</strong> show derivation structure</li>
+        <li><strong>Ambiguity</strong> = multiple parse trees for one string</li>
+        <li><strong>CNF</strong>: A &rarr; BC | a (useful for CYK parsing)</li>
+        <li>Closed under &cup;, concat, * but <strong>NOT</strong> &cap; or complement</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Common Grammar Patterns</h3>
+      <div class="diagram small">
+a^n b^n:         S &rarr; aSb | &epsilon;
+palindromes:     S &rarr; aSa | bSb | a | b | &epsilon;
+balanced parens: S &rarr; SS | (S) | &epsilon;
+arithmetic:      E &rarr; E+T | T
+                 T &rarr; T*F | F
+                 F &rarr; (E) | id
+      </div>
+      <h3>CNF Conversion Steps</h3>
+      <div class="diagram small">
+1. Remove &epsilon;-productions  (propagate nullables)
+2. Remove unit productions  (substitute chains)
+3. Break long productions   (A&rarr;BCD ==> A&rarr;BX, X&rarr;CD)
+4. Fix terminal mixing      (A&rarr;aB ==> A&rarr;T_aB, T_a&rarr;a)
+      </div>
+      <div class="key-idea">
+        <h3>Coming Next</h3>
+        <p>Pushdown Automata (PDA) -- the machine model equivalent of CFGs. Think of it as an NFA with a stack. We will prove that PDAs and CFGs recognize exactly the same class of languages.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">20 / 20</div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 20;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+</script>
+
+</body>
+</html>

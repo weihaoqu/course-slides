@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pushdown Automata (PDA) - CS305</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: Title -->
+<!-- ============================================================ -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>Pushdown Automata (PDA)</h1>
+    <p class="subtitle">CS305 -- Formal Language Theory</p>
+    <div class="diagram" style="display:inline-block; text-align:left; font-size:0.9em;">
+   _______________________________________________
+  |                                               |
+  |      NFA  +  Stack  =  Pushdown Automaton     |
+  |                                               |
+  |   Recognizes: Context-Free Languages (CFLs)   |
+  |   Equivalent to: Context-Free Grammars (CFGs) |
+  |_______________________________________________|
+    </div>
+    <p style="margin-top: 30px; color: #64748b;">Use arrow keys or buttons to navigate. ~20 slides.</p>
+  </div>
+  <div class="slide-number">1 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: Big Picture -->
+<!-- ============================================================ -->
+<div class="slide" id="s2">
+  <h2>The Big Picture: PDA = NFA + Stack</h2>
+
+  <div class="two-col">
+    <div>
+      <p>A <strong>Pushdown Automaton</strong> takes everything an NFA can do and adds a <strong>stack</strong> -- an infinite, last-in-first-out memory.</p>
+      <ul class="mt">
+        <li><strong>DFA/NFA</strong> -- recognizes regular languages</li>
+        <li><strong>PDA</strong> -- recognizes context-free languages</li>
+        <li><strong>Turing Machine</strong> -- recognizes recursively enumerable languages</li>
+      </ul>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>The stack lets the PDA "remember" unbounded amounts of information, but only in LIFO order. This is exactly the extra power needed to match things like nested parentheses and a<sup>n</sup>b<sup>n</sup>.</p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram" style="font-size:0.85em;">
+  The Chomsky Hierarchy
+  =====================
+
+  +-------------------------------+
+  |  Recursively Enumerable       |
+  |  (Turing Machine)             |
+  |                               |
+  |  +-------------------------+  |
+  |  |  Context-Free           |  |
+  |  |  (PDA) <-- YOU ARE HERE |  |
+  |  |                         |  |
+  |  |  +-------------------+  |  |
+  |  |  |  Regular          |  |  |
+  |  |  |  (DFA / NFA)      |  |  |
+  |  |  +-------------------+  |  |
+  |  +-------------------------+  |
+  +-------------------------------+
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">2 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: Why a Stack? -->
+<!-- ============================================================ -->
+<div class="slide" id="s3">
+  <h2>Why Do We Need a Stack?</h2>
+
+  <div class="two-col">
+    <div>
+      <p>A DFA has <strong>finite memory</strong> -- just its current state. It cannot count beyond a fixed bound.</p>
+      <p class="mt">Consider the language L = { a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }:</p>
+      <ul>
+        <li>A DFA would need a separate state for each count of a's</li>
+        <li>But n can be <em>any</em> number -- we'd need infinitely many states</li>
+        <li>The Pumping Lemma proves no DFA can do this</li>
+      </ul>
+      <p class="mt"><strong>Solution:</strong> Give the machine a stack! Push each <code>a</code>, then pop one for each <code>b</code>. Accept if stack is empty.</p>
+
+      <div class="analogy mt">
+        <h3>Analogy: Cafeteria Tray Stack</h3>
+        <p>Think of a spring-loaded cafeteria tray dispenser. You can only see and grab the <strong>top tray</strong>. You push trays on and pop them off. You never reach into the middle. That's exactly how a PDA's stack works.</p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram" style="font-size:0.85em;">
+  DFA memory: just a state label
+  ================================
+  Can be in q0, q1, q2, ... qk
+  but only FINITELY many states.
+
+  PDA memory: state + STACK
+  ================================
+        +---+
+        | b |  <-- top (can see this)
+        +---+
+        | a |
+        +---+
+        | a |
+        +---+
+        | a |
+        +---+
+        | $ |  <-- bottom marker
+        +---+
+  Unbounded depth!
+  But: LIFO access only.
+      </div>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy: Function Call Stack</h3>
+        <p>Every programmer already knows a stack! When function A calls B calls C, the return addresses pile up on the call stack -- and unwind in reverse order. A PDA works exactly the same way.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">3 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: The PDA Machine Model -->
+<!-- ============================================================ -->
+<div class="slide" id="s4">
+  <h2>The PDA Machine Model</h2>
+  <p>A PDA has three components: an <strong>input tape</strong> (read left-to-right), a <strong>finite control</strong> (current state), and a <strong>stack</strong> (unbounded LIFO memory).</p>
+
+  <div class="diagram" style="font-size:0.95em;">
+          INPUT TAPE (read left to right, one symbol at a time)
+         +-----+-----+-----+-----+-----+-----+-----+-----+
+         |  a  |  a  |  a  |  b  |  b  |  b  |     |     |
+         +-----+-----+-----+-----+-----+-----+-----+-----+
+                        ^
+                        | read head
+                        |
+              +---------+---------+
+              |                   |
+              |   FINITE CONTROL  |     Transition:
+              |                   |     delta(state, input_sym, stack_top)
+              |   current state:  |         = { (new_state, push_string) }
+              |      [ q1 ]       |
+              |                   |
+              +---------+---------+
+                        |
+                        | stack access (push / pop / peek)
+                        v
+                     +-----+
+                     |  a  |  <-- stack top
+                     +-----+
+                     |  a  |
+                     +-----+
+                     |  a  |
+                     +-----+
+                     |  $  |  <-- initial stack symbol (bottom marker)
+                     +-----+
+
+  At each step the PDA:
+    1. Reads the current input symbol (or epsilon -- no read)
+    2. Peeks at the top of the stack
+    3. Based on (state, input_symbol, stack_top), transitions to a new state
+       and replaces the stack top with a string (push, pop, or no-change)
+  </div>
+
+  <div class="slide-number">4 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: Formal Definition -->
+<!-- ============================================================ -->
+<div class="slide" id="s5">
+  <h2>Formal Definition of a PDA</h2>
+
+  <div class="two-col">
+    <div>
+      <p>A PDA is a <strong>7-tuple</strong>:</p>
+      <div class="diagram" style="font-size:1.05em;">
+  M = (Q, &Sigma;, &Gamma;, &delta;, q0, Z0, F)
+      </div>
+      <table class="mt">
+        <tr><th>Symbol</th><th>Meaning</th></tr>
+        <tr><td><strong>Q</strong></td><td>Finite set of states</td></tr>
+        <tr><td><strong>&Sigma;</strong></td><td>Input alphabet</td></tr>
+        <tr><td><strong>&Gamma;</strong></td><td>Stack alphabet</td></tr>
+        <tr><td><strong>&delta;</strong></td><td>Transition function</td></tr>
+        <tr><td><strong>q<sub>0</sub></strong></td><td>Start state (q<sub>0</sub> &in; Q)</td></tr>
+        <tr><td><strong>Z<sub>0</sub></strong></td><td>Initial stack symbol (Z<sub>0</sub> &in; &Gamma;)</td></tr>
+        <tr><td><strong>F</strong></td><td>Set of accept (final) states</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>The Transition Function</h3>
+      <div class="diagram" style="font-size:0.95em;">
+  &delta; : Q x (&Sigma; &cup; {&epsilon;}) x &Gamma;  -->  P(Q x &Gamma;*)
+
+  domain:                    range:
+  (state, input_or_eps,    finite subsets of
+   stack_top)               (new_state, string_to_push)
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>The range is a <strong>set</strong> of (state, string) pairs -- this makes PDAs <strong>nondeterministic</strong>. The PDA can "choose" among multiple possible moves. It accepts if <em>any</em> choice sequence leads to acceptance.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>Watch Out</h3>
+        <p>&Sigma; is the input alphabet (e.g., {a, b}). &Gamma; is the stack alphabet (e.g., {a, b, $}). They can overlap, but &Gamma; often has extra symbols like the bottom marker $.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">5 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: Reading PDA Transitions -->
+<!-- ============================================================ -->
+<div class="slide" id="s6">
+  <h2>Reading PDA Transitions</h2>
+
+  <div class="two-col">
+    <div>
+      <p>Each transition is written as:</p>
+      <div class="diagram" style="font-size:1.1em;">
+  &delta;(q, a, X) contains (p, Y)
+      </div>
+      <p>Read this as:</p>
+      <ul>
+        <li>"In state <strong>q</strong>,"</li>
+        <li>"reading input symbol <strong>a</strong> (or &epsilon; for no read),"</li>
+        <li>"with <strong>X</strong> on top of stack,"</li>
+        <li>"move to state <strong>p</strong>,"</li>
+        <li>"and replace X with string <strong>Y</strong> on the stack."</li>
+      </ul>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>The string <strong>Y</strong> is pushed so that its <em>leftmost</em> symbol ends up on top of the stack. If Y = ABC, then A is on top, B below it, C at the bottom of the pushed portion.</p>
+      </div>
+    </div>
+    <div>
+      <h3>On State Diagrams</h3>
+      <p>Transitions are labeled on edges:</p>
+      <div class="diagram" style="font-size:0.95em;">
+        a, X / Y
+  (q) ---------> (p)
+
+  Read this:
+  - Consume input symbol: a
+  - Pop from stack:       X
+  - Push onto stack:      Y
+      </div>
+      <h3 class="mt">Epsilon Transitions</h3>
+      <div class="diagram" style="font-size:0.95em;">
+       &epsilon;, X / Y
+  (q) ---------> (p)
+
+  - Don't consume any input
+  - Pop X from stack
+  - Push Y onto stack
+  - The read head does NOT advance
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">6 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: Push, Pop, No-change -->
+<!-- ============================================================ -->
+<div class="slide" id="s7">
+  <h2>Push, Pop, and No-Change Operations</h2>
+  <p>Every transition pops the stack top and pushes a replacement string. We encode push, pop, and no-change using this single mechanism.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>PUSH (add B on top of X)</h3>
+      <div class="diagram small">
+  &delta;(q, a, X) = {(p, BX)}
+
+  Before:       After:
+  +---+         +---+
+  | X | top     | B | top  (B pushed on top!)
+  +---+         +---+
+  | . |         | X |
+  +---+         +---+
+                | . |
+  "Replace X    +---+
+   with BX"
+      </div>
+
+      <h3 class="mt">POP (remove X)</h3>
+      <div class="diagram small">
+  &delta;(q, a, X) = {(p, &epsilon;)}
+
+  Before:       After:
+  +---+         +---+
+  | X | top     | . | top  (X is gone!)
+  +---+         +---+
+  | . |
+  +---+
+  "Replace X
+   with &epsilon; (nothing)"
+      </div>
+    </div>
+    <div>
+      <h3>NO-CHANGE (leave X on top)</h3>
+      <div class="diagram small">
+  &delta;(q, a, X) = {(p, X)}
+
+  Before:       After:
+  +---+         +---+
+  | X | top     | X | top  (same!)
+  +---+         +---+
+  | . |         | . |
+  +---+         +---+
+  "Replace X
+   with X (itself)"
+      </div>
+
+      <h3 class="mt">PUSH MULTIPLE (replace X with ABC)</h3>
+      <div class="diagram small">
+  &delta;(q, a, X) = {(p, ABC)}
+
+  Before:       After:
+  +---+         +---+
+  | X | top     | A | top  (leftmost = top)
+  +---+         +---+
+  | . |         | B |
+  +---+         +---+
+                | C |
+                +---+
+                | . |
+                +---+
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">7 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: Example 1 - a^n b^n -->
+<!-- ============================================================ -->
+<div class="slide" id="s8">
+  <h2>Example 1: PDA for { a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Strategy</h3>
+      <ol>
+        <li>Start with bottom marker $ on the stack</li>
+        <li>For each <code>a</code> read: <strong>push</strong> an <code>a</code> onto the stack</li>
+        <li>Switch to "b-reading" mode</li>
+        <li>For each <code>b</code> read: <strong>pop</strong> one <code>a</code> from the stack</li>
+        <li>Accept if stack has only $ (all a's matched)</li>
+      </ol>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>The stack <strong>counts</strong> the a's. Each b cancels one a by popping. If counts match, the stack returns to just $, and we accept.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>Watch Out</h3>
+        <p>The empty string &epsilon; is in this language (n=0). We must accept it! That's why q<sub>0</sub> transitions directly to accept on seeing $.</p>
+      </div>
+    </div>
+    <div>
+      <h3>State Diagram</h3>
+      <div class="diagram" style="font-size:0.82em;">
+             a, $ / a$         b, a / &epsilon;
+             a, a / aa
+          +----------+      +----------+
+          |          |      |          |
+          v          |      v          |
+  ---> ( q0 ) ---->  ( q1 ) ----> ( q2 )
+         |     &epsilon;,$/$ |    b,a/&epsilon;     |
+         |           |              |
+         |     &epsilon;, $ / $          &epsilon;, $ / $
+         |           |              |
+         +-----+----+---------+----+
+               |               |
+               v               v
+            (( q_accept ))
+
+  States:
+    q0 : start (reading a's, pushing)
+    q1 : reading b's (popping a's)
+    q_accept : accept state
+      </div>
+      <h3 class="mt">Formal Transitions</h3>
+      <div class="diagram small">
+  &delta;(q0, a, $) = {(q0, a$)}   -- first a
+  &delta;(q0, a, a) = {(q0, aa)}   -- more a's
+  &delta;(q0, &epsilon;, $) = {(q_acc, $)} -- accept &epsilon;
+  &delta;(q0, b, a) = {(q1, &epsilon;)}   -- first b
+  &delta;(q1, b, a) = {(q1, &epsilon;)}   -- more b's
+  &delta;(q1, &epsilon;, $) = {(q_acc, $)} -- done!
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">8 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: Trace of "aabb" -->
+<!-- ============================================================ -->
+<div class="slide" id="s9">
+  <h2>Trace: Processing "aabb"</h2>
+  <p>Let's trace the PDA for { a<sup>n</sup>b<sup>n</sup> } on input <code>aabb</code>, step by step.</p>
+
+  <div class="diagram" style="font-size:0.82em;">
+ Step  |  Input Remaining  |  State  |  Stack (top on left)  |  Action
+ ------+-------------------+---------+-----------------------+----------------------------
+   0   |  a a b b          |   q0    |  $                    |  Start
+   1   |  a b b            |   q0    |  a $                  |  Read a, push a
+   2   |  b b              |   q0    |  a a $                |  Read a, push a
+   3   |  b                |   q1    |  a $                  |  Read b, pop a
+   4   |  (empty)          |   q1    |  $                    |  Read b, pop a
+   5   |  (empty)          |  q_acc  |  $                    |  &epsilon;-move, see $, ACCEPT!
+  </div>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Stack Evolution (Visual)</h3>
+      <div class="diagram small">
+Step 0:   Step 1:   Step 2:   Step 3:   Step 4:   Step 5:
++---+     +---+     +---+     +---+     +---+     +---+
+| $ |     | a |     | a |     | a |     | $ |     | $ |
++---+     +---+     +---+     +---+     +---+     +---+
+          | $ |     | a |     | $ |
+          +---+     +---+     +---+      ACCEPT!
+                    | $ |
+                    +---+
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Watch the stack grow during the a-phase (steps 0-2) and shrink during the b-phase (steps 3-4). The stack acts as a <strong>counter</strong>. When it returns to just $, we know the counts matched.</p>
+      </div>
+      <div class="warning">
+        <h3>What about "aab"?</h3>
+        <p>After reading two a's and one b, stack = <code>a $</code>. Input is empty but stack is not just $. No transition to accept. <strong>Reject!</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">9 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: Acceptance Modes -->
+<!-- ============================================================ -->
+<div class="slide" id="s10">
+  <h2>Acceptance: Final State vs. Empty Stack</h2>
+  <p>There are <strong>two equivalent</strong> ways a PDA can accept a string.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>1. Acceptance by Final State</h3>
+      <div class="diagram small">
+  Accept if:
+  - ALL input has been consumed
+  - PDA is in a state q &in; F
+
+  (Stack contents don't matter!)
+
+       +-----+
+       |     |  <-- could have stuff
+       +-----+      on the stack,
+       |     |      we don't care
+       +-----+
+
+  State: q &in; F   --> ACCEPT
+      </div>
+      <p>This is the more common definition in textbooks. The accept states F determine acceptance.</p>
+    </div>
+    <div>
+      <h3>2. Acceptance by Empty Stack</h3>
+      <div class="diagram small">
+  Accept if:
+  - ALL input has been consumed
+  - Stack is completely EMPTY
+
+  (Current state doesn't matter!)
+
+       (empty)     <-- stack is empty
+                       that's all we check
+
+  State: any      --> ACCEPT
+      </div>
+      <p>Here, F is ignored (or F = Q). The PDA accepts purely by emptying its stack after reading all input.</p>
+    </div>
+  </div>
+
+  <div class="key-idea mt">
+    <h3>Key Idea</h3>
+    <p>These two acceptance modes are <strong>equivalent in power</strong>. Any language accepted by a PDA using final states can also be accepted by some (different) PDA using empty stack, and vice versa. We can mechanically convert between the two.</p>
+  </div>
+
+  <div class="slide-number">10 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: Converting Between Acceptance Modes -->
+<!-- ============================================================ -->
+<div class="slide" id="s11">
+  <h2>Converting Between Acceptance Modes</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Final State --> Empty Stack</h3>
+      <div class="diagram small">
+  Idea: When original PDA reaches a
+  final state, drain the entire stack.
+
+         &epsilon;, Z0' / Z0'
+  (q0')  -----------> (q0)
+  new                  original
+  start                start
+
+  For each q &in; F:
+               &epsilon;, any / &epsilon;
+  (q) ---------> (q_drain)
+                    |
+                    | &epsilon;, any / &epsilon;  (loop: pop everything)
+                    v
+                 (q_drain)
+
+  Steps:
+  1. Add new start state q0', push
+     new bottom marker Z0' under Z0
+  2. From every final state, add
+     &epsilon;-transition to q_drain
+  3. q_drain pops everything
+      </div>
+    </div>
+    <div>
+      <h3>Empty Stack --> Final State</h3>
+      <div class="diagram small">
+  Idea: When stack empties, transition
+  to a new accept state.
+
+         &epsilon;, Z0' / Z0 Z0'
+  (q0')  ----------------> (q0)
+  new                       original
+  start                     start
+
+  For each state q:
+               &epsilon;, Z0' / &epsilon;
+  (q) ---------> (( q_f ))
+                  new final state
+
+  Steps:
+  1. Add new start state q0', push
+     new bottom marker Z0' under Z0
+  2. From EVERY state, add
+     &epsilon;-transition to q_f when
+     Z0' is on top (= original stack
+     is empty)
+  3. q_f is the only accept state
+      </div>
+    </div>
+  </div>
+
+  <div class="warning mt">
+    <h3>Watch Out</h3>
+    <p>The new bottom marker Z<sub>0</sub>' is essential! Without it, the original PDA might empty its stack prematurely (not at a final state), and the conversion would accept strings it shouldn't.</p>
+  </div>
+
+  <div class="slide-number">11 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: Balanced Parentheses -->
+<!-- ============================================================ -->
+<div class="slide" id="s12">
+  <h2>Example 2: PDA for Balanced Parentheses</h2>
+  <p>Language: { w &in; {(, )}* | w has properly nested, balanced parentheses }</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Strategy</h3>
+      <ul>
+        <li>Push a marker for each <code>(</code></li>
+        <li>Pop a marker for each <code>)</code></li>
+        <li>Accept if stack returns to just $</li>
+        <li>If we see <code>)</code> but stack has only $ -- reject (unmatched close)</li>
+      </ul>
+
+      <h3 class="mt">State Diagram</h3>
+      <div class="diagram small">
+         (, $ / L$        ), L / &epsilon;
+         (, L / LL
+        +--------+      +--------+
+        |        |      |        |
+        v        |      v        |
+  ---> ( q0 ) ---------> ( q0 )
+         |                  |
+         |     &epsilon;, $ / $      |
+         +--------+---------+
+                  |
+                  v
+            (( q_acc ))
+      </div>
+      <p><em>Note: We can use a single state q<sub>0</sub>! The transitions for ( and ) just loop on q<sub>0</sub>.</em></p>
+    </div>
+    <div>
+      <h3>Formal Transitions</h3>
+      <div class="diagram small">
+  &delta;(q0,  (,  $) = {(q0,  L$)}  push L
+  &delta;(q0,  (,  L) = {(q0,  LL)}  push L
+  &delta;(q0,  ),  L) = {(q0,  &epsilon;)}   pop L
+  &delta;(q0,  &epsilon;,  $) = {(q_acc, $)} accept
+
+  L = marker for open paren
+      </div>
+
+      <h3 class="mt">Trace: "(())"</h3>
+      <div class="diagram small">
+ Step | Input Rem. | Stack     | Action
+ -----+------------+-----------+--------
+  0   | ( ( ) )    | $         | start
+  1   | ( ) )      | L $       | read (, push L
+  2   | ) )        | L L $     | read (, push L
+  3   | )          | L $       | read ), pop L
+  4   | (empty)    | $         | read ), pop L
+  5   | (empty)    | $         | &epsilon;-move, ACCEPT
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>This is exactly how compilers check brace matching! Every <code>{</code> pushes, every <code>}</code> pops. Mismatches are caught instantly.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">12 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: Palindromes ww^R -->
+<!-- ============================================================ -->
+<div class="slide" id="s13">
+  <h2>Example 3: PDA for { ww<sup>R</sup> | w &in; {0,1}* }</h2>
+  <p>Even-length palindromes! The string's second half is the reverse of the first.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>The Problem</h3>
+      <p>Consider <code>01 10</code>: the first half is <code>01</code>, the second half <code>10</code> is <code>01</code> reversed.</p>
+      <p class="mt">But how does the PDA know where the <strong>middle</strong> is?</p>
+
+      <div class="key-idea mt">
+        <h3>Key Idea: Nondeterminism!</h3>
+        <p>The PDA <strong>guesses</strong> the midpoint! At every position, it nondeterministically branches into two choices:</p>
+        <ol>
+          <li>"I haven't reached the middle yet" -- keep pushing</li>
+          <li>"This is the middle!" -- switch to popping mode</li>
+        </ol>
+        <p>It accepts if <em>any</em> guess leads to acceptance. The "correct" guess (at the true midpoint) will succeed.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Imagine cloning yourself at every step. One clone keeps pushing, the other switches to matching. Most clones die. The one who guessed right survives.</p>
+      </div>
+    </div>
+    <div>
+      <h3>State Diagram</h3>
+      <div class="diagram small">
+        0, $ / 0$       0, 0 / &epsilon;
+        1, $ / 1$       1, 1 / &epsilon;
+        0, 0 / 00
+        0, 1 / 01
+        1, 0 / 10
+        1, 1 / 11
+        +-------+       +-------+
+        |       |       |       |
+        v       |       v       |
+  ---> (q0) --------> (q1) ------+
+   push phase  |   pop phase   |
+       &epsilon;,$/$ |               |  &epsilon;, $ / $
+       &epsilon;,0/0 |               |
+       &epsilon;,1/1 |               |
+               +------+---------+
+                      |
+                      v
+                (( q_acc ))
+      </div>
+      <h3 class="mt">Trace: "0110"</h3>
+      <div class="diagram small">
+ Step | Input | State | Stack  | Action
+ -----+-------+-------+--------+---------
+  0   | 0110  |  q0   | $      | start
+  1   | 110   |  q0   | 0 $    | read 0, push
+  2   | 10    |  q0   | 1 0 $  | read 1, push
+  3   | 10    |  q1   | 1 0 $  | GUESS middle!
+  4   | 0     |  q1   | 0 $    | read 1, pop 1
+  5   | (end) |  q1   | $      | read 0, pop 0
+  6   | (end) | q_acc | $      | ACCEPT!
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">13 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: PDA vs DPDA -->
+<!-- ============================================================ -->
+<div class="slide" id="s14">
+  <h2>PDA vs. DPDA: Nondeterminism Matters!</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Recall: DFA vs NFA</h3>
+      <p>For finite automata, deterministic = nondeterministic in power.</p>
+      <div class="diagram small">
+  DFA = NFA
+  (same languages: regular)
+      </div>
+
+      <h3 class="mt">For PDAs: NOT the same!</h3>
+      <div class="diagram small">
+  DPDA  &lt;  PDA  (strict subset!)
+
+  +---------------------------+
+  | Context-Free Languages    |
+  | (PDA)                     |
+  |                           |
+  |  +---------------------+  |
+  |  | Deterministic CFLs  |  |
+  |  | (DPDA)              |  |
+  |  |                     |  |
+  |  |  +---------------+  |  |
+  |  |  | Regular       |  |  |
+  |  |  | (DFA)         |  |  |
+  |  |  +---------------+  |  |
+  |  +---------------------+  |
+  +---------------------------+
+      </div>
+    </div>
+    <div>
+      <h3>What is a DPDA?</h3>
+      <p>A <strong>deterministic PDA</strong> has at most <strong>one</strong> move at each step. Formally: for every (state, input, stack_top), there is at most one transition, and if there's an &epsilon;-transition, there are no other transitions for that (state, stack_top).</p>
+
+      <div class="warning mt">
+        <h3>Critical Difference</h3>
+        <p>The language { ww<sup>R</sup> | w &in; {0,1}* } is context-free but <strong>NOT</strong> deterministic context-free. No DPDA can recognize it -- the "guess the middle" trick <em>requires</em> nondeterminism.</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Languages recognized by DPDAs are called <strong>Deterministic CFLs</strong>. They are important in practice because most programming languages are designed to be deterministic CFLs (so parsers are efficient).</p>
+      </div>
+
+      <h3 class="mt">Examples</h3>
+      <table>
+        <tr><th>Language</th><th>DPDA?</th><th>PDA?</th></tr>
+        <tr><td>a<sup>n</sup>b<sup>n</sup></td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>ww<sup>R</sup></td><td>No</td><td>Yes</td></tr>
+        <tr><td>wcw<sup>R</sup> (with center marker)</td><td>Yes</td><td>Yes</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="slide-number">14 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: CFG to PDA Conversion -->
+<!-- ============================================================ -->
+<div class="slide" id="s15">
+  <h2>CFG to PDA Conversion</h2>
+  <p>Given any CFG G, we can build a PDA M such that L(M) = L(G). This uses a <strong>top-down parsing</strong> strategy.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>The Construction (3 states!)</h3>
+      <div class="diagram" style="font-size:0.82em;">
+           &epsilon;, $ / S$
+  (q_start) ----------> (q_loop) -------> ((q_acc))
+                           |  ^       &epsilon;, $ / $
+                           |  |
+                           +--+
+              For each rule A -> w:
+                &epsilon;, A / w
+              For each terminal a:
+                a, a / &epsilon;
+      </div>
+      <p class="mt">The PDA has essentially <strong>one working state</strong> (q<sub>loop</sub>) that does all the work.</p>
+    </div>
+    <div>
+      <h3>How It Works</h3>
+      <ol>
+        <li><strong>Start:</strong> Push start variable S onto stack</li>
+        <li><strong>Loop:</strong> Repeat until stack is empty:
+          <ul>
+            <li>If top of stack is a <strong>variable</strong> A: nondeterministically pick a rule A &rarr; w and replace A with w</li>
+            <li>If top of stack is a <strong>terminal</strong> a: match it against the next input symbol (pop a, consume input a)</li>
+          </ul>
+        </li>
+        <li><strong>Accept:</strong> Stack is empty (just $) and all input consumed</li>
+      </ol>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>The stack holds the "prediction" of what the rest of the input should look like. Variables get expanded (replaced by rule right-hand sides). Terminals get matched and consumed. This is a <strong>leftmost derivation simulation</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">15 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: CFG to PDA Example -->
+<!-- ============================================================ -->
+<div class="slide" id="s16">
+  <h2>CFG to PDA: Worked Example</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Grammar G</h3>
+      <div class="diagram">
+  S &rarr; aSb | &epsilon;
+      </div>
+      <p>This generates { a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }.</p>
+
+      <h3 class="mt">Resulting PDA Transitions</h3>
+      <div class="diagram small">
+  From the construction:
+
+  Start:
+    &delta;(q_start, &epsilon;, $) = {(q_loop, S$)}
+
+  Variable rules (replace on stack):
+    &delta;(q_loop, &epsilon;, S) = {(q_loop, aSb),
+                          (q_loop, &epsilon;)}
+
+  Terminal matching:
+    &delta;(q_loop, a, a) = {(q_loop, &epsilon;)}
+    &delta;(q_loop, b, b) = {(q_loop, &epsilon;)}
+
+  Accept:
+    &delta;(q_loop, &epsilon;, $) = {(q_acc, $)}
+      </div>
+    </div>
+    <div>
+      <h3>Trace on input "aabb"</h3>
+      <div class="diagram small">
+ Step | Input  | Stack (top left)| Action
+ -----+--------+-----------------+-----------
+  0   | aabb   | $               | start
+  1   | aabb   | S $             | push S
+  2   | aabb   | a S b $         | S &rarr; aSb
+  3   | abb    | S b $           | match a
+  4   | abb    | a S b b $       | S &rarr; aSb
+  5   | bb     | S b b $         | match a
+  6   | bb     | b b $           | S &rarr; &epsilon;
+  7   | b      | b $             | match b
+  8   | (end)  | $               | match b
+  9   | (end)  | $               | ACCEPT!
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>At step 2, the PDA <strong>nondeterministically chose</strong> S &rarr; aSb over S &rarr; &epsilon;. At step 6, it chose S &rarr; &epsilon;. The "right" choices simulate the derivation: S &rArr; aSb &rArr; aaSbb &rArr; aabb.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>Watch Out</h3>
+        <p>When replacing S with aSb on the stack, push so that <code>a</code> is on top: the stack gets <code>a S b</code> with <code>a</code> on top (leftmost symbol of the replacement on top).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">16 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17: PDA to CFG Conversion -->
+<!-- ============================================================ -->
+<div class="slide" id="s17">
+  <h2>PDA to CFG Conversion</h2>
+  <p>The harder direction: given a PDA, build an equivalent CFG. This proves every PDA language is context-free.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>The Main Idea</h3>
+      <p>Create a variable <strong>A<sub>pq</sub></strong> for every pair of states (p, q). This variable generates exactly the strings that take the PDA:</p>
+      <ul>
+        <li>From state p to state q</li>
+        <li>Starting and ending with the <strong>same stack</strong> (net effect: nothing added or removed)</li>
+      </ul>
+
+      <div class="diagram small">
+  A_pq generates all strings w such that:
+
+  (p, w, empty) |-*-> (q, &epsilon;, empty)
+
+   state p                    state q
+     |                          ^
+     |   reading w              |
+     |   stack: push/pop/...    |
+     |   but NET stack change   |
+     +-------- = 0 ------------+
+      </div>
+    </div>
+    <div>
+      <h3>Construction Rules</h3>
+      <div class="diagram small">
+  Rule 1: A_pp &rarr; &epsilon;   (for all states p)
+    "Zero-length path, no net stack change"
+
+  Rule 2: A_pq &rarr; A_pr A_rq
+    (for all states p, r, q)
+    "Concatenate two net-zero paths"
+
+  Rule 3: If &delta;(p,a,X) contains (r,Y)
+    and &delta;(s,b,Y) contains (q,&epsilon;):
+    A_pq &rarr; a A_rs b
+    "Push X, do stuff, pop X"
+      </div>
+
+      <div class="warning mt">
+        <h3>Watch Out</h3>
+        <p>This construction can produce a <em>huge</em> number of rules (|Q|<sup>3</sup> rules just from Rule 2). Many rules may be useless (generating no terminal strings), but the grammar is correct.</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>The start variable is <strong>A<sub>q0,qf</sub></strong> for accept states q<sub>f</sub>. The grammar works because every computation that starts with an empty stack and ends with an empty stack can be decomposed into paired push/pop segments.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">17 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18: PDA = CFG Equivalence -->
+<!-- ============================================================ -->
+<div class="slide" id="s18">
+  <h2>The Big Equivalence: PDA = CFG</h2>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram" style="font-size:0.95em;">
+  +------------------------------+
+  |                              |
+  |   Context-Free Languages     |
+  |                              |
+  |   +--------+    +--------+  |
+  |   |  CFG   |<==>|  PDA   |  |
+  |   +--------+    +--------+  |
+  |                              |
+  |   Both describe EXACTLY the  |
+  |   same class of languages.   |
+  +------------------------------+
+
+  CFG ---> PDA : Top-down parsing
+                 (Slide 15-16)
+
+  PDA ---> CFG : A_pq construction
+                 (Slide 17)
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>This is one of the fundamental theorems of formal language theory. It says that the <strong>generative</strong> model (grammars deriving strings) and the <strong>recognition</strong> model (automata accepting strings) agree perfectly for context-free languages.</p>
+      </div>
+    </div>
+    <div>
+      <h3>The Complete Picture</h3>
+      <div class="diagram" style="font-size:0.85em;">
+    Language Class     Generator    Recognizer
+  +-----------------+-----------+------------+
+  | Regular         | Regular   | DFA / NFA  |
+  |                 | Expr / RG |            |
+  +-----------------+-----------+------------+
+  | Det. CF         | LR(1)     | DPDA       |
+  |                 | Grammar   |            |
+  +-----------------+-----------+------------+
+  | Context-Free    | CFG       | PDA        |
+  +-----------------+-----------+------------+
+  | Context-        | CSG       | Linear     |
+  |  Sensitive      |           | Bounded    |
+  +-----------------+-----------+------------+
+  | Recursively     | Unrestr.  | Turing     |
+  |  Enumerable     | Grammar   | Machine    |
+  +-----------------+-----------+------------+
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Think of CFGs as <strong>blueprints</strong> (how to build strings) and PDAs as <strong>inspectors</strong> (how to verify strings). The theorem says: anything one can build, the other can check -- and vice versa. They're two views of the same reality.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">18 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 19: Limitations of PDAs -->
+<!-- ============================================================ -->
+<div class="slide" id="s19">
+  <h2>Limitations: What PDAs Cannot Do</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Languages Beyond PDAs</h3>
+      <table>
+        <tr><th>Language</th><th>PDA?</th><th>Why Not</th></tr>
+        <tr><td>{ a<sup>n</sup>b<sup>n</sup>c<sup>n</sup> }</td><td>No</td><td>Can't count 3 things</td></tr>
+        <tr><td>{ ww } (copy)</td><td>No</td><td>Can't match forward</td></tr>
+        <tr><td>{ a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>d<sup>n</sup> }</td><td>No</td><td>Same reason</td></tr>
+        <tr><td>{ a<sup>i</sup>b<sup>j</sup>c<sup>k</sup> | i<j<k }</td><td>No</td><td>Two independent counts</td></tr>
+      </table>
+
+      <h3 class="mt">Why a<sup>n</sup>b<sup>n</sup>c<sup>n</sup> Fails</h3>
+      <div class="diagram small">
+  Push a's:     +---+
+                | a |
+                +---+  Count of a's on stack
+                | a |
+                +---+
+                | $ |
+                +---+
+
+  Pop for b's:  Stack tracks a=b. Good.
+
+  But now the stack is EMPTY.
+  How do we check c count = n too?
+
+  The stack was "used up" matching
+  a's and b's. No memory left for c's!
+      </div>
+    </div>
+    <div>
+      <h3>Why ww (Copy Language) Fails</h3>
+      <div class="diagram small">
+  Input:  0 1 1 | 0 1 1
+          first   second (copy of first)
+                   half    half
+
+  After pushing first half:
+      +---+
+      | 1 |  top
+      +---+
+      | 1 |
+      +---+
+      | 0 |
+      +---+
+      | $ |
+      +---+
+
+  But popping gives REVERSE: 1,1,0
+  We need FORWARD match:    0,1,1
+
+  Stack is LIFO -- it reverses!
+  That's why ww^R works but ww doesn't.
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>A stack is <strong>LIFO</strong> (last-in, first-out). It naturally handles <strong>reversal</strong> (palindromes, nesting) but cannot handle <strong>copying</strong> or <strong>three-way matching</strong>. These require a Turing machine's tape.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>Proving Non-CFL</h3>
+        <p>Use the <strong>Pumping Lemma for CFLs</strong> to formally prove a language is not context-free (and hence no PDA can recognize it).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">19 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 20: Summary & Cheat Sheet -->
+<!-- ============================================================ -->
+<div class="slide" id="s20">
+  <h2>Summary & Cheat Sheet</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>PDA at a Glance</h3>
+      <div class="diagram small">
+  PDA = NFA + Stack
+
+  7-tuple: (Q, &Sigma;, &Gamma;, &delta;, q0, Z0, F)
+
+  Transition: &delta;(q, a, X) = {(p, Y)}
+    "state q, read a, pop X, push Y, goto p"
+
+  Push:      replace X with BX
+  Pop:       replace X with &epsilon;
+  No-change: replace X with X
+      </div>
+
+      <h3 class="mt">Acceptance Modes</h3>
+      <div class="diagram small">
+  Final State: end in q &in; F, input consumed
+  Empty Stack: stack empty, input consumed
+  (Equivalent in power!)
+      </div>
+
+      <h3 class="mt">Key Equivalence</h3>
+      <div class="diagram small">
+        CFG  &lt;====&gt;  PDA
+  Both describe Context-Free Languages.
+
+  CFG &rarr; PDA: top-down parsing (3 states)
+  PDA &rarr; CFG: A_pq variable construction
+      </div>
+    </div>
+    <div>
+      <h3>What PDAs Can and Can't Do</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>Language</th><th>Regular?</th><th>CFL?</th></tr>
+        <tr><td>a*b*</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>a<sup>n</sup>b<sup>n</sup></td><td>No</td><td>Yes</td></tr>
+        <tr><td>balanced parens</td><td>No</td><td>Yes</td></tr>
+        <tr><td>ww<sup>R</sup></td><td>No</td><td>Yes (nondet)</td></tr>
+        <tr><td>wcw<sup>R</sup></td><td>No</td><td>Yes (det)</td></tr>
+        <tr><td>a<sup>n</sup>b<sup>n</sup>c<sup>n</sup></td><td>No</td><td>No</td></tr>
+        <tr><td>ww (copy)</td><td>No</td><td>No</td></tr>
+      </table>
+
+      <h3 class="mt">PDA vs DPDA</h3>
+      <div class="key-idea">
+        <h3>Remember</h3>
+        <p><strong>DPDA &lt; PDA</strong> (unlike DFA = NFA). Some CFLs fundamentally require nondeterminism. Example: ww<sup>R</sup> (even palindromes) needs nondeterministic "guess the middle."</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Mental Model</h3>
+        <p><strong>DFA</strong> = person with a notecard (finite notes).<br>
+        <strong>PDA</strong> = person with a stack of plates (LIFO memory).<br>
+        <strong>TM</strong> = person with a scroll (random-access memory).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-number">20 / 20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- NAVIGATION -->
+<!-- ============================================================ -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 20;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+</script>
+
+</body>
+</html>

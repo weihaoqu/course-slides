@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turing Machines - CS305 Formal Language Theory</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ============================== SLIDE 1 ============================== -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>Turing Machines</h1>
+    <p class="subtitle">The Ultimate Model of Computation</p>
+    <div class="diagram" style="display:inline-block; text-align:left; font-size:0.85em;">
+  ... B B [ 1 ] [ 0 ] [ 1 ] [ 1 ] [ 0 ] B B ...
+               ^
+          +---------+
+          |  q_3    |
+          | Finite  |
+          | Control |
+          +---------+
+    </div>
+    <p class="subtitle" style="margin-top:30px;">CS305 - Formal Language Theory</p>
+    <p style="color:#64748b; font-size:0.95em;">Arrow keys or Space to navigate</p>
+  </div>
+  <div class="slide-number">1 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 2 ============================== -->
+<div class="slide" id="s2">
+  <h2>Big Picture: The Chomsky Hierarchy</h2>
+  <p>We've been climbing a ladder of computational power. The Turing Machine sits at the very top.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram" style="font-size:0.82em;">
++-----------------------------------------------+
+|  Type 0: Recursively Enumerable  (TM)         |
+|                                                |
+|  +----------------------------------------+   |
+|  |  Type 1: Context-Sensitive  (LBA)      |   |
+|  |                                        |   |
+|  |  +----------------------------------+  |   |
+|  |  |  Type 2: Context-Free  (PDA)     |  |   |
+|  |  |                                  |  |   |
+|  |  |  +----------------------------+  |  |   |
+|  |  |  | Type 3: Regular  (DFA/NFA) |  |  |   |
+|  |  |  +----------------------------+  |  |   |
+|  |  +----------------------------------+  |   |
+|  +----------------------------------------+   |
++-----------------------------------------------+
+      </div>
+    </div>
+    <div>
+      <table>
+        <tr><th>Type</th><th>Grammar</th><th>Machine</th></tr>
+        <tr><td>3</td><td>Regular</td><td>DFA / NFA</td></tr>
+        <tr><td>2</td><td>Context-Free</td><td>PDA</td></tr>
+        <tr><td>1</td><td>Context-Sensitive</td><td>LBA</td></tr>
+        <tr class="highlight"><td>0</td><td>Unrestricted</td><td>TM</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:20px;">
+        <h3>Key Idea</h3>
+        <p>Each level strictly contains the one below it. TMs can do <strong>everything</strong> the lower models can, and more.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">2 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 3 ============================== -->
+<div class="slide" id="s3">
+  <h2>Motivation: Why Go Beyond PDAs?</h2>
+  <p>PDAs are powerful, but there are simple-sounding languages they cannot recognize.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Languages PDAs Cannot Handle</h3>
+      <ul>
+        <li><strong>{ a<sup>n</sup>b<sup>n</sup>c<sup>n</sup> | n &ge; 1 }</strong> &mdash; needs to "count" three things at once, but a stack can only match two</li>
+        <li><strong>{ ww | w &isin; {a,b}* }</strong> &mdash; exact copy. The stack reverses, so it can match ww<sup>R</sup> but not ww</li>
+        <li><strong>{ a<sup>n</sup> | n is a perfect square }</strong> &mdash; requires arithmetic beyond stack counting</li>
+      </ul>
+      <div class="warning">
+        <h3>The Core Limitation</h3>
+        <p>A PDA's stack is <strong>LIFO</strong> (last-in, first-out). It can only access the top. It cannot "go back" or "look deeper" without destroying data above.</p>
+      </div>
+    </div>
+    <div>
+      <h3>What We Need</h3>
+      <ul>
+        <li>A memory that can be <strong>read and written</strong> anywhere</li>
+        <li>The ability to <strong>move left and right</strong> over the input</li>
+        <li><strong>Unlimited</strong> storage (not just a finite stack)</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>A PDA is like someone with a notepad who can only see the last line written. A Turing Machine is like someone with an <strong>infinitely long piece of scratch paper</strong> and a pencil &mdash; they can write, erase, and move freely.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">3 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 4 ============================== -->
+<div class="slide" id="s4">
+  <h2>Alan Turing and the Origins</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>The Year: 1936</h3>
+      <ul>
+        <li>No electronic computers existed yet</li>
+        <li>Mathematicians were asking: <em>"What does it mean for a problem to be computable?"</em></li>
+        <li>Alan Turing, a 23-year-old Cambridge mathematician, published <strong>"On Computable Numbers"</strong></li>
+        <li>He invented an abstract machine &mdash; not to build, but to <strong>define computation itself</strong></li>
+      </ul>
+      <div class="key-idea" style="margin-top:16px;">
+        <h3>Key Idea</h3>
+        <p>Turing didn't design a computer. He defined <strong>what "computable" means</strong>. His machine is a mathematical object, not an engineering blueprint.</p>
+      </div>
+    </div>
+    <div>
+      <h3>The Historical Context</h3>
+      <ul>
+        <li><strong>David Hilbert (1928)</strong> posed the <em>Entscheidungsproblem</em>: "Is there a mechanical procedure to decide all mathematical truths?"</li>
+        <li><strong>Alonzo Church (1936)</strong> answered "no" using lambda calculus</li>
+        <li><strong>Alan Turing (1936)</strong> independently answered "no" using his machines &mdash; and proved undecidability of the Halting Problem</li>
+      </ul>
+      <div class="warning">
+        <h3>Historical Note</h3>
+        <p>Church and Turing arrived at the same answer by different paths. Their equivalence is part of what gives us confidence in the Church-Turing Thesis (Slide 17).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">4 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 5 ============================== -->
+<div class="slide" id="s5">
+  <h2>The Turing Machine Model</h2>
+  <p>A TM consists of three parts: an <strong>infinite tape</strong>, a <strong>read/write head</strong>, and a <strong>finite control</strong>.</p>
+
+  <div class="diagram">
+                     The Tape (infinite in both directions)
+   +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+...|  B  |  B  |  0  |  1  |  1  |  0  |  1  |  B  |  B  |  B  |  B  |...
+   +-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+                            ^
+                            |
+                      +-----+-----+
+                      | Read/Write|
+                      |   Head    |
+                      +-----+-----+
+                            |
+                   +--------+--------+
+                   |                 |
+                   |  Finite Control |
+                   |  State: q_2    |
+                   |                 |
+                   +-----------------+
+  </div>
+
+  <div class="two-col" style="margin-top:10px;">
+    <div>
+      <h3>The Three Components</h3>
+      <ul>
+        <li><strong>Tape:</strong> Divided into cells, each holding one symbol. Extends infinitely in both directions. Blank symbol (B) fills unused cells.</li>
+        <li><strong>Head:</strong> Points to one cell at a time. Can <em>read</em> the symbol, <em>write</em> a new symbol, and <em>move</em> left or right.</li>
+        <li><strong>Finite Control:</strong> A finite set of states plus a transition function that dictates behavior.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Think of a Turing Machine as the <strong>simplest possible general-purpose computer</strong>. The tape is RAM (but infinite). The head is the read/write mechanism. The finite control is the CPU running a fixed program.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">5 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 6 ============================== -->
+<div class="slide" id="s6">
+  <h2>Key Differences from PDA</h2>
+  <p>The Turing Machine lifts every major restriction the PDA has.</p>
+
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>Feature</th><th>PDA</th><th>TM</th></tr>
+        <tr><td>Input</td><td>Read only</td><td>Read & Write</td></tr>
+        <tr><td>Head movement</td><td>Left to right only</td><td>Left & Right</td></tr>
+        <tr><td>Memory</td><td>Stack (LIFO)</td><td>Infinite tape</td></tr>
+        <tr><td>Memory access</td><td>Top of stack only</td><td>Any cell</td></tr>
+        <tr><td>Input handling</td><td>Separate input tape</td><td>Input on same tape</td></tr>
+        <tr><td>Acceptance</td><td>Final state or empty stack</td><td>Final state + halt</td></tr>
+        <tr class="highlight"><td>Power</td><td>Context-free</td><td>Recursively Enumerable</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="diagram" style="font-size:0.82em;">
+  PDA:
+  Input:  [ a ] [ b ] [ b ] [ a ] ---->
+                                   (one way)
+  Stack:  | a |
+          | b |     (can only see top)
+          +---+
+
+  TM:
+  Tape: ...[ a ][ b ][ b ][ a ][ B ]...
+              ^
+           &lt;--+--&gt;   (read, write, move
+            Head      either direction)
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The TM's tape replaces <em>both</em> the input tape and the stack. Input is written on the tape before computation begins, and the TM uses the rest of the tape as scratch space.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">6 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 7 ============================== -->
+<div class="slide" id="s7">
+  <h2>Formal Definition: The 7-Tuple</h2>
+  <p>A Turing Machine is formally defined as <strong>M = (Q, &Sigma;, &Gamma;, &delta;, q<sub>0</sub>, B, F)</strong></p>
+
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>Symbol</th><th>Name</th><th>Description</th></tr>
+        <tr><td><strong>Q</strong></td><td>States</td><td>Finite set of states</td></tr>
+        <tr><td><strong>&Sigma;</strong></td><td>Input alphabet</td><td>Symbols that appear in input (&Sigma; &sub; &Gamma;, B &notin; &Sigma;)</td></tr>
+        <tr><td><strong>&Gamma;</strong></td><td>Tape alphabet</td><td>All symbols that can appear on tape (&Sigma; &cup; {B} &sube; &Gamma;)</td></tr>
+        <tr><td><strong>&delta;</strong></td><td>Transition fn</td><td>Q &times; &Gamma; &rarr; Q &times; &Gamma; &times; {L, R}</td></tr>
+        <tr><td><strong>q<sub>0</sub></strong></td><td>Start state</td><td>q<sub>0</sub> &isin; Q</td></tr>
+        <tr><td><strong>B</strong></td><td>Blank symbol</td><td>B &isin; &Gamma; but B &notin; &Sigma;</td></tr>
+        <tr><td><strong>F</strong></td><td>Final states</td><td>F &sube; Q (accepting states)</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea: Input vs Tape Alphabet</h3>
+        <p><strong>&Sigma;</strong> is what the input is made of (e.g., {0, 1}). <strong>&Gamma;</strong> is everything that can be on the tape, including &Sigma;, the blank B, and any extra "work" symbols (e.g., X, Y for marking).</p>
+      </div>
+      <div class="diagram" style="font-size:0.85em;">
+Example:
+  Q = {q0, q1, q2, q3, q4}
+  &Sigma; = {0, 1}
+  &Gamma; = {0, 1, X, Y, B}
+  q0 = q0
+  B  = B  (the blank)
+  F  = {q4}
+      </div>
+      <div class="warning">
+        <h3>Watch Out</h3>
+        <p>The blank symbol B is in &Gamma; but NOT in &Sigma;. The input never contains blanks &mdash; blanks only appear as the "empty" cells on the tape.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">7 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 8 ============================== -->
+<div class="slide" id="s8">
+  <h2>The Transition Function</h2>
+  <p>Each transition has three parts: <strong>what to write</strong>, <strong>where to move</strong>, and <strong>which state to enter</strong>.</p>
+
+  <div class="diagram" style="font-size:1.1em; text-align:center;">
+                &delta;( q , X )  =  ( p , Y , D )
+                     |   |        |   |   |
+                     |   |        |   |   +-- Direction: L (left) or R (right)
+                     |   |        |   +------ Symbol to WRITE on tape
+                     |   |        +---------- New state to enter
+                     |   +------------------- Symbol currently READ from tape
+                     +----------------------- Current state
+  </div>
+
+  <div class="two-col" style="margin-top:10px;">
+    <div>
+      <h3>Reading a Transition</h3>
+      <p><strong>&delta;(q<sub>1</sub>, 0) = (q<sub>2</sub>, X, R)</strong></p>
+      <p>Means: "If you are in state q<sub>1</sub> and the head reads 0, then:</p>
+      <ul>
+        <li>Write <strong>X</strong> over the 0</li>
+        <li>Move the head <strong>right</strong></li>
+        <li>Go to state <strong>q<sub>2</sub></strong>"</li>
+      </ul>
+      <div class="diagram small">
+Before:          After:
+...[ 0 ][ 1 ]   ...[ X ][ 1 ]
+     ^                    ^
+    q1                   q2
+      </div>
+    </div>
+    <div>
+      <h3>Halting</h3>
+      <p>The TM <strong>halts</strong> when &delta;(q, X) is undefined &mdash; there is no transition for the current state and tape symbol.</p>
+      <ul>
+        <li><strong>Accept:</strong> Halt in a state q &isin; F</li>
+        <li><strong>Reject:</strong> Halt in a state q &notin; F</li>
+        <li><strong>Loop:</strong> Never halt (possible!)</li>
+      </ul>
+      <div class="warning">
+        <h3>Warning</h3>
+        <p>Unlike DFAs and PDAs, a TM might <strong>never stop</strong>. This is not a bug &mdash; it's a fundamental feature that leads to undecidability.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">8 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 9 ============================== -->
+<div class="slide" id="s9">
+  <h2>Instantaneous Description (ID)</h2>
+  <p>An ID captures the <strong>complete configuration</strong> of a TM at any point in its computation.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Format: X<sub>1</sub>X<sub>2</sub>...X<sub>i-1</sub> <strong>q</strong> X<sub>i</sub>...X<sub>n</sub></h3>
+      <p>The state symbol <strong>q</strong> appears immediately <em>before</em> the symbol the head is currently reading.</p>
+
+      <div class="diagram" style="font-size:0.9em;">
+Tape: ...B [ 0 ] [ 1 ] [ 1 ] [ 0 ] B...
+                   ^
+                 state q2
+
+ID:   0 q2 1 1 0
+
+  - "0" is to the left of the head
+  - "q2" is the current state
+  - "1 1 0" is at and to the right
+  - head reads the first symbol
+    after the state: "1"
+      </div>
+    </div>
+    <div>
+      <h3>Moves as ID Transitions</h3>
+      <p>If &delta;(q, X<sub>i</sub>) = (p, Y, R) then:</p>
+      <div class="diagram small">
+X1...Xi-1 q Xi Xi+1...Xn
+          |
+          v    (move right)
+X1...Xi-1 Y p Xi+1...Xn
+      </div>
+      <p>If &delta;(q, X<sub>i</sub>) = (p, Y, L) then:</p>
+      <div class="diagram small">
+X1...Xi-2 Xi-1 q Xi...Xn
+                |
+                v    (move left)
+X1...Xi-2 p Xi-1 Y...Xn
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>IDs let us write an entire computation as a sequence:
+        <br><strong>ID<sub>1</sub> |- ID<sub>2</sub> |- ID<sub>3</sub> |- ... |- ID<sub>n</sub></strong>
+        <br>where |- means "yields in one step."</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">9 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 10 ============================== -->
+<div class="slide" id="s10">
+  <h2>Example 1: TM for { 0<sup>n</sup>1<sup>n</sup> | n &ge; 1 }</h2>
+  <p>Strategy: <strong>Zig-zag</strong> across the tape, crossing off one 0 and one 1 on each pass.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Zig-Zag Strategy</h3>
+      <div class="diagram small">
+Pass 1:  [ 0 ][ 0 ][ 1 ][ 1 ]
+          ^
+         Cross off leftmost 0 (write X)
+         Scan right to find leftmost 1
+         Cross it off (write Y)
+         Scan left back to start
+
+         [ X ][ 0 ][ Y ][ 1 ]
+
+Pass 2:  Skip X's, find next 0
+         Cross it off (write X)
+         Scan right, skip Y's, find 1
+         Cross it off (write Y)
+         Scan left back
+
+         [ X ][ X ][ Y ][ Y ]
+
+Check:   No more 0's? No more 1's?
+         All matched => ACCEPT!
+      </div>
+    </div>
+    <div>
+      <h3>Transition Table</h3>
+      <table style="font-size:0.85em;">
+        <tr><th>State</th><th>Read</th><th>Write</th><th>Move</th><th>Next</th></tr>
+        <tr><td>q0</td><td>0</td><td>X</td><td>R</td><td>q1</td></tr>
+        <tr><td>q0</td><td>Y</td><td>Y</td><td>R</td><td>q3</td></tr>
+        <tr><td>q1</td><td>0</td><td>0</td><td>R</td><td>q1</td></tr>
+        <tr><td>q1</td><td>Y</td><td>Y</td><td>R</td><td>q1</td></tr>
+        <tr><td>q1</td><td>1</td><td>Y</td><td>L</td><td>q2</td></tr>
+        <tr><td>q2</td><td>0</td><td>0</td><td>L</td><td>q2</td></tr>
+        <tr><td>q2</td><td>Y</td><td>Y</td><td>L</td><td>q2</td></tr>
+        <tr><td>q2</td><td>X</td><td>X</td><td>R</td><td>q0</td></tr>
+        <tr><td>q3</td><td>Y</td><td>Y</td><td>R</td><td>q3</td></tr>
+        <tr class="highlight"><td>q3</td><td>B</td><td>B</td><td>R</td><td>q4</td></tr>
+      </table>
+      <p style="font-size:0.9em;"><strong>q4</strong> is the accept state. States: q0=find 0, q1=scan right for 1, q2=scan left, q3=verify done.</p>
+    </div>
+  </div>
+  <div class="slide-number">10 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 11 ============================== -->
+<div class="slide" id="s11">
+  <h2>Trace of TM on Input "0011"</h2>
+  <p>Following every step of the zig-zag algorithm on input 0011.</p>
+
+  <div class="diagram small" style="font-size:0.78em; line-height:1.5;">
+Step  State  Tape                     ID              Action
+----  -----  -----------------------  --------------  ---------------------------
+ 1    q0     [<span style="color:#fbbf24;">0</span>] 0  1  1  B         q0 0011        Read 0: write X, go R, -> q1
+ 2    q1      X [<span style="color:#fbbf24;">0</span>] 1  1  B         X q1 011       Read 0: skip, go R
+ 3    q1      X  0 [<span style="color:#fbbf24;">1</span>] 1  B         X0 q1 11       Read 1: write Y, go L, -> q2
+ 4    q2      X [<span style="color:#fbbf24;">0</span>] Y  1  B         X q2 0Y1       Read 0: skip, go L
+ 5    q2     [<span style="color:#fbbf24;">X</span>] 0  Y  1  B         q2 X0Y1       Read X: skip, go R, -> q0
+ 6    q0      X [<span style="color:#fbbf24;">0</span>] Y  1  B         X q0 0Y1       Read 0: write X, go R, -> q1
+ 7    q1      X  X [<span style="color:#fbbf24;">Y</span>] 1  B         XX q1 Y1       Read Y: skip, go R
+ 8    q1      X  X  Y [<span style="color:#fbbf24;">1</span>] B         XXY q1 1       Read 1: write Y, go L, -> q2
+ 9    q2      X  X [<span style="color:#fbbf24;">Y</span>] Y  B         XX q2 YY       Read Y: skip, go L
+10    q2      X [<span style="color:#fbbf24;">X</span>] Y  Y  B         X q2 XYY       Read X: skip, go R, -> q0
+11    q0      X  X [<span style="color:#fbbf24;">Y</span>] Y  B         XX q0 YY        Read Y: skip, go R, -> q3
+12    q3      X  X  Y [<span style="color:#fbbf24;">Y</span>] B         XXY q3 Y       Read Y: skip, go R
+13    q3      X  X  Y  Y [<span style="color:#fbbf24;">B</span>]        XXYY q3 B      Read B: -> q4  ACCEPT!
+  </div>
+
+  <div class="key-idea" style="margin-top:10px;">
+    <h3>Key Idea: Why It Works</h3>
+    <p>Each pass crosses off exactly one 0 and one 1. If all 0s and 1s get crossed off together, the counts were equal. If we run out of 1s before 0s (or vice versa), the TM halts in a non-accepting state.</p>
+  </div>
+  <div class="slide-number">11 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 12 ============================== -->
+<div class="slide" id="s12">
+  <h2>Example 2: TM as a Transducer &mdash; Binary Increment</h2>
+  <p>TMs can also <strong>compute functions</strong>, not just decide languages. Here: add 1 to a binary number.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Strategy</h3>
+      <ul>
+        <li>Start with the head at the <strong>rightmost bit</strong></li>
+        <li>If it's <strong>0</strong>: change to 1, done</li>
+        <li>If it's <strong>1</strong>: change to 0 (carry), move left, repeat</li>
+        <li>If it's <strong>B</strong> (blank, went past all digits): write 1 (carry into new position)</li>
+      </ul>
+
+      <div class="diagram small">
+&delta;(q0, 0) = (qf, 1, R)   -- flip 0->1, halt
+&delta;(q0, 1) = (q0, 0, L)   -- flip 1->0, carry
+&delta;(q0, B) = (qf, 1, R)   -- carry into blank
+      </div>
+    </div>
+    <div>
+      <h3>Trace: Increment 1011 (11 -> 12 = 1100)</h3>
+      <div class="diagram small">
+Tape:  [ 1 ][ 0 ][ 1 ][ 1 ]
+                          ^  q0
+Read 1: write 0, move L, stay q0
+
+Tape:  [ 1 ][ 0 ][ 1 ][ 0 ]
+                    ^  q0
+Read 1: write 0, move L, stay q0
+
+Tape:  [ 1 ][ 0 ][ 0 ][ 0 ]
+              ^  q0
+Read 0: write 1, HALT (qf)
+
+Tape:  [ 1 ][ 1 ][ 0 ][ 0 ]
+
+Result: 1011 + 1 = 1100
+   (11 in decimal + 1 = 12)
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy</h3>
+    <p>This is exactly how you add 1 by hand: start from the right, flip bits, and carry the 1 leftward until you find a 0 to absorb it.</p>
+  </div>
+  <div class="slide-number">12 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 13 ============================== -->
+<div class="slide" id="s13">
+  <h2>TM Programming Techniques</h2>
+  <p>Building TMs for complex tasks uses a few recurring "tricks."</p>
+
+  <div class="two-col">
+    <div>
+      <h3>1. Marking Symbols</h3>
+      <p>Replace a symbol with a "marked" version (e.g., 0 &rarr; X) to remember you've processed it. This is what our 0<sup>n</sup>1<sup>n</sup> TM did.</p>
+
+      <h3 class="mt">2. Shifting</h3>
+      <p>To insert or delete a symbol, shift all symbols right/left by one cell. Requires O(n) steps per shift.</p>
+      <div class="diagram small">
+Insert 'A' at position 3:
+Before: [ a ][ b ][ c ][ d ]
+After:  [ a ][ b ][ A ][ c ][ d ]
+      </div>
+
+      <h3 class="mt">3. Multiple Tracks</h3>
+      <p>Treat each tape cell as holding a <em>tuple</em> of symbols. E.g., one track for data, one for markers.</p>
+    </div>
+    <div>
+      <div class="diagram small">
+Multiple Tracks (single tape):
++-------+-------+-------+-------+
+| (0,#) | (1,*) | (1,#) | (0,#) |
++-------+-------+-------+-------+
+Track 1:  0  1  1  0   (data)
+Track 2:  #  *  #  #   (markers)
+
+&Gamma; includes all pairs: (0,#),(0,*),
+(1,#),(1,*), etc.
+      </div>
+
+      <h3>4. Subroutines</h3>
+      <p>Design a TM for a subtask (e.g., "shift right"), then "call" it by entering its start state, with a designated "return" state that hands control back.</p>
+
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>These techniques show that TMs, despite their simplicity, can simulate structured programming concepts: variables (marked cells), arrays (tape regions), and function calls (subroutines).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">13 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 14 ============================== -->
+<div class="slide" id="s14">
+  <h2>Multi-Tape Turing Machines</h2>
+  <p>A multi-tape TM has <strong>k tapes</strong>, each with its own independent read/write head.</p>
+
+  <div class="diagram">
+  Tape 1: ...[ B ][ a ][ b ][ b ][ a ][ B ]...       (input tape)
+                          ^
+  Tape 2: ...[ B ][ X ][ Y ][ B ][ B ][ B ]...       (work tape 1)
+                    ^
+  Tape 3: ...[ B ][ 1 ][ 0 ][ 1 ][ B ][ B ]...       (work tape 2)
+                              ^
+
+               +-----------------------+
+               |    Finite Control     |
+               | State: q_5            |
+               | Reads all 3 heads     |
+               | simultaneously        |
+               +-----------------------+
+  </div>
+
+  <div class="two-col" style="margin-top:10px;">
+    <div>
+      <h3>Transition</h3>
+      <p>&delta;(q, a<sub>1</sub>, a<sub>2</sub>, ..., a<sub>k</sub>) = (p, b<sub>1</sub>, b<sub>2</sub>, ..., b<sub>k</sub>, D<sub>1</sub>, D<sub>2</sub>, ..., D<sub>k</sub>)</p>
+      <p>Reads all k heads at once, writes to all, moves each independently.</p>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Equivalence Theorem</h3>
+        <p>Every multi-tape TM can be simulated by a <strong>single-tape TM</strong>. The single tape encodes all k tapes using multiple tracks and markers for head positions. This costs at most a <strong>polynomial slowdown</strong>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">14 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 15 ============================== -->
+<div class="slide" id="s15">
+  <h2>Nondeterministic Turing Machines</h2>
+  <p>A Nondeterministic TM (NTM) can have <strong>multiple possible transitions</strong> for the same (state, symbol) pair.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram small">
+Deterministic TM:
+  &delta;(q1, a) = (q2, b, R)
+  (exactly ONE choice)
+
+Nondeterministic TM:
+  &delta;(q1, a) = { (q2, b, R),
+                 (q3, a, L),
+                 (q5, c, R) }
+  (MULTIPLE choices -- pick any)
+      </div>
+
+      <h3 class="mt">Acceptance</h3>
+      <p>An NTM accepts if <strong>at least one</strong> computation path reaches an accepting state. Think of it as exploring a tree of possibilities.</p>
+
+      <div class="diagram small">
+              q0
+            / | \
+          q1  q2  q3
+         / \     / \
+       q4  q5  q6  q7 &lt;-- accept!
+               (reject)
+NTM accepts: q7 is reachable!
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Equivalence Theorem</h3>
+        <p>NTMs are <strong>equivalent in power</strong> to deterministic TMs. Every NTM can be simulated by a DTM (using breadth-first search of the computation tree).</p>
+      </div>
+      <div class="warning">
+        <h3>But There's a Catch</h3>
+        <p>The simulation may be <strong>exponentially slower</strong>. If the NTM runs in time t, the DTM simulation might take O(c<sup>t</sup>) steps. Whether this exponential blowup is <em>necessary</em> is the famous <strong>P vs NP problem</strong>!</p>
+      </div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>An NTM is like a "lucky guesser" &mdash; it always picks the right branch. A DTM is like a methodical searcher who has to try every branch. They solve the same problems, but the guesser might be much faster.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">15 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 16 ============================== -->
+<div class="slide" id="s16">
+  <h2>Decidable vs. Recognizable Languages</h2>
+  <p>TMs introduce a crucial distinction based on whether they always halt.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Decidable (Recursive)</h3>
+      <div class="diagram small">
+Input w
+  |
+  v
++--------+      +-----+
+|   TM   |----->| YES |  (accept)
+|        |      +-----+
+| ALWAYS |
+| HALTS  |      +-----+
+|        |----->| NO  |  (reject)
++--------+      +-----+
+
+Guaranteed: one of these two.
+      </div>
+      <p>The TM <strong>always halts</strong>, either accepting or rejecting. You always get a definitive answer.</p>
+    </div>
+    <div>
+      <h3>Recognizable (Recursively Enumerable)</h3>
+      <div class="diagram small">
+Input w
+  |
+  v
++--------+      +-----+
+|   TM   |----->| YES |  (accept)
+|        |      +-----+
+| MIGHT  |
+| LOOP   |      +----------+
+|        |----->| LOOP ... |  (no answer)
++--------+      +----------+
+
+If w is in L: TM accepts.
+If w is NOT in L: TM might loop
+                  forever!
+      </div>
+      <p>The TM accepts all strings in L, but may <strong>loop forever</strong> on strings not in L.</p>
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top:10px;">
+    <h3>Warning: This Distinction Matters!</h3>
+    <p>If a TM loops on input w, you can never be sure whether it will eventually halt or loop forever. There is no general way to detect this &mdash; that's the <strong>Halting Problem</strong>.</p>
+  </div>
+  <div class="slide-number">16 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 17 ============================== -->
+<div class="slide" id="s17">
+  <h2>The Church-Turing Thesis</h2>
+  <p>The most important <em>philosophical</em> claim in computer science.</p>
+
+  <div class="key-idea" style="font-size:1.1em; margin:20px 0;">
+    <h3>The Church-Turing Thesis</h3>
+    <p><em>"Every function that would naturally be regarded as computable can be computed by a Turing Machine."</em></p>
+    <p style="margin-top:10px;">Equivalently: <strong>if there's an algorithm for it, a TM can do it.</strong></p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>What It IS</h3>
+      <ul>
+        <li>A <strong>thesis</strong> (claim / belief / hypothesis)</li>
+        <li>Supported by overwhelming evidence</li>
+        <li>Every proposed model of computation (lambda calculus, recursive functions, Post systems, RAM machines, ...) turned out to be <strong>equivalent</strong> to TMs</li>
+        <li>No one has ever found a counterexample</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What It is NOT</h3>
+      <ul>
+        <li><strong>Not a theorem</strong> &mdash; it cannot be formally "proved"</li>
+        <li>Not about efficiency (a TM might be astronomically slow)</li>
+        <li>Could theoretically be "falsified" if someone found a new model that computes something TMs can't</li>
+      </ul>
+      <div class="warning">
+        <h3>Common Mistake</h3>
+        <p>Students often treat it as a proven fact. It is <strong>not a theorem</strong>. It is a universally accepted <strong>belief</strong> backed by 90 years of evidence. No proof exists because "effective procedure" has no formal definition outside of it.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">17 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 18 ============================== -->
+<div class="slide" id="s18">
+  <h2>Turing Machines and Modern Computers</h2>
+  <p>Your laptop is, in theory, no more powerful than a Turing Machine.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>What They Share</h3>
+      <div class="diagram small">
++-------------+     +-----------------+
+| Your Laptop |     | Turing Machine  |
++-------------+     +-----------------+
+| CPU         | <=> | Finite Control  |
+| RAM + Disk  | <=> | Infinite Tape   |
+| Program     | <=> | Transition fn   |
+| Input file  | <=> | Initial tape    |
++-------------+     +-----------------+
+
+Same languages recognized.
+Same functions computed.
+      </div>
+      <p>If a problem can be solved by any computer ever built, a TM can solve it too (and vice versa).</p>
+    </div>
+    <div>
+      <h3>The Differences</h3>
+      <ul>
+        <li><strong>Speed:</strong> Real computers are enormously faster (parallelism, caches, O(1) random access vs. O(n) tape traversal)</li>
+        <li><strong>Memory:</strong> Real computers have finite memory. TMs have infinite tape. But we can always "buy more RAM" &mdash; the TM just assumes we always have enough.</li>
+        <li><strong>Practicality:</strong> Nobody programs TMs. They're a <em>theoretical tool</em> for reasoning about what <em>can</em> and <em>can't</em> be computed.</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>A TM is to a computer what a free-body diagram is to a bridge. Nobody builds a bridge from a free-body diagram directly &mdash; but it tells you whether the bridge <em>can</em> stand.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">18 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 19 ============================== -->
+<div class="slide" id="s19">
+  <h2>Recursive and RE Languages</h2>
+  <p>The landscape of all languages, organized by TM decidability.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram">
++-------------------------------------------+
+| ALL LANGUAGES                             |
+|                                           |
+| +---------------------------------------+ |
+| | Recursively Enumerable (RE)           | |
+| |  TM that accepts all w in L           | |
+| |  (may loop on w not in L)             | |
+| |                                       | |
+| | +----------------------------------+  | |
+| | | Recursive (Decidable)            |  | |
+| | |  TM always halts                 |  | |
+| | |  Gives YES or NO                 |  | |
+| | |                                  |  | |
+| | |  {0^n 1^n}, {a^n b^n c^n},      |  | |
+| | |  {ww}, all CFLs, all regular     |  | |
+| | +----------------------------------+  | |
+| |                                       | |
+| |  Halting Problem (A_TM) is here       | |
+| |  (RE but NOT recursive)               | |
+| +---------------------------------------+ |
+|                                           |
+|  Some languages are NOT even RE!          |
+|  (e.g., complement of Halting Problem)    |
++-------------------------------------------+
+      </div>
+    </div>
+    <div>
+      <h3>co-RE Languages</h3>
+      <p>A language is <strong>co-RE</strong> if its <em>complement</em> is RE.</p>
+
+      <div class="key-idea">
+        <h3>Key Theorem</h3>
+        <p>A language L is <strong>recursive</strong> (decidable) if and only if <strong>both L and its complement</strong> are RE.</p>
+        <p style="margin-top:8px;">L is recursive &hArr; L &isin; RE &cap; co-RE</p>
+      </div>
+
+      <div class="diagram small">
+          RE            co-RE
+      +--------+    +--------+
+      |   A_TM |    | ~A_TM  |
+      |        |    |        |
+      | +----+ |    | +----+ |
+      | |Rec.| |    | |Rec.| |
+      | +----+ |    | +----+ |
+      +--------+    +--------+
+
+Recursive = RE &cap; co-RE
+      </div>
+      <p>If L is RE but not co-RE (like the Halting Problem), then L is undecidable.</p>
+    </div>
+  </div>
+  <div class="slide-number">19 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 20 ============================== -->
+<div class="slide" id="s20">
+  <h2>Closure Properties</h2>
+  <p>Which operations preserve decidability and recognizability?</p>
+
+  <div style="display:flex; justify-content:center;">
+    <table style="font-size:1.05em;">
+      <tr><th>Operation</th><th>Recursive (Decidable)</th><th>RE (Recognizable)</th></tr>
+      <tr><td>Union (L<sub>1</sub> &cup; L<sub>2</sub>)</td><td style="color:#34d399;">Closed</td><td style="color:#34d399;">Closed</td></tr>
+      <tr><td>Intersection (L<sub>1</sub> &cap; L<sub>2</sub>)</td><td style="color:#34d399;">Closed</td><td style="color:#34d399;">Closed</td></tr>
+      <tr><td>Complement (&overline;L})</td><td style="color:#34d399;">Closed</td><td style="color:#f87171;">NOT Closed</td></tr>
+      <tr><td>Concatenation (L<sub>1</sub>L<sub>2</sub>)</td><td style="color:#34d399;">Closed</td><td style="color:#34d399;">Closed</td></tr>
+      <tr><td>Kleene Star (L*)</td><td style="color:#34d399;">Closed</td><td style="color:#34d399;">Closed</td></tr>
+    </table>
+  </div>
+
+  <div class="two-col" style="margin-top:20px;">
+    <div>
+      <div class="key-idea">
+        <h3>Why Recursive is Closed Under Complement</h3>
+        <p>If TM M always halts and decides L, just <strong>swap accept and reject</strong>. The new TM decides the complement. Easy!</p>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Why RE is NOT Closed Under Complement</h3>
+        <p>If M might loop on strings not in L, "swapping accept/reject" doesn't help &mdash; you can't swap "loop forever" with "accept." If RE were closed under complement, then RE &cap; co-RE = RE, making everything decidable. But the Halting Problem shows that's false.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">20 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 21 ============================== -->
+<div class="slide" id="s21">
+  <h2>TM Variants: All Equivalent!</h2>
+  <p>Many variations of the TM have been proposed. Remarkably, they all have the <strong>exact same computational power</strong>.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Variants</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>Variant</th><th>Description</th></tr>
+        <tr><td>Multi-tape</td><td>k independent tapes + heads</td></tr>
+        <tr><td>Multi-track</td><td>Each cell holds a tuple of symbols</td></tr>
+        <tr><td>2-way infinite</td><td>Tape extends infinitely in both directions</td></tr>
+        <tr><td>Stay option</td><td>Head can stay put (L, R, or S)</td></tr>
+        <tr><td>Multi-head</td><td>Multiple heads on one tape</td></tr>
+        <tr><td>Nondeterministic</td><td>Multiple transitions per (state, symbol)</td></tr>
+        <tr><td>Enumerator</td><td>Prints strings instead of accepting</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="diagram small">
+Standard single-tape TM:
+  ...[ ][ ][ a ][ b ][ c ][ ][ ]...
+               ^
+          finite control
+
+is equivalent to ALL of these:
+
+  Multi-tape:     k tapes
+  Multi-head:     k heads, 1 tape
+  2-way infinite: ...&lt;----tape----&gt;...
+  Stay option:    head can stay
+  NTM:            branching choices
+      </div>
+      <div class="key-idea">
+        <h3>Why This Matters</h3>
+        <p>This robustness is <strong>evidence for the Church-Turing Thesis</strong>. No matter how you tweak the TM model, you get the same class of computable functions. The notion of computability seems to be a <em>natural</em>, model-independent concept.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">21 / 22</div>
+</div>
+
+<!-- ============================== SLIDE 22 ============================== -->
+<div class="slide" id="s22">
+  <h2>Summary &amp; Cheat Sheet</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>The TM in One Paragraph</h3>
+      <p>A Turing Machine is an abstract device with a <strong>finite control</strong>, an <strong>infinite tape</strong>, and a <strong>read/write head</strong>. It reads a symbol, writes a symbol, moves left or right, and changes state. It is the most powerful standard model of computation &mdash; anything computable is TM-computable.</p>
+
+      <h3 class="mt">Formal Definition</h3>
+      <div class="diagram small">
+M = (Q, &Sigma;, &Gamma;, &delta;, q0, B, F)
+
+&delta;: Q x &Gamma; --> Q x &Gamma; x {L, R}
+
+ID format: X1...Xi-1 q Xi...Xn
+  (state before symbol head reads)
+      </div>
+
+      <h3 class="mt">Key Techniques</h3>
+      <ul>
+        <li>Marking symbols (0 &rarr; X)</li>
+        <li>Zig-zag / shuttle strategy</li>
+        <li>Multiple tracks</li>
+        <li>Subroutines via state transitions</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Language Classes</h3>
+      <div class="diagram small">
+Decidable (Recursive):
+  TM halts on ALL inputs.
+  Closed: &cup;, &cap;, complement, concat, *
+
+RE (Recognizable):
+  TM accepts w &isin; L; may loop if w &notin; L.
+  Closed: &cup;, &cap;, concat, *
+  NOT closed: complement
+
+Recursive = RE &cap; co-RE
+      </div>
+
+      <h3 class="mt">Must-Know Facts</h3>
+      <div class="key-idea">
+        <ul>
+          <li><strong>Church-Turing Thesis</strong> is NOT a theorem</li>
+          <li>All TM variants (multi-tape, NTM, etc.) are <strong>equivalent</strong></li>
+          <li>NTM &rarr; DTM simulation may be <strong>exponentially slower</strong></li>
+          <li>TMs = modern computers in power (not speed)</li>
+          <li>RE but not Recursive: <strong>Halting Problem</strong></li>
+        </ul>
+      </div>
+
+      <h3 class="mt">Hierarchy Reminder</h3>
+      <div class="diagram small">
+Regular &sub; CFL &sub; Decidable &sub; RE &sub; All Languages
+ DFA      PDA    TM(halts)   TM
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">22 / 22</div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 22;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+</script>
+
+</body>
+</html>

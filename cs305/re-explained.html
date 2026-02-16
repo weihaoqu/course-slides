@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regular Expressions - CS305 Formal Language Theory</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.step { opacity: 0.25; transition: opacity 0.4s; margin: 8px 0; padding: 8px 12px; border-radius: 8px; }
+.step.revealed { opacity: 1; background: rgba(59,130,246,0.08); }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ===================== SLIDE 1: TITLE ===================== -->
+<div class="slide" id="s1">
+  <div class="center">
+    <h1>Regular Expressions</h1>
+    <p class="subtitle">CS305 -- Formal Language Theory</p>
+    <div class="diagram" style="display:inline-block; text-align:left; font-size:0.9em;">
+    "The algebraic notation for regular languages"
+
+         ____  _____
+        |  _ \| ____|
+        | |_) |  _|
+        |  _ &lt;| |___
+        |_| \_\_____|
+
+    Pattern  -->  Language  -->  Machine
+    </div>
+    <p class="mt" style="color:#64748b;">Use Arrow Keys or Space to navigate | Press S to reveal steps</p>
+  </div>
+  <div class="slide-number">1 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 2: BIG PICTURE ===================== -->
+<div class="slide" id="s2">
+  <h2>The Big Picture: Three Equivalent Views</h2>
+  <p>Regular Expressions, DFAs, and NFAs all describe the <strong>exact same class</strong> of languages: the <strong>regular languages</strong>.</p>
+  <div class="diagram">
+                    Regular Expressions (RE)
+                          /         \
+                         /           \
+                   convert            convert
+                   to NFA             from DFA
+                       /               \
+                      v                 v
+                   NFA  &lt;----------&gt;  DFA
+                      subset construction
+                      &amp; vice versa
+
+   +-----------+     +-----------+     +-----------+
+   |           |     |           |     |           |
+   |    RE     | === |    NFA    | === |    DFA    |
+   |           |     |           |     |           |
+   +-----------+     +-----------+     +-----------+
+        All three recognize EXACTLY the regular languages
+  </div>
+  <div class="key-idea">
+    <h3>Key Idea</h3>
+    <p>Any language you can describe with an RE, you can build a DFA for -- and vice versa. They are <strong>equally powerful</strong>. The proofs go around the triangle: RE --> NFA --> DFA --> RE.</p>
+  </div>
+  <div class="slide-number">2 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 3: WHAT IS A RE ===================== -->
+<div class="slide" id="s3">
+  <h2>What Is a Regular Expression?</h2>
+  <div class="two-col">
+    <div>
+      <p>A <strong>regular expression</strong> is a compact, algebraic notation for describing a <strong>set of strings</strong> (i.e., a language).</p>
+      <ul class="mt">
+        <li>Every RE defines a language L(R)</li>
+        <li>Built from a small set of operations</li>
+        <li>No memory, no counting -- just patterns</li>
+        <li>Equivalent in power to finite automata</li>
+      </ul>
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p><strong>Regex is to languages what arithmetic is to numbers.</strong> Just as 3 + 5 x 2 is a compact way to describe the number 13, the expression <code>(0|1)*01</code> is a compact way to describe "all binary strings ending in 01."</p>
+      </div>
+    </div>
+    <div>
+      <h3>Quick Examples</h3>
+      <table>
+        <tr><th>RE</th><th>Language</th></tr>
+        <tr><td><code>0</code></td><td>{ "0" }</td></tr>
+        <tr><td><code>0|1</code></td><td>{ "0", "1" }</td></tr>
+        <tr><td><code>01</code></td><td>{ "01" }</td></tr>
+        <tr><td><code>0*</code></td><td>{ "", "0", "00", "000", ... }</td></tr>
+        <tr><td><code>(0|1)*</code></td><td>All binary strings</td></tr>
+        <tr class="highlight"><td><code>(0|1)*01</code></td><td>Binary strings ending in 01</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number">3 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 4: THREE BASIC OPS ===================== -->
+<div class="slide" id="s4">
+  <h2>The Three Basic Operations</h2>
+  <p>Every regular expression is built from just <strong>three operations</strong>:</p>
+  <div class="two-col mt">
+    <div>
+      <div class="step">
+        <h3>1. Union (|)</h3>
+        <p>R1 | R2 = "either R1 or R2"</p>
+        <div class="diagram small">
+  L(R1 | R2) = L(R1) ∪ L(R2)
+
+  Example: 0 | 1 = { "0", "1" }
+
+       +--- R1 ---+
+       |           |
+  -->--+           +-->--
+       |           |
+       +--- R2 ---+
+        </div>
+      </div>
+      <div class="step">
+        <h3>2. Concatenation (.)</h3>
+        <p>R1 R2 = "R1 followed by R2"</p>
+        <div class="diagram small">
+  L(R1 . R2) = { xy : x in L(R1), y in L(R2) }
+
+  Example: 0 . 1 = { "01" }
+
+  -->-- R1 -->-- R2 -->--
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="step">
+        <h3>3. Kleene Star (*)</h3>
+        <p>R* = "zero or more copies of R"</p>
+        <div class="diagram small">
+  L(R*) = { e, w, ww, www, ... : w in L(R) }
+
+  Example: 0* = { "", "0", "00", "000", ... }
+
+            +---+
+            |   |
+  -->-- ( --+-R-+-- ) -->--
+        |               |
+        +--- epsilon ---+
+        </div>
+      </div>
+      <div class="key-idea">
+        <h3>That's It!</h3>
+        <p>Union, Concatenation, and Kleene Star -- these three operations are <strong>all you need</strong> to build every regular expression. They are like LEGO bricks: simple pieces, infinite combinations.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">4 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 5: FORMAL DEFINITION ===================== -->
+<div class="slide" id="s5">
+  <h2>Formal Definition (Recursive)</h2>
+  <p>A regular expression over alphabet &Sigma; is defined <strong>inductively</strong>:</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Base Cases</h3>
+      <div class="step">
+        <div class="diagram small">
+  1.  &empty;   is a RE.    L(&empty;) = {}        (empty set)
+
+  2.  &epsilon;   is a RE.    L(&epsilon;) = {""}      (set containing
+                                       empty string)
+
+  3.  a   is a RE     L(a) = {"a"}     (single symbol
+      for each                          from alphabet)
+      a in &Sigma;
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Inductive Cases</h3>
+      <div class="step">
+        <div class="diagram small">
+  If R1 and R2 are REs, then:
+
+  4.  (R1 | R2)  is a RE.
+      L(R1 | R2) = L(R1) ∪ L(R2)
+
+  5.  (R1 R2)    is a RE.
+      L(R1 R2)   = L(R1) . L(R2)
+
+  6.  (R1*)      is a RE.
+      L(R1*)     = (L(R1))*
+        </div>
+      </div>
+      <div class="step">
+        <p><strong>Nothing else is a regular expression.</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="warning mt">
+    <h3>Watch Out: &empty; vs &epsilon;</h3>
+    <p><strong>&empty;</strong> matches <em>nothing at all</em> (the empty language -- no strings). <strong>&epsilon;</strong> matches <em>one thing</em>: the empty string "". They are NOT the same!</p>
+    <p>&bull; L(&empty;) = { } &nbsp;&nbsp;(0 elements) &nbsp;&nbsp;&nbsp; &bull; L(&epsilon;) = { "" } &nbsp;&nbsp;(1 element)</p>
+  </div>
+  <div class="slide-number">5 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 6: OPERATOR PRECEDENCE ===================== -->
+<div class="slide" id="s6">
+  <h2>Operator Precedence</h2>
+  <p>Just like arithmetic has PEMDAS, regular expressions have a precedence order:</p>
+  <div class="diagram" style="font-size: 1.1em;">
+   Highest   +-----------+
+   priority  |  * Star   |   Bind tightest (like exponents)
+             +-----------+
+             |  . Concat |   Middle        (like multiplication)
+             +-----------+
+   Lowest    |  | Union  |   Bind loosest  (like addition)
+   priority  +-----------+
+  </div>
+  <div class="two-col mt">
+    <div>
+      <h3>Why It Matters</h3>
+      <div class="step">
+        <p><code>ab|c</code> means <code>(ab)|c</code> not <code>a(b|c)</code></p>
+        <p style="color:#94a3b8;">= {"ab", "c"} not {"ab", "ac"}</p>
+      </div>
+      <div class="step">
+        <p><code>ab*</code> means <code>a(b*)</code> not <code>(ab)*</code></p>
+        <p style="color:#94a3b8;">= {"a", "ab", "abb", ...} not {"", "ab", "abab", ...}</p>
+      </div>
+      <div class="step">
+        <p><code>a|bc*</code> means <code>a|(b(c*))</code></p>
+        <p style="color:#94a3b8;">= {"a", "b", "bc", "bcc", ...}</p>
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Arithmetic Parallel</h3>
+        <table>
+          <tr><th>Arithmetic</th><th>Regex</th></tr>
+          <tr><td>Exponent (^)</td><td>Star (*)</td></tr>
+          <tr><td>Multiply (x)</td><td>Concat (.)</td></tr>
+          <tr><td>Add (+)</td><td>Union (|)</td></tr>
+        </table>
+        <p class="mt" style="font-size:0.95em;">Just as <code>2+3x4 = 14</code> (not 20),<br><code>a|bc = {a, bc}</code> (not {ac, bc}).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">6 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 7: READING REs ===================== -->
+<div class="slide" id="s7">
+  <h2>Examples: Reading Regular Expressions</h2>
+  <p>Given an RE, describe the language it generates:</p>
+  <div class="step">
+    <div class="two-col">
+      <div>
+        <h3>Example 1: <code>a(a|b)*</code></h3>
+        <div class="diagram small">
+Parse tree:
+  concat
+  /    \
+ a    star(*)
+       |
+    union(|)
+    /     \
+   a       b
+
+Language: Strings over {a,b} that
+          START with 'a'
+  {"a", "aa", "ab", "aab", "aba", ...}
+        </div>
+      </div>
+      <div>
+        <h3>Example 2: <code>(aa|bb)(a|b)*</code></h3>
+        <div class="diagram small">
+Parse tree:
+     concat
+     /    \
+  union   star(*)
+  /   \     |
+ aa   bb  union
+          /   \
+         a     b
+
+Language: Strings that start with
+          "aa" or "bb"
+  {"aa", "bb", "aaa", "bba", ...}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="two-col">
+      <div>
+        <h3>Example 3: <code>(0|1)*0</code></h3>
+        <p>Any binary string ending in 0<br>= { "0", "00", "10", "010", "110", ... }</p>
+      </div>
+      <div>
+        <h3>Example 4: <code>a*b*c*</code></h3>
+        <p>Zero or more a's, then zero or more b's, then zero or more c's<br>= { "", "a", "b", "c", "ab", "abc", "aabbc", ... }</p>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="key-idea">
+      <h3>Reading Strategy</h3>
+      <p>1. Identify the <strong>outermost operation</strong> (lowest precedence). 2. Break into sub-expressions. 3. Describe each part in English. 4. Combine the descriptions.</p>
+    </div>
+  </div>
+  <div class="slide-number">7 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 8: WRITING REs ===================== -->
+<div class="slide" id="s8">
+  <h2>Examples: Writing Regular Expressions</h2>
+  <p>Given a language description, write the RE:</p>
+  <div class="step">
+    <div class="two-col">
+      <div>
+        <h3>Language 1</h3>
+        <p>"All binary strings of length exactly 3"</p>
+        <div class="diagram small">
+Think: 3 symbols, each is 0 or 1
+
+Answer: (0|1)(0|1)(0|1)
+
+Check: 000 ✓  010 ✓  111 ✓
+       0 ✗    0011 ✗  ✓!
+        </div>
+      </div>
+      <div>
+        <h3>Language 2</h3>
+        <p>"All binary strings containing 010"</p>
+        <div class="diagram small">
+Think: something, then 010, then something
+
+Answer: (0|1)*010(0|1)*
+
+Check: 010 ✓  10101 ✓  111 ✗  ✓!
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="two-col">
+      <div>
+        <h3>Language 3</h3>
+        <p>"Strings over {a,b} with even length"</p>
+        <div class="diagram small">
+Think: pairs of symbols, repeated
+
+Answer: ((a|b)(a|b))*
+
+Check: "" ✓  "ab" ✓  "a" ✗
+       "abba" ✓  ✓!
+        </div>
+      </div>
+      <div>
+        <h3>Language 4</h3>
+        <p>"Strings over {0,1} with no consecutive 1s"</p>
+        <div class="diagram small">
+Think: after each 1, must see 0 or end
+
+Answer: (0|10)*(1|&epsilon;)
+
+Check: "" ✓  "0" ✓  "101" ✓
+       "11" ✗  "010" ✓  ✓!
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="analogy mt">
+    <h3>Writing Strategy</h3>
+    <p><strong>Think in building blocks:</strong> (1) What must appear? (2) What can repeat? (3) What are the choices? Combine using concat for "then," union for "or," and star for "repeat."</p>
+  </div>
+  <div class="slide-number">8 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 9: THOMPSON OVERVIEW ===================== -->
+<div class="slide" id="s9">
+  <h2>RE to &epsilon;-NFA: Thompson's Construction</h2>
+  <p>We can systematically convert <strong>any RE into an equivalent NFA</strong> using Thompson's Construction (1968).</p>
+  <div class="diagram">
+   The Idea: Build the NFA like LEGO
+   ====================================
+
+   1. Each sub-expression gets its own small NFA "fragment"
+
+         +-------------------+
+    ---->| start       accept|---->
+         +-------------------+
+              "fragment"
+
+   2. Fragments have EXACTLY:
+      - One start state  (no incoming edges from outside)
+      - One accept state (no outgoing edges from outside)
+
+   3. Combine fragments using rules for |, ., and *
+
+   4. The structure mirrors the parse tree of the RE!
+  </div>
+  <div class="analogy">
+    <h3>Analogy: LEGO Bricks</h3>
+    <p>Think of each base case (symbol, &epsilon;) as a basic LEGO brick. Union, concatenation, and star are <strong>ways to snap bricks together</strong>. You build bottom-up, combining small NFAs into bigger ones, until you have one NFA for the whole RE.</p>
+  </div>
+  <div class="slide-number">9 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 10: THOMPSON BASE CASES ===================== -->
+<div class="slide" id="s10">
+  <h2>Thompson's Construction: Base Cases</h2>
+  <div class="two-col">
+    <div>
+      <h3>Empty String &epsilon;</h3>
+      <div class="diagram">
+  NFA for &epsilon;:
+
+      &epsilon;
+  (q0)----->(q1)
+  start     accept
+
+
+  L = { "" }
+  Accepts only the empty string.
+      </div>
+      <h3 class="mt">Empty Set &empty;</h3>
+      <div class="diagram">
+  NFA for &empty;:
+
+  (q0)      (q1)
+  start     accept
+
+  No transition at all!
+  L = { }
+  Accepts nothing.
+      </div>
+    </div>
+    <div>
+      <h3>Single Symbol a</h3>
+      <div class="diagram">
+  NFA for symbol 'a':
+
+       a
+  (q0)----->(q1)
+  start     accept
+
+
+  L = { "a" }
+  Accepts only the string "a".
+      </div>
+      <div class="key-idea mt">
+        <h3>Properties of Every Fragment</h3>
+        <ul>
+          <li>Exactly <strong>one</strong> start state</li>
+          <li>Exactly <strong>one</strong> accept state</li>
+          <li>Start state has no incoming edges</li>
+          <li>Accept state has no outgoing edges</li>
+        </ul>
+        <p class="mt">These invariants let us compose fragments cleanly!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">10 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 11: THOMPSON UNION ===================== -->
+<div class="slide" id="s11">
+  <h2>Thompson's Construction: Union (R1 | R2)</h2>
+  <p>"Accept if <strong>either</strong> R1 or R2 matches."</p>
+  <div class="diagram">
+  Given NFA fragments for R1 and R2:
+
+  R1:  (s1)---[...]--->(f1)         R2:  (s2)---[...]--->(f2)
+
+
+  Build NFA for R1 | R2:
+
+                    &epsilon;    +------------------+    &epsilon;
+               +-------->| s1   NFA(R1)   f1 |--------+
+               |         +------------------+         |
+               |                                      v
+          ( start )                               ( accept )
+               |                                      ^
+               |         +------------------+         |
+               +-------->| s2   NFA(R2)   f2 |--------+
+                    &epsilon;    +------------------+    &epsilon;
+
+
+  Detail:
+    - NEW start state with &epsilon;-transitions to s1 and s2
+    - f1 and f2 get &epsilon;-transitions to NEW accept state
+    - s1, f1, s2, f2 are no longer start/accept
+  </div>
+  <div class="key-idea">
+    <h3>Why This Works</h3>
+    <p>From the new start, the NFA <strong>nondeterministically guesses</strong> which branch (R1 or R2) will match. If <em>either</em> branch reaches its old accept state, the &epsilon;-transition carries us to the new accept state.</p>
+  </div>
+  <div class="slide-number">11 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 12: THOMPSON CONCAT ===================== -->
+<div class="slide" id="s12">
+  <h2>Thompson's Construction: Concatenation (R1 R2)</h2>
+  <p>"Accept if R1 matches a prefix and R2 matches the rest."</p>
+  <div class="diagram">
+  Given NFA fragments for R1 and R2:
+
+  R1:  (s1)---[...]--->(f1)         R2:  (s2)---[...]--->(f2)
+
+
+  Build NFA for R1 . R2:
+
+  +------------------+    &epsilon;    +------------------+
+  | s1   NFA(R1)   f1 |-------->| s2   NFA(R2)   f2 |
+  +------------------+         +------------------+
+   ^                                              |
+   start                                      accept
+
+
+  Detail:
+    - Start state = s1  (start of R1)
+    - f1 gets &epsilon;-transition to s2
+    - Accept state = f2  (accept of R2)
+    - f1 is no longer an accept state
+    - s2 is no longer a start state
+
+  The input must pass through R1 first, then R2.
+  </div>
+  <div class="analogy">
+    <h3>Analogy: Train Cars</h3>
+    <p>Concatenation is like <strong>coupling train cars</strong>. The output of the first car (R1) connects directly to the input of the second car (R2). A string must ride through both to be accepted.</p>
+  </div>
+  <div class="slide-number">12 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 13: THOMPSON STAR ===================== -->
+<div class="slide" id="s13">
+  <h2>Thompson's Construction: Kleene Star (R*)</h2>
+  <p>"Accept zero or more repetitions of R."</p>
+  <div class="diagram">
+  Given NFA fragment for R:
+
+  R:   (s1)---[...]--->(f1)
+
+
+  Build NFA for R*:
+
+                          &epsilon;
+                   +------------------+
+                   |                  |
+                   v                  |
+  ( start )--&epsilon;-->(s1)---[NFA(R)]--->(f1)--&epsilon;-->( accept )
+      |                                              ^
+      |                                              |
+      +-------------------&epsilon;-----------------------+
+                    (skip: zero copies)
+
+
+  Detail:
+    - NEW start state  --&epsilon;-->  s1        (enter R)
+    - NEW start state  --&epsilon;-->  NEW accept (skip R entirely = &epsilon;)
+    - f1               --&epsilon;-->  s1        (loop back for another copy)
+    - f1               --&epsilon;-->  NEW accept (done repeating)
+  </div>
+  <div class="warning">
+    <h3>Critical: The &epsilon;-bypass</h3>
+    <p>The bottom &epsilon;-transition from start directly to accept is what makes R* accept the <strong>empty string</strong>. Without it, we would need at least one copy of R (that would be R<sup>+</sup>, not R*).</p>
+  </div>
+  <div class="slide-number">13 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 14: COMPLETE EXAMPLE ===================== -->
+<div class="slide" id="s14">
+  <h2>Complete Example: (0|1)*01 to NFA</h2>
+  <p>Let's convert the RE <code>(0|1)*01</code> step by step.</p>
+  <div class="step">
+    <h3>Step 1: Parse the expression</h3>
+    <div class="diagram small">
+  (0|1)*01  =  concat( star( union(0, 1) ), concat(0, 1) )
+
+  Parse tree:        concat
+                    /      \
+                 star     concat
+                  |       /    \
+               union     0      1
+               /   \
+              0     1
+    </div>
+  </div>
+  <div class="step">
+    <h3>Step 2: Build base fragments</h3>
+    <div class="diagram small">
+  NFA(0): (A)--0-->(B)       NFA(1): (C)--1-->(D)
+
+  NFA(0): (E)--0-->(F)       NFA(1): (G)--1-->(H)
+   (for the final "01")       (for the final "01")
+    </div>
+  </div>
+  <div class="step">
+    <h3>Step 3: Build union(0,1), then star, then full NFA</h3>
+    <div class="diagram small">
+                         &epsilon;                            &epsilon;
+                   +--->(A)--0-->(B)---+
+                   |                   v        &epsilon;          &epsilon;
+  -->(start)--&epsilon;-->(q)                  (r)--+--->( )--&epsilon;-->(E)--0-->(F)--&epsilon;-->(G)--1-->((H))
+      |            |                   ^     |
+      +----&epsilon;---+  +--->(C)--1-->(D)---+     |
+                |  |    &epsilon;               &epsilon;      |
+                |  +--------&epsilon;-----------+     |
+                |                              |
+                +--------------&epsilon;--------------+
+
+  Key: (start)=start of star, ( )=start of "01" part, ((H))=final accept
+    </div>
+  </div>
+  <div class="key-idea">
+    <h3>Result</h3>
+    <p>The NFA has about 10 states. It accepts all binary strings ending in "01". The &epsilon;-transitions allow the NFA to loop through the (0|1)* part any number of times, then commit to reading 0 then 1.</p>
+  </div>
+  <div class="slide-number">14 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 15: STATE ELIMINATION OVERVIEW ===================== -->
+<div class="slide" id="s15">
+  <h2>DFA to RE: State Elimination Method</h2>
+  <p>To convert a DFA (or NFA) back to a regular expression, we use <strong>state elimination</strong>.</p>
+  <div class="diagram">
+  The Idea:
+  =========
+  1. Start with the DFA
+
+  2. Add a NEW unique start state  (s) --&epsilon;--> old start
+     Add a NEW unique accept state: old accepts --&epsilon;--> (f)
+
+  3. Remove states ONE BY ONE (not s or f)
+     - When removing state q, replace transitions
+       through q with RE-labeled transitions
+
+  4. When only s and f remain, the label on
+     the single edge s --> f is the answer RE!
+
+  Before:                     After removing q_rip:
+  +----+  R1   +------+  R3   +----+
+  | qi |------>| q_rip|------>| qj |
+  +----+       +------+       +----+
+                  ^ |
+               R2 | | R2
+                  +-+
+
+  +----+     R1 R2* R3      +----+
+  | qi |------------------->| qj |     (plus any direct qi-->qj edge)
+  +----+                    +----+
+  </div>
+  <div class="key-idea">
+    <h3>Core Rule for Removing State q</h3>
+    <p>For every pair (qi, qj) that both connect through q: the new label on qi-->qj becomes: <code>(old label qi-->qj) | (label qi-->q)(label q-->q)*(label q-->qj)</code></p>
+  </div>
+  <div class="slide-number">15 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 16: STATE ELIMINATION EXAMPLE ===================== -->
+<div class="slide" id="s16">
+  <h2>State Elimination: Worked Example</h2>
+  <p>Convert this DFA to a RE. It accepts binary strings ending in 1.</p>
+  <div class="step">
+    <h3>Step 1: Original DFA + new start/accept</h3>
+    <div class="diagram small">
+                  0              1
+  (s)--&epsilon;-->(q0)------>(q0)  (q0)------>(q1)--&epsilon;-->(f)
+                   ^                  |
+                   |     0            |
+                   +-------(q1)&lt;------+
+                             |
+                             | 1
+                             v
+                           (q1) [loop on 1 to q1... see table]
+
+  Transition table:
+    q0 --0--> q0,  q0 --1--> q1
+    q1 --0--> q0,  q1 --1--> q1
+  With added:  s --&epsilon;--> q0,   q1 --&epsilon;--> f
+    </div>
+  </div>
+  <div class="step">
+    <h3>Step 2: Eliminate q0</h3>
+    <div class="diagram small">
+  q0 has:  self-loop on "0",  incoming &epsilon; from s,  outgoing "1" to q1
+  Also: q1 --"0"--> q0 (incoming from q1)
+
+  For path s --> q0 --> q1:    &epsilon; . 0* . 1    =  0*1
+  For path q1 --> q0 --> q1:   0 . 0* . 1       =  00*1 = 0+1
+  (where 0+ means one or more 0s, i.e., 00*)
+
+  After eliminating q0:
+  (s)---0*1--->(q1)--&epsilon;-->(f)
+                 ^  |
+                 +--+
+              0*1|1  (self: old "1" | new "00*1")
+                    = (1|00*1)
+    </div>
+  </div>
+  <div class="step">
+    <h3>Step 3: Eliminate q1</h3>
+    <div class="diagram small">
+  q1 has:  self-loop "(1|00*1)",  incoming "0*1" from s,  outgoing "&epsilon;" to f
+
+  For path s --> q1 --> f:  0*1 . (1|00*1)* . &epsilon;
+
+  Result:  (s)---0*1(1|00*1)*--->(f)
+
+  Final RE:  0*1(1|00*1)*
+
+  Simplifies to:  (0|1)*1   (all binary strings ending in 1)
+    </div>
+  </div>
+  <div class="slide-number">16 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 17: ALGEBRAIC LAWS ===================== -->
+<div class="slide" id="s17">
+  <h2>Algebraic Laws of Regular Expressions</h2>
+  <p>REs obey many useful identities. These help simplify expressions.</p>
+  <div class="two-col">
+    <div>
+      <h3>Union Laws</h3>
+      <table>
+        <tr><th>Law</th><th>Rule</th></tr>
+        <tr><td>Commutative</td><td>R | S = S | R</td></tr>
+        <tr><td>Associative</td><td>(R|S)|T = R|(S|T)</td></tr>
+        <tr><td>Idempotent</td><td>R | R = R</td></tr>
+        <tr><td>Identity</td><td>R | &empty; = R</td></tr>
+      </table>
+      <h3 class="mt">Concatenation Laws</h3>
+      <table>
+        <tr><th>Law</th><th>Rule</th></tr>
+        <tr><td>Associative</td><td>(RS)T = R(ST)</td></tr>
+        <tr><td>Identity</td><td>R&epsilon; = &epsilon;R = R</td></tr>
+        <tr><td>Annihilator</td><td>R&empty; = &empty;R = &empty;</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Distributivity</h3>
+      <table>
+        <tr><th>Law</th><th>Rule</th></tr>
+        <tr><td>Left dist.</td><td>R(S|T) = RS | RT</td></tr>
+        <tr><td>Right dist.</td><td>(S|T)R = SR | TR</td></tr>
+      </table>
+      <h3 class="mt">Star Laws</h3>
+      <table>
+        <tr><th>Law</th><th>Rule</th></tr>
+        <tr><td>Star idem.</td><td>(R*)* = R*</td></tr>
+        <tr><td>Star of &epsilon;</td><td>&epsilon;* = &epsilon;</td></tr>
+        <tr><td>Star of &empty;</td><td>&empty;* = &epsilon;</td></tr>
+      </table>
+      <div class="warning mt">
+        <h3>Not Commutative!</h3>
+        <p>Concatenation is <strong>NOT</strong> commutative. <code>ab ≠ ba</code>. Order matters!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">17 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 18: THEORY vs PRACTICE ===================== -->
+<div class="slide" id="s18">
+  <h2>Theory vs Practice: Regex in Programming</h2>
+  <p>The "regex" in Python/Java/etc. is <strong>more powerful</strong> than theoretical REs!</p>
+  <div class="two-col">
+    <div>
+      <h3>Theoretical RE (CS305)</h3>
+      <ul>
+        <li>Only: union, concat, star</li>
+        <li>Describes exactly the regular languages</li>
+        <li>Equivalent to DFA/NFA</li>
+        <li>Always runs in O(n) time</li>
+        <li>Cannot count or match patterns like a<sup>n</sup>b<sup>n</sup></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Practical Regex (Programming)</h3>
+      <ul>
+        <li>Adds: <code>+, ?, {n,m}, [a-z], \d, \w</code></li>
+        <li><code>.</code> for any character</li>
+        <li><strong>Backreferences</strong>: <code>\1, \2</code> (NOT regular!)</li>
+        <li><strong>Lookahead/lookbehind</strong></li>
+        <li>Can cause exponential blowup!</li>
+      </ul>
+    </div>
+  </div>
+  <div class="mt">
+    <table style="width:100%;">
+      <tr><th>Feature</th><th>Theoretical</th><th>Practical</th><th>Still Regular?</th></tr>
+      <tr><td><code>R+</code> (one or more)</td><td>Write as RR*</td><td>Built-in</td><td style="color:#34d399;">Yes</td></tr>
+      <tr><td><code>R?</code> (optional)</td><td>Write as R|&epsilon;</td><td>Built-in</td><td style="color:#34d399;">Yes</td></tr>
+      <tr><td><code>[a-z]</code></td><td>Write as a|b|...|z</td><td>Built-in</td><td style="color:#34d399;">Yes</td></tr>
+      <tr><td><code>R{3,5}</code></td><td>Write as RRR|RRRR|RRRRR</td><td>Built-in</td><td style="color:#34d399;">Yes</td></tr>
+      <tr class="highlight"><td><code>\1</code> backreference</td><td>Cannot express</td><td>Built-in</td><td style="color:#f87171;">NO!</td></tr>
+      <tr class="highlight"><td>Lookahead <code>(?=...)</code></td><td>Cannot express</td><td>Built-in</td><td style="color:#f87171;">NO!</td></tr>
+    </table>
+  </div>
+  <div class="warning mt">
+    <h3>ReDoS: When Regex Goes Wrong</h3>
+    <p>Backreferences can make regex matching <strong>NP-hard</strong>. Poorly written patterns like <code>(a+)+</code> can cause catastrophic backtracking -- a real security vulnerability called <strong>ReDoS</strong>.</p>
+  </div>
+  <div class="slide-number">18 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 19: COMMON PATTERNS ===================== -->
+<div class="slide" id="s19">
+  <h2>Common RE Patterns</h2>
+  <p>Useful regular expression patterns for common language descriptions.</p>
+  <div class="two-col">
+    <div>
+      <h3>Over &Sigma; = {0, 1}</h3>
+      <table style="font-size:0.95em;">
+        <tr><th>Language</th><th>RE</th></tr>
+        <tr><td>All strings</td><td><code>(0|1)*</code></td></tr>
+        <tr><td>Strings starting with 1</td><td><code>1(0|1)*</code></td></tr>
+        <tr><td>Strings ending in 00</td><td><code>(0|1)*00</code></td></tr>
+        <tr><td>Strings containing 101</td><td><code>(0|1)*101(0|1)*</code></td></tr>
+        <tr><td>Even-length strings</td><td><code>((0|1)(0|1))*</code></td></tr>
+        <tr><td>Strings of only 0s</td><td><code>0*</code></td></tr>
+        <tr><td>Non-empty strings</td><td><code>(0|1)(0|1)*</code></td></tr>
+        <tr><td>Exactly three characters</td><td><code>(0|1)(0|1)(0|1)</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Over &Sigma; = {a, b}</h3>
+      <table style="font-size:0.95em;">
+        <tr><th>Language</th><th>RE</th></tr>
+        <tr><td>Starts and ends with a</td><td><code>a(a|b)*a | a</code></td></tr>
+        <tr><td>Contains at least two b's</td><td><code>(a|b)*b(a|b)*b(a|b)*</code></td></tr>
+        <tr><td>No two consecutive a's</td><td><code>(b|ab)*(a|&epsilon;)</code></td></tr>
+        <tr><td>Every a followed by b</td><td><code>(b|ab)*</code></td></tr>
+        <tr><td>Alternating a's and b's</td><td><code>(ab)*(a|&epsilon;) | (ba)*(b|&epsilon;)</code></td></tr>
+      </table>
+      <div class="key-idea mt">
+        <h3>Building Block Patterns</h3>
+        <p><code>&Sigma;*</code> = anything,<br>
+          <code>&Sigma;* w &Sigma;*</code> = contains w,<br>
+          <code>w &Sigma;*</code> = starts with w,<br>
+          <code>&Sigma;* w</code> = ends with w</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">19 / 20</div>
+</div>
+
+<!-- ===================== SLIDE 20: SUMMARY ===================== -->
+<div class="slide" id="s20">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <div class="two-col">
+    <div>
+      <h3>Core Concepts</h3>
+      <div class="diagram small">
+  RE = DFA = NFA (same power!)
+
+  Three operations:
+  +--------+---------------------------+
+  |  R|S   | Union: R or S             |
+  |  RS    | Concat: R then S          |
+  |  R*    | Star: 0 or more R         |
+  +--------+---------------------------+
+
+  Precedence:  * > concat > |
+
+  Base cases:
+    &empty; --> empty language { }
+    &epsilon; --> empty string  { "" }
+    a --> single symbol  { "a" }
+      </div>
+      <h3 class="mt">Conversions</h3>
+      <div class="diagram small">
+  RE --Thompson's--> &epsilon;-NFA
+      Construction
+
+  DFA --State-------> RE
+      Elimination
+      </div>
+    </div>
+    <div>
+      <h3>Key Identities</h3>
+      <div class="diagram small">
+  R | S  =  S | R        (union commutes)
+  R | R  =  R            (idempotent)
+  R&epsilon;   =  R            (concat identity)
+  R&empty;   =  &empty;            (annihilator)
+  (R*)*  =  R*           (star is idempotent)
+  &empty;*    =  &epsilon;            (star of empty)
+  R | &empty;  =  R            (union identity)
+  R(S|T) =  RS | RT      (distribute)
+      </div>
+      <h3 class="mt">Common Mistakes</h3>
+      <div class="warning" style="margin:8px 0;">
+        <ul style="font-size:0.95em;">
+          <li>&empty; ≠ &epsilon; &nbsp;(empty lang vs empty string)</li>
+          <li><code>ab*</code> ≠ <code>(ab)*</code> &nbsp;(star binds tightest)</li>
+          <li><code>R*</code> always includes &epsilon;</li>
+          <li>Concat does NOT commute</li>
+          <li>Practical regex ≠ theoretical RE</li>
+        </ul>
+      </div>
+      <div class="analogy mt">
+        <h3>Remember</h3>
+        <p>Regular expressions are the <strong>algebra of regular languages</strong>. Master the three operations, know the precedence, and you can describe any regular language concisely.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">20 / 20</div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">Previous</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next</button>
+</div>
+
+<script>
+const totalSlides = 20;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+</script>
+
+</body>
+</html>

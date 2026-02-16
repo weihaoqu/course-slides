@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P vs NP - The Million Dollar Question | CS305</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+.big-emoji { font-size: 3em; margin-bottom: 16px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; }
+.highlight-text { color: #fbbf24; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide" id="s1">
+  <div class="center">
+    <h1>P vs NP</h1>
+    <h1>The Million Dollar Question</h1>
+    <p class="subtitle" style="margin-top: 20px;">CS305 -- Formal Language Theory &amp; Complexity</p>
+    <div class="diagram" style="display: inline-block; text-align: left; margin-top: 20px;">
+   Can every problem whose solution
+   can be QUICKLY VERIFIED...
+
+   ...also be QUICKLY SOLVED?
+
+       P  =?=  NP
+
+   Prize: $1,000,000 (Clay Institute)
+   Status: UNSOLVED since 1971
+    </div>
+    <p style="margin-top: 20px; color: #64748b;">Use arrow keys or buttons to navigate</p>
+  </div>
+  <span class="slide-number">1 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 2: Big Picture ==================== -->
+<div class="slide" id="s2">
+  <h1>The Big Picture</h1>
+  <p class="subtitle">We've studied what's computable. Now: among computable problems, which are EFFICIENTLY solvable?</p>
+
+  <div class="diagram">
+  The Computability/Complexity Landscape
+  ========================================
+
+  All Problems (Languages)
+  +----------------------------------------------------------+
+  |  Undecidable (Halting Problem, etc.)                     |
+  |    "No algorithm can solve these -- ever."               |
+  |                                                          |
+  |  +----------------------------------------------------+  |
+  |  |  Decidable (Computable)                            |  |
+  |  |    "An algorithm EXISTS, but how fast is it?"      |  |
+  |  |                                                    |  |
+  |  |  +----------------------------------------------+  |  |
+  |  |  |  Efficiently Solvable?                       |  |  |
+  |  |  |    THIS is the P vs NP question!             |  |  |
+  |  |  +----------------------------------------------+  |  |
+  |  +----------------------------------------------------+  |
+  +----------------------------------------------------------+
+  </div>
+
+  <div class="key-idea">
+    <h3>Key Shift in Perspective</h3>
+    <p>In the first half of the course, we asked: <em>"Can this problem be solved at all?"</em><br>
+    Now we ask: <em>"Can it be solved FAST ENOUGH to be practical?"</em></p>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy: Finding Your Keys</h3>
+    <p><strong>Computability:</strong> "Your keys exist somewhere in the universe." <br>
+    <strong>Complexity:</strong> "Can you find them before lunch?"</p>
+  </div>
+  <span class="slide-number">2 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 3: Measuring Efficiency ==================== -->
+<div class="slide" id="s3">
+  <h1>Measuring Efficiency</h1>
+  <p class="subtitle">Time complexity as a function of input size n</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Polynomial Time (Tractable)</h3>
+      <ul>
+        <li><code>O(n)</code> -- Linear</li>
+        <li><code>O(n log n)</code> -- Linearithmic</li>
+        <li><code>O(n^2)</code> -- Quadratic</li>
+        <li><code>O(n^3)</code> -- Cubic</li>
+        <li><code>O(n^k)</code> -- Polynomial for fixed k</li>
+      </ul>
+      <p class="mt" style="color: #34d399;">These grow manageably.</p>
+
+      <h3 class="mt">Exponential Time (Intractable)</h3>
+      <ul>
+        <li><code>O(2^n)</code> -- Exponential</li>
+        <li><code>O(n!)</code> -- Factorial</li>
+        <li><code>O(n^n)</code> -- Superexponential</li>
+      </ul>
+      <p class="mt" style="color: #f87171;">These EXPLODE.</p>
+    </div>
+
+    <div>
+      <h3>The Growth Gap (operations for input size n)</h3>
+      <table>
+        <tr><th>n</th><th>n^2</th><th>n^3</th><th>2^n</th><th>n!</th></tr>
+        <tr><td>10</td><td>100</td><td>1,000</td><td>1,024</td><td>3.6M</td></tr>
+        <tr><td>20</td><td>400</td><td>8,000</td><td>1M</td><td>2.4 x 10^18</td></tr>
+        <tr><td>50</td><td>2,500</td><td>125K</td><td>10^15</td><td>3 x 10^64</td></tr>
+        <tr class="highlight"><td>100</td><td>10,000</td><td>1M</td><td>10^30</td><td>10^158</td></tr>
+        <tr><td>1000</td><td>1M</td><td>1B</td><td>10^301</td><td>!!!</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="warning">
+    <h3>Why This Matters</h3>
+    <p>At n=100, an O(n^2) algorithm takes 10,000 steps (milliseconds on modern hardware). <br>
+    An O(2^n) algorithm takes 10^30 steps -- that's more than the <strong>age of the universe in nanoseconds</strong>. <br>
+    No amount of faster hardware will save you from exponential growth.</p>
+  </div>
+  <span class="slide-number">3 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 4: The Class P ==================== -->
+<div class="slide" id="s4">
+  <h1>The Class P</h1>
+  <p class="subtitle">Problems solvable in polynomial time by a deterministic Turing Machine</p>
+
+  <div class="diagram">
+  P = { L | there exists a deterministic TM M and polynomial p(n)
+            such that M decides L in time O(p(n)) }
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>What "P" Means Intuitively</h3>
+      <ul>
+        <li>Problems we can <strong>actually solve</strong> in practice</li>
+        <li>Algorithms that <strong>scale</strong> to large inputs</li>
+        <li>The time to solve grows at most as some fixed power of input size</li>
+        <li>"Efficiently solvable" = "in P"</li>
+      </ul>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>P captures the notion of <strong>feasible computation</strong>. If a problem is in P, we can build practical software to solve it.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3>Examples of P Problems</h3>
+      <div class="diagram small">
+  Sorting an array
+    Input:  [38, 27, 43, 3, 9, 82]
+    Output: [3, 9, 27, 38, 43, 82]
+    Time:   O(n log n)
+
+  Shortest path (Dijkstra's)
+    Input:  Graph + source + destination
+    Output: Shortest path
+    Time:   O(V^2) or O(E + V log V)
+
+  String matching
+    Input:  Text + pattern
+    Output: All occurrences
+    Time:   O(n + m)
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy</h3>
+    <p>P problems are like recipes where the cooking time is proportional to the number of guests. Double the guests? Maybe quadruple the cooking time. That's manageable.</p>
+  </div>
+  <span class="slide-number">4 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 5: Examples of P ==================== -->
+<div class="slide" id="s5">
+  <h1>Examples of P Problems</h1>
+  <p class="subtitle">A tour of problems we CAN solve efficiently</p>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Sorting -- O(n log n)</h3>
+        <p>Given n numbers, put them in order. Merge sort, quicksort, heapsort all achieve this. Fundamental to CS.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Graph Connectivity -- O(V + E)</h3>
+        <p>Given a graph, is there a path from vertex A to vertex B? BFS or DFS answers this in linear time.</p>
+        <div class="diagram small" style="margin-bottom:0;">
+  A---B---C       Is A connected to E?
+  |       |       BFS: A -> B -> D -> C -> E
+  D---E---F       Answer: YES, in O(V+E)
+        </div>
+      </div>
+
+      <div class="key-idea">
+        <h3>Greatest Common Divisor -- O(log n)</h3>
+        <p>Euclid's algorithm (300 BCE!). GCD(48, 18) = 6. One of the oldest known efficient algorithms.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="key-idea">
+        <h3>Linear Programming -- Polynomial</h3>
+        <p>Optimize a linear function subject to linear constraints. Solved by ellipsoid method or interior-point methods. Used everywhere in industry.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Primality Testing -- O(n^6) *</h3>
+        <p>"Is 104729 prime?" The AKS algorithm (2002) proved this is in P. A breakthrough result!</p>
+        <p style="font-size: 0.9em; color: #94a3b8;">* n = number of digits in the input</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Maximum Matching -- O(V^3)</h3>
+        <p>Pair up vertices in a graph optimally. Edmonds' "blossom algorithm" solves this in polynomial time.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="warning mt">
+    <h3>Note</h3>
+    <p>Being "in P" doesn't mean it's trivially fast -- O(n^100) is technically polynomial but impractical. In practice, most P algorithms we use are O(n), O(n log n), or low-degree polynomials.</p>
+  </div>
+  <span class="slide-number">5 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 6: The Class NP ==================== -->
+<div class="slide" id="s6">
+  <h1>The Class NP</h1>
+  <p class="subtitle">Problems where solutions can be VERIFIED quickly</p>
+
+  <div class="diagram">
+  NP = { L | there exists a polynomial-time VERIFIER V such that:
+             x in L  <==>  there exists certificate c, |c| &lt;= poly(|x|),
+                            where V(x, c) accepts }
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>The Two Key Parts</h3>
+      <ul>
+        <li><strong>Certificate (witness):</strong> A proposed solution or "proof" that the answer is YES</li>
+        <li><strong>Verifier:</strong> An algorithm that CHECKS the certificate in polynomial time</li>
+      </ul>
+
+      <p class="mt">NP stands for <strong>Nondeterministic Polynomial</strong> time, NOT "Non-Polynomial"!</p>
+
+      <div class="warning mt">
+        <h3>Common Misconception</h3>
+        <p>NP does NOT mean "not solvable in polynomial time." Many NP problems ARE in P! NP means verifiable in polynomial time.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Sudoku</h3>
+        <div class="diagram small">
+  Solving Sudoku: HARD
+  (Try all possibilities?)
+
+  +-------+-------+-------+
+  | 5 3 _ | _ 7 _ | _ _ _ |
+  | 6 _ _ | 1 9 5 | _ _ _ |
+  | _ 9 8 | _ _ _ | _ 6 _ |
+  +-------+-------+-------+
+  | 8 _ _ | _ 6 _ | _ _ 3 |
+  | ...                    |
+
+  Verifying a filled Sudoku: EASY
+  Just check each row, column,
+  and 3x3 box has digits 1-9.
+  Takes O(n^2) time.
+        </div>
+        <p>You might struggle to SOLVE it, but if someone hands you a completed grid, you can CHECK it in seconds.</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">6 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 7: NP as Nondeterministic Polynomial ==================== -->
+<div class="slide" id="s7">
+  <h1>NP as Nondeterministic Polynomial Time</h1>
+  <p class="subtitle">The equivalent "lucky guessing" definition</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Nondeterministic TM Definition</h3>
+      <p>NP = problems solvable by a <strong>nondeterministic</strong> Turing Machine in polynomial time.</p>
+      <p>A nondeterministic TM can "branch" into multiple computation paths simultaneously. If ANY path accepts, the machine accepts.</p>
+
+      <div class="diagram small">
+  Nondeterministic TM on input x:
+
+         start
+           |
+     +-----+-----+
+     |     |     |
+  guess1 guess2 guess3
+     |     |     |
+  check  check  check
+     |     |     |
+  REJECT ACCEPT REJECT
+
+  Result: ACCEPT
+  (at least one path accepted)
+      </div>
+    </div>
+
+    <div>
+      <h3>The "Lucky Guesser" Interpretation</h3>
+      <p>Think of it as a two-phase machine:</p>
+
+      <div class="key-idea">
+        <h3>Phase 1: GUESS</h3>
+        <p>Nondeterministically "guess" a certificate (candidate solution). Magically picks the right one if it exists.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Phase 2: VERIFY</h3>
+        <p>Deterministically check the guess in polynomial time. This is the verifier.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy: A Magic Oracle</h3>
+        <p>Imagine you have a friend with perfect intuition. They always guess the right answer, but you still need to double-check their work. If the checking step is fast (polynomial), the problem is in NP.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="key-idea mt">
+    <h3>Why These Definitions Are Equivalent</h3>
+    <p>Certificate-based: "A short proof exists and can be checked quickly."<br>
+    NTM-based: "A nondeterministic machine can find and verify in poly time."<br>
+    Each nondeterministic branch corresponds to a different candidate certificate.</p>
+  </div>
+  <span class="slide-number">7 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 8: Examples of NP Problems ==================== -->
+<div class="slide" id="s8">
+  <h1>Examples of NP Problems</h1>
+  <p class="subtitle">Problems where we can verify but (probably) can't efficiently solve</p>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>SAT (Boolean Satisfiability)</h3>
+        <p>Given a Boolean formula, is there an assignment making it TRUE?</p>
+        <p><code>(x1 OR ~x2) AND (x2 OR x3)</code><br>Certificate: x1=T, x2=T, x3=T. Check: TRUE!</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Traveling Salesman (Decision)</h3>
+        <p>Given cities and distances, is there a tour visiting all cities with total distance &le; k?</p>
+        <p>Certificate: A specific tour. Check: add up the distances.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Graph Coloring</h3>
+        <p>Can you color vertices with k colors so no adjacent vertices share a color?</p>
+        <p>Certificate: A coloring. Check: look at each edge.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Subset Sum</h3>
+        <p>Given {3, 7, 1, 8, 4}, is there a subset summing to 12?</p>
+        <p>Certificate: {3, 1, 8}. Check: 3+1+8 = 12. YES!</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="key-idea">
+        <h3>Clique</h3>
+        <p>Does graph G contain a complete subgraph of size k?</p>
+        <div class="diagram small" style="margin-bottom: 4px;">
+  A---B    Does this graph have
+  |\ /|    a 3-clique?
+  | X |    Certificate: {A, B, D}
+  |/ \|    Check: A-B? yes. A-D? yes.
+  C---D           B-D? yes. VERIFIED!
+        </div>
+      </div>
+
+      <div class="key-idea">
+        <h3>Vertex Cover</h3>
+        <p>Can you pick k vertices that "cover" every edge?</p>
+        <p>Certificate: A set of k vertices. Check: does every edge touch at least one?</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Hamiltonian Path</h3>
+        <p>Is there a path visiting every vertex exactly once?</p>
+        <p>Certificate: A sequence of vertices. Check: valid path, all vertices visited.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <h3>The Pattern</h3>
+    <p>For every NP problem: <strong>finding</strong> the answer seems to require searching an exponential space, but <strong>checking</strong> a given answer is fast. That asymmetry is the heart of P vs NP.</p>
+  </div>
+  <span class="slide-number">8 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 9: P subset NP ==================== -->
+<div class="slide" id="s9">
+  <h1>P is a Subset of NP</h1>
+  <p class="subtitle">Every problem in P is also in NP -- but is the reverse true?</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Why P &sube; NP</h3>
+      <p>If you can <strong>solve</strong> a problem in polynomial time, you can certainly <strong>verify</strong> a solution in polynomial time.</p>
+      <p>The verifier just ignores the certificate and solves the problem from scratch!</p>
+
+      <div class="diagram small">
+  Verifier for a P problem:
+
+  Input: (x, certificate)
+            |
+      [Ignore certificate]
+            |
+      [Solve x directly
+       in polynomial time]
+            |
+      [Accept/Reject based
+       on the solution]
+      </div>
+
+      <p>So every P problem trivially has a polynomial-time verifier, meaning it's in NP.</p>
+    </div>
+
+    <div>
+      <h3>The Million Dollar Question</h3>
+      <div class="diagram">
+  We KNOW:    P  <span style="color: #fbbf24;">&sube;</span>  NP
+
+  We DON'T KNOW:
+
+   Does  P  <span style="color: #f87171;">=</span>  NP  ?
+         (everything verifiable
+          is also solvable)
+
+   Or    P  <span style="color: #34d399;">&subne;</span>  NP  ?
+         (some problems are
+          harder to solve
+          than to verify)
+      </div>
+
+      <div class="warning">
+        <h3>The Stakes</h3>
+        <p>This is one of the <strong>Clay Millennium Prize Problems</strong>. Solve it (either direction) and win <strong>$1,000,000</strong>.</p>
+        <p>It has been open since Stephen Cook formalized it in <strong>1971</strong> -- over 50 years of the brightest minds failing to resolve it.</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">9 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 10: The P vs NP Question ==================== -->
+<div class="slide" id="s10">
+  <h1>The P vs NP Question -- Visualized</h1>
+  <p class="subtitle">Two possible worlds</p>
+
+  <div class="two-col">
+    <div>
+      <h2 class="center">World 1: P = NP</h2>
+      <div class="diagram">
+  +----------------------------------+
+  |                                  |
+  |          P   =   NP              |
+  |                                  |
+  |  Sorting, SAT, TSP, Clique,     |
+  |  Graph Coloring, Subset Sum,    |
+  |  Hamiltonian Path, Factoring... |
+  |                                  |
+  |  ALL efficiently solvable!       |
+  |                                  |
+  +----------------------------------+
+
+  Every problem whose solution can
+  be checked quickly can ALSO be
+  solved quickly.
+
+  "Verification = Solution"
+      </div>
+      <p style="color: #f87171; font-weight: 600; text-align: center;">Most experts think this is UNLIKELY</p>
+    </div>
+
+    <div>
+      <h2 class="center">World 2: P &ne; NP</h2>
+      <div class="diagram">
+  +----------------------------------+
+  |              NP                   |
+  |   +-----------+                  |
+  |   |           | NP-Complete      |
+  |   |     P     |  (SAT, TSP,     |
+  |   |           |   Clique, ...)  |
+  |   | (Sorting, |                  |
+  |   |  GCD,     +---------+       |
+  |   |  Shortest |NP-Inter-|       |
+  |   |  Path)    |mediate  |       |
+  |   |           |(Factor- |       |
+  |   |           | ing?,   |       |
+  |   |           | Graph   |       |
+  |   |           | Iso.?)  |       |
+  |   +-----------+---------+       |
+  +----------------------------------+
+
+  Some problems are INHERENTLY harder
+  to solve than to verify.
+      </div>
+      <p style="color: #34d399; font-weight: 600; text-align: center;">Most experts believe THIS is reality</p>
+    </div>
+  </div>
+
+  <div class="key-idea mt">
+    <h3>Why Most Experts Believe P &ne; NP</h3>
+    <p>Decades of effort by brilliant researchers have failed to find polynomial algorithms for NP-complete problems. It would be astonishing if all that effort missed something. But nobody can PROVE it either way!</p>
+  </div>
+  <span class="slide-number">10 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 11: Polynomial-Time Reductions ==================== -->
+<div class="slide" id="s11">
+  <h1>Polynomial-Time Reductions</h1>
+  <p class="subtitle">The tool for comparing problem difficulty</p>
+
+  <div class="key-idea">
+    <h3>Core Idea</h3>
+    <p>Problem A <strong>reduces</strong> to problem B (written A &le;_P B) if we can transform any instance of A into an instance of B in polynomial time, such that solving B gives us the answer to A.</p>
+  </div>
+
+  <div class="diagram">
+  Polynomial-Time Reduction:  A  &le;_P  B
+
+  Instance of A          Instance of B           Solution to B
+  +-----------+   poly   +-----------+   solve   +-----------+
+  |           | -------> |           | -------> |           |
+  |  "Is x    |  time    |  "Is f(x) |   B's    |  YES/NO   |
+  |   in A?"  |  f(x)   |   in B?"  |  algo    |           |
+  +-----------+          +-----------+          +-----------+
+       |                                              |
+       |                                              |
+       +---------- Same answer! ----------------------+
+
+  If B is easy (in P), then A is easy too!
+  If A is hard, then B must be hard too!
+  </div>
+
+  <div class="two-col mt">
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Language Translation</h3>
+        <p>If you can translate French to English quickly, and you have an English dictionary, then you can effectively look up French words. Reducing French-lookup to English-lookup.</p>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Direction Matters!</h3>
+        <p>A &le;_P B means "A is <em>no harder</em> than B" (or "B is <em>at least as hard</em> as A").<br>
+        If you show a hard problem reduces TO your problem, your problem must be hard too!</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">11 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 12: NP-Hardness ==================== -->
+<div class="slide" id="s12">
+  <h1>NP-Hardness</h1>
+  <p class="subtitle">Problems that are "at least as hard as anything in NP"</p>
+
+  <div class="diagram">
+  Definition:  A problem H is NP-HARD if:
+
+    For EVERY problem L in NP:   L  &le;_P  H
+
+    "Every NP problem can be reduced to H in polynomial time"
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>What This Means</h3>
+      <ul>
+        <li>H is a <strong>universal</strong> problem -- if you could solve H efficiently, you could solve EVERYTHING in NP efficiently</li>
+        <li>H is "at least as hard" as the hardest problems in NP</li>
+        <li>If ANY NP-hard problem is in P, then P = NP</li>
+      </ul>
+
+      <div class="diagram small">
+  Every NP problem reduces to H:
+
+  SAT --------\
+  TSP ---------\
+  Clique -------+----> H
+  Coloring ----/
+  SubsetSum --/
+  ...every NP problem
+      </div>
+    </div>
+
+    <div>
+      <div class="warning">
+        <h3>NP-Hard Does NOT Mean "in NP"</h3>
+        <p>NP-hard problems can be <em>harder</em> than NP! They might not even be decidable.</p>
+        <p>Example: The Halting Problem is NP-hard (every NP problem reduces to it) but it's not in NP -- it's not even decidable!</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy: The Master Lock</h3>
+        <p>Think of an NP-hard problem as a "master lock." If you can pick this one lock, every other lock (NP problem) opens automatically. It's at least as tough as every other lock in the building.</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">12 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 13: NP-Completeness ==================== -->
+<div class="slide" id="s13">
+  <h1>NP-Completeness</h1>
+  <p class="subtitle">The hardest problems IN NP -- the sweet spot</p>
+
+  <div class="key-idea">
+    <h3>Definition</h3>
+    <p>A problem is <strong>NP-Complete</strong> if it is:</p>
+    <p>1. <strong>In NP</strong> (solutions can be verified in polynomial time), AND</p>
+    <p>2. <strong>NP-Hard</strong> (every NP problem reduces to it)</p>
+  </div>
+
+  <div class="diagram">
+  The Complexity Landscape (assuming P &ne; NP)
+
+  +----------------------------------------------------------+
+  |                        NP-Hard                           |
+  |   (at least as hard as NP -- may not be in NP)          |
+  |                                                          |
+  |   Halting Problem, General TSP Optimization, ...         |
+  |                                                          |
+  |   +----------------------------------------------------+ |
+  |   |                     NP                             | |
+  |   |                                                    | |
+  |   |   +-------------------+ +------------------------+ | |
+  |   |   |                   | |                        | | |
+  |   |   |        P          | |    NP-Complete         | | |
+  |   |   |                   | |                        | | |
+  |   |   | Sorting           | | SAT, 3-SAT            | | |
+  |   |   | Shortest Path     | | Clique, Vertex Cover  | | |
+  |   |   | Primality         | | TSP (decision)        | | |
+  |   |   | Matching          | | Graph Coloring        | | |
+  |   |   | GCD               | | Subset Sum            | | |
+  |   |   |                   | | Hamiltonian Cycle      | | |
+  |   |   +-------------------+ +------------------------+ | |
+  |   |                                                    | |
+  |   +----------------------------------------------------+ |
+  +----------------------------------------------------------+
+
+  NP-Complete = NP-Hard  &cap;  NP  (the boundary of NP)
+  </div>
+
+  <div class="key-idea mt">
+    <h3>Why NP-Complete Problems Are Special</h3>
+    <p>If you find a polynomial algorithm for ANY NP-complete problem, then <strong>P = NP</strong> (all NP problems become easy). Conversely, if you prove ANY NP-complete problem has no poly-time algorithm, then <strong>P &ne; NP</strong>. They're the "gatekeepers" of the P vs NP question.</p>
+  </div>
+  <span class="slide-number">13 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 14: Cook's Theorem ==================== -->
+<div class="slide" id="s14">
+  <h1>Cook's Theorem (Cook-Levin, 1971)</h1>
+  <p class="subtitle">The theorem that launched complexity theory</p>
+
+  <div class="key-idea">
+    <h3>Theorem</h3>
+    <p><strong>SAT is NP-complete.</strong></p>
+    <p>Boolean Satisfiability was the FIRST problem ever proven NP-complete. Every other NP-completeness proof builds on this foundation.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>Proof Idea (Sketch)</h3>
+      <ol>
+        <li><strong>SAT is in NP:</strong> Given a truth assignment (certificate), we can evaluate the formula in polynomial time.</li>
+        <li class="mt"><strong>SAT is NP-Hard:</strong> Take ANY problem L in NP with its verifier V. We can encode the entire computation of V(x,c) as a Boolean formula &phi; such that:
+          <ul>
+            <li>&phi; is satisfiable &hArr; V accepts some certificate for x</li>
+            <li>&phi; has polynomial size (since V runs in poly time)</li>
+          </ul>
+        </li>
+      </ol>
+
+      <div class="diagram small mt">
+  Any NP verifier V:
+
+  Input x, Certificate c
+       |
+  V's computation (poly steps)
+       |
+  Accept/Reject
+
+  ENCODE as Boolean formula:
+  - Variables for each tape cell
+    at each time step
+  - Clauses enforcing TM rules
+  - Clauses enforcing acceptance
+      </div>
+    </div>
+
+    <div>
+      <h3>Why This Is Profound</h3>
+      <p>Cook showed that the <em>general act of computation</em> can be captured by Boolean logic. Every polynomial-time verification can be "compiled" into a SAT instance.</p>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>It's like discovering that every recipe in every cookbook can be translated into one universal recipe format. SAT is that universal format -- it can express ANY NP computation.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>Historical Note</h3>
+        <p>Stephen Cook (Toronto) proved this in 1971. Leonid Levin independently proved a similar result in the Soviet Union. Cook received the Turing Award in 1982 for this work.</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">14 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 15: The SAT Problem ==================== -->
+<div class="slide" id="s15">
+  <h1>The SAT Problem -- Worked Example</h1>
+  <p class="subtitle">Boolean Satisfiability: the "mother" of NP-complete problems</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Problem</h3>
+      <p>Given a Boolean formula in <strong>Conjunctive Normal Form (CNF)</strong>, is there an assignment of TRUE/FALSE to variables that makes the entire formula TRUE?</p>
+
+      <div class="diagram">
+  CNF Formula:
+  &phi; = (x1 OR ~x2 OR x3)      -- clause 1
+    AND (  ~x1 OR x2    )      -- clause 2
+    AND (  ~x1 OR ~x3   )      -- clause 3
+    AND (   x2 OR x3    )      -- clause 4
+
+  Variables: x1, x2, x3
+  Each can be TRUE or FALSE
+  2^3 = 8 possible assignments
+      </div>
+
+      <h3 class="mt">Working Through It</h3>
+      <p>Try <code>x1=T, x2=T, x3=F</code>:</p>
+      <div class="diagram small">
+  Clause 1: (T OR ~T OR F)
+           = (T OR F OR F) = <span style="color:#34d399">TRUE</span>
+  Clause 2: (~T OR T)
+           = (F OR T)      = <span style="color:#34d399">TRUE</span>
+  Clause 3: (~T OR ~F)
+           = (F OR T)      = <span style="color:#34d399">TRUE</span>
+  Clause 4: (T OR F)       = <span style="color:#34d399">TRUE</span>
+
+  ALL clauses TRUE!
+  Formula is <span style="color:#34d399">SATISFIABLE</span>
+  Certificate: {x1=T, x2=T, x3=F}
+      </div>
+    </div>
+
+    <div>
+      <h3>All 8 Assignments</h3>
+      <table style="width: 100%;">
+        <tr><th>x1</th><th>x2</th><th>x3</th><th>C1</th><th>C2</th><th>C3</th><th>C4</th><th>&phi;</th></tr>
+        <tr><td>F</td><td>F</td><td>F</td><td>T</td><td>T</td><td>T</td><td style="color:#f87171;">F</td><td style="color:#f87171;">F</td></tr>
+        <tr><td>F</td><td>F</td><td>T</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#34d399;">T</td></tr>
+        <tr><td>F</td><td>T</td><td>F</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#34d399;">T</td></tr>
+        <tr><td>F</td><td>T</td><td>T</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#34d399;">T</td></tr>
+        <tr class="highlight"><td>T</td><td>T</td><td>F</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#34d399;">T</td></tr>
+        <tr><td>T</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#f87171;">F</td><td>T</td><td style="color:#f87171;">F</td></tr>
+        <tr><td>T</td><td>F</td><td>F</td><td>T</td><td style="color:#f87171;">F</td><td>T</td><td style="color:#f87171;">F</td><td style="color:#f87171;">F</td></tr>
+        <tr><td>T</td><td>F</td><td>T</td><td>T</td><td style="color:#f87171;">F</td><td>T</td><td>T</td><td style="color:#f87171;">F</td></tr>
+      </table>
+      <p style="font-size: 0.95em; color: #94a3b8;">Highlighted row is the assignment we verified.</p>
+
+      <div class="warning mt">
+        <h3>The Difficulty</h3>
+        <p>With 3 variables, we checked 8 rows. With <strong>n</strong> variables, there are <strong>2^n</strong> possible assignments. At n=300, that's more than the atoms in the universe. No known algorithm avoids this exponential blowup in the worst case.</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>3-SAT</h3>
+        <p>When every clause has exactly 3 literals, it's called 3-SAT. This restricted version is STILL NP-complete! (2-SAT, however, is in P.)</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">15 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 16: Proving NP-Completeness ==================== -->
+<div class="slide" id="s16">
+  <h1>Proving NP-Completeness</h1>
+  <p class="subtitle">The reduction chain -- a domino effect of hardness</p>
+
+  <div class="key-idea">
+    <h3>The Recipe for Proving Problem X is NP-Complete</h3>
+    <p>1. Show X is <strong>in NP</strong> (give a polynomial-time verifier).<br>
+    2. Pick a <strong>known NP-complete problem Y</strong> and show <strong>Y &le;_P X</strong> (reduce Y to X in polynomial time).</p>
+    <p>Since Y is NP-hard and Y &le;_P X, then X is NP-hard too. Combined with being in NP: X is NP-complete!</p>
+  </div>
+
+  <div class="diagram">
+  The Web of Reductions (each arrow = polynomial-time reduction)
+
+                         +-------+
+                         |  SAT  |   (Cook-Levin: the root of it all)
+                         +---+---+
+                             |
+                         +---v---+
+                         | 3-SAT |
+                         +---+---+
+                  ___________|___________
+                 |           |           |
+            +----v---+  +---v----+  +---v--------+
+            | CLIQUE |  | INDEP. |  | VERTEX     |
+            |        |  |  SET   |  | COVER      |
+            +----+---+  +---+----+  +------+-----+
+                 |           |             |
+            +----v---+  +---v--------+ +--v-----------+
+            | SUBGR. |  | HAMILTO-   | | SET COVER    |
+            | ISOM.  |  | NIAN CYCLE | |              |
+            +--------+  +---+--------+ +--------------+
+                             |
+                        +----v-------+
+                        |    TSP     |
+                        | (decision) |
+                        +------------+
+
+  Also from 3-SAT:
+  3-SAT ----> SUBSET SUM ----> KNAPSACK
+  3-SAT ----> 3-COLORING ----> k-COLORING
+  </div>
+
+  <div class="analogy mt">
+    <h3>Analogy: A Chain of Dominoes</h3>
+    <p>Cook knocked over the first domino (SAT). Karp knocked over 21 more in 1972. Now thousands of NP-complete problems are known. Each new one just needs ONE reduction from an existing NP-complete problem.</p>
+  </div>
+  <span class="slide-number">16 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 17: Classic NP-Complete Problems ==================== -->
+<div class="slide" id="s17">
+  <h1>Classic NP-Complete Problems</h1>
+  <p class="subtitle">The "greatest hits" -- problems you'll see everywhere</p>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>3-SAT</h3>
+        <p>SAT where each clause has exactly 3 literals.<br>
+        <code>(x1 OR ~x2 OR x3) AND (~x1 OR x4 OR x2)</code><br>
+        The "workhorse" for reductions.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Clique</h3>
+        <p>Find k vertices all connected to each other.<br>
+        "Is there a friend group of size 5 where everyone knows everyone?"</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Independent Set</h3>
+        <p>Find k vertices with NO edges between them.<br>
+        "Can you seat 5 people at a dinner where no two are enemies?"</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Vertex Cover</h3>
+        <p>Find k vertices that touch every edge.<br>
+        "Place k security cameras to watch every hallway."</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="key-idea">
+        <h3>Hamiltonian Cycle</h3>
+        <p>Visit every vertex exactly once and return to start.<br>
+        "Can the mail carrier visit every house on one loop?"</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>TSP (Decision Version)</h3>
+        <p>Is there a tour of all cities with distance &le; k?<br>
+        4 cities: "Can I visit A, B, C, D and return in &le; 20 miles?"</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Subset Sum</h3>
+        <p>Given S = {3, 7, 1, 8, 4, 12}, target = 15.<br>
+        Is there a subset summing to 15? Yes: {3, 8, 4}.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Graph k-Coloring (k &ge; 3)</h3>
+        <p>Color vertices with k colors, no adjacent vertices same color.<br>
+        "Color a map with 3 colors so no bordering countries match."</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="warning mt">
+    <h3>They're All Connected</h3>
+    <p>If you solve ANY ONE of these in polynomial time, you've solved ALL of them (and won $1M). They all reduce to each other. They stand or fall together.</p>
+  </div>
+  <span class="slide-number">17 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 18: Dealing with NP-Completeness ==================== -->
+<div class="slide" id="s18">
+  <h1>Dealing with NP-Completeness</h1>
+  <p class="subtitle">Your problem is NP-complete. Now what?</p>
+
+  <p>Don't despair! NP-completeness is a <strong>worst-case</strong> statement. In practice, there are many strategies:</p>
+
+  <div class="two-col mt">
+    <div>
+      <div class="key-idea">
+        <h3>1. Approximation Algorithms</h3>
+        <p>Don't find the OPTIMAL solution -- find one that's provably CLOSE to optimal.</p>
+        <p>Example: For Vertex Cover, a simple greedy algorithm always finds a cover at most <strong>2x the optimal size</strong>. Good enough for many applications!</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>2. Heuristics &amp; Metaheuristics</h3>
+        <p>Algorithms that work well in practice without guarantees: simulated annealing, genetic algorithms, local search.</p>
+        <p>Example: TSP tours for millions of cities are routinely found near-optimally using heuristics.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>3. Special Cases / Fixed Parameters</h3>
+        <p>Your specific inputs might have structure that makes the problem easier.</p>
+        <p>Example: 2-SAT is in P! Graph coloring on trees is in P! TSP on Euclidean distances has good approximations.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="key-idea">
+        <h3>4. Randomized Algorithms</h3>
+        <p>Allow random coin flips. Sometimes randomness helps!</p>
+        <p>Example: Random assignment satisfies at least 7/8 of clauses in MAX-3-SAT on average.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>5. Exponential but Practical</h3>
+        <p>Modern SAT solvers handle formulas with <em>millions</em> of variables using clever techniques (DPLL, CDCL, unit propagation). Worst case is exponential, but typical cases are fast.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>6. Restrict Input Size</h3>
+        <p>If n is small enough, even O(2^n) is fine. Subset Sum with 30 elements? 2^30 &asymp; 10^9 -- a computer handles that in seconds.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>NP-completeness says "you can't always find the exit in a giant maze quickly." But YOUR maze might have helpful signs, be smaller than you think, or you might accept finding an exit that's <em>close enough</em> to the shortest one.</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">18 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 19: Beyond NP ==================== -->
+<div class="slide" id="s19">
+  <h1>Beyond NP -- The Complexity Hierarchy</h1>
+  <p class="subtitle">NP is just one level in a vast tower of complexity</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram">
+  The Complexity Tower
+  (each level contains all below it)
+
+  +================================+
+  ||         UNDECIDABLE          ||
+  ||   (Halting Problem, etc.)    ||
+  +================================+
+              |
+  +--------------------------------+
+  |          EXPSPACE              |
+  |  (exponential space)           |
+  +--------------------------------+
+              |
+  +--------------------------------+
+  |          EXPTIME               |
+  |  (exponential time)            |
+  |  Chess, Checkers (generalized) |
+  +--------------------------------+
+              |
+  +--------------------------------+
+  |          PSPACE                |
+  |  (polynomial space)            |
+  |  QBF, Generalized Geography    |
+  |  PSPACE = NPSPACE (Savitch's)  |
+  +--------------------------------+
+              |
+  +---+---+------------------------+
+  | coNP  |        NP              |
+  |       |  SAT, Clique, TSP      |
+  +---+---+---+--------------------+
+      |       |
+  +---+-------+--------------------+
+  |            P                   |
+  |  Sorting, Shortest Path, GCD   |
+  +--------------------------------+
+              |
+  +--------------------------------+
+  |            L (LOGSPACE)        |
+  |  Reachability in undirected    |
+  |  graphs                        |
+  +--------------------------------+
+      </div>
+    </div>
+
+    <div>
+      <h3>Key Classes Beyond NP</h3>
+
+      <div class="key-idea">
+        <h3>coNP</h3>
+        <p>Complements of NP problems. "Can you verify that something is NOT the case?"</p>
+        <p>Example: "Is this formula UNSATISFIABLE?" (complement of SAT). Easy to prove satisfiable (give an assignment), hard to prove unsatisfiable.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>PSPACE</h3>
+        <p>Problems solvable with polynomial SPACE (but possibly exponential time).</p>
+        <p>Example: Quantified Boolean Formulas (QBF): "For all x, there exists y, such that &phi;(x,y) is true." Like a two-player game -- much harder than SAT!</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>EXPTIME</h3>
+        <p>Problems requiring exponential time. Generalized chess and checkers are EXPTIME-complete. We KNOW P &ne; EXPTIME!</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>What We Know vs. Don't Know</h3>
+        <p>P &sube; NP &sube; PSPACE &sube; EXPTIME -- all inclusions are known.<br>
+        But we only know <strong>P &ne; EXPTIME</strong> for certain. Whether P &ne; NP, NP &ne; PSPACE, etc. are all <strong>open questions</strong>!</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">19 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 20: What if P = NP ==================== -->
+<div class="slide" id="s20">
+  <h1>What If P = NP?</h1>
+  <p class="subtitle">The "mathematical apocalypse" scenario</p>
+
+  <p>If someone proved P = NP and gave us actual algorithms, the consequences would be staggering:</p>
+
+  <div class="two-col mt">
+    <div>
+      <div class="warning">
+        <h3>Cryptography BREAKS</h3>
+        <p>Modern encryption (RSA, AES, etc.) relies on problems being HARD to solve (factoring, discrete log). If P = NP, an attacker could break any cipher, forge any digital signature, and decrypt any message. Online banking, HTTPS, blockchain -- all gone.</p>
+      </div>
+
+      <div class="warning">
+        <h3>Optimization Becomes Trivial</h3>
+        <p>Scheduling, logistics, resource allocation, protein folding, chip design -- all solvable optimally in polynomial time. Companies would save billions. Supply chains perfected overnight.</p>
+      </div>
+
+      <div class="warning">
+        <h3>AI / Machine Learning Leaps</h3>
+        <p>Many ML problems (optimal neural network training, feature selection) are NP-hard. If P = NP, we could find provably optimal models efficiently.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="warning">
+        <h3>Mathematical Proofs Become Automated</h3>
+        <p>Finding proofs is in NP (verify by checking each step). If P = NP, computers could find short proofs of any provable theorem automatically. Mathematics itself would be transformed.</p>
+      </div>
+
+      <div class="warning">
+        <h3>Creative Tasks Become Algorithmic</h3>
+        <p>Writing a symphony "as good as Beethoven's" (if quality can be verified) becomes a computation. Generating optimal code, designing drugs, composing music -- all become algorithmic.</p>
+      </div>
+
+      <div class="diagram small mt">
+  Scott Aaronson's famous quote:
+
+  "If P = NP, then the world would
+  be a profoundly different place
+  than we usually assume it to be.
+
+  Everyone who could appreciate a
+  symphony would be Mozart;
+  everyone who could follow a
+  step-by-step argument would be
+  Gauss; everyone who could
+  recognize a good investment
+  strategy would be Warren Buffett."
+      </div>
+    </div>
+  </div>
+
+  <div class="key-idea mt">
+    <h3>The Catch</h3>
+    <p>Even if P = NP, the polynomial might be impractically large (e.g., O(n^1000000)). A "yes" answer doesn't guarantee practical algorithms -- but historically, polynomial algorithms are eventually improved.</p>
+  </div>
+  <span class="slide-number">20 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 21: What if P != NP ==================== -->
+<div class="slide" id="s21">
+  <h1>What If P &ne; NP? (The Likely Answer)</h1>
+  <p class="subtitle">The world as we know it -- some problems are inherently hard</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The "Expected" Reality</h3>
+      <p>Most computer scientists believe P &ne; NP. A 2019 poll showed <strong>88%</strong> of complexity theorists expect P &ne; NP.</p>
+
+      <div class="key-idea mt">
+        <h3>Cryptography is Safe</h3>
+        <p>The hardness of certain problems guarantees that encryption, digital signatures, and secure communication work as intended. Your online banking is safe because breaking the encryption is (probably) an inherently hard problem.</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Fundamental Asymmetry Exists</h3>
+        <p>There really IS a deep difference between <strong>creating</strong> and <strong>checking</strong>. Composing a symphony is harder than appreciating one. Writing a proof is harder than verifying one. This asymmetry is built into the fabric of mathematics.</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>The Creativity Gap is Real</h3>
+        <p>Some tasks require genuine insight that cannot be shortcut by brute computation. Human (and AI) creativity retains its value.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3>What Proving P &ne; NP Would Mean</h3>
+
+      <div class="diagram small">
+  A proof of P &ne; NP would:
+
+  1. WIN the $1,000,000 Clay Prize
+
+  2. CONFIRM that NP-complete problems
+     have no efficient exact algorithms
+
+  3. VALIDATE 50+ years of complexity
+     theory built on this assumption
+
+  4. REQUIRE fundamentally new math
+     (current techniques are known
+     to be insufficient -- this is
+     called "barrier results")
+      </div>
+
+      <div class="warning mt">
+        <h3>Why Is It So Hard to Prove?</h3>
+        <p>We'd need to show that <em>no polynomial-time algorithm</em> exists for SAT -- ruling out ALL possible algorithms, including ones nobody has thought of yet. Known proof techniques (diagonalization, relativization, natural proofs) have been shown to be <strong>insufficient</strong> for this task.</p>
+        <p class="mt">Razborov and Rudich (1997) showed that a large class of "natural" proof strategies cannot resolve P vs NP. We need genuinely new mathematical ideas.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Proving P &ne; NP is like proving that no shortcut exists through a maze -- not just that YOU can't find one, but that nobody ever could. You have to rule out every conceivable path.</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">21 / 22</span>
+</div>
+
+<!-- ==================== SLIDE 22: Summary & Cheat Sheet ==================== -->
+<div class="slide" id="s22">
+  <h1>Summary &amp; Cheat Sheet</h1>
+  <p class="subtitle">Everything you need to know about P vs NP on one slide</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram small">
+  COMPLEXITY CHEAT SHEET
+  ======================
+
+  P:   Solvable in poly time
+       (deterministic TM)
+       Examples: sorting, shortest
+       path, primality, matching
+
+  NP:  Verifiable in poly time
+       (given a certificate)
+       Examples: SAT, TSP, Clique,
+       Subset Sum, Graph Coloring
+
+  P &sube; NP:  Always true.
+             If you can solve it
+             fast, you can verify
+             it fast.
+
+  NP-Hard:  At least as hard as
+            every NP problem.
+            Every NP problem
+            reduces to it.
+
+  NP-Complete:  NP-Hard AND in NP.
+                The "hardest" problems
+                that are still in NP.
+                Examples: SAT, 3-SAT,
+                Clique, Vertex Cover,
+                TSP, Hamiltonian Cycle
+
+  P =? NP:  OPEN. $1M prize.
+            Most believe P &ne; NP.
+      </div>
+
+      <div class="key-idea">
+        <h3>How to Prove X is NP-Complete</h3>
+        <p>1. Show X is in NP (describe a verifier).<br>
+        2. Reduce a known NP-complete problem to X.<br>
+        That's it! The "known problem" is usually 3-SAT.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="diagram small">
+  RELATIONSHIP MAP (if P &ne; NP)
+
+  +---------------------------------+
+  |             NP                  |
+  |  +-------+  +----------------+ |
+  |  |   P   |  |  NP-Complete   | |
+  |  +-------+  +----------------+ |
+  +---------------------------------+
+
+  KEY REDUCTIONS:
+  SAT -> 3-SAT -> Clique
+                -> Vertex Cover
+                -> Subset Sum
+                -> 3-Coloring
+                -> Ham. Cycle -> TSP
+      </div>
+
+      <div class="diagram small">
+  IF P = NP:
+  - Crypto breaks, optimization
+    trivial, proofs automated
+  - The world transforms
+
+  IF P &ne; NP (likely):
+  - Some problems inherently hard
+  - Crypto is safe
+  - Creativity has value
+  - Use approximation, heuristics,
+    special cases in practice
+      </div>
+
+      <div class="key-idea mt">
+        <h3>The Big Takeaway</h3>
+        <p>P vs NP is about whether <strong>finding solutions</strong> is fundamentally harder than <strong>checking solutions</strong>. It's arguably the most important open question in all of computer science and mathematics. We believe the answer is yes (P &ne; NP), but proving it remains one of humanity's greatest intellectual challenges.</p>
+      </div>
+    </div>
+  </div>
+  <span class="slide-number">22 / 22</span>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 22;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+</script>
+
+</body>
+</html>

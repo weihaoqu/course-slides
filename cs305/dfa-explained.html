@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFA Explained - A Student-Friendly Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+
+  /* Slide system */
+  .slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+  .slide.active { display: flex; flex-direction: column; justify-content: center; }
+  .slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+
+  /* Navigation */
+  .nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+  .nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+  .nav button:hover { background: #475569; }
+  .nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+
+  /* Typography */
+  h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+  h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+  h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+  p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+  .subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+
+  /* Layout helpers */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .center { text-align: center; }
+  .mt { margin-top: 20px; }
+  .mb { margin-bottom: 20px; }
+
+  /* Code / diagram blocks */
+  .diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+  .diagram.small { font-size: 0.85em; }
+
+  /* Highlight boxes */
+  .key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+  .key-idea h3 { margin-bottom: 8px; }
+  .warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+  .warning h3 { color: #fbbf24; }
+  .analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+  .analogy h3 { color: #34d399; }
+
+  /* Table */
+  table { border-collapse: collapse; margin: 16px 0; width: auto; }
+  th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+  th { background: #334155; color: #93c5fd; font-weight: 600; }
+  td { background: #1e293b; color: #e2e8f0; }
+  tr.highlight td { background: rgba(59,130,246,0.2); }
+
+  /* Animations */
+  .fade-in { animation: fadeIn 0.5s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Step-by-step reveal */
+  .step { opacity: 0.25; transition: opacity 0.4s; margin: 8px 0; padding: 8px 12px; border-radius: 8px; }
+  .step.revealed { opacity: 1; background: rgba(59,130,246,0.08); }
+
+  ul { padding-left: 24px; }
+  ul li { margin-bottom: 8px; }
+
+  .vs-box { display: flex; gap: 30px; align-items: stretch; margin: 20px 0; }
+  .vs-card { flex: 1; background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
+  .vs-card h3 { text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>Deterministic Finite Automata (DFA)</h1>
+    <p class="subtitle">A complete guide to DFAs -- formal definitions, design patterns, minimization, and the tennis scoring example</p>
+    <div style="margin-top: 40px; color: #64748b;">
+      <p>Based on CS305 lecture materials (Ullman: Finite Automata &amp; Tennis)</p>
+      <p style="margin-top:20px; font-size: 0.9em;">Use <b>Arrow Keys</b> or the buttons below to navigate. Press <b>S</b> to step through animations.</p>
+    </div>
+  </div>
+  <div class="slide-number">1 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h1>The Big Picture</h1>
+  <p class="subtitle">Where do DFAs fit in the Chomsky hierarchy?</p>
+  <div class="diagram">
+  +==============================================================+
+  |                  Recursively Enumerable (Type 0)             |
+  |   Turing Machines recognize these                            |
+  |  +========================================================+  |
+  |  |              Context-Sensitive (Type 1)                 |  |
+  |  |  +=================================================+   |  |
+  |  |  |           Context-Free (Type 2)                  |   |  |
+  |  |  |   Pushdown Automata (PDAs) recognize these       |   |  |
+  |  |  |   Example: balanced parentheses, a^n b^n         |   |  |
+  |  |  |  +==========================================+    |   |  |
+  |  |  |  |       Regular Languages (Type 3)         |    |   |  |
+  |  |  |  |                                          |    |   |  |
+  |  |  |  |   *** DFAs recognize EXACTLY these ***   |    |   |  |
+  |  |  |  |                                          |    |   |  |
+  |  |  |  |   Also: NFAs, Regular Expressions,       |    |   |  |
+  |  |  |  |         Regular Grammars                  |    |   |  |
+  |  |  |  +==========================================+    |   |  |
+  |  |  +=================================================+   |  |
+  |  +========================================================+  |
+  +==============================================================+
+  </div>
+  <div class="key-idea">
+    <h3>Why does this matter?</h3>
+    <p>DFAs are the <b>simplest</b> computational model that still recognizes a useful class of languages. They are the foundation of everything above. Understanding DFAs is the first step toward understanding all of computation theory.</p>
+  </div>
+  <div class="slide-number">2 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 3: WHAT IS A FINITE AUTOMATON ==================== -->
+<div class="slide" id="s3">
+  <h1>What is a Finite Automaton?</h1>
+  <p class="subtitle">Intuition before formalism -- you already know these!</p>
+  <div class="two-col">
+    <div>
+      <p>A finite automaton is a <b>formal system</b> that:</p>
+      <ul>
+        <li>Remembers only a <b>finite</b> amount of information</li>
+        <li>Information is represented by its <b>state</b></li>
+        <li>State changes in response to <b>inputs</b></li>
+        <li>Rules for state changes are called <b>transitions</b></li>
+      </ul>
+      <div class="diagram small">
+  Turnstile:               Traffic Light:
+  +--------+  coin         +-------+  timer
+  | LOCKED |-------+       | RED   |-------+
+  +--------+       |       +-------+       |
+      ^            v           ^            v
+      |       +----------+    |        +---------+
+      +--push-| UNLOCKED |   timer     | GREEN   |
+              +----------+    |        +---------+
+                              |            |
+                         +--------+  timer |
+                         | YELLOW |&lt;-------+
+                         +--------+
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Vending Machine</h3>
+        <p>A vending machine is a finite automaton! It has <b>states</b> (how much money inserted), <b>inputs</b> (coins, button presses), and <b>transitions</b> (inserting a quarter changes the state from "$0.50" to "$0.75"). It has finitely many states and follows deterministic rules.</p>
+      </div>
+      <div class="key-idea">
+        <h3>Why "Finite"?</h3>
+        <p>The machine has a <b>fixed, finite number of states</b>. It cannot count to infinity or remember an unbounded amount of data. This is its fundamental limitation -- and also what makes it analyzable.</p>
+      </div>
+      <div class="analogy">
+        <h3>Why study finite automata?</h3>
+        <p>Used in circuit design and verification, text processing (grep, regex), compilers (lexical analysis), protocol verification, and modeling simple patterns of events.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">3 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 4: FORMAL DEFINITION ==================== -->
+<div class="slide" id="s4">
+  <h1>Formal Definition: The 5-Tuple</h1>
+  <p class="subtitle">A DFA is precisely defined by (Q, &Sigma;, &delta;, q<sub>0</sub>, F)</p>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>Symbol</th><th>Name</th><th>What it is</th></tr>
+        <tr><td><b>Q</b></td><td>States</td><td>A finite set of states</td></tr>
+        <tr><td><b>&Sigma;</b></td><td>Alphabet</td><td>A finite set of input symbols</td></tr>
+        <tr><td><b>&delta;</b></td><td>Transition function</td><td>&delta; : Q &times; &Sigma; &rarr; Q</td></tr>
+        <tr><td><b>q<sub>0</sub></b></td><td>Start state</td><td>q<sub>0</sub> &isin; Q (exactly one)</td></tr>
+        <tr><td><b>F</b></td><td>Accept states</td><td>F &sube; Q (zero or more)</td></tr>
+      </table>
+      <div class="diagram small">
+  Example DFA:
+    Q     = {q0, q1, q2}
+    Sigma = {0, 1}
+    q0    = q0         (start state)
+    F     = {q2}       (accept states)
+
+    delta:
+      delta(q0, 0) = q1
+      delta(q0, 1) = q0
+      delta(q1, 0) = q2
+      delta(q1, 1) = q0
+      delta(q2, 0) = q2
+      delta(q2, 1) = q2
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>The "Deterministic" in DFA</h3>
+        <p><b>&delta; is a total function</b>: for every state q and every symbol a, &delta;(q, a) produces <b>exactly one</b> next state. No choices. No ambiguity. No missing transitions.</p>
+      </div>
+      <div class="warning">
+        <h3>Common exam mistake</h3>
+        <p>Students often draw DFAs with missing transitions. If state q has no arrow for symbol 'a', that is NOT a valid DFA! Every state must have exactly one outgoing transition for each symbol in &Sigma;.</p>
+      </div>
+      <div class="analogy">
+        <h3>Analogy: GPS Navigation</h3>
+        <p>A DFA is like a GPS that gives you <b>exactly one instruction</b> at every intersection. "Turn left." No options, no ambiguity. You just follow the rules. At the end of your trip, you check: "Am I at an acceptable destination?"</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">4 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 5: STATE DIAGRAM NOTATION ==================== -->
+<div class="slide" id="s5">
+  <h1>State Diagram Notation</h1>
+  <p class="subtitle">How to draw DFAs -- the visual language</p>
+  <div class="two-col">
+    <div>
+      <h3>The four visual elements</h3>
+      <div class="diagram">
+  1. STATES = circles
+     ( q0 )    ( q1 )    ( q2 )
+
+  2. START STATE = arrow from nowhere
+     --&gt;( q0 )
+
+  3. ACCEPT/FINAL STATES = double circle
+     (( q2 ))
+
+  4. TRANSITIONS = labeled arrows
+          a
+     ( q0 )-----&gt;( q1 )
+
+     Self-loop:
+        +--a--+
+        |     |
+        v     |
+       ( q0 )-+
+      </div>
+    </div>
+    <div>
+      <h3>Complete example: "contains at least two 0s"</h3>
+      <div class="diagram">
+            0             0
+  --&gt;( q0 )------&gt;( q1 )------&gt;(( q2 ))
+       |              |               |
+       | 1            | 1             | 0,1
+       v              v               v
+      ( q0 )         ( q1 )         (( q2 ))
+    (self-loop)    (self-loop)     (self-loop)
+
+  Cleaner drawing:
+
+        +--1--+     +--1--+     +--0,1-+
+        |     |     |     |     |      |
+        v     |     v     |     v      |
+  --&gt;( q0 )--+  ( q1 )--+  (( q2 ))--+
+        |  0         |  0
+        +----------&gt; +----------&gt;
+      </div>
+      <div class="key-idea">
+        <h3>Reading a state diagram</h3>
+        <p>Start at the arrow. Follow transitions for each input symbol. After all input is consumed, check: are you in a double-circle state? If yes: <b>accept</b>. If no: <b>reject</b>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">5 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 6: TRANSITION TABLE ==================== -->
+<div class="slide" id="s6">
+  <h1>Transition Tables</h1>
+  <p class="subtitle">An equivalent way to represent DFAs -- great for systematic work</p>
+  <div class="two-col">
+    <div>
+      <h3>The same DFA, two representations</h3>
+      <div class="diagram small">
+  State Diagram:
+
+       +--1--+     +--1--+     +-0,1--+
+       |     |     |     |     |      |
+       v     |     v     |     v      |
+  --&gt;( q0 )-+   ( q1 )-+  (( q2 ))--+
+        |  0        |  0
+        +--------&gt;  +--------&gt;
+      </div>
+      <h3>Transition Table:</h3>
+      <table>
+        <tr><th></th><th>0</th><th>1</th></tr>
+        <tr><td><b>&rarr; q0</b></td><td>q1</td><td>q0</td></tr>
+        <tr><td>q1</td><td>q2</td><td>q1</td></tr>
+        <tr class="highlight"><td><b>*q2</b></td><td>q2</td><td>q2</td></tr>
+      </table>
+      <p style="font-size: 0.9em; color:#94a3b8;">&rarr; = start state, * = accept state</p>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>How to read the table</h3>
+        <p>Each row is a state. Each column is an input symbol. The cell at row q, column a gives &delta;(q, a) -- the next state.</p>
+        <p style="margin-top: 8px;">Row "q0", column "0" says <b>q1</b>. This means: "from state q0, on input 0, go to q1."</p>
+      </div>
+      <div class="warning">
+        <h3>Completeness check</h3>
+        <p>In a valid DFA transition table, <b>every cell must be filled</b> with exactly one state. If any cell is empty or has multiple states, it is not a DFA.</p>
+      </div>
+      <div class="analogy">
+        <h3>When to use which?</h3>
+        <p><b>Diagrams</b> are better for intuition and seeing structure. <b>Tables</b> are better for algorithms (minimization, product construction) and for making sure you have not missed any transitions.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">6 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 7: EXAMPLE EVEN NUMBER OF 0s ==================== -->
+<div class="slide" id="s7">
+  <h1>Example: Even Number of 0s</h1>
+  <p class="subtitle">Building a DFA step by step -- the thought process matters</p>
+  <div class="two-col">
+    <div>
+      <h3>The problem</h3>
+      <p>Design a DFA over &Sigma; = {0, 1} that accepts all strings with an <b>even number of 0s</b> (including zero 0s).</p>
+      <h3 style="margin-top: 16px;">Step 1: What do we need to remember?</h3>
+      <p>We only care about the <b>parity</b> (even/odd) of the count of 0s seen so far. That is a finite amount of information -- just 2 states!</p>
+      <div class="step"><b>Step 2:</b> Define states
+        <ul>
+          <li><b>E</b> = "seen an even number of 0s so far"</li>
+          <li><b>O</b> = "seen an odd number of 0s so far"</li>
+        </ul>
+      </div>
+      <div class="step"><b>Step 3:</b> Start state = <b>E</b> (zero 0s is even)</div>
+      <div class="step"><b>Step 4:</b> Accept state = <b>{E}</b> (we want even count)</div>
+    </div>
+    <div>
+      <div class="step">
+      <h3>Step 5: Define transitions</h3>
+      <table>
+        <tr><th></th><th>0</th><th>1</th></tr>
+        <tr class="highlight"><td><b>&rarr; *E</b></td><td>O</td><td>E</td></tr>
+        <tr><td>O</td><td>E</td><td>O</td></tr>
+      </table>
+      <p style="font-size:0.95em;">Reading a 0 flips parity. Reading a 1 keeps it the same.</p>
+      </div>
+      <div class="step">
+      <h3>Step 6: Draw the state diagram</h3>
+      <div class="diagram">
+       +---1---+            +---1---+
+       |       |            |       |
+       v       |            v       |
+  --&gt;(( E ))--+           ( O )---+
+        |          0          ^
+        +--------------------&gt;|
+        |&lt;--------------------+
+                   0
+      </div>
+      </div>
+      <div class="key-idea">
+        <h3>Design principle</h3>
+        <p>Ask: "What is the <b>minimum</b> information I need to remember?" That tells you how many states you need. For parity questions, the answer is always 2.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">7 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 8: PROCESSING STRINGS ==================== -->
+<div class="slide" id="s8">
+  <h1>Processing Strings</h1>
+  <p class="subtitle">Tracing input through a DFA -- the mechanical procedure</p>
+  <div class="two-col">
+    <div>
+      <h3>The DFA (even number of 0s)</h3>
+      <div class="diagram small">
+       +---1---+            +---1---+
+       |       |            |       |
+       v       |            v       |
+  --&gt;(( E ))--+           ( O )---+
+        |          0          ^
+        +--------------------&gt;|
+        |&lt;--------------------+
+                   0
+      </div>
+      <h3>Trace: input = "10010"</h3>
+      <div class="step"><b>Start:</b> state = <b>E</b></div>
+      <div class="step">Read <b>'1'</b>: &delta;(E, 1) = <b>E</b></div>
+      <div class="step">Read <b>'0'</b>: &delta;(E, 0) = <b>O</b></div>
+      <div class="step">Read <b>'0'</b>: &delta;(O, 0) = <b>E</b></div>
+      <div class="step">Read <b>'1'</b>: &delta;(E, 1) = <b>E</b></div>
+      <div class="step">Read <b>'0'</b>: &delta;(E, 0) = <b>O</b></div>
+      <div class="step"><b>End:</b> state = O (not accept) &rarr; <b>REJECT</b></div>
+    </div>
+    <div>
+      <h3>Trace: input = "1001"</h3>
+      <div class="step"><b>Start:</b> state = <b>E</b></div>
+      <div class="step">Read <b>'1'</b>: &delta;(E, 1) = <b>E</b></div>
+      <div class="step">Read <b>'0'</b>: &delta;(E, 0) = <b>O</b></div>
+      <div class="step">Read <b>'0'</b>: &delta;(O, 0) = <b>E</b></div>
+      <div class="step">Read <b>'1'</b>: &delta;(E, 1) = <b>E</b></div>
+      <div class="step"><b>End:</b> state = E (accept!) &rarr; <b>ACCEPT</b></div>
+      <div class="diagram small">
+  Summary of both traces:
+
+  "10010":  E -1-&gt; E -0-&gt; O -0-&gt; E -1-&gt; E -0-&gt; O   REJECT
+  "1001" :  E -1-&gt; E -0-&gt; O -0-&gt; E -1-&gt; E         ACCEPT
+  "0000" :  E -0-&gt; O -0-&gt; E -0-&gt; O -0-&gt; E         ACCEPT
+  ""     :  E                                       ACCEPT
+  "0"    :  E -0-&gt; O                                REJECT
+      </div>
+      <div class="key-idea">
+        <h3>The procedure is purely mechanical</h3>
+        <p>Start at q<sub>0</sub>. For each symbol in the input (left to right), look up the next state. At the end, check membership in F. That is all a DFA does.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">8 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 9: TENNIS SCORING ==================== -->
+<div class="slide" id="s9">
+  <h1>Tennis Scoring as a DFA</h1>
+  <p class="subtitle">A real-world DFA example from the lecture: scoring a game of tennis</p>
+  <div class="two-col">
+    <div>
+      <h3>Tennis game rules</h3>
+      <ul>
+        <li>One person serves throughout a game</li>
+        <li>Points: Love (0), 15, 30, 40</li>
+        <li>Must score at least <b>4 points</b> to win</li>
+        <li>Must win by at least <b>2 points</b></li>
+        <li>When tied at 40-40: <b>Deuce</b></li>
+        <li>From Deuce, one point ahead: <b>Advantage</b></li>
+      </ul>
+      <h3 style="margin-top: 12px;">Alphabet</h3>
+      <p><b>&Sigma; = {s, o}</b></p>
+      <ul>
+        <li><b>s</b> = server wins the point</li>
+        <li><b>o</b> = opponent wins the point</li>
+      </ul>
+      <div class="key-idea">
+        <h3>Why is this a DFA?</h3>
+        <p>The score is the state. Each point (s or o) deterministically moves to exactly one new score. There is a finite number of possible scores. The "Server Wins" state is the accept state.</p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  Tennis DFA (20 states):  s = server wins point, o = opponent wins point
+  Scores shown as Server-Opponent.  Accept = ((Server Wins))
+
+                              s
+  Start --&gt;(Love)---&gt;(15-Lv)---&gt;(30-Lv)---&gt;(40-Lv)---&gt;((SvrW))
+              |  o       | o        | o         | o         ^  ^
+              v          v          v           v           |  |
+          (Lv-15)   (15-all)   (30-15)     (40-15)--s------+  |
+              |  o       | o        | o         | o            |
+              v          v          v           v          s   |
+          (Lv-30)   (15-30)    (30-all)     (40-30)--------+  |
+              |  o       | o        | o         | o            |
+              v          v          v           v              |
+          (Lv-40)   (15-40)    (30-40)     (Deuce)&lt;---+    s  |
+              |  o       | o        | o      |  |     |    |  |
+              v          v          v        s  o     |    |  |
+           (OppW)    (OppW)     (OppW)       |  |     |    |  |
+              ^          ^          ^        v  v     |    |  |
+              |          |          |     (Ad-in)(Ad-out)  |  |
+              |          +----------+--------o  |  s       |  |
+              |          from any losing path    +--&gt;(Deuce)+  |
+              |                                  o--&gt;(OppW)    |
+              +------------------------------------------------+
+                         (Ad-in)---s---&gt;((SvrW))
+      </div>
+      <p style="font-size: 0.9em; color: #94a3b8;">SvrW = Server Wins, OppW = Opponent Wins, Ad = Advantage, Lv = Love</p>
+    </div>
+  </div>
+  <div class="slide-number">9 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 9B: TENNIS FULL DIAGRAM ==================== -->
+<div class="slide" id="s10">
+  <h1>Tennis DFA: Full State Diagram</h1>
+  <p class="subtitle">The complete picture with all 20 states and transitions</p>
+  <div class="diagram" style="font-size: 0.78em; line-height: 1.5;">
+                                     s                  s                   s
+  Start--&gt;(Love)----------&gt;(15-Love)----------&gt;(30-Love)----------&gt;(40-Love)----------&gt;((Server Wins))
+            |          s       |          s         |           s        |    o                ^    ^
+            | o                | o                  | o                  v         s            |    |
+            v                  v                    v               (40-15)--------+       s   |    |
+         (Love-15)         (15-all)             (30-15)               |                   |   |    |
+            |          s       |          s         |           s     | o                  |   |    |
+            | o                | o                  | o               v        s           |   |    |
+            v                  v                    v             (40-30)------+           |   |    |
+         (Love-30)         (15-30)              (30-all)             |                    |   |    |
+            |          s       |          s         |           s    | o                   |   |    |
+            | o                | o                  | o              v         s    o      |   |    |
+            v                  v                    v           (Deuce)----&gt;(Ad-in)----&gt;(Deuce)    |
+         (Love-40)         (15-40)              (30-40)          ^  |         |                    |
+            |          s       |          s         |        s   |  | o       | s                  |
+            | o                | o                  | o          |  v         +--------------------+
+            v                  v                    v            |(Ad-out)
+         ((Opp Wins))&lt;-----((Opp Wins))&lt;-------((Opp Wins))    |  |
+                                                                 |  | o
+                                                                 +--+ s--&gt;(Deuce)
+                                                                    o--&gt;((Opp Wins))
+  </div>
+  <div class="two-col" style="margin-top: 16px;">
+    <div>
+      <div class="key-idea">
+        <h3>Example trace: "sosososososs"</h3>
+        <p>Love &rarr;<sup>s</sup> 15-Lv &rarr;<sup>o</sup> 15-all &rarr;<sup>s</sup> 30-15 &rarr;<sup>o</sup> 30-all &rarr;<sup>s</sup> 40-30 &rarr;<sup>o</sup> Deuce &rarr;<sup>s</sup> Ad-in &rarr;<sup>o</sup> Deuce &rarr;<sup>s</sup> Ad-in &rarr;<sup>o</sup> Deuce &rarr;<sup>s</sup> Ad-in &rarr;<sup>s</sup> <b>Server Wins!</b></p>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Note: Server Wins and Opp Wins are "absorbing"</h3>
+        <p>Once the game is over, both s and o transitions from Server Wins lead back to Server Wins (and similarly for Opp Wins). The game is over -- no more points change the outcome. These are sometimes called <b>trap states</b> or <b>absorbing states</b>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">10 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 10: EXTENDED TRANSITION FUNCTION ==================== -->
+<div class="slide" id="s11">
+  <h1>Extended Transition Function</h1>
+  <p class="subtitle">&delta;&#770; (delta-hat): extending &delta; from single symbols to entire strings</p>
+  <div class="two-col">
+    <div>
+      <h3>The problem</h3>
+      <p>&delta;(q, a) tells us the next state for <b>one</b> symbol. But we need to process <b>entire strings</b>. We define &delta;&#770;(q, w) by induction on the length of w:</p>
+      <div class="key-idea">
+        <p><b>Base case:</b> &delta;&#770;(q, &epsilon;) = q</p>
+        <p style="color:#94a3b8;">"Reading nothing leaves you where you are."</p>
+        <p style="margin-top:12px;"><b>Inductive case:</b> &delta;&#770;(q, wa) = &delta;(&delta;&#770;(q, w), a)</p>
+        <p style="color:#94a3b8;">"To process string wa: first process w to reach some state p, then take one more step on symbol a."</p>
+      </div>
+    </div>
+    <div>
+      <h3>Worked example</h3>
+      <p>Using the "even 0s" DFA with states E, O:</p>
+      <div class="diagram small">
+  delta-hat(E, "010") = ?
+
+  delta-hat(E, epsilon) = E             (base)
+  delta-hat(E, "0")  = delta(E, 0)
+                     = O                (E + 0 -> O)
+  delta-hat(E, "01") = delta(O, 1)
+                     = O                (O + 1 -> O)
+  delta-hat(E, "010")= delta(O, 0)
+                     = E                (O + 0 -> E)
+
+  Result: E (accept state) -> "010" ACCEPTED
+      </div>
+      <div class="analogy">
+        <h3>Why define it this formally?</h3>
+        <p>This inductive definition lets us <b>prove</b> things about DFAs mathematically. For example, we can prove that two DFAs accept the same language by showing their &delta;&#770; functions agree on all strings. Without formal definitions, proofs are impossible.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">11 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 11: LANGUAGE OF A DFA ==================== -->
+<div class="slide" id="s12">
+  <h1>Language of a DFA</h1>
+  <p class="subtitle">L(A) -- the set of all strings a DFA accepts</p>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>For a DFA A = (Q, &Sigma;, &delta;, q<sub>0</sub>, F), the <b>language</b> of A is:</p>
+        <p style="font-size: 1.2em; margin-top: 8px;"><b>L(A) = { w &isin; &Sigma;* | &delta;&#770;(q<sub>0</sub>, w) &isin; F }</b></p>
+        <p style="color:#94a3b8; margin-top: 8px;">"The set of all strings over &Sigma; that, when processed from q<sub>0</sub>, end in an accept state."</p>
+      </div>
+      <h3 style="margin-top: 16px;">Examples</h3>
+      <div class="diagram small">
+  DFA 1 (even 0s):
+    L(A) = { w in {0,1}* | w has an even
+             number of 0s }
+    Examples in L:  "", "1", "11", "00",
+                    "1001", "0110"
+    Examples not in L: "0", "010", "000"
+
+  DFA 2 (tennis):
+    L(A) = { w in {s,o}* | server wins
+             the game }
+    Examples in L: "ssss", "sosososs"
+    Examples not in L: "oooo", "so"
+      </div>
+    </div>
+    <div>
+      <h3>A language is called "regular" if...</h3>
+      <div class="key-idea">
+        <p>A language L is <b>regular</b> if there exists some DFA A such that L = L(A).</p>
+        <p style="margin-top: 8px;">Equivalently: L is regular if it can be recognized by a DFA, an NFA, or described by a regular expression (all three formalisms define the same class).</p>
+      </div>
+      <div class="warning">
+        <h3>Not every language is regular!</h3>
+        <p>The language { a<sup>n</sup>b<sup>n</sup> | n &ge; 0 } is <b>not regular</b>. No DFA can count to an arbitrary n. DFAs have <b>finite</b> memory, so they cannot match unbounded counts.</p>
+      </div>
+      <div class="analogy">
+        <h3>Analogy: club bouncers</h3>
+        <p>Think of a DFA as a bouncer with a simple checklist. The <b>language</b> is the guest list. The bouncer reads your invitation (input string) and follows fixed rules to decide: are you in or out?</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">12 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 12: PRODUCT CONSTRUCTION ==================== -->
+<div class="slide" id="s13">
+  <h1>Product Construction</h1>
+  <p class="subtitle">Combining two DFAs to build intersection and union</p>
+  <div class="two-col">
+    <div>
+      <h3>The idea</h3>
+      <p>Given DFA A<sub>1</sub> recognizing L<sub>1</sub> and DFA A<sub>2</sub> recognizing L<sub>2</sub>, we can build a <b>single DFA</b> recognizing L<sub>1</sub> &cap; L<sub>2</sub> or L<sub>1</sub> &cup; L<sub>2</sub>.</p>
+      <div class="key-idea">
+        <h3>Construction</h3>
+        <p><b>Run both DFAs simultaneously.</b></p>
+        <p>States of product DFA: <b>Q<sub>1</sub> &times; Q<sub>2</sub></b> (all pairs)</p>
+        <p>Transition: &delta;((p, q), a) = (&delta;<sub>1</sub>(p, a), &delta;<sub>2</sub>(q, a))</p>
+        <p>Start: (q<sub>0,1</sub>, q<sub>0,2</sub>)</p>
+        <p style="margin-top: 8px;"><b>For intersection:</b> F = F<sub>1</sub> &times; F<sub>2</sub> (both accept)</p>
+        <p><b>For union:</b> F = (F<sub>1</sub> &times; Q<sub>2</sub>) &cup; (Q<sub>1</sub> &times; F<sub>2</sub>) (either accepts)</p>
+      </div>
+    </div>
+    <div>
+      <h3>Example: L<sub>1</sub> &cap; L<sub>2</sub></h3>
+      <p>L<sub>1</sub> = "even number of 0s", L<sub>2</sub> = "ends with 1"</p>
+      <div class="diagram small">
+  A1: states {E, O}, start E, accept {E}
+  A2: states {A, B}, start A, accept {B}
+      A --0--> A,  A --1--> B
+      B --0--> A,  B --1--> B
+
+  Product DFA states: {(E,A),(E,B),(O,A),(O,B)}
+  Start: (E, A)
+
+  delta:
+  (E,A) --0--> (O,A)    (E,A) --1--> (E,B)
+  (E,B) --0--> (O,A)    (E,B) --1--> (E,B)
+  (O,A) --0--> (E,A)    (O,A) --1--> (O,B)
+  (O,B) --0--> (E,A)    (O,B) --1--> (O,B)
+
+  Intersection accept: {(E,B)}
+  (even 0s AND ends with 1)
+
+  Union accept: {(E,A),(E,B),(O,B)}
+  (even 0s OR ends with 1)
+      </div>
+      <div class="analogy">
+        <h3>Why does this matter?</h3>
+        <p>This proves <b>regular languages are closed under intersection and union</b>. If L<sub>1</sub> and L<sub>2</sub> are regular, so are L<sub>1</sub> &cap; L<sub>2</sub> and L<sub>1</sub> &cup; L<sub>2</sub>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">13 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 13: COMPLEMENT ==================== -->
+<div class="slide" id="s14">
+  <h1>Complement of a DFA</h1>
+  <p class="subtitle">The simplest closure proof you will ever see</p>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>The trick</h3>
+        <p>Given a DFA A recognizing L, build a DFA for the complement <b>&Sigma;* \ L</b> by simply <b>swapping accept and non-accept states</b>.</p>
+        <p style="margin-top: 8px;">Accept states become non-accept. Non-accept states become accept. Everything else stays the same.</p>
+      </div>
+      <div class="diagram">
+  Original:  accept = {q2}
+
+       +--1--+     +--1--+     +-0,1--+
+       |     |     |     |     |      |
+       v     |     v     |     v      |
+  --&gt;( q0 )-+   ( q1 )-+  (( q2 ))--+
+        |  0        |  0
+        +--------&gt;  +--------&gt;
+
+  Complement: accept = {q0, q1}
+
+       +--1--+     +--1--+     +-0,1--+
+       |     |     |     |     |      |
+       v     |     v     |     v      |
+  --&gt;(( q0 ))  (( q1 ))    ( q2 )---+
+        |  0        |  0
+        +--------&gt;  +--------&gt;
+      </div>
+    </div>
+    <div>
+      <h3>Why does this work?</h3>
+      <p>For any string w, the DFA ends in exactly one state. That state is either in F (accept) or not in F (reject). Swapping F flips every accept to reject and vice versa -- so the complement DFA accepts exactly the strings the original rejects.</p>
+      <div class="warning">
+        <h3>This ONLY works for DFAs, not NFAs!</h3>
+        <p>An NFA accepts if <b>any</b> path leads to an accept state. Swapping accept/non-accept in an NFA does NOT give the complement. (Some paths might accept while others reject the same string.) You must first convert the NFA to a DFA, then complement.</p>
+      </div>
+      <div class="analogy">
+        <h3>Analogy: pass/fail grading</h3>
+        <p>Imagine a class where &ge;60 passes. The complement is like changing the rule to "&lt;60 passes." Same exam, same scores, just flip which scores count as passing.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">14 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 14: DFA MINIMIZATION ==================== -->
+<div class="slide" id="s15">
+  <h1>DFA Minimization</h1>
+  <p class="subtitle">Finding the smallest DFA for a given language</p>
+  <div class="two-col">
+    <div>
+      <h3>Why minimize?</h3>
+      <ul>
+        <li>Smaller DFA = less memory, faster execution</li>
+        <li>The <b>minimum DFA for a regular language is unique</b> (up to renaming states)</li>
+        <li>Two DFAs accept the same language if and only if their minimized versions are identical</li>
+      </ul>
+      <div class="key-idea">
+        <h3>Key concept: Distinguishable States</h3>
+        <p>States p and q are <b>distinguishable</b> if there exists some string w such that exactly one of &delta;&#770;(p, w) and &delta;&#770;(q, w) is in F.</p>
+        <p style="margin-top:8px;">In other words: there is a string that one state accepts but the other rejects. They behave differently, so they must stay separate.</p>
+        <p style="margin-top:8px;">States that are <b>not distinguishable</b> are called <b>equivalent</b> -- they can be merged.</p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram">
+  Can these two states be merged?
+
+  --&gt;( A )--0--&gt;( B )--0--&gt;(( C ))
+       |         |              ^
+       1         1              |
+       v         v              |
+      ( D )     ( D )--0-------+
+       |
+       1
+       v
+      (( C ))
+
+  A and B:
+    From A, "00" reaches C (accept)
+    From B, "0"  reaches C (accept)
+    But from A, "0" reaches B (not accept)
+    and  from B, "0" reaches C (accept)
+    The string "0" distinguishes A from B.
+    They are DIFFERENT and cannot be merged.
+      </div>
+      <div class="analogy">
+        <h3>Analogy: identical twins</h3>
+        <p>If two states respond identically to every possible future input, they are "twins" and can be merged into one. The table-filling algorithm systematically finds all such twins.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">15 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 15: TABLE FILLING ALGORITHM ==================== -->
+<div class="slide" id="s16">
+  <h1>Table-Filling Algorithm</h1>
+  <p class="subtitle">A systematic way to find all distinguishable pairs of states</p>
+  <div class="two-col">
+    <div>
+      <h3>The algorithm</h3>
+      <div class="step"><b>Step 1 (Base case):</b> Mark every pair (p, q) where exactly one of p, q is an accept state. These are distinguishable by &epsilon; (the empty string).</div>
+      <div class="step"><b>Step 2 (Induction):</b> For each unmarked pair (p, q), check: for some input symbol a, is the pair (&delta;(p,a), &delta;(q,a)) already marked? If yes, mark (p, q) too.</div>
+      <div class="step"><b>Step 3:</b> Repeat Step 2 until no more pairs can be marked.</div>
+      <div class="step"><b>Step 4:</b> All <b>unmarked</b> pairs are equivalent and can be merged.</div>
+      <div class="key-idea">
+        <h3>Why does it work?</h3>
+        <p>If &delta;(p, a) and &delta;(q, a) are distinguishable by some string w, then p and q are distinguishable by the string <b>aw</b>. The algorithm propagates distinguishability backwards through transitions.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Visualizing the table</h3>
+      <div class="diagram small">
+  Triangular table (only need pairs where p &lt; q):
+
+       q1   q2   q3   q4   q5
+  q0 [    |    |    |    |    ]
+  q1      [    |    |    |    ]
+  q2           [    |    |    ]
+  q3                [    |    ]
+  q4                     [    ]
+
+  Step 1: Mark all (accept, non-accept) pairs
+          with "X" in the base round.
+
+  Step 2+: For each empty cell (p,q),
+           check if delta(p,a) vs delta(q,a)
+           is already marked for any symbol a.
+           If so, mark this cell too.
+
+  Step 3: When nothing new gets marked, STOP.
+
+  Step 4: Empty cells = equivalent pairs = MERGE!
+      </div>
+      <div class="warning">
+        <h3>Complexity</h3>
+        <p>The algorithm runs in <b>O(n<sup>2</sup>)</b> time where n = |Q|. Each pair is checked at most once per round, and there are at most n rounds.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">16 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 16: MINIMIZATION WORKED EXAMPLE ==================== -->
+<div class="slide" id="s17">
+  <h1>Example: Minimizing a DFA</h1>
+  <p class="subtitle">Complete worked example with the table-filling algorithm</p>
+  <div class="two-col">
+    <div>
+      <h3>Original DFA</h3>
+      <table style="font-size: 0.9em;">
+        <tr><th></th><th>0</th><th>1</th></tr>
+        <tr><td><b>&rarr; A</b></td><td>B</td><td>C</td></tr>
+        <tr><td>B</td><td>D</td><td>E</td></tr>
+        <tr class="highlight"><td><b>*C</b></td><td>F</td><td>C</td></tr>
+        <tr><td>D</td><td>D</td><td>E</td></tr>
+        <tr class="highlight"><td><b>*E</b></td><td>F</td><td>C</td></tr>
+        <tr><td>F</td><td>D</td><td>E</td></tr>
+      </table>
+      <p style="font-size:0.9em;">Accept states: {C, E}</p>
+      <h3 style="margin-top:12px;">Step 1: Base case marks</h3>
+      <p style="font-size:0.95em;">Mark all (accept, non-accept) pairs:</p>
+      <div class="diagram small">
+       B    C    D    E    F
+  A [    | X  |    | X  |    ]
+  B      [ X  |    | X  |    ]
+  C           [ X  |    | X  ]
+  D                [ X  |    ]
+  E                     [ X  ]
+
+  X = distinguishable (one accept, one not)
+      </div>
+    </div>
+    <div>
+      <h3>Step 2: Propagate</h3>
+      <div class="diagram small">
+  Check (A,B):
+    delta(A,0)=B, delta(B,0)=D -> (B,D) unmarked
+    delta(A,1)=C, delta(B,1)=E -> (C,E) unmarked
+    No mark found. Leave unmarked.
+
+  Check (A,D):
+    delta(A,0)=B, delta(D,0)=D -> (B,D) unmarked
+    delta(A,1)=C, delta(D,1)=E -> (C,E) unmarked
+    Leave unmarked.
+
+  Check (A,F):
+    delta(A,0)=B, delta(F,0)=D -> (B,D) unmarked
+    delta(A,1)=C, delta(F,1)=E -> (C,E) unmarked
+    Leave unmarked.
+
+  Check (B,D):
+    delta(B,0)=D, delta(D,0)=D -> same! skip
+    delta(B,1)=E, delta(D,1)=E -> same! skip
+    Leave unmarked.
+
+  Check (B,F):
+    delta(B,0)=D, delta(F,0)=D -> same!
+    delta(B,1)=E, delta(F,1)=E -> same!
+    Leave unmarked.
+
+  Check (D,F): same analysis -> unmarked.
+  Check (C,E):
+    delta(C,0)=F, delta(E,0)=F -> same!
+    delta(C,1)=C, delta(E,1)=C -> same!
+    Leave unmarked.
+
+  No new marks! DONE.
+      </div>
+      <h3>Result: Equivalent classes</h3>
+      <p><b>{A, B, D, F}</b> and <b>{C, E}</b>. The 6-state DFA minimizes to <b>2 states</b>!</p>
+    </div>
+  </div>
+  <div class="slide-number">17 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 17: MYHILL-NERODE ==================== -->
+<div class="slide" id="s18">
+  <h1>The Myhill-Nerode Theorem</h1>
+  <p class="subtitle">The deepest result about DFAs -- connecting equivalence classes to minimum states</p>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>The Equivalence Relation &equiv;<sub>L</sub></h3>
+        <p>For a language L, define: <b>x &equiv;<sub>L</sub> y</b> if and only if for every string z, xz &isin; L &hArr; yz &isin; L.</p>
+        <p style="color:#94a3b8; margin-top:8px;">"x and y are equivalent if no suffix can tell them apart with respect to L."</p>
+      </div>
+      <h3 style="margin-top:16px;">The Theorem (three parts)</h3>
+      <ol>
+        <li style="margin-bottom:8px;">L is regular <b>if and only if</b> &equiv;<sub>L</sub> has a <b>finite</b> number of equivalence classes</li>
+        <li style="margin-bottom:8px;">The number of equivalence classes equals the <b>minimum number of states</b> in any DFA for L</li>
+        <li>The minimum-state DFA is <b>unique</b> (up to renaming)</li>
+      </ol>
+    </div>
+    <div>
+      <h3>Example: L = "even number of 0s"</h3>
+      <div class="diagram small">
+  Equivalence classes of strings:
+
+  Class 1: strings with even # of 0s
+    "", "1", "11", "00", "1001", ...
+    Any suffix that makes one accept
+    also makes the other accept.
+
+  Class 2: strings with odd # of 0s
+    "0", "010", "000", "10", ...
+
+  Only 2 classes -> minimum DFA has 2 states!
+  (This matches our E/O DFA exactly.)
+      </div>
+      <div class="warning">
+        <h3>For non-regular languages</h3>
+        <p>If L = { a<sup>n</sup>b<sup>n</sup> }, then the strings "", "a", "aa", "aaa", ... are all in <b>different</b> equivalence classes (infinitely many). By Myhill-Nerode, L is not regular. This is an alternative to the pumping lemma for proving non-regularity!</p>
+      </div>
+      <div class="analogy">
+        <h3>Why does this matter?</h3>
+        <p>Myhill-Nerode gives us a <b>precise lower bound</b> on the number of states. It is not just an algorithm -- it is a theorem about the nature of regular languages themselves.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">18 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 18: DEAD STATES AND TRAP STATES ==================== -->
+<div class="slide" id="s19">
+  <h1>Dead States and Trap States</h1>
+  <p class="subtitle">States you can never leave -- or should never reach</p>
+  <div class="two-col">
+    <div>
+      <h3>Dead state (a.k.a. trap state, sink state)</h3>
+      <div class="key-idea">
+        <p>A <b>dead state</b> is a non-accepting state where all transitions (for every symbol) loop back to itself. Once you enter, you can never reach an accept state.</p>
+      </div>
+      <div class="diagram">
+  Example: "starts with 1" over {0,1}
+
+       +--0,1-+
+       |      |
+       v      |
+  --&gt;( q0 )--+---1---&gt;(( q1 ))
+       |                  |
+       0               +--0,1-+
+       v               |      |
+      (DEAD)&lt;--+       v      |
+       |       |      (( q1 ))+
+       +--0,1--+
+
+  DEAD state: non-accepting, all arrows
+  point back to itself. It's a "black hole."
+      </div>
+    </div>
+    <div>
+      <h3>When do you need dead states?</h3>
+      <ul>
+        <li>A DFA requires <b>total transitions</b> -- every state must have a transition for every symbol</li>
+        <li>When no "useful" state exists for a transition, send it to the dead state</li>
+        <li>The dead state makes the DFA <b>complete</b></li>
+      </ul>
+      <div class="warning">
+        <h3>Common omission</h3>
+        <p>Students often leave out the dead state when drawing DFAs. This is technically incorrect -- the DFA is incomplete. Always include it, or explicitly note "transitions to dead state omitted for clarity."</p>
+      </div>
+      <div class="analogy">
+        <h3>Absorbing states (like Tennis)</h3>
+        <p>In the tennis DFA, "Server Wins" and "Opp Wins" are <b>absorbing states</b>: all transitions loop back. "Server Wins" is an <b>accepting</b> absorbing state. "Opp Wins" is a <b>dead state</b> (non-accepting absorbing state). Both are trap states -- once you are in, you never leave.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">19 / 20</div>
+</div>
+
+<!-- ==================== SLIDE 19/20: DESIGN PATTERNS + SUMMARY ==================== -->
+<div class="slide" id="s20">
+  <h1>DFA Design Patterns &amp; Cheat Sheet</h1>
+  <p class="subtitle">Common patterns and a quick reference for exams</p>
+  <div class="two-col">
+    <div>
+      <h3>Common DFA Design Patterns</h3>
+      <div class="diagram small">
+  1. "AT LEAST ONE a"
+     Two states: seen-a (accept), not-yet.
+     --&gt;(S)--a--&gt;((T))--a,b--&gt;((T))
+        |b               (self-loop)
+        v
+       (S) (self-loop on b)
+
+  2. "ENDS WITH ab"
+     Three states tracking suffix progress.
+     --&gt;(S)--a--&gt;(A)--b--&gt;((AB))
+        ^-b  ^-a    |a       |a--&gt;(A)
+                     +-b-&gt;(S) |b--&gt;(S)
+
+  3. "CONTAINS substring aba"
+     Build states for each prefix matched.
+     Once full match: stay in accept forever.
+
+  4. "DIVISIBILITY by n"
+     States = {0, 1, ..., n-1} = remainders.
+     delta(r, d) = (r * base + d) mod n
+     Accept = {0}.
+     Example: divisible by 3 in binary
+       States: {0, 1, 2}, start=0, accept={0}
+       delta(r, b) = (2r + b) mod 3
+      </div>
+    </div>
+    <div>
+      <h3>Summary &amp; Cheat Sheet</h3>
+      <div class="key-idea" style="font-size: 0.9em;">
+        <h3>Core Facts</h3>
+        <ul>
+          <li><b>DFA = (Q, &Sigma;, &delta;, q<sub>0</sub>, F)</b> -- 5-tuple</li>
+          <li>&delta; is a <b>total function</b>: Q &times; &Sigma; &rarr; Q</li>
+          <li>Accepts w if &delta;&#770;(q<sub>0</sub>, w) &isin; F</li>
+          <li>L(A) = { w | &delta;&#770;(q<sub>0</sub>, w) &isin; F }</li>
+        </ul>
+      </div>
+      <div class="key-idea" style="font-size: 0.9em;">
+        <h3>Closure Properties</h3>
+        <ul>
+          <li><b>Complement:</b> swap F and Q\F</li>
+          <li><b>Union:</b> product construction, F = either accepts</li>
+          <li><b>Intersection:</b> product construction, F = both accept</li>
+          <li><b>Concatenation, Kleene star:</b> need NFAs (covered later)</li>
+        </ul>
+      </div>
+      <div class="warning" style="font-size: 0.9em;">
+        <h3>Common Mistakes to Avoid</h3>
+        <ul>
+          <li>Missing transitions (every state needs one per symbol)</li>
+          <li>Forgetting the dead/trap state</li>
+          <li>Complementing an NFA (must convert to DFA first!)</li>
+          <li>Confusing DFA state count with language complexity</li>
+          <li>Not specifying all 5 components of the tuple</li>
+        </ul>
+      </div>
+      <p style="margin-top: 12px; color: #64748b; font-size: 0.9em;"><b>Minimization:</b> Table-filling algorithm. Myhill-Nerode gives the exact minimum state count. The minimum DFA is unique up to renaming.</p>
+    </div>
+  </div>
+  <div class="slide-number">20 / 20</div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 20;
+let current = 1;
+
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) {
+    slide.classList.add('active');
+    slide.classList.add('fade-in');
+  }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) {
+    current = next;
+    showSlide(current);
+  }
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault();
+    changeSlide(1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    changeSlide(-1);
+  } else if (e.key === 's' || e.key === 'S') {
+    // Reveal next step on current slide
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+
+showSlide(1);
+</script>
+</body>
+</html>

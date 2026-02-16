@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Epsilon-NFA Explained | CS305 Formal Language Theory</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.step { opacity: 0.25; transition: opacity 0.4s; margin: 8px 0; padding: 8px 12px; border-radius: 8px; }
+.step.revealed { opacity: 1; background: rgba(59,130,246,0.08); }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1 : TITLE                                              -->
+<!-- ============================================================ -->
+<div class="slide" id="s1">
+  <div class="center">
+    <h1>Epsilon-NFA</h1>
+    <p class="subtitle">Extended NFA with Epsilon-Transitions</p>
+    <div class="diagram" style="display:inline-block; text-align:left; font-size:0.9em;">
+                    epsilon          epsilon
+          -----       ....&gt;    -----    ....&gt;    =====
+   --&gt;  | q0  |  ---------- | q1  | ---------- || q2 ||
+         -----               -----               =====
+            |                  |
+            |  a               |  b
+            v                  v
+          -----              -----
+         | q3  |            | q4  |
+          -----              -----
+    </div>
+    <p class="subtitle" style="margin-top: 30px;">CS305 -- Formal Language Theory</p>
+    <p style="color:#64748b; font-size:0.95em;">Arrow Keys or Space to navigate &bull; Press S to reveal steps</p>
+  </div>
+  <div class="slide-number">1 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2 : BIG PICTURE                                        -->
+<!-- ============================================================ -->
+<div class="slide" id="s2">
+  <h2>Big Picture: Where Does Epsilon-NFA Fit?</h2>
+  <p>We have now seen DFAs and NFAs. The epsilon-NFA adds one more layer of nondeterminism -- but all three recognize exactly the same class of languages: the <strong>regular languages</strong>.</p>
+
+  <div class="diagram">
+  Expressive Power (all equivalent!):
+
+  +===============+     +===============+     +===================+
+  |     DFA       | &lt;=&gt; |     NFA       | &lt;=&gt; |   epsilon-NFA     |
+  | (deterministic|     | (nondetermini-|     | (NFA + free moves |
+  |  exactly 1    |     |  stic, set of |     |  on epsilon)      |
+  |  move per     |     |  moves per    |     |                   |
+  |  symbol)      |     |  symbol)      |     |                   |
+  +===============+     +===============+     +===================+
+        ^                                              |
+        |                                              |
+        +------  can always convert back  -------------+
+
+  All three define EXACTLY the regular languages.
+  </div>
+
+  <div class="key-idea">
+    <h3>Key Idea</h3>
+    <p>Adding epsilon-transitions does NOT increase the power of the machine. It only makes designing automata <strong>easier and more modular</strong>. Any epsilon-NFA can be converted to an equivalent DFA.</p>
+  </div>
+  <div class="slide-number">2 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3 : MOTIVATION                                         -->
+<!-- ============================================================ -->
+<div class="slide" id="s3">
+  <h2>Motivation: Why Add Epsilon-Transitions?</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>The Problem</h3>
+      <p>Sometimes, designing an NFA for a complex language is still painful. We want to:</p>
+      <ul>
+        <li>Build small machines for simple sub-languages</li>
+        <li><strong>Glue them together</strong> without re-engineering</li>
+        <li>Translate regular expressions to automata <em>mechanically</em></li>
+      </ul>
+
+      <div class="analogy">
+        <h3>Analogy: Building with LEGO</h3>
+        <p>Epsilon-transitions are like LEGO connectors: they let you snap small, tested components together into bigger machines without redesigning anything.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Example: L = {a<sup>n</sup> | n &ge; 0} &cup; {b<sup>n</sup> | n &ge; 0}</h3>
+      <div class="diagram small">
+  Machine for a*:        Machine for b*:
+
+    ===       a           ===       b
+   ||q1|| ---&gt;---+       ||q3|| ---&gt;---+
+    ===     |    |        ===     |    |
+            +--&lt;-+                +--&lt;-+
+
+  Glue with epsilon:
+
+          eps       ===        a
+   --&gt; (q0) ....&gt; ||q1|| ---&gt;---+
+         |          ===     |    |
+         |                  +--&lt;-+
+         |  eps     ===        b
+         +.....&gt;  ||q3|| ---&gt;---+
+                    ===     |    |
+                            +--&lt;-+
+      </div>
+      <p>The <strong>epsilon-transitions</strong> from q0 let us "choose" which sub-machine to enter -- no input consumed!</p>
+    </div>
+  </div>
+  <div class="slide-number">3 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4 : WHAT IS AN EPSILON-TRANSITION                      -->
+<!-- ============================================================ -->
+<div class="slide" id="s4">
+  <h2>What is an Epsilon-Transition?</h2>
+
+  <div class="two-col">
+    <div>
+      <p>An <strong>epsilon-transition</strong> (written as an &epsilon;-transition) is a transition that the machine can take <em>without reading any input symbol</em>.</p>
+
+      <ul>
+        <li>The machine "teleports" to another state for free</li>
+        <li>The input head does NOT advance</li>
+        <li>The machine can choose to take it or not (nondeterminism)</li>
+      </ul>
+
+      <div class="diagram">
+  Normal transition (reads 'a'):
+
+      -----   a    -----
+     | q0  | ---&gt; | q1  |
+      -----        -----
+      ^ reads 'a' from input
+
+  Epsilon-transition (reads NOTHING):
+
+      -----   &epsilon;    -----
+     | q0  | ....&gt; | q1  |
+      -----         -----
+      ^ input head stays put!
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Secret Passages</h3>
+        <p>Think of states as rooms in a castle. Normal transitions are doors that require a key (an input symbol) to pass through. Epsilon-transitions are <strong>secret passages</strong> -- you can slip through them at any time, for free, without spending a key.</p>
+      </div>
+
+      <div class="analogy">
+        <h3>Analogy: Teleporters</h3>
+        <p>Or think of epsilon-transitions as <strong>teleporters</strong> between states. You can beam yourself to the destination instantly without consuming any resource. And you can chain teleporters: q0 &rarr; q1 &rarr; q2 all for free!</p>
+      </div>
+
+      <div class="warning">
+        <h3>Warning</h3>
+        <p>&epsilon; is NOT a symbol in the alphabet &Sigma;. It represents the <em>empty string</em>. The machine never "reads" an &epsilon; from the tape.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">4 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5 : FORMAL DEFINITION                                  -->
+<!-- ============================================================ -->
+<div class="slide" id="s5">
+  <h2>Formal Definition: The 5-Tuple</h2>
+
+  <p>An <strong>epsilon-NFA</strong> is a 5-tuple E = (Q, &Sigma;, &delta;, q<sub>0</sub>, F) where:</p>
+
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>Component</th><th>Meaning</th></tr>
+        <tr><td>Q</td><td>Finite set of states</td></tr>
+        <tr><td>&Sigma;</td><td>Finite input alphabet (&epsilon; &notin; &Sigma;)</td></tr>
+        <tr class="highlight"><td>&delta;</td><td>Q &times; (&Sigma; &cup; {&epsilon;}) &rarr; P(Q)</td></tr>
+        <tr><td>q<sub>0</sub></td><td>Start state (q<sub>0</sub> &in; Q)</td></tr>
+        <tr><td>F</td><td>Set of accept states (F &sube; Q)</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>The ONE Difference from NFA</h3>
+        <p>In a plain NFA: &delta; : Q &times; &Sigma; &rarr; P(Q)</p>
+        <p>In an &epsilon;-NFA: &delta; : Q &times; (<strong>&Sigma; &cup; {&epsilon;}</strong>) &rarr; P(Q)</p>
+        <p>The transition function now also accepts &epsilon; as input. This means the transition table gets an <strong>extra column</strong> for &epsilon;.</p>
+      </div>
+
+      <div class="warning">
+        <h3>Common Mistake</h3>
+        <p>Students sometimes add &epsilon; to the alphabet &Sigma;. Don't! &epsilon; is never in &Sigma;. The transition function's domain is extended to include &epsilon;, but the alphabet itself stays the same.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">5 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6 : EXAMPLE EPSILON-NFA                                -->
+<!-- ============================================================ -->
+<div class="slide" id="s6">
+  <h2>Example: An Epsilon-NFA</h2>
+  <p>Let's build an &epsilon;-NFA for the language L = { strings over {a,b} that start with 'a' or end with 'b' or are empty }.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>State Diagram</h3>
+      <div class="diagram small">
+                   &epsilon;       a       a,b
+          ---&gt; (q0) ....&gt; (q1) ---&gt; ((q2)) &lt;---+
+                |                      |         |
+                |                      +---------+
+                |
+                |   &epsilon;          b          b
+                +.....&gt; (q3) ---&gt; (q4) ---&gt; ((q5))
+                           |         ^
+                           |   a,b   |
+                           +---------+
+
+  Legend:
+    (qX)   = state          ....&gt;  = epsilon-transition
+    ((qX)) = accept state   ---&gt;   = symbol transition
+    ---&gt;   before q0 = start
+      </div>
+    </div>
+    <div>
+      <h3>Transition Table</h3>
+      <table>
+        <tr><th>State</th><th>a</th><th>b</th><th>&epsilon;</th></tr>
+        <tr><td>&#x2192; q0</td><td>&empty;</td><td>&empty;</td><td>{q1, q3}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>*q2</td><td>{q2}</td><td>{q2}</td><td>&empty;</td></tr>
+        <tr><td>q3</td><td>{q3}</td><td>{q4}</td><td>&empty;</td></tr>
+        <tr><td>q4</td><td>{q3}</td><td>{q5}</td><td>&empty;</td></tr>
+        <tr><td>*q5</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+      <p style="font-size:0.95em; color:#94a3b8;">Note the &epsilon; column -- that's what makes this an &epsilon;-NFA, not just an NFA.</p>
+    </div>
+  </div>
+  <div class="slide-number">6 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7 : EPSILON-CLOSURE DEFINITION                         -->
+<!-- ============================================================ -->
+<div class="slide" id="s7">
+  <h2>Epsilon-Closure: CL(q)</h2>
+
+  <p>The <strong>epsilon-closure</strong> of a state q, written CL(q) or ECLOSE(q), is the set of all states reachable from q by following <em>zero or more</em> epsilon-transitions.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Formal Definition</h3>
+        <p>CL(q) is the smallest set such that:</p>
+        <ul>
+          <li><strong>Base:</strong> q &in; CL(q) &nbsp; (you're always reachable from yourself via zero &epsilon;-moves)</li>
+          <li><strong>Induction:</strong> If p &in; CL(q) and r &in; &delta;(p, &epsilon;), then r &in; CL(q)</li>
+        </ul>
+      </div>
+
+      <div class="analogy">
+        <h3>Analogy: Wormhole Network</h3>
+        <p>Imagine each &epsilon;-transition is a wormhole. CL(q) is the set of all places you can reach from q using only wormholes (no fuel/input needed). You always include your starting location!</p>
+      </div>
+    </div>
+    <div>
+      <h3>Example from Previous Slide</h3>
+      <div class="diagram small">
+         &epsilon;          &epsilon;
+  (q0) ....&gt; (q1)   (q0) ....&gt; (q3)
+
+  CL(q0) = {q0, q1, q3}
+           ^^^^
+           q0 is always included!
+
+  CL(q1) = {q1}
+           (no &epsilon;-transitions out of q1)
+
+  CL(q3) = {q3}
+           (no &epsilon;-transitions out of q3)
+
+  CL(q2) = {q2}   CL(q4) = {q4}
+  CL(q5) = {q5}
+      </div>
+
+      <div class="warning">
+        <h3>Don't Forget!</h3>
+        <p>A state is <em>always</em> in its own epsilon-closure. CL(q) always contains q itself (zero epsilon-transitions = staying put).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">7 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8 : COMPUTING EPSILON-CLOSURE                          -->
+<!-- ============================================================ -->
+<div class="slide" id="s8">
+  <h2>Computing Epsilon-Closure: Step by Step</h2>
+  <p>Use BFS or DFS starting from q, following only &epsilon;-transitions.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>A Richer Example</h3>
+      <div class="diagram small">
+         &epsilon;        &epsilon;        &epsilon;
+  (q0) ....&gt; (q1) ....&gt; (q2) ....&gt; (q3)
+                |                    |
+                | &epsilon;               | a
+                v                    v
+              (q4)               (q5)
+      </div>
+      <p>Compute CL(q0):</p>
+
+      <div class="step">
+        <strong>Step 0:</strong> Start with {q0} (always include yourself)
+        <div class="diagram small" style="margin:4px 0;">  Visited: {q0}    Queue: [q0]</div>
+      </div>
+      <div class="step">
+        <strong>Step 1:</strong> Process q0 -- &delta;(q0,&epsilon;) = {q1}. Add q1.
+        <div class="diagram small" style="margin:4px 0;">  Visited: {q0,q1}    Queue: [q1]</div>
+      </div>
+      <div class="step">
+        <strong>Step 2:</strong> Process q1 -- &delta;(q1,&epsilon;) = {q2, q4}. Add both.
+        <div class="diagram small" style="margin:4px 0;">  Visited: {q0,q1,q2,q4}  Queue: [q2,q4]</div>
+      </div>
+      <div class="step">
+        <strong>Step 3:</strong> Process q2 -- &delta;(q2,&epsilon;) = {q3}. Add q3.
+        <div class="diagram small" style="margin:4px 0;">  Visited: {q0,q1,q2,q3,q4}  Queue: [q4,q3]</div>
+      </div>
+      <div class="step">
+        <strong>Step 4:</strong> Process q4 -- &delta;(q4,&epsilon;) = &empty;. Nothing to add.
+        <div class="diagram small" style="margin:4px 0;">  Visited: {q0,q1,q2,q3,q4}  Queue: [q3]</div>
+      </div>
+      <div class="step">
+        <strong>Step 5:</strong> Process q3 -- &delta;(q3,&epsilon;) = &empty;. Done!
+        <div class="diagram small" style="margin:4px 0;">  CL(q0) = {q0, q1, q2, q3, q4}</div>
+      </div>
+    </div>
+    <div>
+      <h3>BFS Algorithm</h3>
+      <div class="diagram small">
+  ECLOSE(q):
+    result = {q}
+    queue  = [q]
+    while queue is not empty:
+        p = dequeue(queue)
+        for each r in &delta;(p, &epsilon;):
+            if r not in result:
+                result = result &cup; {r}
+                enqueue(queue, r)
+    return result
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Insight</h3>
+        <p>Epsilon-closure is essentially a <strong>graph reachability</strong> problem. The &epsilon;-transitions form a directed graph, and CL(q) is just all nodes reachable from q in that graph.</p>
+      </div>
+
+      <div class="warning">
+        <h3>Watch Out for Cycles!</h3>
+        <p>Epsilon-transitions can form cycles. Always track visited states to avoid infinite loops.</p>
+        <div class="diagram small" style="margin:4px 0;">
+     &epsilon;          &epsilon;
+  (q0) ....&gt; (q1) ....&gt; (q0)   &lt;-- cycle!
+
+  CL(q0) = {q0, q1}  (still finite)
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">8 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9 : EPSILON-CLOSURE FOR SETS                           -->
+<!-- ============================================================ -->
+<div class="slide" id="s9">
+  <h2>Epsilon-Closure for Sets: CL(S)</h2>
+
+  <p>We often need the epsilon-closure of a <em>set</em> of states, not just one state.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>For a set of states S &sube; Q:</p>
+        <p style="font-size:1.3em; text-align:center; color:#a5f3fc; margin: 12px 0;">CL(S) = &bigcup;<sub>q &in; S</sub> CL(q)</p>
+        <p>Just take the union of the epsilon-closures of every state in S.</p>
+      </div>
+
+      <h3>Example</h3>
+      <div class="diagram small">
+  Using the machine from slide 8:
+
+  CL(q1) = {q1, q2, q3, q4}
+  CL(q5) = {q5}
+
+  CL({q1, q5}) = CL(q1) &cup; CL(q5)
+               = {q1, q2, q3, q4} &cup; {q5}
+               = {q1, q2, q3, q4, q5}
+      </div>
+    </div>
+    <div>
+      <h3>Why Do We Need This?</h3>
+      <p>When processing input in an &epsilon;-NFA, after reading a symbol we may land in <em>multiple</em> states (just like regular NFA). We need the epsilon-closure of that entire set before processing the next symbol.</p>
+
+      <div class="diagram small">
+  Processing input "ab":
+
+  Start: CL({q0})             &lt;-- closure of a set
+    |
+    | read 'a'
+    v
+  CL( &delta;(CL({q0}), a) )     &lt;-- closure again!
+    |
+    | read 'b'
+    v
+  CL( &delta;(..., b) )          &lt;-- and again!
+      </div>
+
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>After each "real" step (reading a symbol), all your tokens teleport through every wormhole they can reach. You always "expand" via epsilon before and after reading input.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">9 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10 : EXTENDED TRANSITION FUNCTION                      -->
+<!-- ============================================================ -->
+<div class="slide" id="s10">
+  <h2>Extended Transition Function: &delta;&#x0302;</h2>
+
+  <p>The extended transition function &delta;&#x0302;(q, w) tells us the set of states reachable from q after reading string w, <strong>accounting for all epsilon-transitions</strong>.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Recursive Definition</h3>
+        <p><strong>Base case:</strong></p>
+        <p style="color:#a5f3fc; font-size:1.1em;">&delta;&#x0302;(q, &epsilon;) = CL(q)</p>
+        <p>On empty input, you can reach anything via epsilon.</p>
+
+        <p class="mt"><strong>Inductive case:</strong> For string w = xa (x is a string, a is a symbol):</p>
+        <p style="color:#a5f3fc; font-size:1.1em;">&delta;&#x0302;(q, xa) = CL( &bigcup;<sub>p &in; &delta;&#x0302;(q,x)</sub> &delta;(p, a) )</p>
+      </div>
+
+      <p class="mt">In words: first process x to get a set of states, then from each of those states follow the 'a'-transition, then take the epsilon-closure of all the resulting states.</p>
+    </div>
+    <div>
+      <h3>The Pattern</h3>
+      <div class="diagram small">
+  &delta;&#x0302;(q, w) computation:
+
+  1. Start with CL(q)        &lt;-- epsilon first!
+  2. For each symbol a in w:
+     a. From current set S,
+        compute &delta;(S, a)    &lt;-- "real" move
+     b. Take CL of result   &lt;-- epsilon again!
+  3. Final set = &delta;&#x0302;(q, w)
+      </div>
+
+      <div class="diagram">
+  CL(q0)  --a--&gt;  CL(...)  --b--&gt;  CL(...)
+  ^^^^^^          ^^^^^^          ^^^^^^
+  always          always          always
+  close!          close!          close!
+      </div>
+
+      <div class="warning">
+        <h3>Difference from NFA</h3>
+        <p>In a plain NFA, &delta;&#x0302;(q, &epsilon;) = {q}. In an &epsilon;-NFA, &delta;&#x0302;(q, &epsilon;) = CL(q), which may include many states!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">10 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11 : WORKED EXAMPLE                                    -->
+<!-- ============================================================ -->
+<div class="slide" id="s11">
+  <h2>Worked Example: Processing "ab"</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Our Epsilon-NFA</h3>
+      <div class="diagram small">
+         &epsilon;         a          b
+  --&gt;(q0) ....&gt; (q1) ---&gt; (q2) ---&gt; ((q3))
+         |
+         | &epsilon;
+         v          b
+        (q4) ------&gt; ((q5))
+      </div>
+      <table style="font-size:0.9em;">
+        <tr><th></th><th>a</th><th>b</th><th>&epsilon;</th></tr>
+        <tr><td>&#x2192; q0</td><td>&empty;</td><td>&empty;</td><td>{q1, q4}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>q2</td><td>&empty;</td><td>{q3}</td><td>&empty;</td></tr>
+        <tr><td>*q3</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>q4</td><td>&empty;</td><td>{q5}</td><td>&empty;</td></tr>
+        <tr><td>*q5</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Process w = "ab"</h3>
+
+      <div class="step">
+        <strong>Step 0: Initial epsilon-closure</strong>
+        <div class="diagram small" style="margin:4px 0;">  CL(q0) = {q0, q1, q4}</div>
+        Current states: {q0, q1, q4}
+      </div>
+
+      <div class="step">
+        <strong>Step 1: Read 'a'</strong>
+        <div class="diagram small" style="margin:4px 0;">  &delta;(q0, a) = &empty;
+  &delta;(q1, a) = {q2}
+  &delta;(q4, a) = &empty;
+  Union = {q2}
+  CL({q2}) = {q2}</div>
+        Current states: {q2}
+      </div>
+
+      <div class="step">
+        <strong>Step 2: Read 'b'</strong>
+        <div class="diagram small" style="margin:4px 0;">  &delta;(q2, b) = {q3}
+  Union = {q3}
+  CL({q3}) = {q3}</div>
+        Current states: {q3}
+      </div>
+
+      <div class="step">
+        <strong>Step 3: Accept?</strong>
+        <div class="diagram small" style="margin:4px 0;">  {q3} &cap; F = {q3} &cap; {q3, q5} = {q3} &ne; &empty;
+  ACCEPT!</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">11 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12 : ACCEPTANCE                                        -->
+<!-- ============================================================ -->
+<div class="slide" id="s12">
+  <h2>Acceptance in Epsilon-NFA</h2>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>An &epsilon;-NFA E = (Q, &Sigma;, &delta;, q<sub>0</sub>, F) <strong>accepts</strong> string w if and only if:</p>
+        <p style="font-size:1.3em; text-align:center; color:#a5f3fc; margin:16px 0;">&delta;&#x0302;(q<sub>0</sub>, w) &cap; F &ne; &empty;</p>
+        <p>That is, after processing w (with all epsilon-closures), at least one of the states we end up in is an accept state.</p>
+      </div>
+
+      <p class="mt">The language recognized by E is:</p>
+      <p style="font-size:1.1em; color:#a5f3fc;">L(E) = { w &in; &Sigma;* | &delta;&#x0302;(q<sub>0</sub>, w) &cap; F &ne; &empty; }</p>
+    </div>
+    <div>
+      <h3>Important Subtlety: The Empty String</h3>
+      <div class="diagram small">
+  Does the machine accept &epsilon;?
+
+  &delta;&#x0302;(q0, &epsilon;) = CL(q0)
+
+  If CL(q0) contains an accept state,
+  then YES, &epsilon; is accepted!
+      </div>
+
+      <div class="warning">
+        <h3>Watch Out</h3>
+        <p>Even if q<sub>0</sub> is NOT an accept state, the &epsilon;-NFA might still accept the empty string! If any state in CL(q<sub>0</sub>) is an accept state, then &epsilon; &in; L(E).</p>
+      </div>
+
+      <div class="diagram small">
+  Example:
+              &epsilon;
+  --&gt; (q0) ....&gt; ((q1))
+
+  q0 is NOT an accept state, but:
+  CL(q0) = {q0, q1}
+  q1 &in; F    =&gt;    &epsilon; is accepted!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">12 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13 : CONVERSION ALGORITHM                              -->
+<!-- ============================================================ -->
+<div class="slide" id="s13">
+  <h2>Converting &epsilon;-NFA to Ordinary NFA</h2>
+  <p>We can <strong>eliminate</strong> all epsilon-transitions to get an equivalent ordinary NFA.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>The Algorithm</h3>
+        <p>Given &epsilon;-NFA E = (Q, &Sigma;, &delta;<sub>E</sub>, q<sub>0</sub>, F), construct NFA N = (Q, &Sigma;, &delta;<sub>N</sub>, q<sub>0</sub>, F') where:</p>
+        <ol>
+          <li style="margin-bottom:12px;"><strong>New transitions:</strong> For each state q and symbol a:<br>
+            <span style="color:#a5f3fc;">&delta;<sub>N</sub>(q, a) = CL( &delta;<sub>E</sub>( CL(q), a ) )</span><br>
+            First epsilon-close q, then follow a, then epsilon-close again.</li>
+          <li style="margin-bottom:12px;"><strong>New accept states:</strong><br>
+            <span style="color:#a5f3fc;">F' = { q &in; Q | CL(q) &cap; F &ne; &empty; }</span><br>
+            Any state whose epsilon-closure touches an accept state becomes an accept state.</li>
+          <li><strong>Same start state:</strong> q<sub>0</sub></li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  Intuition:
+
+  BEFORE (epsilon-NFA):
+        &epsilon;     a      &epsilon;
+  (q0) ...&gt; (q1) --&gt; (q2) ...&gt; ((q3))
+
+  AFTER (ordinary NFA):
+        a
+  (q0) --------------------&gt; ((q3))
+   ^accept?                    ^always was
+   Check: CL(q0)={q0,q1}
+   Neither is in F, so q0
+   stays non-accepting.
+
+  The "a" transition from q0 in the NFA
+  bakes in: &epsilon; to q1, then a to q2,
+  then &epsilon; to q3.
+      </div>
+
+      <div class="warning">
+        <h3>Don't Forget F'</h3>
+        <p>If CL(q<sub>0</sub>) &cap; F &ne; &empty;, then q<sub>0</sub> becomes an accept state in the NFA (even if it wasn't before). This ensures the NFA still accepts &epsilon; when the &epsilon;-NFA did.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">13 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14 : CONVERSION EXAMPLE                                -->
+<!-- ============================================================ -->
+<div class="slide" id="s14">
+  <h2>Conversion Example: Epsilon-NFA to NFA</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Original &epsilon;-NFA</h3>
+      <div class="diagram small">
+          &epsilon;       a        &epsilon;        b
+  --&gt;(q0) ...&gt; (q1) --&gt; (q2) ...&gt; (q3) --&gt; ((q4))
+      </div>
+      <table style="font-size:0.85em;">
+        <tr><th></th><th>a</th><th>b</th><th>&epsilon;</th></tr>
+        <tr><td>&#x2192; q0</td><td>&empty;</td><td>&empty;</td><td>{q1}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>q2</td><td>&empty;</td><td>&empty;</td><td>{q3}</td></tr>
+        <tr><td>q3</td><td>&empty;</td><td>{q4}</td><td>&empty;</td></tr>
+        <tr><td>*q4</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+
+      <h3 class="mt">Epsilon-Closures</h3>
+      <div class="diagram small">
+  CL(q0) = {q0, q1}
+  CL(q1) = {q1}
+  CL(q2) = {q2, q3}
+  CL(q3) = {q3}
+  CL(q4) = {q4}
+      </div>
+    </div>
+    <div>
+      <h3>Compute New Transitions &delta;<sub>N</sub></h3>
+      <div class="step">
+        <strong>&delta;<sub>N</sub>(q0, a):</strong> CL(q0)={q0,q1} &rarr; &delta;({q0,q1},a)={q2} &rarr; CL({q2})=<strong>{q2,q3}</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;<sub>N</sub>(q0, b):</strong> CL(q0)={q0,q1} &rarr; &delta;({q0,q1},b)=&empty; &rarr; CL(&empty;)=<strong>&empty;</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;<sub>N</sub>(q1, a):</strong> CL(q1)={q1} &rarr; &delta;({q1},a)={q2} &rarr; CL({q2})=<strong>{q2,q3}</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;<sub>N</sub>(q2, b):</strong> CL(q2)={q2,q3} &rarr; &delta;({q2,q3},b)={q4} &rarr; CL({q4})=<strong>{q4}</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;<sub>N</sub>(q3, b):</strong> CL(q3)={q3} &rarr; &delta;({q3},b)={q4} &rarr; CL({q4})=<strong>{q4}</strong>
+      </div>
+
+      <h3 class="mt">Result: NFA (no &epsilon; column!)</h3>
+      <table style="font-size:0.85em;">
+        <tr><th></th><th>a</th><th>b</th></tr>
+        <tr><td>&#x2192; q0</td><td>{q2,q3}</td><td>&empty;</td></tr>
+        <tr><td>q1</td><td>{q2,q3}</td><td>&empty;</td></tr>
+        <tr><td>q2</td><td>&empty;</td><td>{q4}</td></tr>
+        <tr><td>q3</td><td>&empty;</td><td>{q4}</td></tr>
+        <tr><td>*q4</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+      <p style="font-size:0.9em;">F' = {q4} (only CL(q4)={q4} hits F; no other closure reaches q4)</p>
+    </div>
+  </div>
+  <div class="slide-number">14 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15 : DIRECT CONVERSION TO DFA                          -->
+<!-- ============================================================ -->
+<div class="slide" id="s15">
+  <h2>Converting &epsilon;-NFA Directly to DFA</h2>
+  <p>We can skip the intermediate NFA and go straight from &epsilon;-NFA to DFA using a modified <strong>subset construction</strong> with epsilon-closures baked in.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Modified Subset Construction</h3>
+        <ol>
+          <li style="margin-bottom:10px;"><strong>Start state:</strong> CL(q<sub>0</sub>) -- not just {q<sub>0</sub>}!</li>
+          <li style="margin-bottom:10px;"><strong>For each DFA state S</strong> (a set of &epsilon;-NFA states) and each symbol a &in; &Sigma;:
+            <p style="color:#a5f3fc;">&delta;<sub>DFA</sub>(S, a) = CL( &bigcup;<sub>q &in; S</sub> &delta;(q, a) )</p>
+            Move on a, then epsilon-close.
+          </li>
+          <li style="margin-bottom:10px;"><strong>Accept states:</strong> Any DFA state S where S &cap; F &ne; &empty;</li>
+          <li>Repeat until no new DFA states are generated.</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  The Process:
+
+  &epsilon;-NFA  ====(subset construction)====&gt;  DFA
+                with CL() at every step
+
+  Step 1: DFA start = CL(q0)
+          (may contain multiple states)
+
+  Step 2: For DFA state {q0, q1, q4}
+          and symbol 'a':
+
+    Compute: &delta;(q0,a) &cup; &delta;(q1,a) &cup; &delta;(q4,a)
+           = ... some set T ...
+    Then:   CL(T) = new DFA state
+
+  Step 3: Repeat for all symbols,
+          all new DFA states.
+
+  Step 4: Mark accepting DFA states.
+      </div>
+
+      <div class="analogy">
+        <h3>Same Old Subset Construction</h3>
+        <p>It's the same algorithm you already know from NFA &rarr; DFA, except you wrap every intermediate result in CL(). Think of it as "subset construction wearing epsilon-closure glasses."</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">15 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16 : DIRECT CONVERSION EXAMPLE                         -->
+<!-- ============================================================ -->
+<div class="slide" id="s16">
+  <h2>Direct Conversion Example: &epsilon;-NFA to DFA</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>&epsilon;-NFA (&Sigma; = {a, b})</h3>
+      <div class="diagram small">
+          &epsilon;       a          b
+  --&gt;(q0) ...&gt; (q1) --&gt; (q2) --&gt; ((q3))
+      </div>
+      <table style="font-size:0.85em;">
+        <tr><th></th><th>a</th><th>b</th><th>&epsilon;</th></tr>
+        <tr><td>&#x2192; q0</td><td>&empty;</td><td>&empty;</td><td>{q1}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>q2</td><td>&empty;</td><td>{q3}</td><td>&empty;</td></tr>
+        <tr><td>*q3</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+      <p class="mt" style="font-size:0.95em;">Closures: CL(q0)={q0,q1}, CL(q1)={q1}, CL(q2)={q2}, CL(q3)={q3}</p>
+    </div>
+    <div>
+      <h3>Subset Construction</h3>
+      <div class="step">
+        <strong>DFA start:</strong> CL(q0) = {q0, q1} &rarr; call it <strong>A</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;(A, a):</strong> &delta;({q0,q1}, a) = {q2} &rarr; CL({q2}) = {q2} &rarr; <strong>B</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;(A, b):</strong> &delta;({q0,q1}, b) = &empty; &rarr; CL(&empty;) = &empty; &rarr; <strong>DEAD</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;(B, a):</strong> &delta;({q2}, a) = &empty; &rarr; <strong>DEAD</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;(B, b):</strong> &delta;({q2}, b) = {q3} &rarr; CL({q3}) = {q3} &rarr; <strong>C</strong>
+      </div>
+      <div class="step">
+        <strong>&delta;(C, a):</strong> &empty; &rarr; <strong>DEAD</strong> &nbsp;&nbsp; <strong>&delta;(C, b):</strong> &empty; &rarr; <strong>DEAD</strong>
+      </div>
+
+      <h3 class="mt">Resulting DFA</h3>
+      <table style="font-size:0.85em;">
+        <tr><th>DFA State</th><th>&epsilon;-NFA States</th><th>a</th><th>b</th><th>Accept?</th></tr>
+        <tr><td>&#x2192; A</td><td>{q0, q1}</td><td>B</td><td>DEAD</td><td>No</td></tr>
+        <tr><td>B</td><td>{q2}</td><td>DEAD</td><td>C</td><td>No</td></tr>
+        <tr class="highlight"><td>*C</td><td>{q3}</td><td>DEAD</td><td>DEAD</td><td>Yes</td></tr>
+        <tr><td>DEAD</td><td>&empty;</td><td>DEAD</td><td>DEAD</td><td>No</td></tr>
+      </table>
+      <p style="font-size:0.9em;">L = {ab} -- the DFA accepts exactly the string "ab".</p>
+    </div>
+  </div>
+  <div class="slide-number">16 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17 : WHY IT MATTERS                                    -->
+<!-- ============================================================ -->
+<div class="slide" id="s17">
+  <h2>Why Epsilon-NFA Matters</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>1. Regular Expression &rarr; NFA</h3>
+      <p>Thompson's Construction converts any regex to an &epsilon;-NFA <em>mechanically</em>. Epsilon-transitions are the glue:</p>
+      <div class="diagram small">
+  Regex: (a|b)*
+
+  Thompson builds:
+
+           &epsilon;     a     &epsilon;
+       +--&gt;(q1)--&gt;(q2)--+
+       |                 |
+  --&gt;((q0))            (q5)--+
+       |                 |    |
+       +--&gt;(q3)--&gt;(q4)--+    |
+           &epsilon;     b     &epsilon;      |
+       ^                      |
+       |     &epsilon; (loop back)    |
+       +----------------------+
+      </div>
+      <p>Every regex operator (union, concat, star) maps to an &epsilon;-NFA pattern.</p>
+    </div>
+    <div>
+      <h3>2. Modular Machine Construction</h3>
+      <div class="diagram small">
+  Machine for L1:    Machine for L2:
+   --&gt;(A)--&gt;((B))    --&gt;(C)--&gt;((D))
+
+  L1 &cup; L2 (Union):
+              &epsilon;
+          +--&gt;(A)--&gt;((B))
+  --&gt;(S)--|
+          +--&gt;(C)--&gt;((D))
+              &epsilon;
+
+  L1 &middot; L2 (Concatenation):
+                    &epsilon;
+  --&gt;(A)--&gt;(B) ....&gt; (C)--&gt;((D))
+
+  L1* (Kleene Star):
+              &epsilon;
+  --&gt;((S))--&gt;(A)--&gt;(B)
+       ^              |
+       |    &epsilon;        |
+       +--------------+
+      </div>
+
+      <div class="key-idea">
+        <h3>The Big Win</h3>
+        <p>Epsilon-transitions let us compose automata like functions. Build small, test small, combine freely. This is the foundation of how tools like <code>grep</code>, <code>lex</code>, and regex engines work internally.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">17 / 18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18 : SUMMARY & CHEAT SHEET                             -->
+<!-- ============================================================ -->
+<div class="slide" id="s18">
+  <h2>Summary & Cheat Sheet</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Core Concepts</h3>
+      <table style="font-size:0.85em;">
+        <tr><th>Concept</th><th>Definition</th></tr>
+        <tr><td>&epsilon;-transition</td><td>Move between states without consuming input</td></tr>
+        <tr><td>CL(q)</td><td>All states reachable from q via &epsilon;*</td></tr>
+        <tr><td>CL(S)</td><td>&cup; CL(q) for all q in S</td></tr>
+        <tr><td>&delta;&#x0302;(q,&epsilon;)</td><td>= CL(q)</td></tr>
+        <tr><td>&delta;&#x0302;(q,xa)</td><td>= CL( &delta;( &delta;&#x0302;(q,x), a ) )</td></tr>
+        <tr><td>Accepts w</td><td>&delta;&#x0302;(q<sub>0</sub>,w) &cap; F &ne; &empty;</td></tr>
+      </table>
+
+      <h3 class="mt">Conversion Cheat Sheet</h3>
+      <div class="diagram small">
+  &epsilon;-NFA --&gt; NFA:
+    &delta;_N(q,a) = CL( &delta;_E( CL(q), a ) )
+    F' = { q | CL(q) &cap; F &ne; &empty; }
+
+  &epsilon;-NFA --&gt; DFA (direct):
+    Start = CL(q0)
+    &delta;_DFA(S,a) = CL( &cup; &delta;(q,a) for q in S )
+    Accept if S &cap; F &ne; &empty;
+      </div>
+    </div>
+    <div>
+      <h3>Equivalence Chain</h3>
+      <div class="diagram">
+  DFA &equiv; NFA &equiv; &epsilon;-NFA &equiv; RegEx
+
+  Every conversion is possible:
+
+  RegEx --Thompson--&gt; &epsilon;-NFA
+  &epsilon;-NFA --eliminate &epsilon;--&gt; NFA
+  NFA --subset const.--&gt; DFA
+  DFA --state elim.--&gt; RegEx
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Takeaways</h3>
+        <ul>
+          <li>&epsilon;-transitions add NO extra power -- just convenience</li>
+          <li>Always compute CL() before AND after reading symbols</li>
+          <li>CL(q) always includes q itself</li>
+          <li>&epsilon; is NOT in the alphabet</li>
+          <li>Start state may become accepting after conversion</li>
+          <li>Thompson's construction is why &epsilon;-NFA exists in practice</li>
+        </ul>
+      </div>
+
+      <div class="analogy">
+        <h3>Final Analogy</h3>
+        <p>&epsilon;-transitions are like escalators in a mall -- they move you between floors for free. The mall (language recognized) doesn't change if you remove them and add staircases (direct transitions) instead. Just the convenience of getting around changes.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">18 / 18</div>
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 18;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+</script>
+
+</body>
+</html>

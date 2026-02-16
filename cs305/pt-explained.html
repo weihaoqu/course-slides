@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pumping Lemma - CS305</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+.formula { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px 24px; margin: 12px 0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1.1em; color: #c4b5fd; text-align: center; }
+.step-num { display: inline-block; background: #3b82f6; color: white; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: 700; font-size: 0.9em; margin-right: 8px; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ============ SLIDE 1: Title ============ -->
+<div class="slide active" id="s1">
+  <div class="center" style="width:100%">
+    <h1>The Pumping Lemma</h1>
+    <p class="subtitle">Proving Languages Are NOT Regular (or Not Context-Free)</p>
+    <div class="diagram" style="display:inline-block; text-align:left; margin-top:30px;">
+   "Can I prove this language IS regular?"
+        --> Build a DFA/NFA/regex for it.
+
+   "Can I prove this language is NOT regular?"
+        --> Use the PUMPING LEMMA.
+    </div>
+    <p style="margin-top: 30px; color: #64748b; font-size: 1em;">CS305 - Formal Language Theory</p>
+    <p style="color: #64748b; font-size: 0.9em;">Use arrow keys or buttons to navigate</p>
+  </div>
+  <div class="slide-number">1 / 18</div>
+</div>
+
+<!-- ============ SLIDE 2: Big Picture ============ -->
+<div class="slide" id="s2">
+  <h1>The Big Picture</h1>
+  <p class="subtitle">The pumping lemma is a tool for proving NEGATIVE results</p>
+
+  <div class="two-col">
+    <div>
+      <h3>What it tells you</h3>
+      <ul>
+        <li>A language is <strong style="color:#f87171">NOT</strong> regular</li>
+        <li>A language is <strong style="color:#f87171">NOT</strong> context-free</li>
+      </ul>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Every regular language has a certain "pumping" property. If a language <em>lacks</em> this property, it <strong>cannot</strong> be regular.</p>
+      </div>
+    </div>
+    <div>
+      <h3>What it does NOT tell you</h3>
+      <ul>
+        <li>It does <strong>not</strong> prove a language IS regular</li>
+        <li>Passing the pumping lemma does not mean "regular"</li>
+      </ul>
+      <div class="warning mt">
+        <h3>Warning</h3>
+        <p>The pumping lemma is a <strong>necessary</strong> condition for regularity, NOT a sufficient one. Think of it like a one-way test.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram" style="margin-top:20px;">
+  Proof by contradiction structure:
+  +-------------------------------------------------+
+  | 1. Assume L is regular (for contradiction)      |
+  | 2. Then pumping lemma applies to L              |
+  | 3. Find a string that CANNOT be pumped          |
+  | 4. Contradiction! L is NOT regular.             |
+  +-------------------------------------------------+
+  </div>
+  <div class="slide-number">2 / 18</div>
+</div>
+
+<!-- ============ SLIDE 3: Intuition - Pigeonhole ============ -->
+<div class="slide" id="s3">
+  <h1>Intuition: Why Pumping Works</h1>
+  <p class="subtitle">The Pigeonhole Principle meets finite automata</p>
+
+  <div class="two-col">
+    <div>
+      <p>A DFA has a <strong>finite</strong> number of states. Say it has <strong>p</strong> states.</p>
+      <p>If it reads a string of length &ge; p, it visits at least <strong>p + 1</strong> states (including the start).</p>
+      <p>By the <strong>pigeonhole principle</strong>, some state must be visited <strong>twice</strong>. That means there's a <strong>loop</strong>!</p>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>If you have 5 pigeonholes and 6 pigeons, at least one hole has 2 pigeons. If you have p states and p+1 visits, at least one state is visited twice.</p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  DFA with p = 5 states, reading "aababb" (length 6):
+
+  Visit: q0 -a-> q1 -a-> q2 -b-> q3 -a-> q1 -b-> q4 -b-> q5
+                  ^                         |
+                  |                         |
+                  +--- SAME STATE! (q1) ----+
+                        This is a LOOP!
+
+  The path through the DFA:
+
+         +-----+    a    +-----+    a    +-----+
+  ---->  | q0  |-------->| q1  |-------->| q2  |
+         +-----+         +--+--+         +-----+
+                          ^ |               |
+                     a    | | b             | b
+                          | v               v
+                        +-----+         +-----+    b    +-----+
+                        | q4  |         | q3  |-------->| q5* |
+                        +-----+         +-----+         +-----+
+
+  The loop q1 -> q2 -> q3 -> q1 can be
+  traversed 0 times, 1 time, 2 times, ...
+  The string can be "PUMPED"!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">3 / 18</div>
+</div>
+
+<!-- ============ SLIDE 4: Formal Statement (Regular) ============ -->
+<div class="slide" id="s4">
+  <h1>The Pumping Lemma for Regular Languages</h1>
+  <p class="subtitle">The formal statement you need to memorize</p>
+
+  <div class="key-idea">
+    <h3>Pumping Lemma (Regular Languages)</h3>
+    <p>If <strong>L</strong> is a regular language, then there exists a number <strong>p</strong> (the pumping length) such that for every string <strong>s &isin; L</strong> with <strong>|s| &ge; p</strong>, s can be written as <strong>s = xyz</strong> satisfying:</p>
+  </div>
+
+  <div class="formula" style="font-size: 1.2em; padding: 24px;">
+    <div style="text-align: left; display: inline-block;">
+      1. &nbsp; |y| &gt; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (y is not empty)<br>
+      2. &nbsp; |xy| &le; p &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (loop is in the first p characters)<br>
+      3. &nbsp; xy<sup>i</sup>z &isin; L &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for all i &ge; 0 &nbsp;&nbsp; (pump y any number of times)
+    </div>
+  </div>
+
+  <div class="diagram" style="margin-top: 16px;">
+  The string s broken into x, y, z:
+
+  |&lt;------------ s = xyz ------------>|
+  |&lt;--- x --->|&lt;-- y -->|&lt;--- z ----->|
+  |            |  LOOP   |             |
+  |&lt;--- xy ---->|
+  |  &le; p chars  |
+
+  Pumping:
+    i=0:  x z           (delete the loop)
+    i=1:  x y z         (original string)
+    i=2:  x yy z        (traverse loop twice)
+    i=3:  x yyy z       (traverse loop three times)
+    ...
+  </div>
+  <div class="slide-number">4 / 18</div>
+</div>
+
+<!-- ============ SLIDE 5: Understanding the Quantifiers ============ -->
+<div class="slide" id="s5">
+  <h1>Understanding the Quantifiers</h1>
+  <p class="subtitle">The "adversarial game" interpretation -- this is the KEY to getting proofs right</p>
+
+  <div class="two-col">
+    <div>
+      <div class="analogy">
+        <h3>The Game Analogy</h3>
+        <p>Think of a pumping lemma proof as a <strong>two-player game</strong> between YOU (the prover) and an ADVERSARY (the lemma).</p>
+      </div>
+
+      <p><span class="step-num">1</span> <strong style="color:#f87171;">Adversary</strong> picks pumping length <strong>p</strong></p>
+      <p style="color:#94a3b8;">&nbsp;&nbsp;&nbsp;&nbsp;(You don't know p -- it could be anything!)</p>
+      <p><span class="step-num">2</span> <strong style="color:#34d399;">You</strong> pick a string <strong>s &isin; L</strong> with |s| &ge; p</p>
+      <p style="color:#94a3b8;">&nbsp;&nbsp;&nbsp;&nbsp;(Your choice -- pick something useful)</p>
+      <p><span class="step-num">3</span> <strong style="color:#f87171;">Adversary</strong> picks a split <strong>s = xyz</strong></p>
+      <p style="color:#94a3b8;">&nbsp;&nbsp;&nbsp;&nbsp;(Any valid split respecting the 3 conditions)</p>
+      <p><span class="step-num">4</span> <strong style="color:#34d399;">You</strong> pick an <strong>i &ge; 0</strong> to show xy<sup>i</sup>z &notin; L</p>
+      <p style="color:#94a3b8;">&nbsp;&nbsp;&nbsp;&nbsp;(Just one i that breaks it)</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  THE ADVERSARIAL GAME:
+
+  Adversary (FOR regularity)     You (AGAINST regularity)
+  ============================   ========================
+
+  Step 1: "I pick p."
+                                 Step 2: "I pick s in L,
+                                          |s| >= p."
+
+  Step 3: "I split s = xyz
+           with |y|>0, |xy|<=p."
+                                 Step 4: "I pick i such that
+                                          xy^i z is NOT in L.
+                                          CONTRADICTION!"
+
+  If YOU can always win (for ANY p, for ANY valid split),
+  then L is not regular.
+
+  +-----------------------------------------+
+  |  You win  =  L is NOT regular           |
+  |  Adversary wins  =  proof fails         |
+  |  (NOT the same as "L is regular"!)      |
+  +-----------------------------------------+
+      </div>
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top: 10px;">
+    <h3>Critical Point</h3>
+    <p>Your argument must work for <strong>ALL</strong> possible values of p and <strong>ALL</strong> valid splits xyz. You only get to choose s and i.</p>
+  </div>
+  <div class="slide-number">5 / 18</div>
+</div>
+
+<!-- ============ SLIDE 6: Proof Flowchart ============ -->
+<div class="slide" id="s6">
+  <h1>The Proof Game as a Flowchart</h1>
+  <p class="subtitle">Follow this template for every pumping lemma proof</p>
+
+  <div class="diagram">
+  START: "I want to prove L is not regular."
+    |
+    v
+  +-----------------------------------------------+
+  | Step 0: ASSUME (for contradiction) L is       |
+  |         regular. Then the pumping lemma holds. |
+  +-----------------------------------------------+
+    |
+    v
+  +-----------------------------------------------+
+  | Step 1: Let p be the pumping length           |
+  |         (given by the lemma -- we don't pick  |
+  |         its value, just call it p).            |
+  +-----------------------------------------------+
+    |
+    v
+  +-----------------------------------------------+
+  | Step 2: CHOOSE a specific string s in L       |
+  |         with |s| >= p.                        |
+  |         (This is YOUR strategic choice!)      |
+  +-----------------------------------------------+
+    |
+    v
+  +-----------------------------------------------+
+  | Step 3: CONSIDER ANY split s = xyz            |
+  |         where |y| > 0 and |xy| <= p.         |
+  |         (You must handle ALL valid splits!)   |
+  +-----------------------------------------------+
+    |
+    v
+  +-----------------------------------------------+
+  | Step 4: FIND an i >= 0 such that             |
+  |         xy^i z is NOT in L.                   |
+  |         (Usually i = 0 or i = 2 works.)      |
+  +-----------------------------------------------+
+    |
+    v
+  +-----------------------------------------------+
+  | Step 5: CONTRADICTION with the pumping lemma. |
+  |         Therefore L is NOT regular.     QED   |
+  +-----------------------------------------------+
+  </div>
+
+  <div class="key-idea">
+    <h3>Pro Tip: Choosing s</h3>
+    <p>Pick s so that <strong>any</strong> way the adversary splits the first p characters forces y to land in an "inconvenient" region. Strings like a<sup>p</sup>b<sup>p</sup> work well because the first p characters are all a's, so y must be all a's -- pumping it breaks the a/b balance.</p>
+  </div>
+  <div class="slide-number">6 / 18</div>
+</div>
+
+<!-- ============ SLIDE 7: Example 1 - a^n b^n ============ -->
+<div class="slide" id="s7">
+  <h1>Example 1: {a<sup>n</sup>b<sup>n</sup> | n &ge; 0}</h1>
+  <p class="subtitle">The classic -- prove this language is not regular</p>
+
+  <div class="two-col">
+    <div>
+      <p><span class="step-num">0</span> <strong>Assume</strong> L = {a<sup>n</sup>b<sup>n</sup>} is regular.</p>
+      <p><span class="step-num">1</span> <strong>Let p</strong> be the pumping length.</p>
+      <p><span class="step-num">2</span> <strong>Choose</strong> s = a<sup>p</sup>b<sup>p</sup>.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">s is in L (equal a's and b's) and |s| = 2p &ge; p. Good.</p>
+      <p><span class="step-num">3</span> <strong>Consider any</strong> split s = xyz with |y| &gt; 0 and |xy| &le; p.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">Since |xy| &le; p and the first p characters are all a's, <strong>y = a<sup>k</sup></strong> for some k &ge; 1.</p>
+      <p><span class="step-num">4</span> <strong>Choose i = 2</strong>. Then xy<sup>2</sup>z = a<sup>p+k</sup>b<sup>p</sup>.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">This has more a's than b's, so xy<sup>2</sup>z &notin; L.</p>
+      <p><span class="step-num">5</span> <strong>Contradiction!</strong> L is not regular. &square;</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  The string s = a^p b^p:
+
+  a a a a ... a a a a b b b b ... b b b b
+  |<--- p a's --->|  |<--- p b's --->|
+
+  Since |xy| <= p, x and y are ALL a's:
+
+  |<-- x -->|<- y ->|<-------- z -------->|
+  a a ... a  a ... a  a ... a b b ... b b b
+             |<-k->|
+             k >= 1             MUST be a's!
+
+  Pump with i = 2:
+  |<-- x -->|<- y ->|<- y ->|<--- z ----->|
+  a a ... a  a ... a  a ... a  a..a b..b b
+  |<----- p + k a's ------>|  |< p b's >|
+
+  p + k != p  (since k >= 1)
+  So a^(p+k) b^p is NOT in L.  Contradiction!
+      </div>
+
+      <div class="key-idea">
+        <h3>Why this choice of s works</h3>
+        <p>By picking a<sup>p</sup>b<sup>p</sup>, we <strong>force</strong> y to be all a's (because |xy| &le; p). Pumping y changes the count of a's but not b's -- guaranteed mismatch.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">7 / 18</div>
+</div>
+
+<!-- ============ SLIDE 8: Example 2 - ww ============ -->
+<div class="slide" id="s8">
+  <h1>Example 2: {ww | w &isin; {0,1}*}</h1>
+  <p class="subtitle">Prove this language is not regular</p>
+
+  <div class="two-col">
+    <div>
+      <p><span class="step-num">0</span> <strong>Assume</strong> L = {ww} is regular.</p>
+      <p><span class="step-num">1</span> <strong>Let p</strong> be the pumping length.</p>
+      <p><span class="step-num">2</span> <strong>Choose</strong> s = 0<sup>p</sup>1 0<sup>p</sup>1.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">Here w = 0<sup>p</sup>1, so s = ww &isin; L. And |s| = 2p + 2 &ge; p.</p>
+      <p><span class="step-num">3</span> <strong>Consider any</strong> split s = xyz with |y| &gt; 0, |xy| &le; p.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">Since |xy| &le; p and the first p chars are all 0's, <strong>y = 0<sup>k</sup></strong> for some k &ge; 1.</p>
+      <p><span class="step-num">4</span> <strong>Choose i = 2</strong>. Then:</p>
+      <p style="color:#94a3b8; margin-left: 36px;">xy<sup>2</sup>z = 0<sup>p+k</sup>1 0<sup>p</sup>1</p>
+      <p style="color:#94a3b8; margin-left: 36px;">Total length = 2p + 2 + k (odd+even matters less; structure matters).</p>
+      <p style="color:#94a3b8; margin-left: 36px;">For this to be ww, the two halves must match. The first half would be 0<sup>(p+k)/2+1</sup>... but the 1's are no longer aligned symmetrically. The first half has more 0's before its 1 than the second half does. So xy<sup>2</sup>z &notin; L.</p>
+      <p><span class="step-num">5</span> <strong>Contradiction!</strong> L is not regular. &square;</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  s = 0^p 1 0^p 1    (this is ww where w = 0^p 1)
+
+  0 0 0 ... 0 0 1 0 0 0 ... 0 0 1
+  |<-- p -->|   |<-- p -->|
+  |<--- w --->| |<--- w --->|
+
+  Since |xy| <= p:
+  |< x >|< y >|<--------- z --------->|
+  0 .. 0  0..0  0 .. 0 1 0 0 .. 0 0 1
+          |<k>|
+          all 0's
+
+  After pumping (i=2):
+  0 0 .. 0 0 0..0 0..0 1 0 0 .. 0 0 1
+  |<--- p+k 0's --->|   |<-- p -->|
+
+  For this to be ww, split in half:
+    first half  = 0^((p+k+1)) ... contains the "1"
+    second half = 0^p 1 ... or similar
+
+  The two halves CANNOT match because
+  there are p+k zeros before the first "1"
+  but only p zeros before the second "1".
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">8 / 18</div>
+</div>
+
+<!-- ============ SLIDE 9: Example 3 - 1^(n^2) ============ -->
+<div class="slide" id="s9">
+  <h1>Example 3: {1<sup>n<sup>2</sup></sup> | n &ge; 0}</h1>
+  <p class="subtitle">Strings of 1s whose length is a perfect square -- proof using number theory</p>
+
+  <div class="two-col">
+    <div>
+      <p><span class="step-num">0</span> <strong>Assume</strong> L = {1<sup>n<sup>2</sup></sup>} is regular.</p>
+      <p><span class="step-num">1</span> <strong>Let p</strong> be the pumping length.</p>
+      <p><span class="step-num">2</span> <strong>Choose</strong> s = 1<sup>p<sup>2</sup></sup>.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">s &isin; L since p<sup>2</sup> is a perfect square. |s| = p<sup>2</sup> &ge; p.</p>
+      <p><span class="step-num">3</span> <strong>Consider any</strong> split s = xyz with |y| = k where 1 &le; k &le; p (since |y| &gt; 0 and |xy| &le; p).</p>
+      <p><span class="step-num">4</span> <strong>Choose i = 2</strong>. Then:</p>
+      <p style="margin-left: 36px; color: #c4b5fd; font-family: monospace;">|xy<sup>2</sup>z| = p<sup>2</sup> + k</p>
+      <p style="color:#94a3b8; margin-left: 36px;">We need to show p<sup>2</sup> + k is NOT a perfect square.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">Since 1 &le; k &le; p:</p>
+      <p style="color:#94a3b8; margin-left: 36px;">p<sup>2</sup> &lt; p<sup>2</sup> + k &le; p<sup>2</sup> + p &lt; p<sup>2</sup> + 2p + 1 = (p+1)<sup>2</sup></p>
+      <p style="color:#94a3b8; margin-left: 36px;">So p<sup>2</sup> + k is <strong>strictly between</strong> two consecutive perfect squares. Therefore it is NOT a perfect square!</p>
+      <p><span class="step-num">5</span> <strong>Contradiction!</strong> L is not regular. &square;</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  The key number theory insight:
+
+  Perfect squares: 0, 1, 4, 9, 16, 25, 36, ...
+
+  Gaps between consecutive squares GROW:
+
+  n:    0   1   2   3    4    5    6
+  n^2:  0   1   4   9   16   25   36
+  gap:    1   3   5    7    9   11
+
+  Gap between p^2 and (p+1)^2:
+    (p+1)^2 - p^2  =  2p + 1
+
+  When we pump, we add k where 1 <= k <= p:
+    p^2 + k
+
+  Since k <= p < 2p + 1:
+    p^2 < p^2 + k < (p+1)^2
+
+  |-------|-----------|------------|
+  p^2   p^2+1     p^2+p       (p+1)^2
+          |<--- k --->|
+          falls in the GAP!
+          NOT a perfect square!
+      </div>
+
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Think of perfect squares as "stepping stones" that get further and further apart. Pumping adds a small amount (at most p), but the gap to the next stone is 2p+1. You land in the water every time!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">9 / 18</div>
+</div>
+
+<!-- ============ SLIDE 10: Common Mistakes ============ -->
+<div class="slide" id="s10">
+  <h1>Common Mistakes</h1>
+  <p class="subtitle">These errors cost points on every exam. Do not make them!</p>
+
+  <div class="two-col">
+    <div>
+      <div class="warning">
+        <h3>Mistake 1: Picking a specific p</h3>
+        <p>"Let p = 5..." -- NO! You don't get to choose p. The adversary chooses it. Your proof must work for <strong>any</strong> p.</p>
+      </div>
+
+      <div class="warning">
+        <h3>Mistake 2: Picking a specific split</h3>
+        <p>"Let x = a<sup>2</sup>, y = a<sup>3</sup>, z = ..." -- NO! The adversary picks the split. You must argue about <strong>all valid splits</strong>.</p>
+      </div>
+
+      <div class="warning">
+        <h3>Mistake 3: Forgetting |xy| &le; p</h3>
+        <p>This condition restricts WHERE y can be. It's often the most useful condition! Don't ignore it -- it constrains the adversary's choices.</p>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Mistake 4: Wrong quantifier order</h3>
+        <p>"For some split xyz... for all i..." -- BACKWARDS! The adversary picks the split, and then you pick i.</p>
+      </div>
+
+      <div class="warning">
+        <h3>Mistake 5: Using pumping to prove regularity</h3>
+        <p>"The language can be pumped, so it's regular." -- WRONG! The pumping lemma is one-directional. It can only prove non-regularity.</p>
+      </div>
+
+      <div class="key-idea" style="margin-top: 16px;">
+        <h3>The Correct Quantifier Order</h3>
+        <div class="diagram small" style="margin: 8px 0;">
+  FOR ALL p  (adversary picks)
+    THERE EXISTS s  (you pick)
+      FOR ALL xyz splits  (adversary picks)
+        THERE EXISTS i  (you pick)
+          xy^i z NOT in L
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">10 / 18</div>
+</div>
+
+<!-- ============ SLIDE 11: When Pumping Lemma Fails ============ -->
+<div class="slide" id="s11">
+  <h1>When the Pumping Lemma Fails</h1>
+  <p class="subtitle">A necessary condition is not the same as a sufficient condition</p>
+
+  <div class="two-col">
+    <div>
+      <div class="warning">
+        <h3>Surprising Fact</h3>
+        <p>There exist languages that are <strong>NOT regular</strong> but still <strong>satisfy</strong> the pumping lemma!</p>
+      </div>
+
+      <p>Consider the language:</p>
+      <div class="formula">L = {a<sup>i</sup>b<sup>j</sup>c<sup>k</sup> | i, j, k &ge; 0 and if i = 1 then j = k}</div>
+      <p>This language is NOT regular (it contains {ab<sup>n</sup>c<sup>n</sup>}), but you <strong>cannot</strong> prove this using the pumping lemma alone -- it satisfies the pumping property!</p>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>"All dogs are mammals" does NOT mean "all mammals are dogs." Similarly, "all regular languages are pumpable" does NOT mean "all pumpable languages are regular."</p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  The logical relationship:
+
+  +--------------------------------------+
+  |  All languages                       |
+  |                                      |
+  |  +--------------------------------+  |
+  |  |  Pumpable languages            |  |
+  |  |                                |  |
+  |  |  +--------------------------+  |  |
+  |  |  |  Regular languages       |  |  |
+  |  |  |                          |  |  |
+  |  |  +--------------------------+  |  |
+  |  |    ^                           |  |
+  |  |    These are pumpable AND      |  |
+  |  |    regular.                    |  |
+  |  |                                |  |
+  |  |  * Non-regular but pumpable    |  |
+  |  |    languages live HERE         |  |
+  |  +--------------------------------+  |
+  |                                      |
+  |  * Non-pumpable languages            |
+  |    are definitely NOT regular        |
+  +--------------------------------------+
+
+  Pumping lemma proves: NOT pumpable --> NOT regular
+  It CANNOT prove:      Pumpable --> Regular
+      </div>
+
+      <p class="mt">When the pumping lemma is insufficient, use:</p>
+      <ul>
+        <li><strong>Myhill-Nerode theorem</strong> (necessary AND sufficient)</li>
+        <li><strong>Closure properties</strong> (intersect with a regular language, then pump)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-number">11 / 18</div>
+</div>
+
+<!-- ============ SLIDE 12: CFL Pumping Lemma Statement ============ -->
+<div class="slide" id="s12">
+  <h1>The Pumping Lemma for CFLs</h1>
+  <p class="subtitle">Same idea, but now we pump TWO substrings</p>
+
+  <div class="key-idea">
+    <h3>Pumping Lemma (Context-Free Languages)</h3>
+    <p>If <strong>L</strong> is context-free, then there exists <strong>p</strong> such that for every <strong>s &isin; L</strong> with <strong>|s| &ge; p</strong>, s can be written as <strong>s = uvxyz</strong> satisfying:</p>
+  </div>
+
+  <div class="formula" style="font-size: 1.2em; padding: 24px;">
+    <div style="text-align: left; display: inline-block;">
+      1. &nbsp; |vy| &gt; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (v and y are not BOTH empty)<br>
+      2. &nbsp; |vxy| &le; p &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (the "middle chunk" is bounded)<br>
+      3. &nbsp; uv<sup>i</sup>xy<sup>i</sup>z &isin; L &nbsp;&nbsp;&nbsp; for all i &ge; 0 &nbsp;&nbsp; (pump v and y together)
+    </div>
+  </div>
+
+  <div class="diagram" style="margin-top: 16px;">
+  The string s broken into u, v, x, y, z:
+
+  |<------------------ s = uvxyz ------------------>|
+  |<- u ->|<- v ->|<- x ->|<- y ->|<----- z ------>|
+  |       | PUMP  |       | PUMP  |                 |
+  |       |<----- vxy ---->|
+  |       |   <= p chars   |
+
+  Pumping (v and y are pumped TOGETHER, same number of copies):
+    i=0:  u x z               (delete both v and y)
+    i=1:  u v x y z           (original)
+    i=2:  u vv x yy z         (double both)
+    i=3:  u vvv x yyy z       (triple both)
+  </div>
+
+  <div class="analogy">
+    <h3>Key Difference from Regular Pumping</h3>
+    <p>Regular: pump ONE substring (y). CFL: pump TWO substrings (v and y) <strong>in sync</strong>. This is because CFGs can generate matching pairs (like matching parentheses), but pumping both sides preserves the pairing.</p>
+  </div>
+  <div class="slide-number">12 / 18</div>
+</div>
+
+<!-- ============ SLIDE 13: CFL Pumping Intuition ============ -->
+<div class="slide" id="s13">
+  <h1>Intuition: Why CFL Pumping Works</h1>
+  <p class="subtitle">The parse tree argument -- a repeated variable means a "nestable" pattern</p>
+
+  <div class="two-col">
+    <div>
+      <p>A context-free grammar has a <strong>finite</strong> number of variables (nonterminals).</p>
+      <p>If a string s is long enough, its parse tree must be <strong>tall</strong>. A tall tree means a long root-to-leaf path.</p>
+      <p>By the <strong>pigeonhole principle</strong>, some variable <strong>A</strong> must appear <strong>twice</strong> on this path.</p>
+      <p>The subtree rooted at the upper A generates <strong>vxy</strong>. The subtree rooted at the lower A generates just <strong>x</strong>.</p>
+      <p>We can <strong>replace</strong> the lower A's subtree with the upper A's subtree (or vice versa), giving us the pumping effect!</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  Parse tree with repeated variable A:
+
+              S
+             /|\
+            / | \
+           u  .  z          <-- generates u...z
+              |
+              A   <--------- UPPER occurrence of A
+             /|\
+            / | \
+           v  .  y          <-- generates v...y
+              |
+              A   <--------- LOWER occurrence of A
+              |
+              x             <-- generates x
+
+  String: u  v  x  y  z
+
+  PUMP UP (replace lower A with upper A's tree):
+              S
+             /|\
+            u  .  z
+               |
+               A
+              /|\
+             v  .  y
+                |
+                A   <-- plug in upper A again!
+               /|\
+              v  .  y
+                 |
+                 A
+                 |
+                 x
+
+  Result: u v v x y y z  =  uv^2 xy^2 z
+
+  PUMP DOWN (replace upper A with lower A's tree):
+              S
+             /|\
+            u  .  z
+               |
+               A
+               |
+               x
+
+  Result: u x z  =  uv^0 xy^0 z
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">13 / 18</div>
+</div>
+
+<!-- ============ SLIDE 14: CFL Example - a^n b^n c^n ============ -->
+<div class="slide" id="s14">
+  <h1>Example: {a<sup>n</sup>b<sup>n</sup>c<sup>n</sup> | n &ge; 0}</h1>
+  <p class="subtitle">Prove this language is not context-free</p>
+
+  <div class="two-col">
+    <div>
+      <p><span class="step-num">0</span> <strong>Assume</strong> L = {a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>} is context-free.</p>
+      <p><span class="step-num">1</span> <strong>Let p</strong> be the pumping length.</p>
+      <p><span class="step-num">2</span> <strong>Choose</strong> s = a<sup>p</sup>b<sup>p</sup>c<sup>p</sup>.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">s &isin; L and |s| = 3p &ge; p.</p>
+      <p><span class="step-num">3</span> <strong>Consider any</strong> split s = uvxyz with |vy| &gt; 0 and |vxy| &le; p.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">Since |vxy| &le; p, the substring vxy can span <strong>at most two</strong> of the three symbol types (a, b, c). It cannot touch all three.</p>
+      <p><span class="step-num">4</span> <strong>Choose i = 2</strong>. Then uv<sup>2</sup>xy<sup>2</sup>z has more of at most two symbols but not the third. The counts of a's, b's, c's are no longer all equal.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">So uv<sup>2</sup>xy<sup>2</sup>z &notin; L.</p>
+      <p><span class="step-num">5</span> <strong>Contradiction!</strong> L is not context-free. &square;</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  s = a^p b^p c^p
+
+  a a...a a  b b...b b  c c...c c
+  |<- p ->|  |<- p ->|  |<- p ->|
+
+  Since |vxy| <= p, vxy fits in a window
+  of width p. Where can this window be?
+
+  Case 1: vxy is all a's and b's (no c's)
+  a a [a..a  b..b] b  c c...c c
+      |<= p chars>|
+  Pumping increases a's or b's (or both),
+  but NOT c's. Counts become unequal!
+
+  Case 2: vxy is all b's and c's (no a's)
+  a a...a a  b [b..b  c..c] c
+              |<= p chars>|
+  Pumping increases b's or c's (or both),
+  but NOT a's. Counts become unequal!
+
+  Case 3: vxy is all a's (or all b's/c's)
+  Same argument -- only one count changes.
+
+  In ALL cases, pumping breaks the
+  a-count = b-count = c-count requirement!
+      </div>
+
+      <div class="key-idea">
+        <h3>Key Insight</h3>
+        <p>The constraint |vxy| &le; p is what makes this work. It prevents the "pump zone" from touching all three symbol groups simultaneously.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">14 / 18</div>
+</div>
+
+<!-- ============ SLIDE 15: CFL Example - ww ============ -->
+<div class="slide" id="s15">
+  <h1>Example: {ww | w &isin; {0,1}*}</h1>
+  <p class="subtitle">Not just non-regular -- also NOT context-free!</p>
+
+  <div class="two-col">
+    <div>
+      <p><span class="step-num">0</span> <strong>Assume</strong> L = {ww} is context-free.</p>
+      <p><span class="step-num">1</span> <strong>Let p</strong> be the pumping length.</p>
+      <p><span class="step-num">2</span> <strong>Choose</strong> s = 0<sup>p</sup>1<sup>p</sup>0<sup>p</sup>1<sup>p</sup>.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">Here w = 0<sup>p</sup>1<sup>p</sup>, so s = ww &isin; L, and |s| = 4p &ge; p.</p>
+      <p><span class="step-num">3</span> <strong>Consider any</strong> split s = uvxyz with |vy| &gt; 0 and |vxy| &le; p.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">Since |vxy| &le; p, it sits within a window of at most p characters. In the string 0<sup>p</sup>1<sup>p</sup>0<sup>p</sup>1<sup>p</sup>, this window straddles at most two of the four blocks.</p>
+      <p><span class="step-num">4</span> <strong>Choose i = 2</strong>. Pumping changes the length of at most two of the four blocks, destroying the ww structure.</p>
+      <p style="color:#94a3b8; margin-left: 36px;">The first half and second half can no longer match.</p>
+      <p><span class="step-num">5</span> <strong>Contradiction!</strong> L is not context-free. &square;</p>
+    </div>
+    <div>
+      <div class="diagram small">
+  s = 0^p 1^p 0^p 1^p
+
+  0...0  1...1  0...0  1...1
+  |blk1| |blk2| |blk3| |blk4|
+  |< w = 0^p 1^p >|< w = 0^p 1^p >|
+
+  |vxy| <= p, so the window sits in one
+  of these regions:
+
+  Region A: within block 1 (all 0s)
+  Region B: straddling blocks 1-2 (0s and 1s)
+  Region C: within block 2 (all 1s)
+  Region D: straddling blocks 2-3 (1s and 0s)
+  Region E: within block 3 (all 0s)
+  Region F: straddling blocks 3-4 (0s and 1s)
+  Region G: within block 4 (all 1s)
+
+  In every case, pumping affects at most
+  2 adjacent blocks. The other 2 blocks
+  stay the same.
+
+  Example - Region D (straddles 1^p and 0^p):
+    Pumping gives: 0^p 1^(p+a) 0^(p+b) 1^p
+    First half:  0^p 1^((p+a)/2)...
+    Second half: ...doesn't match!
+      </div>
+
+      <div class="warning">
+        <h3>Note</h3>
+        <p>Contrast with {ww<sup>R</sup>} (palindromes), which IS context-free. ww requires "copying" which CFGs cannot do; ww<sup>R</sup> requires "mirroring" which CFGs handle via nesting.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">15 / 18</div>
+</div>
+
+<!-- ============ SLIDE 16: Comparing the Two Lemmas ============ -->
+<div class="slide" id="s16">
+  <h1>Comparing the Two Pumping Lemmas</h1>
+  <p class="subtitle">Side-by-side: Regular vs. Context-Free</p>
+
+  <table style="width: 100%; margin-top: 16px;">
+    <tr>
+      <th style="width: 25%;">Feature</th>
+      <th style="width: 37%;">Regular Languages PL</th>
+      <th style="width: 37%;">Context-Free Languages PL</th>
+    </tr>
+    <tr>
+      <td style="text-align: left;"><strong>Split</strong></td>
+      <td>s = <strong>xyz</strong> (3 parts)</td>
+      <td>s = <strong>uvxyz</strong> (5 parts)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left;"><strong>Pumped parts</strong></td>
+      <td><strong>y</strong> alone</td>
+      <td><strong>v</strong> and <strong>y</strong> together (in sync)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left;"><strong>Non-empty</strong></td>
+      <td>|y| &gt; 0</td>
+      <td>|vy| &gt; 0</td>
+    </tr>
+    <tr>
+      <td style="text-align: left;"><strong>Length bound</strong></td>
+      <td>|xy| &le; p</td>
+      <td>|vxy| &le; p</td>
+    </tr>
+    <tr>
+      <td style="text-align: left;"><strong>Pumped string</strong></td>
+      <td>xy<sup>i</sup>z &isin; L</td>
+      <td>uv<sup>i</sup>xy<sup>i</sup>z &isin; L</td>
+    </tr>
+    <tr>
+      <td style="text-align: left;"><strong>Source of loop</strong></td>
+      <td>Repeated <strong>state</strong> in DFA</td>
+      <td>Repeated <strong>variable</strong> in parse tree</td>
+    </tr>
+    <tr>
+      <td style="text-align: left;"><strong>Proves</strong></td>
+      <td>Language is NOT regular</td>
+      <td>Language is NOT context-free</td>
+    </tr>
+    <tr>
+      <td style="text-align: left;"><strong>Limitation</strong></td>
+      <td>Necessary, not sufficient</td>
+      <td>Necessary, not sufficient</td>
+    </tr>
+  </table>
+
+  <div class="two-col mt">
+    <div class="diagram small">
+  Regular PL:      |-- x --|-- y --|--- z ---|
+                            PUMP
+
+  Pumped:          |-- x --|yyyyyy|--- z ---|
+    </div>
+    <div class="diagram small">
+  CFL PL:  |- u -|- v -|- x -|- y -|- z -|
+                  PUMP          PUMP
+
+  Pumped:  |- u -|vvvvv|- x -|yyyyy|- z -|
+    </div>
+  </div>
+
+  <div class="key-idea mt">
+    <h3>How to Decide Which to Use</h3>
+    <p>Trying to prove a language is not regular? Use the <strong>regular pumping lemma</strong> first (simpler). Trying to prove it's not context-free? You <strong>must</strong> use the CFL pumping lemma. If you already know a language is not regular, the CFL lemma can tell you if it's also not context-free.</p>
+  </div>
+  <div class="slide-number">16 / 18</div>
+</div>
+
+<!-- ============ SLIDE 17: Beyond Pumping ============ -->
+<div class="slide" id="s17">
+  <h1>Beyond Pumping</h1>
+  <p class="subtitle">Other techniques for proving non-regularity and non-context-freeness</p>
+
+  <div class="two-col">
+    <div>
+      <h2>Myhill-Nerode Theorem</h2>
+      <p>A language L is regular <strong>if and only if</strong> it has a <strong>finite</strong> number of equivalence classes under the indistinguishability relation.</p>
+      <div class="key-idea">
+        <h3>Advantage over Pumping</h3>
+        <p>Myhill-Nerode is <strong>necessary AND sufficient</strong>. If the pumping lemma can't prove non-regularity, Myhill-Nerode still can.</p>
+      </div>
+
+      <h2 class="mt">Closure Properties</h2>
+      <p>Regular and context-free languages are closed under certain operations. Strategy:</p>
+      <ul>
+        <li>Assume L is regular (or CF)</li>
+        <li>Intersect L with a known regular language</li>
+        <li>Show the result is a known non-regular (or non-CF) language</li>
+        <li>Contradiction with closure!</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Ogden's Lemma</h2>
+      <p>A <strong>strengthened</strong> version of the CFL pumping lemma where you can "mark" certain positions and the lemma guarantees the pump includes marked positions.</p>
+
+      <div class="diagram small">
+  Example: Closure property proof
+
+  Prove L = {0^n 1^n 2^n} is not CF.
+
+  Alternative to pumping:
+
+  1. Assume L is CF.
+  2. CF languages are closed under
+     intersection with regular languages.
+  3. Let R = 0* 1* 2* (regular).
+  4. L intersect R = L itself.
+  5. But we can also use this trick
+     with harder languages where direct
+     pumping is tricky.
+
+  Closure properties let you REDUCE
+  a hard problem to an easier one!
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>The pumping lemma is a screwdriver -- great for most screws. Myhill-Nerode is a power drill -- works on everything but takes more setup. Closure properties are like using a friend's tool -- reduce the problem to one they already solved.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">17 / 18</div>
+</div>
+
+<!-- ============ SLIDE 18: Summary & Cheat Sheet ============ -->
+<div class="slide" id="s18">
+  <h1>Summary & Cheat Sheet</h1>
+  <p class="subtitle">Your quick reference for pumping lemma proofs</p>
+
+  <div class="two-col">
+    <div>
+      <h2>Proof Template (Regular)</h2>
+      <div class="diagram small">
+  1. Assume L is regular.
+  2. Let p = pumping length.
+  3. Choose s in L, |s| >= p.
+     (TIP: make first p chars uniform)
+  4. Let s = xyz, |y| > 0, |xy| <= p.
+  5. Show xy^i z not in L for some i.
+     (TIP: try i = 0 or i = 2 first)
+  6. Contradiction. L not regular. QED.
+      </div>
+
+      <h2>Proof Template (CFL)</h2>
+      <div class="diagram small">
+  1. Assume L is context-free.
+  2. Let p = pumping length.
+  3. Choose s in L, |s| >= p.
+  4. Let s = uvxyz, |vy| > 0, |vxy| <= p.
+  5. Show uv^i xy^i z not in L for some i.
+     (TIP: |vxy| <= p limits the window)
+  6. Contradiction. L not CF. QED.
+      </div>
+
+      <div class="key-idea">
+        <h3>Golden Rule of String Choice</h3>
+        <p>Pick s so that the constraint |xy| &le; p (or |vxy| &le; p) <strong>forces</strong> the pump zone into a region that will break the language's defining property when pumped.</p>
+      </div>
+    </div>
+    <div>
+      <h2>Quick Reference Table</h2>
+      <table style="width: 100%;">
+        <tr>
+          <th>Language</th>
+          <th>Regular?</th>
+          <th>CF?</th>
+        </tr>
+        <tr>
+          <td style="text-align:left; font-family:monospace; font-size:0.95em;">a<sup>n</sup>b<sup>n</sup></td>
+          <td style="color:#f87171;">No</td>
+          <td style="color:#34d399;">Yes</td>
+        </tr>
+        <tr>
+          <td style="text-align:left; font-family:monospace; font-size:0.95em;">ww</td>
+          <td style="color:#f87171;">No</td>
+          <td style="color:#f87171;">No</td>
+        </tr>
+        <tr>
+          <td style="text-align:left; font-family:monospace; font-size:0.95em;">ww<sup>R</sup></td>
+          <td style="color:#f87171;">No</td>
+          <td style="color:#34d399;">Yes</td>
+        </tr>
+        <tr>
+          <td style="text-align:left; font-family:monospace; font-size:0.95em;">a<sup>n</sup>b<sup>n</sup>c<sup>n</sup></td>
+          <td style="color:#f87171;">No</td>
+          <td style="color:#f87171;">No</td>
+        </tr>
+        <tr>
+          <td style="text-align:left; font-family:monospace; font-size:0.95em;">1<sup>n<sup>2</sup></sup></td>
+          <td style="color:#f87171;">No</td>
+          <td style="color:#34d399;">Yes</td>
+        </tr>
+        <tr>
+          <td style="text-align:left; font-family:monospace; font-size:0.95em;">balanced parens</td>
+          <td style="color:#f87171;">No</td>
+          <td style="color:#34d399;">Yes</td>
+        </tr>
+      </table>
+
+      <h2 class="mt">Remember!</h2>
+      <div class="warning">
+        <h3>The Quantifier Chant</h3>
+        <p><strong>For all</strong> p, <strong>there exists</strong> s, <strong>for all</strong> xyz, <strong>there exists</strong> i.</p>
+        <p style="color:#94a3b8; font-size:0.95em;">Adversary, You, Adversary, You. A-Y-A-Y.</p>
+      </div>
+
+      <div class="diagram small" style="margin-top: 8px;">
+  THEY pick p --> YOU pick s
+  THEY split  --> YOU pick i
+  If you always win --> NOT regular!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">18 / 18</div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const totalSlides = 18;
+let current = 1;
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slide = document.getElementById('s' + n);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (n === 1);
+  document.getElementById('nextBtn').disabled = (n === totalSlides);
+  document.getElementById('progress').style.width = ((n / totalSlides) * 100) + '%';
+}
+function changeSlide(delta) {
+  const next = current + delta;
+  if (next >= 1 && next <= totalSlides) { current = next; showSlide(current); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+  else if (e.key === 's' || e.key === 'S') {
+    const slide = document.getElementById('s' + current);
+    const steps = slide.querySelectorAll('.step:not(.revealed)');
+    if (steps.length > 0) steps[0].classList.add('revealed');
+  }
+});
+showSlide(1);
+</script>
+
+</body>
+</html>
