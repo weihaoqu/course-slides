@@ -43,6 +43,21 @@ ul li { margin-bottom: 8px; }
 .big-emoji { font-size: 3em; margin-bottom: 16px; }
 code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; }
 .highlight-text { color: #fbbf24; font-weight: 600; }
+/* Interactive component shared styles */
+.pnp-controls { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+.pnp-controls button, .pnp-btn { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.pnp-controls button:hover, .pnp-btn:hover { background: #475569; }
+.pnp-controls button.active, .pnp-btn.active { background: #3b82f6; border-color: #60a5fa; }
+.pnp-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+.pnp-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin: 12px 0; }
+.pnp-status { font-size: 0.95em; color: #94a3b8; margin: 8px 0; min-height: 24px; }
+.pnp-badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 600; }
+.pnp-badge.green { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
+.pnp-badge.red { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; }
+.pnp-badge.amber { background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+.pnp-badge.blue { background: rgba(59,130,246,0.2); color: #3b82f6; border: 1px solid #3b82f6; }
+@keyframes pnp_pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+@keyframes pnp_glow { 0%,100%{filter:drop-shadow(0 0 4px rgba(59,130,246,0.3));} 50%{filter:drop-shadow(0 0 12px rgba(59,130,246,0.8));} }
 </style>
 </head>
 <body>
@@ -55,21 +70,80 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <h1>P vs NP</h1>
     <h1>The Million Dollar Question</h1>
     <p class="subtitle" style="margin-top: 20px;">CS305 -- Formal Language Theory &amp; Complexity</p>
-    <div class="diagram" style="display: inline-block; text-align: left; margin-top: 20px;">
-   Can every problem whose solution
-   can be QUICKLY VERIFIED...
-
-   ...also be QUICKLY SOLVED?
-
-       P  =?=  NP
-
-   Prize: $1,000,000 (Clay Institute)
-   Status: UNSOLVED since 1971
+    <div id="pnp_hero_container" style="margin: 20px auto; max-width: 520px;">
+      <svg id="pnp_hero_svg" viewBox="0 0 520 320" style="width:100%;height:auto;">
+        <!-- Pulsing P =?= NP text -->
+        <text id="pnp_hero_title" x="260" y="40" text-anchor="middle" font-size="36" font-weight="bold" fill="#93c5fd" style="animation: pnp_pulse 2s ease-in-out infinite;">P  =?=  NP</text>
+        <!-- Fulcrum triangle -->
+        <polygon points="260,260 240,290 280,290" fill="#475569" stroke="#64748b" stroke-width="1.5"/>
+        <!-- Base -->
+        <rect x="200" y="290" width="120" height="8" rx="4" fill="#334155"/>
+        <!-- Beam group - rotates around fulcrum -->
+        <g id="pnp_hero_beam" transform-origin="260 260">
+          <!-- Beam bar -->
+          <rect x="80" y="255" width="360" height="10" rx="5" fill="#64748b"/>
+          <!-- Left chain -->
+          <line x1="130" y1="265" x2="130" y2="195" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,3"/>
+          <!-- Right chain -->
+          <line x1="390" y1="265" x2="390" y2="195" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,3"/>
+          <!-- Left pan -->
+          <ellipse cx="130" cy="200" rx="70" ry="14" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+          <text x="130" y="185" text-anchor="middle" font-size="14" font-weight="600" fill="#f59e0b">SOLVING</text>
+          <text x="130" y="220" text-anchor="middle" font-size="11" fill="#94a3b8">(find answer)</text>
+          <!-- Right pan -->
+          <ellipse cx="390" cy="200" rx="70" ry="14" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+          <text x="390" y="185" text-anchor="middle" font-size="14" font-weight="600" fill="#10b981">VERIFYING</text>
+          <text x="390" y="220" text-anchor="middle" font-size="11" fill="#94a3b8">(check answer)</text>
+        </g>
+        <!-- Bottom text -->
+        <text x="260" y="315" text-anchor="middle" font-size="13" fill="#94a3b8">$1,000,000 · Unsolved since 1971</text>
+        <!-- Question mark -->
+        <text id="pnp_hero_qmark" x="260" y="240" text-anchor="middle" font-size="28" font-weight="bold" fill="#8b5cf6" opacity="0.8">?</text>
+      </svg>
     </div>
-    <p style="margin-top: 20px; color: #64748b;">Use arrow keys or buttons to navigate</p>
+    <p style="margin-top: 10px; color: #64748b;">Use arrow keys or buttons to navigate</p>
   </div>
-  <span class="slide-number">1 / 22</span>
+  <span class="slide-number">1 / 23</span>
 </div>
+<script>
+(function(){
+  var pnp_hero_anim = null;
+  var pnp_hero_angle = 0;
+  var pnp_hero_dir = 1;
+  var pnp_hero_active = false;
+
+  function pnp_hero_tick() {
+    if (!pnp_hero_active) return;
+    pnp_hero_angle += 0.15 * pnp_hero_dir;
+    if (pnp_hero_angle > 8) pnp_hero_dir = -1;
+    if (pnp_hero_angle < -8) pnp_hero_dir = 1;
+    var beam = document.getElementById('pnp_hero_beam');
+    if (beam) beam.setAttribute('transform', 'rotate(' + pnp_hero_angle + ' 260 260)');
+    var qm = document.getElementById('pnp_hero_qmark');
+    if (qm) qm.setAttribute('opacity', (0.5 + 0.5 * Math.abs(Math.sin(pnp_hero_angle * 0.2))).toFixed(2));
+    pnp_hero_anim = requestAnimationFrame(pnp_hero_tick);
+  }
+
+  function pnp_hero_start() {
+    pnp_hero_active = true;
+    pnp_hero_anim = requestAnimationFrame(pnp_hero_tick);
+  }
+
+  function pnp_hero_stop() {
+    pnp_hero_active = false;
+    if (pnp_hero_anim) { cancelAnimationFrame(pnp_hero_anim); pnp_hero_anim = null; }
+  }
+
+  var obs = new MutationObserver(function(muts) {
+    var slide = document.getElementById('s1');
+    if (!slide) return;
+    if (slide.classList.contains('active')) { pnp_hero_start(); }
+    else { pnp_hero_stop(); }
+  });
+  var s1 = document.getElementById('s1');
+  if (s1) obs.observe(s1, { attributes: true, attributeFilter: ['class'] });
+})();
+</script>
 
 <!-- ==================== SLIDE 2: Big Picture ==================== -->
 <div class="slide" id="s2">
@@ -108,7 +182,7 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <p><strong>Computability:</strong> "Your keys exist somewhere in the universe." <br>
     <strong>Complexity:</strong> "Can you find them before lunch?"</p>
   </div>
-  <span class="slide-number">2 / 22</span>
+  <span class="slide-number">2 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 3: Measuring Efficiency ==================== -->
@@ -138,15 +212,21 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     </div>
 
     <div>
-      <h3>The Growth Gap (operations for input size n)</h3>
-      <table>
-        <tr><th>n</th><th>n^2</th><th>n^3</th><th>2^n</th><th>n!</th></tr>
-        <tr><td>10</td><td>100</td><td>1,000</td><td>1,024</td><td>3.6M</td></tr>
-        <tr><td>20</td><td>400</td><td>8,000</td><td>1M</td><td>2.4 x 10^18</td></tr>
-        <tr><td>50</td><td>2,500</td><td>125K</td><td>10^15</td><td>3 x 10^64</td></tr>
-        <tr class="highlight"><td>100</td><td>10,000</td><td>1M</td><td>10^30</td><td>10^158</td></tr>
-        <tr><td>1000</td><td>1M</td><td>1B</td><td>10^301</td><td>!!!</td></tr>
-      </table>
+      <h3>Growth Rate Racing Chart</h3>
+      <div class="pnp-panel" style="padding:12px;">
+        <div class="pnp-controls" style="align-items:center;">
+          <button onclick="window.pnp_grow_play()">Play</button>
+          <button onclick="window.pnp_grow_pause()">Pause</button>
+          <button onclick="window.pnp_grow_reset()">Reset</button>
+          <span style="margin-left:8px;color:#94a3b8;font-size:13px;">n =</span>
+          <input id="pnp_grow_slider" type="range" min="1" max="25" value="1" oninput="window.pnp_grow_set(+this.value)" style="flex:1;accent-color:#3b82f6;">
+          <span id="pnp_grow_nval" style="color:#93c5fd;font-weight:700;font-size:1.3em;min-width:28px;">1</span>
+        </div>
+        <svg id="pnp_grow_svg" viewBox="0 0 420 210" style="width:100%;height:auto;margin-top:4px;">
+          <!-- bars drawn by JS -->
+        </svg>
+        <div id="pnp_grow_status" class="pnp-status" style="text-align:center;min-height:20px;"></div>
+      </div>
     </div>
   </div>
 
@@ -156,8 +236,82 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     An O(2^n) algorithm takes 10^30 steps -- that's more than the <strong>age of the universe in nanoseconds</strong>. <br>
     No amount of faster hardware will save you from exponential growth.</p>
   </div>
-  <span class="slide-number">3 / 22</span>
+  <span class="slide-number">3 / 23</span>
 </div>
+<script>
+(function(){
+  var pnp_grow_n = 1;
+  var pnp_grow_timer = null;
+  var pnp_grow_maxW = 370;
+  var pnp_grow_barH = 28;
+  var pnp_grow_gap = 10;
+  var pnp_grow_labelW = 44;
+  var funcs = [
+    { name:'O(n)',  color:'#10b981', fn: function(n){ return n; } },
+    { name:'O(n\u00B2)', color:'#3b82f6', fn: function(n){ return n*n; } },
+    { name:'O(n\u00B3)', color:'#8b5cf6', fn: function(n){ return n*n*n; } },
+    { name:'O(2\u207F)', color:'#ef4444', fn: function(n){ return Math.pow(2,n); } },
+    { name:'O(n!)', color:'#f59e0b', fn: function(n){ var r=1;for(var i=2;i<=n;i++)r*=i;return r; } }
+  ];
+
+  function pnp_grow_fmt(v){
+    if(v>=1e15) return v.toExponential(1);
+    if(v>=1e9) return (v/1e9).toFixed(1)+'B';
+    if(v>=1e6) return (v/1e6).toFixed(1)+'M';
+    if(v>=1e3) return (v/1e3).toFixed(1)+'K';
+    return String(Math.round(v));
+  }
+
+  function pnp_grow_draw(){
+    var svg = document.getElementById('pnp_grow_svg');
+    if(!svg) return;
+    var n = pnp_grow_n;
+    var vals = funcs.map(function(f){ return f.fn(n); });
+    var maxVal = Math.max.apply(null, vals);
+    var logMax = Math.log10(Math.max(maxVal,10));
+    var html = '';
+    for(var i=0;i<funcs.length;i++){
+      var y = 8 + i*(pnp_grow_barH+pnp_grow_gap);
+      var v = vals[i];
+      var logV = v>0 ? Math.log10(Math.max(v,1)) : 0;
+      var w = Math.max(4, (logV/logMax)*pnp_grow_maxW);
+      var explodes = (i>=3 && n>=20 && v>1e15);
+      html += '<text x="0" y="'+(y+19)+'" font-size="12" fill="'+funcs[i].color+'" font-weight="600">'+funcs[i].name+'</text>';
+      html += '<rect x="'+pnp_grow_labelW+'" y="'+y+'" width="'+w+'" height="'+pnp_grow_barH+'" rx="4" fill="'+funcs[i].color+'" opacity="'+(explodes?'1':'0.85')+'"'+(explodes?' style="animation:pnp_pulse 0.4s infinite"':'')+'/>';
+      var label = pnp_grow_fmt(v);
+      if(explodes) label += ' EXPLODES!';
+      html += '<text x="'+(pnp_grow_labelW+w+6)+'" y="'+(y+19)+'" font-size="11" fill="'+(explodes?funcs[i].color:'#94a3b8')+'">'+label+'</text>';
+    }
+    svg.innerHTML = html;
+    document.getElementById('pnp_grow_nval').textContent = n;
+    document.getElementById('pnp_grow_slider').value = n;
+    var st = document.getElementById('pnp_grow_status');
+    if(n>=20) st.innerHTML = '<span style="color:#ef4444;">Exponential functions dominate -- no hardware can keep up!</span>';
+    else if(n>=10) st.innerHTML = '<span style="color:#f59e0b;">Notice 2\u207F and n! pulling away from polynomial growth.</span>';
+    else st.innerHTML = 'Increase n to see the growth gap emerge.';
+  }
+
+  window.pnp_grow_set = function(v){ pnp_grow_n=v; pnp_grow_draw(); };
+  window.pnp_grow_play = function(){
+    pnp_grow_pause();
+    pnp_grow_timer = setInterval(function(){
+      if(pnp_grow_n<25){ pnp_grow_n++; pnp_grow_draw(); }
+      else { clearInterval(pnp_grow_timer); pnp_grow_timer=null; }
+    }, 350);
+  };
+  window.pnp_grow_pause = function(){ if(pnp_grow_timer){ clearInterval(pnp_grow_timer); pnp_grow_timer=null; } };
+  window.pnp_grow_reset = function(){ pnp_grow_pause(); pnp_grow_n=1; pnp_grow_draw(); };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s3');
+    if(!slide) return;
+    if(slide.classList.contains('active')){ pnp_grow_draw(); }
+    else { pnp_grow_pause(); }
+  });
+  var s3 = document.getElementById('s3');
+  if(s3) obs.observe(s3, { attributes:true, attributeFilter:['class'] });
+})();
+</script>
 
 <!-- ==================== SLIDE 4: The Class P ==================== -->
 <div class="slide" id="s4">
@@ -186,22 +340,49 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     </div>
 
     <div>
-      <h3>Examples of P Problems</h3>
-      <div class="diagram small">
-  Sorting an array
-    Input:  [38, 27, 43, 3, 9, 82]
-    Output: [3, 9, 27, 38, 43, 82]
-    Time:   O(n log n)
-
-  Shortest path (Dijkstra's)
-    Input:  Graph + source + destination
-    Output: Shortest path
-    Time:   O(V^2) or O(E + V log V)
-
-  String matching
-    Input:  Text + pattern
-    Output: All occurrences
-    Time:   O(n + m)
+      <h3>P Algorithm Demos</h3>
+      <div class="pnp-controls" id="pnp_pdemo_tabs">
+        <button class="active" onclick="window.pnp_pdemo_tab('sort')">Sorting O(n log n)</button>
+        <button onclick="window.pnp_pdemo_tab('bfs')">BFS O(V+E)</button>
+        <button onclick="window.pnp_pdemo_tab('gcd')">GCD O(log n)</button>
+      </div>
+      <div class="pnp-panel" style="min-height: 260px;">
+        <!-- Sorting Demo -->
+        <div id="pnp_pdemo_sort" style="display:block;">
+          <svg id="pnp_pdemo_sort_svg" viewBox="0 0 380 160" style="width:100%;max-width:380px;height:auto;"></svg>
+          <div class="pnp-status" id="pnp_pdemo_sort_status">Click Sort to watch merge sort in action</div>
+          <div class="pnp-controls">
+            <button onclick="window.pnp_pdemo_sortStep()">Step</button>
+            <button onclick="window.pnp_pdemo_sortAuto()">Auto</button>
+            <button onclick="window.pnp_pdemo_sortReset()">Reset</button>
+          </div>
+        </div>
+        <!-- BFS Demo -->
+        <div id="pnp_pdemo_bfs" style="display:none;">
+          <svg id="pnp_pdemo_bfs_svg" viewBox="0 0 380 180" style="width:100%;max-width:380px;height:auto;"></svg>
+          <div class="pnp-status" id="pnp_pdemo_bfs_status">Click a start node, then a target node</div>
+          <div class="pnp-controls">
+            <button onclick="window.pnp_pdemo_bfsStep()">Step</button>
+            <button onclick="window.pnp_pdemo_bfsAuto()">Auto</button>
+            <button onclick="window.pnp_pdemo_bfsReset()">Reset</button>
+          </div>
+        </div>
+        <!-- GCD Demo -->
+        <div id="pnp_pdemo_gcd" style="display:none;">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+            <label style="color:#94a3b8;font-size:13px;">a:</label>
+            <input id="pnp_pdemo_gcd_a" type="number" value="48" style="width:70px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:13px;">
+            <label style="color:#94a3b8;font-size:13px;">b:</label>
+            <input id="pnp_pdemo_gcd_b" type="number" value="18" style="width:70px;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:4px;font-size:13px;">
+          </div>
+          <div id="pnp_pdemo_gcd_steps" class="pnp-panel" style="min-height:100px;font-family:'SF Mono','Fira Code','Consolas',monospace;font-size:0.95em;line-height:1.8;"></div>
+          <div class="pnp-status" id="pnp_pdemo_gcd_status">Click Step or Auto to run Euclid's algorithm</div>
+          <div class="pnp-controls">
+            <button onclick="window.pnp_pdemo_gcdStep()">Step</button>
+            <button onclick="window.pnp_pdemo_gcdAuto()">Auto</button>
+            <button onclick="window.pnp_pdemo_gcdReset()">Reset</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -210,53 +391,329 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <h3>Analogy</h3>
     <p>P problems are like recipes where the cooking time is proportional to the number of guests. Double the guests? Maybe quadruple the cooking time. That's manageable.</p>
   </div>
-  <span class="slide-number">4 / 22</span>
+  <span class="slide-number">4 / 23</span>
 </div>
+<script>
+(function(){
+  /* ====== Slide 4: P Algorithm Demos ====== */
+  var timers = [];
+  function clearTimers(){ timers.forEach(function(t){clearTimeout(t);clearInterval(t);}); timers=[]; }
+
+  /* --- Tab switching --- */
+  window.pnp_pdemo_tab = function(which){
+    clearTimers();
+    ['sort','bfs','gcd'].forEach(function(t){
+      document.getElementById('pnp_pdemo_'+t).style.display = t===which?'block':'none';
+    });
+    var btns = document.getElementById('pnp_pdemo_tabs').querySelectorAll('button');
+    btns.forEach(function(b){ b.classList.remove('active'); });
+    if(which==='sort') btns[0].classList.add('active');
+    if(which==='bfs') btns[1].classList.add('active');
+    if(which==='gcd') btns[2].classList.add('active');
+  };
+
+  /* ====== SORTING ====== */
+  var sortOriginal = [38,27,43,3,9,82];
+  var sortArr = sortOriginal.slice();
+  var sortOps = []; // precomputed swap operations
+  var sortOpIdx = 0;
+  var sortColors = ['#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#93c5fd'];
+  var sortComparisons = 0;
+
+  function sortPrecompute(){
+    var a = sortOriginal.slice();
+    sortOps = [];
+    // simple bubble sort for clear visual steps
+    for(var i=0;i<a.length;i++){
+      for(var j=0;j<a.length-1-i;j++){
+        sortOps.push({type:'compare',i:j,j:j+1});
+        if(a[j]>a[j+1]){
+          var tmp=a[j]; a[j]=a[j+1]; a[j+1]=tmp;
+          sortOps.push({type:'swap',i:j,j:j+1,arr:a.slice()});
+        }
+      }
+    }
+    sortOps.push({type:'done'});
+  }
+  sortPrecompute();
+
+  function sortRender(highlight1,highlight2){
+    var svg = document.getElementById('pnp_pdemo_sort_svg');
+    if(!svg) return;
+    var maxVal = 82;
+    var barW = 45, gap = 15, startX = 15;
+    var html = '';
+    for(var i=0;i<sortArr.length;i++){
+      var h = (sortArr[i]/maxVal)*120;
+      var x = startX + i*(barW+gap);
+      var y = 140-h;
+      var col = sortColors[sortOriginal.indexOf(sortArr[i])];
+      if(i===highlight1||i===highlight2) col='#fbbf24';
+      html += '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" rx="4" fill="'+col+'" opacity="0.9"><animate attributeName="y" from="'+(y+10)+'" to="'+y+'" dur="0.2s"/><animate attributeName="height" from="'+(h-10)+'" to="'+h+'" dur="0.2s"/></rect>';
+      html += '<text x="'+(x+barW/2)+'" y="'+(y-6)+'" text-anchor="middle" font-size="12" fill="#e2e8f0">'+sortArr[i]+'</text>';
+    }
+    svg.innerHTML = html;
+  }
+
+  window.pnp_pdemo_sortReset = function(){
+    clearTimers();
+    sortArr = sortOriginal.slice();
+    sortOpIdx = 0;
+    sortComparisons = 0;
+    sortRender(-1,-1);
+    document.getElementById('pnp_pdemo_sort_status').textContent='Click Sort to watch bubble sort in action';
+  };
+
+  window.pnp_pdemo_sortStep = function(){
+    if(sortOpIdx >= sortOps.length) return;
+    var op = sortOps[sortOpIdx];
+    if(op.type==='compare'){
+      sortComparisons++;
+      sortRender(op.i, op.j);
+      document.getElementById('pnp_pdemo_sort_status').textContent='Comparing positions '+op.i+' & '+op.j+' — '+sortComparisons+' comparisons';
+    } else if(op.type==='swap'){
+      sortArr = op.arr.slice();
+      sortRender(op.i, op.j);
+      document.getElementById('pnp_pdemo_sort_status').textContent='Swapped! — '+sortComparisons+' comparisons so far';
+    } else if(op.type==='done'){
+      sortRender(-1,-1);
+      document.getElementById('pnp_pdemo_sort_status').innerHTML='<span style="color:#10b981;font-weight:600;">Sorted! '+sortComparisons+' comparisons total</span>';
+    }
+    sortOpIdx++;
+  };
+
+  window.pnp_pdemo_sortAuto = function(){
+    clearTimers();
+    var iv = setInterval(function(){
+      if(sortOpIdx >= sortOps.length){ clearInterval(iv); return; }
+      window.pnp_pdemo_sortStep();
+    }, 350);
+    timers.push(iv);
+  };
+
+  /* ====== BFS ====== */
+  var bfsNodes = {A:{x:40,y:40},B:{x:150,y:30},C:{x:260,y:40},D:{x:40,y:140},E:{x:150,y:150},F:{x:260,y:140}};
+  var bfsEdges = [['A','B'],['A','D'],['B','C'],['C','F'],['D','E'],['E','F']];
+  var bfsAdj = {A:['B','D'],B:['A','C'],C:['B','F'],D:['A','E'],E:['D','F'],F:['C','E']};
+  var bfsStart = null, bfsTarget = null;
+  var bfsVisited = {}, bfsParent = {}, bfsQueue = [], bfsFound = false;
+  var bfsPath = [];
+  var bfsDiscoveredColors = {};
+  var bfsLevelColors = ['#3b82f6','#8b5cf6','#f59e0b','#10b981'];
+  var bfsLevel = {};
+  var bfsPhase = 'pick-start'; // pick-start, pick-target, running, done
+
+  function bfsRender(){
+    var svg = document.getElementById('pnp_pdemo_bfs_svg');
+    if(!svg) return;
+    var html = '';
+    // edges
+    bfsEdges.forEach(function(e){
+      var a=bfsNodes[e[0]], b=bfsNodes[e[1]];
+      var inPath = false;
+      for(var i=0;i<bfsPath.length-1;i++){
+        if((bfsPath[i]===e[0]&&bfsPath[i+1]===e[1])||(bfsPath[i]===e[1]&&bfsPath[i+1]===e[0])) inPath=true;
+      }
+      var col = inPath?'#10b981':'#475569';
+      var sw = inPath?3:1.5;
+      html += '<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="'+col+'" stroke-width="'+sw+'"/>';
+    });
+    // nodes
+    Object.keys(bfsNodes).forEach(function(n){
+      var nd=bfsNodes[n];
+      var fill='#1e293b', stroke='#64748b', textCol='#e2e8f0';
+      if(bfsPath.indexOf(n)>=0){ fill='rgba(16,185,129,0.3)'; stroke='#10b981'; }
+      else if(bfsVisited[n]){ var lv=bfsLevel[n]||0; fill='rgba(59,130,246,0.25)'; stroke=bfsLevelColors[lv%bfsLevelColors.length]; }
+      if(n===bfsStart){ fill='rgba(16,185,129,0.3)'; stroke='#10b981'; }
+      if(n===bfsTarget && !bfsFound){ fill='rgba(239,68,68,0.2)'; stroke='#ef4444'; }
+      html += '<circle cx="'+nd.x+'" cy="'+nd.y+'" r="20" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2" style="cursor:pointer;" onclick="window.pnp_pdemo_bfsClick(\''+n+'\')"/>';
+      html += '<text x="'+nd.x+'" y="'+(nd.y+5)+'" text-anchor="middle" font-size="14" font-weight="600" fill="'+textCol+'" style="pointer-events:none;">'+n+'</text>';
+    });
+    svg.innerHTML = html;
+  }
+
+  window.pnp_pdemo_bfsClick = function(n){
+    if(bfsPhase==='pick-start'){
+      bfsStart = n;
+      bfsPhase = 'pick-target';
+      document.getElementById('pnp_pdemo_bfs_status').textContent='Start: '+n+'. Now click a target node.';
+      bfsRender();
+    } else if(bfsPhase==='pick-target' && n!==bfsStart){
+      bfsTarget = n;
+      bfsPhase = 'running';
+      bfsQueue = [{node:bfsStart,level:0}];
+      bfsVisited[bfsStart]=true;
+      bfsLevel[bfsStart]=0;
+      bfsParent={};
+      document.getElementById('pnp_pdemo_bfs_status').textContent='BFS from '+bfsStart+' to '+bfsTarget+'. Click Step or Auto.';
+      bfsRender();
+    }
+  };
+
+  window.pnp_pdemo_bfsStep = function(){
+    if(bfsPhase!=='running' || bfsFound) return;
+    if(bfsQueue.length===0){
+      document.getElementById('pnp_pdemo_bfs_status').textContent='No path found!';
+      bfsPhase='done';
+      return;
+    }
+    var cur = bfsQueue.shift();
+    if(cur.node===bfsTarget){
+      bfsFound = true;
+      // reconstruct path
+      bfsPath = [bfsTarget];
+      var p = bfsTarget;
+      while(bfsParent[p]!==undefined){ p=bfsParent[p]; bfsPath.unshift(p); }
+      document.getElementById('pnp_pdemo_bfs_status').innerHTML='<span style="color:#10b981;font-weight:600;">Path found: '+bfsPath.join(' → ')+'</span>';
+      bfsPhase='done';
+      bfsRender();
+      return;
+    }
+    var neighbors = bfsAdj[cur.node]||[];
+    neighbors.forEach(function(nb){
+      if(!bfsVisited[nb]){
+        bfsVisited[nb]=true;
+        bfsLevel[nb]=cur.level+1;
+        bfsParent[nb]=cur.node;
+        bfsQueue.push({node:nb,level:cur.level+1});
+      }
+    });
+    document.getElementById('pnp_pdemo_bfs_status').textContent='Visiting '+cur.node+' (level '+cur.level+'), queue: ['+bfsQueue.map(function(q){return q.node;}).join(',')+']';
+    bfsRender();
+  };
+
+  window.pnp_pdemo_bfsAuto = function(){
+    clearTimers();
+    var iv = setInterval(function(){
+      if(bfsPhase!=='running'||bfsFound){ clearInterval(iv); return; }
+      window.pnp_pdemo_bfsStep();
+    }, 500);
+    timers.push(iv);
+  };
+
+  window.pnp_pdemo_bfsReset = function(){
+    clearTimers();
+    bfsStart=null; bfsTarget=null; bfsVisited={}; bfsParent={}; bfsQueue=[]; bfsFound=false; bfsPath=[]; bfsLevel={};
+    bfsPhase='pick-start';
+    document.getElementById('pnp_pdemo_bfs_status').textContent='Click a start node, then a target node';
+    bfsRender();
+  };
+
+  /* ====== GCD ====== */
+  var gcdSteps = [];
+  var gcdStepIdx = 0;
+
+  function gcdCompute(a,b){
+    gcdSteps = [];
+    while(b!==0){
+      gcdSteps.push({a:a, b:b, r:a%b});
+      var tmp = b;
+      b = a % b;
+      a = tmp;
+    }
+    gcdSteps.push({a:a, b:0, r:null, final:true});
+  }
+
+  function gcdRender(){
+    var el = document.getElementById('pnp_pdemo_gcd_steps');
+    if(!el) return;
+    var html = '';
+    for(var i=0;i<gcdSteps.length;i++){
+      var s = gcdSteps[i];
+      var shown = i < gcdStepIdx;
+      var current = i === gcdStepIdx - 1;
+      if(!shown) continue;
+      var col = current ? '#fbbf24' : '#94a3b8';
+      if(s.final){
+        html += '<div style="color:#10b981;font-weight:600;">GCD = '+s.a+'</div>';
+      } else {
+        html += '<div style="color:'+col+';">GCD('+s.a+', '+s.b+') → '+s.a+' mod '+s.b+' = '+s.r+'</div>';
+      }
+    }
+    el.innerHTML = html || '<span style="color:#64748b;">Steps will appear here...</span>';
+  }
+
+  window.pnp_pdemo_gcdStep = function(){
+    if(gcdSteps.length===0){
+      var a = parseInt(document.getElementById('pnp_pdemo_gcd_a').value)||48;
+      var b = parseInt(document.getElementById('pnp_pdemo_gcd_b').value)||18;
+      gcdCompute(Math.abs(a), Math.abs(b));
+    }
+    if(gcdStepIdx >= gcdSteps.length) return;
+    gcdStepIdx++;
+    gcdRender();
+    var s = gcdSteps[gcdStepIdx-1];
+    if(s.final){
+      document.getElementById('pnp_pdemo_gcd_status').innerHTML='<span style="color:#10b981;font-weight:600;">Result: GCD = '+s.a+' in '+(gcdSteps.length-1)+' steps</span>';
+    } else {
+      document.getElementById('pnp_pdemo_gcd_status').textContent='Step '+gcdStepIdx+': GCD('+s.a+', '+s.b+')';
+    }
+  };
+
+  window.pnp_pdemo_gcdAuto = function(){
+    clearTimers();
+    if(gcdSteps.length===0){
+      var a = parseInt(document.getElementById('pnp_pdemo_gcd_a').value)||48;
+      var b = parseInt(document.getElementById('pnp_pdemo_gcd_b').value)||18;
+      gcdCompute(Math.abs(a), Math.abs(b));
+    }
+    var iv = setInterval(function(){
+      if(gcdStepIdx >= gcdSteps.length){ clearInterval(iv); return; }
+      window.pnp_pdemo_gcdStep();
+    }, 600);
+    timers.push(iv);
+  };
+
+  window.pnp_pdemo_gcdReset = function(){
+    clearTimers();
+    gcdSteps = [];
+    gcdStepIdx = 0;
+    gcdRender();
+    document.getElementById('pnp_pdemo_gcd_status').textContent='Click Step or Auto to run Euclid\'s algorithm';
+  };
+
+  /* ====== Init on slide active ====== */
+  function initS4(){
+    sortArr = sortOriginal.slice(); sortOpIdx=0; sortComparisons=0;
+    sortRender(-1,-1);
+    window.pnp_pdemo_bfsReset();
+    window.pnp_pdemo_gcdReset();
+  }
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s4');
+    if(!slide) return;
+    if(slide.classList.contains('active')){ initS4(); }
+    else { clearTimers(); }
+  });
+  var s4el = document.getElementById('s4');
+  if(s4el) obs.observe(s4el, {attributes:true, attributeFilter:['class']});
+})();
+</script>
 
 <!-- ==================== SLIDE 5: Examples of P ==================== -->
 <div class="slide" id="s5">
   <h1>Examples of P Problems</h1>
   <p class="subtitle">A tour of problems we CAN solve efficiently</p>
 
-  <div class="two-col">
-    <div>
-      <div class="key-idea">
-        <h3>Sorting -- O(n log n)</h3>
-        <p>Given n numbers, put them in order. Merge sort, quicksort, heapsort all achieve this. Fundamental to CS.</p>
+  <div id="pnp_class_area">
+    <div id="pnp_class_cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+      <div id="pnp_class_zone_p" class="pnp-panel" style="min-height:90px;border:2px dashed #10b981;text-align:center;padding:12px;" onclick="window.pnp_class_place('p')">
+        <h3 style="color:#10b981;margin-bottom:8px;">IN P &#10003;</h3>
+        <div id="pnp_class_placed_p" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div>
       </div>
-
-      <div class="key-idea">
-        <h3>Graph Connectivity -- O(V + E)</h3>
-        <p>Given a graph, is there a path from vertex A to vertex B? BFS or DFS answers this in linear time.</p>
-        <div class="diagram small" style="margin-bottom:0;">
-  A---B---C       Is A connected to E?
-  |       |       BFS: A -> B -> D -> C -> E
-  D---E---F       Answer: YES, in O(V+E)
-        </div>
-      </div>
-
-      <div class="key-idea">
-        <h3>Greatest Common Divisor -- O(log n)</h3>
-        <p>Euclid's algorithm (300 BCE!). GCD(48, 18) = 6. One of the oldest known efficient algorithms.</p>
+      <div id="pnp_class_zone_np" class="pnp-panel" style="min-height:90px;border:2px dashed #f59e0b;text-align:center;padding:12px;" onclick="window.pnp_class_place('np')">
+        <h3 style="color:#f59e0b;margin-bottom:8px;">NOT KNOWN TO BE IN P</h3>
+        <div id="pnp_class_placed_np" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div>
       </div>
     </div>
-
-    <div>
-      <div class="key-idea">
-        <h3>Linear Programming -- Polynomial</h3>
-        <p>Optimize a linear function subject to linear constraints. Solved by ellipsoid method or interior-point methods. Used everywhere in industry.</p>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="pnp-controls">
+        <button onclick="window.pnp_class_check()">Check Answers</button>
+        <button onclick="window.pnp_class_reset()">Reset</button>
       </div>
-
-      <div class="key-idea">
-        <h3>Primality Testing -- O(n^6) *</h3>
-        <p>"Is 104729 prime?" The AKS algorithm (2002) proved this is in P. A breakthrough result!</p>
-        <p style="font-size: 0.9em; color: #94a3b8;">* n = number of digits in the input</p>
-      </div>
-
-      <div class="key-idea">
-        <h3>Maximum Matching -- O(V^3)</h3>
-        <p>Pair up vertices in a graph optimally. Edmonds' "blossom algorithm" solves this in polynomial time.</p>
-      </div>
+      <div class="pnp-status" id="pnp_class_status">Click a problem card, then click a zone to classify it</div>
     </div>
   </div>
 
@@ -264,8 +721,103 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <h3>Note</h3>
     <p>Being "in P" doesn't mean it's trivially fast -- O(n^100) is technically polynomial but impractical. In practice, most P algorithms we use are O(n), O(n log n), or low-degree polynomials.</p>
   </div>
-  <span class="slide-number">5 / 22</span>
+  <span class="slide-number">5 / 23</span>
 </div>
+<script>
+(function(){
+  /* ====== Slide 5: Problem Classifier ====== */
+  var problems = [
+    {id:0, name:'Sorting', answer:'p', hint:'O(n log n) — Merge sort'},
+    {id:1, name:'Graph Connectivity', answer:'p', hint:'O(V+E) — BFS/DFS'},
+    {id:2, name:'Primality Testing', answer:'p', hint:'AKS algorithm, O(n⁶)'},
+    {id:3, name:'Shortest Path', answer:'p', hint:'Dijkstra, O(V²)'},
+    {id:4, name:'SAT', answer:'np', hint:'NP-Complete — Cook\'s theorem'},
+    {id:5, name:'Traveling Salesman', answer:'np', hint:'NP-Complete'},
+    {id:6, name:'Graph Coloring (k≥3)', answer:'np', hint:'NP-Complete'},
+    {id:7, name:'Subset Sum', answer:'np', hint:'NP-Complete'}
+  ];
+  var placements = {}; // id -> 'p' or 'np'
+  var selected = null;
+
+  function renderCards(){
+    var el = document.getElementById('pnp_class_cards');
+    if(!el) return;
+    var html = '';
+    problems.forEach(function(p){
+      if(placements[p.id] !== undefined) return; // already placed
+      var sel = selected === p.id;
+      var border = sel ? '#93c5fd' : '#475569';
+      var bg = sel ? 'rgba(59,130,246,0.15)' : '#1e293b';
+      html += '<div onclick="window.pnp_class_select('+p.id+')" style="background:'+bg+';border:2px solid '+border+';border-radius:8px;padding:10px 12px;cursor:pointer;text-align:center;font-size:0.95em;color:#e2e8f0;transition:all 0.2s;">'+p.name+'</div>';
+    });
+    el.innerHTML = html;
+  }
+
+  function renderZone(zone){
+    var el = document.getElementById('pnp_class_placed_'+zone);
+    if(!el) return;
+    var html = '';
+    problems.forEach(function(p){
+      if(placements[p.id] !== zone) return;
+      var badgeClass = zone==='p' ? 'green' : 'amber';
+      html += '<span class="pnp-badge '+badgeClass+'" id="pnp_class_badge_'+p.id+'" style="margin:2px;">'+p.name+'</span>';
+    });
+    el.innerHTML = html;
+  }
+
+  window.pnp_class_select = function(id){
+    selected = id;
+    renderCards();
+    document.getElementById('pnp_class_status').textContent = 'Selected: '+problems[id].name+'. Now click a zone.';
+  };
+
+  window.pnp_class_place = function(zone){
+    if(selected === null) return;
+    placements[selected] = zone;
+    selected = null;
+    renderCards();
+    renderZone('p');
+    renderZone('np');
+    var placed = Object.keys(placements).length;
+    document.getElementById('pnp_class_status').textContent = placed+'/8 placed. '+(placed<8?'Keep going!':'Click Check Answers.');
+  };
+
+  window.pnp_class_check = function(){
+    var correct = 0;
+    problems.forEach(function(p){
+      var badge = document.getElementById('pnp_class_badge_'+p.id);
+      if(!badge) return;
+      if(placements[p.id] === p.answer){
+        correct++;
+        badge.style.boxShadow = '0 0 8px #10b981';
+        badge.title = '✓ '+p.hint;
+      } else {
+        badge.style.boxShadow = '0 0 8px #ef4444';
+        badge.style.borderColor = '#ef4444';
+        badge.title = '✗ Correct: '+(p.answer==='p'?'IN P':'NOT KNOWN IN P')+' — '+p.hint;
+      }
+    });
+    document.getElementById('pnp_class_status').innerHTML = '<span style="font-weight:600;color:'+(correct===8?'#10b981':'#f59e0b')+';">'+correct+'/8 correct!</span> Hover cards for details.';
+  };
+
+  window.pnp_class_reset = function(){
+    placements = {};
+    selected = null;
+    renderCards();
+    renderZone('p');
+    renderZone('np');
+    document.getElementById('pnp_class_status').textContent = 'Click a problem card, then click a zone to classify it';
+  };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s5');
+    if(!slide) return;
+    if(slide.classList.contains('active')){ window.pnp_class_reset(); }
+  });
+  var s5el = document.getElementById('s5');
+  if(s5el) obs.observe(s5el, {attributes:true, attributeFilter:['class']});
+})();
+</script>
 
 <!-- ==================== SLIDE 6: The Class NP ==================== -->
 <div class="slide" id="s6">
@@ -295,31 +847,103 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     </div>
 
     <div>
-      <div class="analogy">
-        <h3>Analogy: Sudoku</h3>
-        <div class="diagram small">
-  Solving Sudoku: HARD
-  (Try all possibilities?)
-
-  +-------+-------+-------+
-  | 5 3 _ | _ 7 _ | _ _ _ |
-  | 6 _ _ | 1 9 5 | _ _ _ |
-  | _ 9 8 | _ _ _ | _ 6 _ |
-  +-------+-------+-------+
-  | 8 _ _ | _ 6 _ | _ _ 3 |
-  | ...                    |
-
-  Verifying a filled Sudoku: EASY
-  Just check each row, column,
-  and 3x3 box has digits 1-9.
-  Takes O(n^2) time.
+      <div class="pnp-panel">
+        <h3 style="color:#a5b4fc;margin-bottom:8px;">Interactive: Subset Sum Verifier</h3>
+        <p style="font-size:0.9em;color:#94a3b8;margin-bottom:8px;">Set = {3, 7, 1, 8, 4} &nbsp; Target = <strong style="color:#93c5fd;">12</strong>. Click numbers to select them.</p>
+        <div id="pnp_ver_nums" style="display:flex;gap:10px;justify-content:center;margin:12px 0;"></div>
+        <div id="pnp_ver_sum" class="pnp-status" style="text-align:center;font-size:1.1em;"></div>
+        <div id="pnp_ver_result" style="text-align:center;min-height:36px;margin:8px 0;"></div>
+        <div class="pnp-controls" style="justify-content:center;">
+          <button onclick="window.pnp_ver_reset()">Reset</button>
+          <button onclick="window.pnp_ver_brute()">Brute Force (2&#x2075; = 32 subsets)</button>
         </div>
-        <p>You might struggle to SOLVE it, but if someone hands you a completed grid, you can CHECK it in seconds.</p>
+        <div id="pnp_ver_brute_status" class="pnp-status" style="text-align:center;"></div>
       </div>
     </div>
   </div>
-  <span class="slide-number">6 / 22</span>
+  <span class="slide-number">6 / 23</span>
 </div>
+<script>
+(function(){
+  var pnp_ver_nums = [3, 7, 1, 8, 4];
+  var pnp_ver_target = 12;
+  var pnp_ver_sel = [false,false,false,false,false];
+  var pnp_ver_bruteTimer = null;
+  var pnp_ver_startTime = 0;
+
+  function pnp_ver_render(){
+    var cont = document.getElementById('pnp_ver_nums');
+    if(!cont) return;
+    var html = '';
+    for(var i=0;i<pnp_ver_nums.length;i++){
+      var on = pnp_ver_sel[i];
+      html += '<div onclick="window.pnp_ver_toggle('+i+')" style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:1.4em;font-weight:700;cursor:pointer;transition:all 0.2s;border:2px solid '+(on?'#10b981':'#475569')+';background:'+(on?'rgba(16,185,129,0.2)':'#1e293b')+';color:'+(on?'#10b981':'#e2e8f0')+';'+(on?'box-shadow:0 0 12px rgba(16,185,129,0.4);':'')+'">'+pnp_ver_nums[i]+'</div>';
+    }
+    cont.innerHTML = html;
+    var sum = 0; var parts = [];
+    for(var i=0;i<pnp_ver_nums.length;i++){ if(pnp_ver_sel[i]){ sum+=pnp_ver_nums[i]; parts.push(pnp_ver_nums[i]); } }
+    var sumEl = document.getElementById('pnp_ver_sum');
+    if(parts.length===0) sumEl.innerHTML = 'Selected: (none) = 0';
+    else sumEl.innerHTML = 'Selected: {'+parts.join(', ')+'} = <strong style="color:'+(sum===pnp_ver_target?'#10b981':'#93c5fd')+'">'+sum+'</strong> / '+pnp_ver_target;
+    var res = document.getElementById('pnp_ver_result');
+    if(sum===pnp_ver_target && parts.length>0){
+      var elapsed = ((performance.now()-pnp_ver_startTime)/1000).toFixed(3);
+      res.innerHTML = '<span class="pnp-badge green" style="font-size:1.2em;padding:8px 20px;">VERIFIED! &#x2713;</span><br><span style="color:#94a3b8;font-size:0.9em;margin-top:4px;display:inline-block;">Verified in '+elapsed+'s -- that\'s polynomial!</span>';
+    } else { res.innerHTML = ''; }
+  }
+
+  window.pnp_ver_toggle = function(i){
+    if(!pnp_ver_startTime) pnp_ver_startTime = performance.now();
+    pnp_ver_sel[i] = !pnp_ver_sel[i];
+    pnp_ver_render();
+  };
+
+  window.pnp_ver_reset = function(){
+    if(pnp_ver_bruteTimer){ clearInterval(pnp_ver_bruteTimer); pnp_ver_bruteTimer=null; }
+    pnp_ver_sel = [false,false,false,false,false];
+    pnp_ver_startTime = 0;
+    document.getElementById('pnp_ver_brute_status').innerHTML = '';
+    pnp_ver_render();
+  };
+
+  window.pnp_ver_brute = function(){
+    if(pnp_ver_bruteTimer) return;
+    var bst = document.getElementById('pnp_ver_brute_status');
+    var mask = 0;
+    var total = 32;
+    var found = -1;
+    // precompute answer
+    for(var m=0;m<total;m++){
+      var s=0;
+      for(var b=0;b<5;b++) if(m&(1<<b)) s+=pnp_ver_nums[b];
+      if(s===pnp_ver_target){ found=m; break; }
+    }
+    mask = 0;
+    pnp_ver_bruteTimer = setInterval(function(){
+      if(mask>=total){ clearInterval(pnp_ver_bruteTimer); pnp_ver_bruteTimer=null; return; }
+      for(var b=0;b<5;b++) pnp_ver_sel[b]=!!(mask&(1<<b));
+      var s=0; for(var b=0;b<5;b++) if(pnp_ver_sel[b]) s+=pnp_ver_nums[b];
+      pnp_ver_startTime = performance.now();
+      pnp_ver_render();
+      bst.innerHTML = 'Trying subset '+(mask+1)+'/'+total+'...' + (s===pnp_ver_target?' <span style="color:#10b981;font-weight:700;">FOUND IT!</span>':'');
+      if(mask===found){
+        clearInterval(pnp_ver_bruteTimer); pnp_ver_bruteTimer=null;
+        return;
+      }
+      mask++;
+    }, 80);
+  };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s6');
+    if(!slide) return;
+    if(slide.classList.contains('active')){ pnp_ver_render(); }
+    else { if(pnp_ver_bruteTimer){ clearInterval(pnp_ver_bruteTimer); pnp_ver_bruteTimer=null; } }
+  });
+  var s6 = document.getElementById('s6');
+  if(s6) obs.observe(s6, { attributes:true, attributeFilter:['class'] });
+})();
+</script>
 
 <!-- ==================== SLIDE 7: NP as Nondeterministic Polynomial ==================== -->
 <div class="slide" id="s7">
@@ -328,25 +952,18 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
 
   <div class="two-col">
     <div>
-      <h3>Nondeterministic TM Definition</h3>
-      <p>NP = problems solvable by a <strong>nondeterministic</strong> Turing Machine in polynomial time.</p>
-      <p>A nondeterministic TM can "branch" into multiple computation paths simultaneously. If ANY path accepts, the machine accepts.</p>
-
-      <div class="diagram small">
-  Nondeterministic TM on input x:
-
-         start
-           |
-     +-----+-----+
-     |     |     |
-  guess1 guess2 guess3
-     |     |     |
-  check  check  check
-     |     |     |
-  REJECT ACCEPT REJECT
-
-  Result: ACCEPT
-  (at least one path accepted)
+      <h3>NTM Branching Tree Explorer</h3>
+      <div class="pnp-panel" style="padding:12px;">
+        <div class="pnp-controls">
+          <button id="pnp_ntm_mode_acc" class="active" onclick="window.pnp_ntm_setMode('accept')">One path accepts</button>
+          <button id="pnp_ntm_mode_rej" onclick="window.pnp_ntm_setMode('reject')">All paths reject</button>
+          <span style="flex:1;"></span>
+          <button onclick="window.pnp_ntm_step()">Step</button>
+          <button onclick="window.pnp_ntm_auto()">Auto</button>
+          <button onclick="window.pnp_ntm_reset()">Reset</button>
+        </div>
+        <svg id="pnp_ntm_svg" viewBox="0 0 440 260" style="width:100%;height:auto;"></svg>
+        <div id="pnp_ntm_status" class="pnp-status" style="text-align:center;"></div>
       </div>
     </div>
 
@@ -377,64 +994,154 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     NTM-based: "A nondeterministic machine can find and verify in poly time."<br>
     Each nondeterministic branch corresponds to a different candidate certificate.</p>
   </div>
-  <span class="slide-number">7 / 22</span>
+  <span class="slide-number">7 / 23</span>
 </div>
+<script>
+(function(){
+  var pnp_ntm_mode = 'accept';
+  var pnp_ntm_step_idx = 0;
+  var pnp_ntm_timer = null;
+  // Tree structure: each node = {x, y, label, color, children[], level}
+  // accept mode: root -> 3 branches, middle branch has an ACCEPT leaf
+  // reject mode: all leaves REJECT
+  var trees = {
+    accept: {
+      nodes: [
+        {id:0, x:220, y:25, label:'start', color:'#93c5fd', level:0},
+        {id:1, x:80, y:90, label:'guess 1', color:'#94a3b8', level:1},
+        {id:2, x:220, y:90, label:'guess 2', color:'#94a3b8', level:1},
+        {id:3, x:360, y:90, label:'guess 3', color:'#94a3b8', level:1},
+        {id:4, x:80, y:155, label:'check', color:'#94a3b8', level:2},
+        {id:5, x:220, y:155, label:'check', color:'#94a3b8', level:2},
+        {id:6, x:360, y:155, label:'check', color:'#94a3b8', level:2},
+        {id:7, x:80, y:220, label:'REJECT', color:'#ef4444', level:3},
+        {id:8, x:220, y:220, label:'ACCEPT', color:'#10b981', level:3},
+        {id:9, x:360, y:220, label:'REJECT', color:'#ef4444', level:3}
+      ],
+      edges: [[0,1],[0,2],[0,3],[1,4],[2,5],[3,6],[4,7],[5,8],[6,9]],
+      acceptPath: [0,2,5,8],
+      result: 'At least one path accepts \u2192 <strong style="color:#10b981;">NTM ACCEPTS</strong>'
+    },
+    reject: {
+      nodes: [
+        {id:0, x:220, y:25, label:'start', color:'#93c5fd', level:0},
+        {id:1, x:80, y:90, label:'guess 1', color:'#94a3b8', level:1},
+        {id:2, x:220, y:90, label:'guess 2', color:'#94a3b8', level:1},
+        {id:3, x:360, y:90, label:'guess 3', color:'#94a3b8', level:1},
+        {id:4, x:80, y:155, label:'check', color:'#94a3b8', level:2},
+        {id:5, x:220, y:155, label:'check', color:'#94a3b8', level:2},
+        {id:6, x:360, y:155, label:'check', color:'#94a3b8', level:2},
+        {id:7, x:80, y:220, label:'REJECT', color:'#ef4444', level:3},
+        {id:8, x:220, y:220, label:'REJECT', color:'#ef4444', level:3},
+        {id:9, x:360, y:220, label:'REJECT', color:'#ef4444', level:3}
+      ],
+      edges: [[0,1],[0,2],[0,3],[1,4],[2,5],[3,6],[4,7],[5,8],[6,9]],
+      acceptPath: [],
+      result: 'All paths reject \u2192 <strong style="color:#ef4444;">NTM REJECTS</strong>'
+    }
+  };
+
+  function pnp_ntm_getTree(){ return trees[pnp_ntm_mode]; }
+
+  function pnp_ntm_draw(){
+    var svg = document.getElementById('pnp_ntm_svg');
+    if(!svg) return;
+    var t = pnp_ntm_getTree();
+    var maxLevel = Math.min(pnp_ntm_step_idx, 3);
+    var html = '';
+    // Draw edges first
+    for(var i=0;i<t.edges.length;i++){
+      var e = t.edges[i];
+      var from = t.nodes[e[0]], to = t.nodes[e[1]];
+      if(from.level >= maxLevel) continue;
+      var isAccPath = t.acceptPath.length>0 && pnp_ntm_step_idx>3 && t.acceptPath.indexOf(e[0])!==-1 && t.acceptPath.indexOf(e[1])!==-1;
+      html += '<line x1="'+from.x+'" y1="'+(from.y+14)+'" x2="'+to.x+'" y2="'+(to.y-14)+'" stroke="'+(isAccPath?'#10b981':'#475569')+'" stroke-width="'+(isAccPath?'3':'1.5')+'"'+(isAccPath?' style="filter:drop-shadow(0 0 6px rgba(16,185,129,0.6))"':'')+'/>';
+    }
+    // Draw nodes
+    for(var i=0;i<t.nodes.length;i++){
+      var n = t.nodes[i];
+      if(n.level > maxLevel) continue;
+      var isLeaf = n.level===3;
+      var isAccNode = t.acceptPath.length>0 && pnp_ntm_step_idx>3 && t.acceptPath.indexOf(n.id)!==-1;
+      var r = isLeaf ? 22 : 18;
+      html += '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+r+'" fill="'+(isLeaf?'rgba(0,0,0,0.3)':'#1e293b')+'" stroke="'+(isAccNode?'#10b981':n.color)+'" stroke-width="'+(isAccNode?'3':'2')+'"'+(isAccNode?' style="filter:drop-shadow(0 0 8px rgba(16,185,129,0.5))"':'')+'/>';
+      html += '<text x="'+n.x+'" y="'+(n.y+4)+'" text-anchor="middle" font-size="'+(isLeaf?'10':'11')+'" fill="'+n.color+'" font-weight="'+(isLeaf?'700':'400')+'">'+n.label+'</text>';
+      // pop animation
+      if(n.level === maxLevel && pnp_ntm_step_idx<=3){
+        html += '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+(r+8)+'" fill="none" stroke="'+n.color+'" stroke-width="1" opacity="0.5"><animate attributeName="r" from="'+r+'" to="'+(r+14)+'" dur="0.5s" fill="freeze"/><animate attributeName="opacity" from="0.6" to="0" dur="0.5s" fill="freeze"/></circle>';
+      }
+    }
+    svg.innerHTML = html;
+    // Status
+    var st = document.getElementById('pnp_ntm_status');
+    if(pnp_ntm_step_idx===0) st.innerHTML = 'Click <strong>Step</strong> or <strong>Auto</strong> to build the computation tree.';
+    else if(pnp_ntm_step_idx===1) st.innerHTML = 'Level 1: NTM nondeterministically branches into multiple guesses.';
+    else if(pnp_ntm_step_idx===2) st.innerHTML = 'Level 2: Each branch verifies its guess deterministically.';
+    else if(pnp_ntm_step_idx===3) st.innerHTML = 'Level 3: Each path reaches ACCEPT or REJECT.';
+    else st.innerHTML = t.result;
+  }
+
+  window.pnp_ntm_setMode = function(m){
+    pnp_ntm_mode = m;
+    document.getElementById('pnp_ntm_mode_acc').className = m==='accept'?'active':'';
+    document.getElementById('pnp_ntm_mode_rej').className = m==='reject'?'active':'';
+    pnp_ntm_step_idx = 0;
+    if(pnp_ntm_timer){ clearInterval(pnp_ntm_timer); pnp_ntm_timer=null; }
+    pnp_ntm_draw();
+  };
+
+  window.pnp_ntm_step = function(){
+    if(pnp_ntm_timer){ clearInterval(pnp_ntm_timer); pnp_ntm_timer=null; }
+    if(pnp_ntm_step_idx<=4) pnp_ntm_step_idx++;
+    pnp_ntm_draw();
+  };
+
+  window.pnp_ntm_auto = function(){
+    if(pnp_ntm_timer) return;
+    pnp_ntm_step_idx = 0;
+    pnp_ntm_draw();
+    pnp_ntm_timer = setInterval(function(){
+      pnp_ntm_step_idx++;
+      pnp_ntm_draw();
+      if(pnp_ntm_step_idx>=4){ clearInterval(pnp_ntm_timer); pnp_ntm_timer=null; }
+    }, 800);
+  };
+
+  window.pnp_ntm_reset = function(){
+    if(pnp_ntm_timer){ clearInterval(pnp_ntm_timer); pnp_ntm_timer=null; }
+    pnp_ntm_step_idx = 0;
+    pnp_ntm_draw();
+  };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s7');
+    if(!slide) return;
+    if(slide.classList.contains('active')){ pnp_ntm_draw(); }
+    else { if(pnp_ntm_timer){ clearInterval(pnp_ntm_timer); pnp_ntm_timer=null; } }
+  });
+  var s7 = document.getElementById('s7');
+  if(s7) obs.observe(s7, { attributes:true, attributeFilter:['class'] });
+})();
+</script>
 
 <!-- ==================== SLIDE 8: Examples of NP Problems ==================== -->
 <div class="slide" id="s8">
   <h1>Examples of NP Problems</h1>
   <p class="subtitle">Problems where we can verify but (probably) can't efficiently solve</p>
 
-  <div class="two-col">
-    <div>
-      <div class="key-idea">
-        <h3>SAT (Boolean Satisfiability)</h3>
-        <p>Given a Boolean formula, is there an assignment making it TRUE?</p>
-        <p><code>(x1 OR ~x2) AND (x2 OR x3)</code><br>Certificate: x1=T, x2=T, x3=T. Check: TRUE!</p>
-      </div>
-
-      <div class="key-idea">
-        <h3>Traveling Salesman (Decision)</h3>
-        <p>Given cities and distances, is there a tour visiting all cities with total distance &le; k?</p>
-        <p>Certificate: A specific tour. Check: add up the distances.</p>
-      </div>
-
-      <div class="key-idea">
-        <h3>Graph Coloring</h3>
-        <p>Can you color vertices with k colors so no adjacent vertices share a color?</p>
-        <p>Certificate: A coloring. Check: look at each edge.</p>
-      </div>
-
-      <div class="key-idea">
-        <h3>Subset Sum</h3>
-        <p>Given {3, 7, 1, 8, 4}, is there a subset summing to 12?</p>
-        <p>Certificate: {3, 1, 8}. Check: 3+1+8 = 12. YES!</p>
-      </div>
+  <div id="pnp_npv_area">
+    <div class="pnp-controls" id="pnp_npv_tabs">
+      <button class="active" onclick="window.pnp_npv_select('sat')">SAT</button>
+      <button onclick="window.pnp_npv_select('clique')">Clique</button>
+      <button onclick="window.pnp_npv_select('subset')">Subset Sum</button>
+      <button onclick="window.pnp_npv_select('vc')">Vertex Cover</button>
     </div>
-
-    <div>
-      <div class="key-idea">
-        <h3>Clique</h3>
-        <p>Does graph G contain a complete subgraph of size k?</p>
-        <div class="diagram small" style="margin-bottom: 4px;">
-  A---B    Does this graph have
-  |\ /|    a 3-clique?
-  | X |    Certificate: {A, B, D}
-  |/ \|    Check: A-B? yes. A-D? yes.
-  C---D           B-D? yes. VERIFIED!
-        </div>
-      </div>
-
-      <div class="key-idea">
-        <h3>Vertex Cover</h3>
-        <p>Can you pick k vertices that "cover" every edge?</p>
-        <p>Certificate: A set of k vertices. Check: does every edge touch at least one?</p>
-      </div>
-
-      <div class="key-idea">
-        <h3>Hamiltonian Path</h3>
-        <p>Is there a path visiting every vertex exactly once?</p>
-        <p>Certificate: A sequence of vertices. Check: valid path, all vertices visited.</p>
+    <div class="pnp-panel" style="min-height:250px;">
+      <svg id="pnp_npv_svg" viewBox="0 0 700 220" style="width:100%;height:auto;"></svg>
+      <div class="pnp-status" id="pnp_npv_status">Click Verify to check the certificate</div>
+      <div class="pnp-controls">
+        <button onclick="window.pnp_npv_verify()">Verify</button>
+        <button onclick="window.pnp_npv_reset()">Reset</button>
       </div>
     </div>
   </div>
@@ -443,8 +1150,239 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <h3>The Pattern</h3>
     <p>For every NP problem: <strong>finding</strong> the answer seems to require searching an exponential space, but <strong>checking</strong> a given answer is fast. That asymmetry is the heart of P vs NP.</p>
   </div>
-  <span class="slide-number">8 / 22</span>
+  <span class="slide-number">8 / 23</span>
 </div>
+<script>
+(function(){
+  /* ====== Slide 8: NP Certificate Verifier ====== */
+  var timers = [];
+  function clearTimers(){ timers.forEach(function(t){clearTimeout(t);clearInterval(t);}); timers=[]; }
+  var mode = 'sat';
+  var verifyStep = 0;
+  var verifying = false;
+
+  window.pnp_npv_select = function(m){
+    clearTimers();
+    mode = m;
+    verifyStep = 0;
+    verifying = false;
+    var btns = document.getElementById('pnp_npv_tabs').querySelectorAll('button');
+    btns.forEach(function(b){ b.classList.remove('active'); });
+    var idx = {sat:0,clique:1,subset:2,vc:3}[m];
+    btns[idx].classList.add('active');
+    renderMode();
+    document.getElementById('pnp_npv_status').textContent = 'Click Verify to check the certificate';
+  };
+
+  function renderMode(){
+    var svg = document.getElementById('pnp_npv_svg');
+    if(!svg) return;
+    if(mode==='sat') renderSAT(svg);
+    else if(mode==='clique') renderClique(svg);
+    else if(mode==='subset') renderSubset(svg);
+    else if(mode==='vc') renderVC(svg);
+  }
+
+  /* --- SAT --- */
+  function renderSAT(svg){
+    var html = '';
+    // Formula
+    html += '<text x="350" y="25" text-anchor="middle" font-size="14" font-weight="600" fill="#93c5fd">Formula: (x\u2081 \u2228 \u00ACx\u2082) \u2227 (x\u2082 \u2228 x\u2083)</text>';
+    // Certificate
+    html += '<text x="350" y="50" text-anchor="middle" font-size="13" fill="#f59e0b">Certificate: x\u2081=T, x\u2082=T, x\u2083=F</text>';
+    // Clause boxes
+    var clauses = [
+      {label:'(x\u2081 \u2228 \u00ACx\u2082)', vals:'T \u2228 F', result:'T', x:170},
+      {label:'(x\u2082 \u2228 x\u2083)', vals:'T \u2228 F', result:'T', x:470}
+    ];
+    clauses.forEach(function(c,i){
+      var show = verifyStep > i;
+      var col = show ? '#10b981' : '#475569';
+      var fill = show ? 'rgba(16,185,129,0.15)' : '#1e293b';
+      html += '<rect x="'+(c.x-90)+'" y="70" width="180" height="90" rx="8" fill="'+fill+'" stroke="'+col+'" stroke-width="2"/>';
+      html += '<text x="'+c.x+'" y="95" text-anchor="middle" font-size="13" fill="#e2e8f0">'+c.label+'</text>';
+      if(show){
+        html += '<text x="'+c.x+'" y="118" text-anchor="middle" font-size="12" fill="#94a3b8">= '+c.vals+'</text>';
+        html += '<text x="'+c.x+'" y="145" text-anchor="middle" font-size="16" font-weight="600" fill="#10b981">= '+c.result+' \u2713</text>';
+      }
+    });
+    // AND connector
+    html += '<text x="350" y="120" text-anchor="middle" font-size="18" font-weight="bold" fill="#8b5cf6">\u2227</text>';
+    // Final result
+    if(verifyStep >= 3){
+      html += '<rect x="240" y="175" width="220" height="36" rx="8" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="2"/>';
+      html += '<text x="350" y="199" text-anchor="middle" font-size="15" font-weight="600" fill="#10b981">SATISFIABLE \u2713</text>';
+    }
+    svg.innerHTML = html;
+  }
+
+  /* --- Clique --- */
+  var cliqueNodes = {A:{x:100,y:40},B:{x:220,y:40},C:{x:100,y:160},D:{x:220,y:160},E:{x:320,y:100}};
+  var cliqueEdges = [['A','B'],['A','C'],['A','D'],['B','D'],['B','E'],['C','D']];
+  var cliqueCert = ['A','B','D'];
+  var cliqueChecks = [['A','B'],['A','D'],['B','D']];
+
+  function renderClique(svg){
+    var html = '';
+    html += '<text x="500" y="25" text-anchor="middle" font-size="14" font-weight="600" fill="#93c5fd">Find 3-Clique</text>';
+    html += '<text x="500" y="48" text-anchor="middle" font-size="13" fill="#f59e0b">Certificate: {A, B, D}</text>';
+    // edges
+    cliqueEdges.forEach(function(e){
+      var a=cliqueNodes[e[0]], b=cliqueNodes[e[1]];
+      var inCert = cliqueCert.indexOf(e[0])>=0 && cliqueCert.indexOf(e[1])>=0;
+      var checkIdx = -1;
+      cliqueChecks.forEach(function(ck,ci){
+        if((ck[0]===e[0]&&ck[1]===e[1])||(ck[0]===e[1]&&ck[1]===e[0])) checkIdx=ci;
+      });
+      var col = '#475569', sw = 1.5;
+      if(inCert && verifyStep > checkIdx && checkIdx >= 0){ col='#10b981'; sw=3; }
+      html += '<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="'+col+'" stroke-width="'+sw+'"/>';
+    });
+    // nodes
+    Object.keys(cliqueNodes).forEach(function(n){
+      var nd=cliqueNodes[n];
+      var inCert = cliqueCert.indexOf(n)>=0;
+      var fill = inCert ? 'rgba(245,158,11,0.2)' : '#1e293b';
+      var stroke = inCert ? '#f59e0b' : '#64748b';
+      html += '<circle cx="'+nd.x+'" cy="'+nd.y+'" r="20" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2"/>';
+      html += '<text x="'+nd.x+'" y="'+(nd.y+5)+'" text-anchor="middle" font-size="14" font-weight="600" fill="#e2e8f0">'+n+'</text>';
+    });
+    // Verification steps text
+    var checks = ['A-B?','A-D?','B-D?'];
+    for(var i=0;i<checks.length;i++){
+      var y = 80 + i*30;
+      var shown = verifyStep > i;
+      html += '<text x="420" y="'+y+'" font-size="13" fill="'+(shown?'#10b981':'#64748b')+'">'+checks[i]+' '+(shown?'\u2713 edge exists':'')+'</text>';
+    }
+    if(verifyStep >= 4){
+      html += '<rect x="390" y="170" width="220" height="36" rx="8" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="2"/>';
+      html += '<text x="500" y="194" text-anchor="middle" font-size="15" font-weight="600" fill="#10b981">3-CLIQUE VERIFIED \u2713</text>';
+    }
+    svg.innerHTML = html;
+  }
+
+  /* --- Subset Sum --- */
+  var ssSet = [3,7,1,8,4];
+  var ssTarget = 12;
+  var ssCert = [3,1,8];
+
+  function renderSubset(svg){
+    var html = '';
+    html += '<text x="350" y="25" text-anchor="middle" font-size="14" font-weight="600" fill="#93c5fd">Set: {3, 7, 1, 8, 4}   Target: 12</text>';
+    html += '<text x="350" y="48" text-anchor="middle" font-size="13" fill="#f59e0b">Certificate: {3, 1, 8}</text>';
+    // Show set elements as boxes
+    ssSet.forEach(function(v,i){
+      var x = 70 + i*80;
+      var inCert = ssCert.indexOf(v)>=0;
+      var fill = inCert ? 'rgba(245,158,11,0.2)' : '#1e293b';
+      var stroke = inCert ? '#f59e0b' : '#475569';
+      html += '<rect x="'+x+'" y="65" width="55" height="40" rx="6" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2"/>';
+      html += '<text x="'+(x+27)+'" y="90" text-anchor="middle" font-size="16" font-weight="600" fill="#e2e8f0">'+v+'</text>';
+    });
+    // Sum animation
+    var sums = [0,3,4,12];
+    var labels = ['Start: 0','+3 = 3','+1 = 4','+8 = 12'];
+    for(var i=0;i<labels.length;i++){
+      var shown = verifyStep > i;
+      var x = 80 + i*160;
+      if(!shown) continue;
+      var isFinal = i===labels.length-1 && verifyStep >= labels.length+1;
+      html += '<text x="'+x+'" y="145" font-size="13" fill="'+(isFinal?'#10b981':'#93c5fd')+'" font-weight="'+(isFinal?'600':'400')+'">'+labels[i]+'</text>';
+      if(i<labels.length-1 && verifyStep>i+1){
+        html += '<text x="'+(x+80)+'" y="145" font-size="14" fill="#8b5cf6">\u2192</text>';
+      }
+    }
+    if(verifyStep >= 5){
+      html += '<rect x="220" y="170" width="260" height="36" rx="8" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="2"/>';
+      html += '<text x="350" y="194" text-anchor="middle" font-size="15" font-weight="600" fill="#10b981">SUM=12 VERIFIED \u2713</text>';
+    }
+    svg.innerHTML = html;
+  }
+
+  /* --- Vertex Cover --- */
+  var vcNodes = {A:{x:100,y:40},B:{x:220,y:40},C:{x:50,y:140},D:{x:160,y:160},E:{x:270,y:140}};
+  var vcEdges = [['A','B'],['A','C'],['A','D'],['B','D'],['B','E'],['D','E']];
+  var vcCert = ['A','D']; // Actually need B too — using {A,B,D} for a valid cover
+  // With {B,D}: A-B(B✓), A-C(neither!). Let me use {A,B,D} as 3-cover.
+  // Actually spec says {B,D} and 5 nodes 6 edges. Let me pick edges carefully so {B,D} covers all:
+  // edges: A-B(B✓), B-C(B✓), B-E(B✓), C-D(D✓), D-E(D✓), A-D(D✓) ← {B,D} covers all 6 edges!
+  var vcEdgesFix = [['A','B'],['B','C'],['B','E'],['C','D'],['D','E'],['A','D']];
+  var vcCertFix = ['B','D'];
+
+  function renderVC(svg){
+    var html = '';
+    html += '<text x="500" y="25" text-anchor="middle" font-size="14" font-weight="600" fill="#93c5fd">Vertex Cover (k=2)</text>';
+    html += '<text x="500" y="48" text-anchor="middle" font-size="13" fill="#f59e0b">Certificate: {B, D}</text>';
+    // edges
+    vcEdgesFix.forEach(function(e,i){
+      var a=vcNodes[e[0]], b=vcNodes[e[1]];
+      var checked = verifyStep > i;
+      var col = checked ? '#10b981' : '#475569';
+      var sw = checked ? 3 : 1.5;
+      html += '<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="'+col+'" stroke-width="'+sw+'"/>';
+    });
+    // nodes
+    Object.keys(vcNodes).forEach(function(n){
+      var nd=vcNodes[n];
+      var inCert = vcCertFix.indexOf(n)>=0;
+      var fill = inCert ? 'rgba(245,158,11,0.2)' : '#1e293b';
+      var stroke = inCert ? '#f59e0b' : '#64748b';
+      html += '<circle cx="'+nd.x+'" cy="'+nd.y+'" r="20" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2"/>';
+      html += '<text x="'+nd.x+'" y="'+(nd.y+5)+'" text-anchor="middle" font-size="14" font-weight="600" fill="#e2e8f0">'+n+'</text>';
+    });
+    // Check steps
+    var edgeLabels = ['A-B','B-C','B-E','C-D','D-E','A-D'];
+    var coverBy =    ['B',  'B',  'B',  'D',  'D',  'D'];
+    for(var i=0;i<edgeLabels.length;i++){
+      var y = 70 + i*22;
+      var shown = verifyStep > i;
+      html += '<text x="380" y="'+y+'" font-size="11" fill="'+(shown?'#10b981':'#64748b')+'">'+edgeLabels[i]+': '+(shown?coverBy[i]+' \u2713':'')+'</text>';
+    }
+    if(verifyStep >= 7){
+      html += '<rect x="380" y="175" width="240" height="36" rx="8" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="2"/>';
+      html += '<text x="500" y="199" text-anchor="middle" font-size="14" font-weight="600" fill="#10b981">VERTEX COVER VERIFIED \u2713</text>';
+    }
+    svg.innerHTML = html;
+  }
+
+  /* --- Verify button --- */
+  window.pnp_npv_verify = function(){
+    if(verifying) return;
+    verifying = true;
+    var maxSteps = {sat:4, clique:5, subset:6, vc:8}[mode];
+    verifyStep = 0;
+    var iv = setInterval(function(){
+      verifyStep++;
+      renderMode();
+      if(verifyStep >= maxSteps){
+        clearInterval(iv);
+        verifying = false;
+        document.getElementById('pnp_npv_status').innerHTML = '<span style="color:#10b981;font-weight:600;">Verification time: O(polynomial) \u2014 FAST!</span>';
+      } else {
+        document.getElementById('pnp_npv_status').textContent = 'Verifying step '+verifyStep+'...';
+      }
+    }, 500);
+    timers.push(iv);
+  };
+
+  window.pnp_npv_reset = function(){
+    clearTimers();
+    verifyStep = 0;
+    verifying = false;
+    renderMode();
+    document.getElementById('pnp_npv_status').textContent = 'Click Verify to check the certificate';
+  };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s8');
+    if(!slide) return;
+    if(slide.classList.contains('active')){ window.pnp_npv_select('sat'); }
+    else { clearTimers(); }
+  });
+  var s8el = document.getElementById('s8');
+  if(s8el) obs.observe(s8el, {attributes:true, attributeFilter:['class']});
+})();
+</script>
 
 <!-- ==================== SLIDE 9: P subset NP ==================== -->
 <div class="slide" id="s9">
@@ -455,23 +1393,16 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <div>
       <h3>Why P &sube; NP</h3>
       <p>If you can <strong>solve</strong> a problem in polynomial time, you can certainly <strong>verify</strong> a solution in polynomial time.</p>
-      <p>The verifier just ignores the certificate and solves the problem from scratch!</p>
 
-      <div class="diagram small">
-  Verifier for a P problem:
-
-  Input: (x, certificate)
-            |
-      [Ignore certificate]
-            |
-      [Solve x directly
-       in polynomial time]
-            |
-      [Accept/Reject based
-       on the solution]
+      <div class="pnp-panel" style="padding:10px;">
+        <svg id="pnp_sub_svg" viewBox="0 0 360 260" style="width:100%;height:auto;"></svg>
+        <div class="pnp-status" id="pnp_sub_status">Step through to see why P &sube; NP</div>
+        <div class="pnp-controls">
+          <button onclick="window.pnp_sub_step()">Step</button>
+          <button onclick="window.pnp_sub_auto()">Auto</button>
+          <button onclick="window.pnp_sub_reset()">Reset</button>
+        </div>
       </div>
-
-      <p>So every P problem trivially has a polynomial-time verifier, meaning it's in NP.</p>
     </div>
 
     <div>
@@ -498,72 +1429,267 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">9 / 22</span>
+  <span class="slide-number">9 / 23</span>
 </div>
+<script>
+(function(){
+  /* ====== Slide 9: P ⊆ NP Visualization ====== */
+  var timers = [];
+  function clearTimers(){ timers.forEach(function(t){clearTimeout(t);clearInterval(t);}); timers=[]; }
+  var step = 0;
+  var maxStep = 5;
+
+  function render(){
+    var svg = document.getElementById('pnp_sub_svg');
+    if(!svg) return;
+    var html = '';
+    var laneH = 90;
+    var laneY1 = 30, laneY2 = 150;
+
+    // Lane labels
+    html += '<rect x="0" y="'+laneY1+'" width="360" height="'+laneH+'" rx="8" fill="rgba(16,185,129,0.08)" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,3"/>';
+    html += '<text x="10" y="'+(laneY1+18)+'" font-size="11" font-weight="600" fill="#10b981">SOLVER (P algorithm)</text>';
+
+    html += '<rect x="0" y="'+laneY2+'" width="360" height="'+laneH+'" rx="8" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3"/>';
+    html += '<text x="10" y="'+(laneY2+18)+'" font-size="11" font-weight="600" fill="#3b82f6">VERIFIER (uses same solver)</text>';
+
+    // Step 1: Problem arrives
+    if(step>=1){
+      html += '<rect x="10" y="'+(laneY1+30)+'" width="70" height="40" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>';
+      html += '<text x="45" y="'+(laneY1+55)+'" text-anchor="middle" font-size="11" fill="#f59e0b">Input x</text>';
+      html += '<rect x="10" y="'+(laneY2+30)+'" width="70" height="40" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>';
+      html += '<text x="45" y="'+(laneY2+47)+'" text-anchor="middle" font-size="10" fill="#f59e0b">Input x</text>';
+      html += '<text x="45" y="'+(laneY2+62)+'" text-anchor="middle" font-size="9" fill="#64748b">+ cert</text>';
+    }
+
+    // Step 2: Solver computes
+    if(step>=2){
+      html += '<line x1="80" y1="'+(laneY1+50)+'" x2="130" y2="'+(laneY1+50)+'" stroke="#10b981" stroke-width="2" marker-end="url(#pnp_sub_arrow)"/>';
+      html += '<rect x="130" y="'+(laneY1+30)+'" width="90" height="40" rx="6" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="2"/>';
+      html += '<text x="175" y="'+(laneY1+48)+'" text-anchor="middle" font-size="10" fill="#10b981">Solve in</text>';
+      html += '<text x="175" y="'+(laneY1+62)+'" text-anchor="middle" font-size="10" fill="#10b981">poly time</text>';
+    }
+
+    // Step 3: Answer produced
+    if(step>=3){
+      html += '<line x1="220" y1="'+(laneY1+50)+'" x2="270" y2="'+(laneY1+50)+'" stroke="#10b981" stroke-width="2" marker-end="url(#pnp_sub_arrow)"/>';
+      html += '<rect x="270" y="'+(laneY1+30)+'" width="70" height="40" rx="6" fill="rgba(16,185,129,0.2)" stroke="#10b981" stroke-width="2"/>';
+      html += '<text x="305" y="'+(laneY1+55)+'" text-anchor="middle" font-size="12" font-weight="600" fill="#10b981">YES/NO</text>';
+    }
+
+    // Step 4: Verifier ignores cert, solves directly
+    if(step>=4){
+      html += '<line x1="80" y1="'+(laneY2+50)+'" x2="100" y2="'+(laneY2+50)+'" stroke="#3b82f6" stroke-width="2" marker-end="url(#pnp_sub_arrow)"/>';
+      // Cert crossed out
+      html += '<rect x="100" y="'+(laneY2+28)+'" width="55" height="44" rx="6" fill="rgba(239,68,68,0.1)" stroke="#ef4444" stroke-width="1.5"/>';
+      html += '<text x="127" y="'+(laneY2+48)+'" text-anchor="middle" font-size="9" fill="#ef4444">Ignore</text>';
+      html += '<text x="127" y="'+(laneY2+62)+'" text-anchor="middle" font-size="9" fill="#ef4444">cert!</text>';
+      html += '<line x1="100" y1="'+(laneY2+28)+'" x2="155" y2="'+(laneY2+72)+'" stroke="#ef4444" stroke-width="1.5"/>';
+      // Same solver
+      html += '<line x1="155" y1="'+(laneY2+50)+'" x2="180" y2="'+(laneY2+50)+'" stroke="#3b82f6" stroke-width="2" marker-end="url(#pnp_sub_arrow)"/>';
+      html += '<rect x="180" y="'+(laneY2+30)+'" width="90" height="40" rx="6" fill="rgba(59,130,246,0.15)" stroke="#3b82f6" stroke-width="2"/>';
+      html += '<text x="225" y="'+(laneY2+48)+'" text-anchor="middle" font-size="10" fill="#3b82f6">Same P</text>';
+      html += '<text x="225" y="'+(laneY2+62)+'" text-anchor="middle" font-size="10" fill="#3b82f6">solver!</text>';
+      html += '<line x1="270" y1="'+(laneY2+50)+'" x2="290" y2="'+(laneY2+50)+'" stroke="#3b82f6" stroke-width="2" marker-end="url(#pnp_sub_arrow)"/>';
+      html += '<rect x="290" y="'+(laneY2+30)+'" width="60" height="40" rx="6" fill="rgba(59,130,246,0.2)" stroke="#3b82f6" stroke-width="2"/>';
+      html += '<text x="320" y="'+(laneY2+55)+'" text-anchor="middle" font-size="11" font-weight="600" fill="#3b82f6">YES/NO</text>';
+    }
+
+    // Step 5: Conclusion
+    if(step>=5){
+      html += '<rect x="40" y="248" width="280" height="12" rx="4" fill="none"/>';
+    }
+
+    // Arrow marker
+    html = '<defs><marker id="pnp_sub_arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#94a3b8"/></marker></defs>' + html;
+
+    svg.innerHTML = html;
+  }
+
+  var stepMessages = [
+    'Step through to see why P \u2286 NP',
+    'Step 1: A problem instance x arrives at both lanes',
+    'Step 2: The P solver computes the answer in polynomial time',
+    'Step 3: The solver produces YES/NO directly',
+    'Step 4: The verifier ignores the certificate and uses the SAME poly-time solver!',
+    '<span style="color:#10b981;font-weight:600;">If solvable in P, then verifiable in NP \u2192 P \u2286 NP \u2713</span>'
+  ];
+
+  window.pnp_sub_step = function(){
+    if(step >= maxStep) return;
+    step++;
+    render();
+    document.getElementById('pnp_sub_status').innerHTML = stepMessages[step];
+  };
+
+  window.pnp_sub_auto = function(){
+    clearTimers();
+    var iv = setInterval(function(){
+      if(step >= maxStep){ clearInterval(iv); return; }
+      window.pnp_sub_step();
+    }, 1000);
+    timers.push(iv);
+  };
+
+  window.pnp_sub_reset = function(){
+    clearTimers();
+    step = 0;
+    render();
+    document.getElementById('pnp_sub_status').innerHTML = stepMessages[0];
+  };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s9');
+    if(!slide) return;
+    if(slide.classList.contains('active')){ window.pnp_sub_reset(); }
+    else { clearTimers(); }
+  });
+  var s9el = document.getElementById('s9');
+  if(s9el) obs.observe(s9el, {attributes:true, attributeFilter:['class']});
+})();
+</script>
 
 <!-- ==================== SLIDE 10: The P vs NP Question ==================== -->
 <div class="slide" id="s10">
   <h1>The P vs NP Question -- Visualized</h1>
-  <p class="subtitle">Two possible worlds</p>
+  <p class="subtitle">Two possible worlds — click to explore each scenario</p>
 
-  <div class="two-col">
-    <div>
-      <h2 class="center">World 1: P = NP</h2>
-      <div class="diagram">
-  +----------------------------------+
-  |                                  |
-  |          P   =   NP              |
-  |                                  |
-  |  Sorting, SAT, TSP, Clique,     |
-  |  Graph Coloring, Subset Sum,    |
-  |  Hamiltonian Path, Factoring... |
-  |                                  |
-  |  ALL efficiently solvable!       |
-  |                                  |
-  +----------------------------------+
-
-  Every problem whose solution can
-  be checked quickly can ALSO be
-  solved quickly.
-
-  "Verification = Solution"
-      </div>
-      <p style="color: #f87171; font-weight: 600; text-align: center;">Most experts think this is UNLIKELY</p>
-    </div>
-
-    <div>
-      <h2 class="center">World 2: P &ne; NP</h2>
-      <div class="diagram">
-  +----------------------------------+
-  |              NP                   |
-  |   +-----------+                  |
-  |   |           | NP-Complete      |
-  |   |     P     |  (SAT, TSP,     |
-  |   |           |   Clique, ...)  |
-  |   | (Sorting, |                  |
-  |   |  GCD,     +---------+       |
-  |   |  Shortest |NP-Inter-|       |
-  |   |  Path)    |mediate  |       |
-  |   |           |(Factor- |       |
-  |   |           | ing?,   |       |
-  |   |           | Graph   |       |
-  |   |           | Iso.?)  |       |
-  |   +-----------+---------+       |
-  +----------------------------------+
-
-  Some problems are INHERENTLY harder
-  to solve than to verify.
-      </div>
-      <p style="color: #34d399; font-weight: 600; text-align: center;">Most experts believe THIS is reality</p>
-    </div>
+  <div class="pnp-controls" style="justify-content:center;margin-bottom:8px;">
+    <button id="pnp_worlds_btn1" class="active" onclick="window.pnp_worlds_show(1)">World 1: P = NP</button>
+    <button id="pnp_worlds_btn2" onclick="window.pnp_worlds_show(2)">World 2: P &ne; NP</button>
   </div>
+
+  <div style="display:flex;justify-content:center;">
+    <svg id="pnp_worlds_svg" viewBox="0 0 700 370" style="width:100%;max-width:750px;height:auto;"></svg>
+  </div>
+  <p id="pnp_worlds_caption" style="text-align:center;font-weight:600;margin-top:8px;"></p>
 
   <div class="key-idea mt">
     <h3>Why Most Experts Believe P &ne; NP</h3>
     <p>Decades of effort by brilliant researchers have failed to find polynomial algorithms for NP-complete problems. It would be astonishing if all that effort missed something. But nobody can PROVE it either way!</p>
   </div>
-  <span class="slide-number">10 / 22</span>
+  <span class="slide-number">10 / 23</span>
 </div>
+<script>
+(function(){
+  var pnp_worlds_mode = 1;
+  var pnp_worlds_anim = null;
+  var pnp_worlds_t = 0;
+
+  var pProblems = ['Sorting','Shortest Path','GCD','Primality'];
+  var npcProblems = ['SAT','TSP','Clique','Coloring','Subset Sum','Ham. Cycle'];
+  var npiProblems = ['Factoring?','Graph Iso.?'];
+  var allProblems = ['Sorting','SAT','TSP','Clique','Coloring','Subset Sum'];
+
+  function lerp(a,b,t){ return a+(b-a)*Math.max(0,Math.min(1,t)); }
+
+  function pnp_worlds_draw(t){
+    var svg = document.getElementById('pnp_worlds_svg');
+    if(!svg) return;
+    var cx=350, cy=170, rOuter=155;
+    // t=0 => P=NP (one big circle), t=1 => P!=NP (venn)
+    var rInner = lerp(rOuter-2, 80, t);
+    var innerCx = lerp(cx, cx-60, t);
+    var innerCy = lerp(cy, cy+10, t);
+    var npcOpacity = t;
+    var npiOpacity = Math.max(0, (t-0.5)*2);
+
+    var h = '';
+    // Outer NP circle
+    h += '<circle cx="'+cx+'" cy="'+cy+'" r="'+rOuter+'" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="'+(t>0.1?'0':'8,4')+'"/>';
+    if(t>0.1) h += '<text x="'+(cx+rOuter-40)+'" y="'+(cy-rOuter+20)+'" font-size="16" font-weight="700" fill="#3b82f6" opacity="'+t+'">NP</text>';
+
+    // NP-Complete region label (between inner and outer, right side)
+    if(t>0.3){
+      h += '<text x="'+(cx+50)+'" y="'+(cy-60)+'" font-size="13" font-weight="600" fill="#f59e0b" opacity="'+npcOpacity+'">NP-Complete</text>';
+      // NPC problem labels
+      var npcPositions = [[cx+40,cy-35],[cx+70,cy-10],[cx+40,cy+15],[cx+70,cy+40],[cx+30,cy+55],[cx+65,cy+70]];
+      for(var i=0;i<npcProblems.length;i++){
+        var px = npcPositions[i][0], py = npcPositions[i][1];
+        h += '<text x="'+px+'" y="'+py+'" font-size="11" fill="#fbbf24" opacity="'+npcOpacity+'">'+npcProblems[i]+'</text>';
+      }
+    }
+
+    // NP-Intermediate region
+    if(t>0.5){
+      h += '<text x="'+(cx-15)+'" y="'+(cy+rOuter-40)+'" font-size="12" font-weight="600" fill="#a78bfa" opacity="'+npiOpacity+'">NP-Intermediate</text>';
+      for(var j=0;j<npiProblems.length;j++){
+        h += '<text x="'+(cx-10)+'" y="'+(cy+rOuter-20+j*16)+'" font-size="11" fill="#c4b5fd" opacity="'+npiOpacity+'">'+npiProblems[j]+'</text>';
+      }
+    }
+
+    // Inner P circle
+    var pFill = t<0.5 ? 'rgba(16,185,129,0.15)' : 'rgba(16,185,129,0.12)';
+    h += '<circle cx="'+innerCx+'" cy="'+innerCy+'" r="'+rInner+'" fill="'+pFill+'" stroke="#10b981" stroke-width="2"/>';
+    h += '<text x="'+innerCx+'" y="'+(innerCy-rInner+20)+'" text-anchor="middle" font-size="16" font-weight="700" fill="#10b981">P'+(t<0.5?' = NP':'')+'</text>';
+
+    // Problems inside P
+    if(t<0.5){
+      // P=NP mode: show all problems inside the one circle
+      var allPos = [[innerCx-50,innerCy-20],[innerCx+30,innerCy-20],[innerCx-60,innerCy+10],[innerCx+20,innerCy+10],[innerCx-40,innerCy+40],[innerCx+30,innerCy+40]];
+      for(var k=0;k<allProblems.length;k++){
+        h += '<text x="'+allPos[k][0]+'" y="'+allPos[k][1]+'" font-size="12" fill="#34d399">'+allProblems[k]+'</text>';
+      }
+      h += '<text x="'+innerCx+'" y="'+(innerCy+75)+'" text-anchor="middle" font-size="13" font-weight="600" fill="#34d399">ALL efficiently solvable!</text>';
+    } else {
+      // P!=NP mode: only P problems inside inner circle
+      var pPos = [[innerCx-35,innerCy-10],[innerCx-35,innerCy+8],[innerCx-35,innerCy+26],[innerCx-35,innerCy+44]];
+      for(var m=0;m<pProblems.length;m++){
+        h += '<text x="'+pPos[m][0]+'" y="'+pPos[m][1]+'" font-size="11" fill="#34d399" opacity="'+t+'">'+pProblems[m]+'</text>';
+      }
+    }
+
+    svg.innerHTML = h;
+  }
+
+  function pnp_worlds_animate(target){
+    if(pnp_worlds_anim) cancelAnimationFrame(pnp_worlds_anim);
+    var start = pnp_worlds_t;
+    var startTime = performance.now();
+    var dur = 600;
+    function tick(now){
+      var elapsed = now - startTime;
+      var progress = Math.min(elapsed/dur, 1);
+      // ease in-out
+      var ease = progress<0.5 ? 2*progress*progress : 1-Math.pow(-2*progress+2,2)/2;
+      pnp_worlds_t = lerp(start, target, ease);
+      pnp_worlds_draw(pnp_worlds_t);
+      if(progress<1) pnp_worlds_anim = requestAnimationFrame(tick);
+      else pnp_worlds_anim = null;
+    }
+    pnp_worlds_anim = requestAnimationFrame(tick);
+  }
+
+  window.pnp_worlds_show = function(mode){
+    pnp_worlds_mode = mode;
+    document.getElementById('pnp_worlds_btn1').classList.toggle('active', mode===1);
+    document.getElementById('pnp_worlds_btn2').classList.toggle('active', mode===2);
+    var cap = document.getElementById('pnp_worlds_caption');
+    if(mode===1){
+      cap.innerHTML = '<span style="color:#f87171;">Most experts think this is UNLIKELY</span>';
+      pnp_worlds_animate(0);
+    } else {
+      cap.innerHTML = '<span style="color:#34d399;">Most experts believe THIS is reality</span>';
+      pnp_worlds_animate(1);
+    }
+  };
+
+  function pnp_worlds_init(){
+    pnp_worlds_t = 0;
+    pnp_worlds_draw(0);
+    window.pnp_worlds_show(1);
+  }
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s10');
+    if(!slide) return;
+    if(slide.classList.contains('active')) pnp_worlds_init();
+    else { if(pnp_worlds_anim){ cancelAnimationFrame(pnp_worlds_anim); pnp_worlds_anim=null; } }
+  });
+  var s10 = document.getElementById('s10');
+  if(s10) obs.observe(s10, { attributes:true, attributeFilter:['class'] });
+})();
+</script>
 
 <!-- ==================== SLIDE 11: Polynomial-Time Reductions ==================== -->
 <div class="slide" id="s11">
@@ -607,7 +1733,7 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">11 / 22</span>
+  <span class="slide-number">11 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 12: NP-Hardness ==================== -->
@@ -657,13 +1783,13 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">12 / 22</span>
+  <span class="slide-number">12 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 13: NP-Completeness ==================== -->
 <div class="slide" id="s13">
   <h1>NP-Completeness</h1>
-  <p class="subtitle">The hardest problems IN NP -- the sweet spot</p>
+  <p class="subtitle">The hardest problems IN NP — click regions and problems to explore</p>
 
   <div class="key-idea">
     <h3>Definition</h3>
@@ -672,42 +1798,111 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <p>2. <strong>NP-Hard</strong> (every NP problem reduces to it)</p>
   </div>
 
-  <div class="diagram">
-  The Complexity Landscape (assuming P &ne; NP)
-
-  +----------------------------------------------------------+
-  |                        NP-Hard                           |
-  |   (at least as hard as NP -- may not be in NP)          |
-  |                                                          |
-  |   Halting Problem, General TSP Optimization, ...         |
-  |                                                          |
-  |   +----------------------------------------------------+ |
-  |   |                     NP                             | |
-  |   |                                                    | |
-  |   |   +-------------------+ +------------------------+ | |
-  |   |   |                   | |                        | | |
-  |   |   |        P          | |    NP-Complete         | | |
-  |   |   |                   | |                        | | |
-  |   |   | Sorting           | | SAT, 3-SAT            | | |
-  |   |   | Shortest Path     | | Clique, Vertex Cover  | | |
-  |   |   | Primality         | | TSP (decision)        | | |
-  |   |   | Matching          | | Graph Coloring        | | |
-  |   |   | GCD               | | Subset Sum            | | |
-  |   |   |                   | | Hamiltonian Cycle      | | |
-  |   |   +-------------------+ +------------------------+ | |
-  |   |                                                    | |
-  |   +----------------------------------------------------+ |
-  +----------------------------------------------------------+
-
-  NP-Complete = NP-Hard  &cap;  NP  (the boundary of NP)
+  <div style="display:flex;justify-content:center;">
+    <svg id="pnp_land_svg" viewBox="0 0 720 310" style="width:100%;max-width:760px;height:auto;"></svg>
   </div>
+  <div id="pnp_land_tooltip" class="pnp-panel" style="min-height:36px;text-align:center;font-size:0.95em;color:#cbd5e1;margin-top:4px;">Click a problem badge or region label to learn more.</div>
 
   <div class="key-idea mt">
     <h3>Why NP-Complete Problems Are Special</h3>
     <p>If you find a polynomial algorithm for ANY NP-complete problem, then <strong>P = NP</strong> (all NP problems become easy). Conversely, if you prove ANY NP-complete problem has no poly-time algorithm, then <strong>P &ne; NP</strong>. They're the "gatekeepers" of the P vs NP question.</p>
   </div>
-  <span class="slide-number">13 / 22</span>
+  <span class="slide-number">13 / 23</span>
 </div>
+<script>
+(function(){
+  var regions = [
+    { id:'nphard', label:'NP-Hard', x:10, y:10, w:700, h:290, fill:'rgba(239,68,68,0.06)', stroke:'#ef4444',
+      desc:'NP-Hard: Problems at least as hard as every NP problem. They may or may not be in NP themselves. Includes undecidable problems like the Halting Problem.' },
+    { id:'np', label:'NP', x:30, y:30, w:540, h:260, fill:'rgba(59,130,246,0.08)', stroke:'#3b82f6',
+      desc:'NP: Problems whose solutions can be verified in polynomial time given a certificate. Includes all of P plus (likely) harder problems.' },
+    { id:'p', label:'P', x:50, y:55, w:200, h:210, fill:'rgba(16,185,129,0.1)', stroke:'#10b981',
+      desc:'P: Problems solvable in polynomial time by a deterministic Turing machine. These are "efficiently solvable" in practice.' },
+    { id:'npc', label:'NP-Complete', x:280, y:55, w:270, h:210, fill:'rgba(245,158,11,0.08)', stroke:'#f59e0b',
+      desc:'NP-Complete = NP-Hard \u2229 NP. The hardest problems still in NP. A poly-time algorithm for ANY of these implies P = NP.' }
+  ];
+
+  var problems = [
+    { name:'Sorting', region:'p', color:'#10b981', reason:'In P because merge sort runs in O(n log n) — polynomial time.' },
+    { name:'Shortest Path', region:'p', color:'#10b981', reason:'In P because Dijkstra\'s algorithm runs in O(V\u00B2) — polynomial.' },
+    { name:'Primality', region:'p', color:'#10b981', reason:'In P because the AKS algorithm (2002) runs in polynomial time.' },
+    { name:'Matching', region:'p', color:'#10b981', reason:'In P because Edmonds\' blossom algorithm runs in O(V\u00B3).' },
+    { name:'GCD', region:'p', color:'#10b981', reason:'In P because Euclid\'s algorithm runs in O(log n) — very efficient.' },
+    { name:'SAT', region:'npc', color:'#f59e0b', reason:'NP-Complete: Cook\'s theorem (1971) proved SAT is the first NP-complete problem by reducing any NP problem to it.' },
+    { name:'3-SAT', region:'npc', color:'#f59e0b', reason:'NP-Complete: Reduced from SAT. Restricting to 3 literals per clause doesn\'t make it easier.' },
+    { name:'Clique', region:'npc', color:'#f59e0b', reason:'NP-Complete: Reduced from 3-SAT by Karp (1972). Finding a complete subgraph of size k.' },
+    { name:'Vertex Cover', region:'npc', color:'#f59e0b', reason:'NP-Complete: Reduced from Independent Set (complement of Clique). Finding min vertices covering all edges.' },
+    { name:'TSP (decision)', region:'npc', color:'#f59e0b', reason:'NP-Complete: Reduced from Hamiltonian Cycle. Is there a tour of total weight \u2264 k?' },
+    { name:'Subset Sum', region:'npc', color:'#f59e0b', reason:'NP-Complete: Reduced from 3-SAT. Does a subset of numbers add up to a target?' },
+    { name:'Halting Problem', region:'nphard_only', color:'#ef4444', reason:'NP-Hard but NOT in NP — it\'s undecidable! No algorithm can solve it at all.' },
+    { name:'General TSP Opt.', region:'nphard_only', color:'#ef4444', reason:'NP-Hard: The optimization version (find shortest tour) is at least as hard as decision TSP, but not in NP because there\'s no polynomial certificate bound.' }
+  ];
+
+  // Positions for problems
+  var pPositions = [[80,110],[80,140],[80,170],[80,200],[80,230]];
+  var npcPositions = [[300,110],[300,140],[300,170],[300,200],[300,230],[430,110]];
+  var nphPositions = [[600,80],[600,130]];
+
+  function pnp_land_draw(){
+    var svg = document.getElementById('pnp_land_svg');
+    if(!svg) return;
+    var h = '';
+    // Draw regions
+    for(var i=0;i<regions.length;i++){
+      var r = regions[i];
+      h += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="12" fill="'+r.fill+'" stroke="'+r.stroke+'" stroke-width="1.5" style="cursor:pointer;" data-region="'+r.id+'"/>';
+      var lx = r.x+8, ly = r.y+18;
+      if(r.id==='npc'){ lx=r.x+r.w/2; ly=r.y+18; }
+      h += '<text x="'+lx+'" y="'+ly+'" font-size="14" font-weight="700" fill="'+r.stroke+'" style="cursor:pointer;" data-region="'+r.id+'"'+(r.id==='npc'?' text-anchor="middle"':'')+'>'+r.label+'</text>';
+    }
+    // NP-Complete = NP-Hard ∩ NP label
+    h += '<text x="360" y="285" text-anchor="middle" font-size="11" fill="#94a3b8">NP-Complete = NP-Hard \u2229 NP</text>';
+
+    // Draw problem badges
+    var pi=0, ni=0, hi=0;
+    for(var j=0;j<problems.length;j++){
+      var p = problems[j];
+      var pos;
+      if(p.region==='p'){ pos=pPositions[pi++]; }
+      else if(p.region==='npc'){ pos=npcPositions[ni++]; }
+      else { pos=nphPositions[hi++]; }
+      var bw = p.name.length*7.5+16;
+      h += '<rect x="'+pos[0]+'" y="'+(pos[1]-13)+'" width="'+bw+'" height="22" rx="6" fill="rgba(30,41,59,0.9)" stroke="'+p.color+'" stroke-width="1" style="cursor:pointer;" data-prob="'+j+'"/>';
+      h += '<text x="'+(pos[0]+8)+'" y="'+(pos[1]+2)+'" font-size="11" font-weight="600" fill="'+p.color+'" style="cursor:pointer;" data-prob="'+j+'">'+p.name+'</text>';
+    }
+    svg.innerHTML = h;
+
+    // Add click handlers
+    svg.querySelectorAll('[data-prob]').forEach(function(el){
+      el.addEventListener('click', function(){ pnp_land_showProb(+this.getAttribute('data-prob')); });
+    });
+    svg.querySelectorAll('[data-region]').forEach(function(el){
+      el.addEventListener('click', function(){ pnp_land_showRegion(this.getAttribute('data-region')); });
+    });
+  }
+
+  function pnp_land_showProb(idx){
+    var p = problems[idx];
+    var tip = document.getElementById('pnp_land_tooltip');
+    if(tip) tip.innerHTML = '<span class="pnp-badge" style="border-color:'+p.color+';color:'+p.color+';background:rgba(30,41,59,0.8);margin-right:8px;">'+p.name+'</span> '+p.reason;
+  }
+
+  function pnp_land_showRegion(id){
+    var tip = document.getElementById('pnp_land_tooltip');
+    for(var i=0;i<regions.length;i++){
+      if(regions[i].id===id && tip){ tip.innerHTML = '<strong style="color:'+regions[i].stroke+'">'+regions[i].label+':</strong> '+regions[i].desc; return; }
+    }
+  }
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s13');
+    if(!slide) return;
+    if(slide.classList.contains('active')) pnp_land_draw();
+  });
+  var s13 = document.getElementById('s13');
+  if(s13) obs.observe(s13, { attributes:true, attributeFilter:['class'] });
+})();
+</script>
 
 <!-- ==================== SLIDE 14: Cook's Theorem ==================== -->
 <div class="slide" id="s14">
@@ -765,66 +1960,55 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">14 / 22</span>
+  <span class="slide-number">14 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 15: The SAT Problem ==================== -->
 <div class="slide" id="s15">
-  <h1>The SAT Problem -- Worked Example</h1>
-  <p class="subtitle">Boolean Satisfiability: the "mother" of NP-complete problems</p>
+  <h1>The SAT Problem -- Interactive Solver</h1>
+  <p class="subtitle">Boolean Satisfiability: toggle variables and watch clauses evaluate live</p>
 
   <div class="two-col">
     <div>
-      <h3>The Problem</h3>
-      <p>Given a Boolean formula in <strong>Conjunctive Normal Form (CNF)</strong>, is there an assignment of TRUE/FALSE to variables that makes the entire formula TRUE?</p>
-
-      <div class="diagram">
-  CNF Formula:
-  &phi; = (x1 OR ~x2 OR x3)      -- clause 1
-    AND (  ~x1 OR x2    )      -- clause 2
-    AND (  ~x1 OR ~x3   )      -- clause 3
-    AND (   x2 OR x3    )      -- clause 4
-
-  Variables: x1, x2, x3
-  Each can be TRUE or FALSE
-  2^3 = 8 possible assignments
+      <h3>CNF Formula</h3>
+      <div class="pnp-panel" style="font-family:'SF Mono','Fira Code','Consolas',monospace;font-size:0.95em;line-height:2;">
+        <div>&phi; = <span id="pnp_sat_c1" style="padding:3px 8px;border-radius:6px;">(x<sub>1</sub> &or; &not;x<sub>2</sub> &or; x<sub>3</sub>)</span></div>
+        <div style="padding-left:22px;">&and; <span id="pnp_sat_c2" style="padding:3px 8px;border-radius:6px;">(&not;x<sub>1</sub> &or; x<sub>2</sub>)</span></div>
+        <div style="padding-left:22px;">&and; <span id="pnp_sat_c3" style="padding:3px 8px;border-radius:6px;">(&not;x<sub>1</sub> &or; &not;x<sub>3</sub>)</span></div>
+        <div style="padding-left:22px;">&and; <span id="pnp_sat_c4" style="padding:3px 8px;border-radius:6px;">(x<sub>2</sub> &or; x<sub>3</sub>)</span></div>
       </div>
 
-      <h3 class="mt">Working Through It</h3>
-      <p>Try <code>x1=T, x2=T, x3=F</code>:</p>
-      <div class="diagram small">
-  Clause 1: (T OR ~T OR F)
-           = (T OR F OR F) = <span style="color:#34d399">TRUE</span>
-  Clause 2: (~T OR T)
-           = (F OR T)      = <span style="color:#34d399">TRUE</span>
-  Clause 3: (~T OR ~F)
-           = (F OR T)      = <span style="color:#34d399">TRUE</span>
-  Clause 4: (T OR F)       = <span style="color:#34d399">TRUE</span>
-
-  ALL clauses TRUE!
-  Formula is <span style="color:#34d399">SATISFIABLE</span>
-  Certificate: {x1=T, x2=T, x3=F}
+      <h3 class="mt">Toggle Variables</h3>
+      <div class="pnp-panel" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:600;color:#93c5fd;">x<sub>1</sub></span>
+          <button id="pnp_sat_t1" onclick="window.pnp_sat_toggle(0)" class="pnp-btn" style="min-width:60px;">FALSE</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:600;color:#93c5fd;">x<sub>2</sub></span>
+          <button id="pnp_sat_t2" onclick="window.pnp_sat_toggle(1)" class="pnp-btn" style="min-width:60px;">FALSE</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:600;color:#93c5fd;">x<sub>3</sub></span>
+          <button id="pnp_sat_t3" onclick="window.pnp_sat_toggle(2)" class="pnp-btn" style="min-width:60px;">FALSE</button>
+        </div>
+      </div>
+      <div id="pnp_sat_result" class="pnp-status" style="font-size:1.1em;font-weight:600;margin-top:10px;text-align:center;min-height:28px;"></div>
+      <div class="pnp-controls" style="justify-content:center;margin-top:6px;">
+        <button onclick="window.pnp_sat_tryall()">Try All (auto-cycle)</button>
+        <button onclick="window.pnp_sat_reset()">Reset</button>
       </div>
     </div>
 
     <div>
       <h3>All 8 Assignments</h3>
-      <table style="width: 100%;">
-        <tr><th>x1</th><th>x2</th><th>x3</th><th>C1</th><th>C2</th><th>C3</th><th>C4</th><th>&phi;</th></tr>
-        <tr><td>F</td><td>F</td><td>F</td><td>T</td><td>T</td><td>T</td><td style="color:#f87171;">F</td><td style="color:#f87171;">F</td></tr>
-        <tr><td>F</td><td>F</td><td>T</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#34d399;">T</td></tr>
-        <tr><td>F</td><td>T</td><td>F</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#34d399;">T</td></tr>
-        <tr><td>F</td><td>T</td><td>T</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#34d399;">T</td></tr>
-        <tr class="highlight"><td>T</td><td>T</td><td>F</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#34d399;">T</td></tr>
-        <tr><td>T</td><td>T</td><td>T</td><td>T</td><td>T</td><td style="color:#f87171;">F</td><td>T</td><td style="color:#f87171;">F</td></tr>
-        <tr><td>T</td><td>F</td><td>F</td><td>T</td><td style="color:#f87171;">F</td><td>T</td><td style="color:#f87171;">F</td><td style="color:#f87171;">F</td></tr>
-        <tr><td>T</td><td>F</td><td>T</td><td>T</td><td style="color:#f87171;">F</td><td>T</td><td>T</td><td style="color:#f87171;">F</td></tr>
+      <table id="pnp_sat_table" style="width:100%;font-size:0.92em;">
+        <tr><th>x<sub>1</sub></th><th>x<sub>2</sub></th><th>x<sub>3</sub></th><th>C1</th><th>C2</th><th>C3</th><th>C4</th><th>&phi;</th></tr>
       </table>
-      <p style="font-size: 0.95em; color: #94a3b8;">Highlighted row is the assignment we verified.</p>
 
       <div class="warning mt">
         <h3>The Difficulty</h3>
-        <p>With 3 variables, we checked 8 rows. With <strong>n</strong> variables, there are <strong>2^n</strong> possible assignments. At n=300, that's more than the atoms in the universe. No known algorithm avoids this exponential blowup in the worst case.</p>
+        <p>With 3 variables, we checked 8 rows. With <strong>n</strong> variables, there are <strong>2<sup>n</sup></strong> possible assignments. At n=300, that's more than the atoms in the universe.</p>
       </div>
 
       <div class="key-idea mt">
@@ -833,59 +2017,343 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">15 / 22</span>
+  <span class="slide-number">15 / 23</span>
 </div>
+<script>
+(function(){
+  var pnp_sat_vals = [false, false, false];
+  var pnp_sat_timer = null;
+  var pnp_sat_tryIdx = 0;
+
+  // clauses: each is array of [varIndex, negated]
+  var clauses = [
+    [[0,false],[1,true],[2,false]],   // (x1 OR ~x2 OR x3)
+    [[0,true],[1,false]],             // (~x1 OR x2)
+    [[0,true],[2,true]],              // (~x1 OR ~x3)
+    [[1,false],[2,false]]             // (x2 OR x3)
+  ];
+
+  // All 8 assignments for truth table
+  var allAssign = [];
+  for(var i=0;i<8;i++) allAssign.push([!!(i&4),!!(i&2),!!(i&1)]);
+
+  function evalClause(cl, vals){
+    for(var i=0;i<cl.length;i++){
+      var v = vals[cl[i][0]];
+      if(cl[i][1]) v = !v;
+      if(v) return true;
+    }
+    return false;
+  }
+
+  function evalAll(vals){
+    var results = [];
+    for(var i=0;i<clauses.length;i++) results.push(evalClause(clauses[i], vals));
+    return results;
+  }
+
+  function pnp_sat_update(){
+    var cResults = evalAll(pnp_sat_vals);
+    var allTrue = cResults.every(function(c){return c;});
+
+    // Update toggle buttons
+    for(var i=0;i<3;i++){
+      var btn = document.getElementById('pnp_sat_t'+(i+1));
+      if(btn){
+        btn.textContent = pnp_sat_vals[i] ? 'TRUE' : 'FALSE';
+        btn.style.background = pnp_sat_vals[i] ? '#10b981' : '#334155';
+        btn.style.borderColor = pnp_sat_vals[i] ? '#34d399' : '#475569';
+      }
+    }
+
+    // Update clause highlighting
+    var clauseIds = ['pnp_sat_c1','pnp_sat_c2','pnp_sat_c3','pnp_sat_c4'];
+    for(var j=0;j<4;j++){
+      var el = document.getElementById(clauseIds[j]);
+      if(el){
+        if(cResults[j]){
+          el.style.background = 'rgba(16,185,129,0.2)';
+          el.style.color = '#34d399';
+        } else {
+          el.style.background = 'rgba(239,68,68,0.2)';
+          el.style.color = '#f87171';
+        }
+      }
+    }
+
+    // Update result
+    var res = document.getElementById('pnp_sat_result');
+    if(res){
+      if(allTrue){
+        res.innerHTML = '<span style="color:#10b981;">SATISFIABLE \u2713 &mdash; all clauses TRUE!</span>';
+      } else {
+        var failIdx = cResults.indexOf(false);
+        res.innerHTML = '<span style="color:#ef4444;">NOT SATISFIED &mdash; clause '+(failIdx+1)+' is false</span>';
+      }
+    }
+
+    // Update truth table - highlight current row
+    pnp_sat_drawTable();
+  }
+
+  function pnp_sat_drawTable(){
+    var tbl = document.getElementById('pnp_sat_table');
+    if(!tbl) return;
+    // Remove old body rows
+    while(tbl.rows.length > 1) tbl.deleteRow(1);
+    for(var i=0;i<allAssign.length;i++){
+      var a = allAssign[i];
+      var cr = evalAll(a);
+      var phi = cr.every(function(c){return c;});
+      var isCurrent = (a[0]===pnp_sat_vals[0] && a[1]===pnp_sat_vals[1] && a[2]===pnp_sat_vals[2]);
+      var row = tbl.insertRow();
+      if(isCurrent) row.style.background = 'rgba(59,130,246,0.2)';
+      for(var v=0;v<3;v++){
+        var td = row.insertCell(); td.textContent = a[v]?'T':'F'; td.style.border='1px solid #475569'; td.style.padding='6px 10px'; td.style.background=isCurrent?'rgba(59,130,246,0.15)':'#1e293b'; td.style.color='#e2e8f0'; td.style.textAlign='center';
+      }
+      for(var c=0;c<4;c++){
+        var td2 = row.insertCell(); td2.textContent = cr[c]?'T':'F'; td2.style.border='1px solid #475569'; td2.style.padding='6px 10px'; td2.style.textAlign='center'; td2.style.background=isCurrent?'rgba(59,130,246,0.15)':'#1e293b';
+        td2.style.color = cr[c] ? '#34d399' : '#f87171';
+      }
+      var td3 = row.insertCell(); td3.textContent = phi?'T':'F'; td3.style.border='1px solid #475569'; td3.style.padding='6px 10px'; td3.style.textAlign='center'; td3.style.background=isCurrent?'rgba(59,130,246,0.15)':'#1e293b';
+      td3.style.color = phi ? '#34d399' : '#f87171';
+      td3.style.fontWeight = '600';
+    }
+  }
+
+  window.pnp_sat_toggle = function(idx){
+    pnp_sat_stopTryAll();
+    pnp_sat_vals[idx] = !pnp_sat_vals[idx];
+    pnp_sat_update();
+  };
+
+  function pnp_sat_stopTryAll(){
+    if(pnp_sat_timer){ clearInterval(pnp_sat_timer); pnp_sat_timer=null; }
+  }
+
+  window.pnp_sat_tryall = function(){
+    pnp_sat_stopTryAll();
+    pnp_sat_tryIdx = 0;
+    pnp_sat_timer = setInterval(function(){
+      if(pnp_sat_tryIdx >= 8){ pnp_sat_stopTryAll(); return; }
+      var a = allAssign[pnp_sat_tryIdx];
+      pnp_sat_vals = [a[0], a[1], a[2]];
+      pnp_sat_update();
+      pnp_sat_tryIdx++;
+    }, 800);
+  };
+
+  window.pnp_sat_reset = function(){
+    pnp_sat_stopTryAll();
+    pnp_sat_vals = [false, false, false];
+    pnp_sat_update();
+  };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s15');
+    if(!slide) return;
+    if(slide.classList.contains('active')) pnp_sat_update();
+    else pnp_sat_stopTryAll();
+  });
+  var s15 = document.getElementById('s15');
+  if(s15) obs.observe(s15, { attributes:true, attributeFilter:['class'] });
+})();
+</script>
 
 <!-- ==================== SLIDE 16: Proving NP-Completeness ==================== -->
 <div class="slide" id="s16">
   <h1>Proving NP-Completeness</h1>
-  <p class="subtitle">The reduction chain -- a domino effect of hardness</p>
+  <p class="subtitle">Click edges for reduction details, nodes for connections, or watch the chain cascade</p>
 
   <div class="key-idea">
     <h3>The Recipe for Proving Problem X is NP-Complete</h3>
     <p>1. Show X is <strong>in NP</strong> (give a polynomial-time verifier).<br>
     2. Pick a <strong>known NP-complete problem Y</strong> and show <strong>Y &le;_P X</strong> (reduce Y to X in polynomial time).</p>
-    <p>Since Y is NP-hard and Y &le;_P X, then X is NP-hard too. Combined with being in NP: X is NP-complete!</p>
   </div>
 
-  <div class="diagram">
-  The Web of Reductions (each arrow = polynomial-time reduction)
-
-                         +-------+
-                         |  SAT  |   (Cook-Levin: the root of it all)
-                         +---+---+
-                             |
-                         +---v---+
-                         | 3-SAT |
-                         +---+---+
-                  ___________|___________
-                 |           |           |
-            +----v---+  +---v----+  +---v--------+
-            | CLIQUE |  | INDEP. |  | VERTEX     |
-            |        |  |  SET   |  | COVER      |
-            +----+---+  +---+----+  +------+-----+
-                 |           |             |
-            +----v---+  +---v--------+ +--v-----------+
-            | SUBGR. |  | HAMILTO-   | | SET COVER    |
-            | ISOM.  |  | NIAN CYCLE | |              |
-            +--------+  +---+--------+ +--------------+
-                             |
-                        +----v-------+
-                        |    TSP     |
-                        | (decision) |
-                        +------------+
-
-  Also from 3-SAT:
-  3-SAT ----> SUBSET SUM ----> KNAPSACK
-  3-SAT ----> 3-COLORING ----> k-COLORING
+  <div class="pnp-controls" style="justify-content:center;">
+    <button onclick="window.pnp_red_chain()">Show Chain (cascade from SAT)</button>
+    <button onclick="window.pnp_red_reset()">Reset</button>
   </div>
+
+  <div style="display:flex;justify-content:center;">
+    <svg id="pnp_red_svg" viewBox="0 0 760 340" style="width:100%;max-width:780px;height:auto;"></svg>
+  </div>
+  <div id="pnp_red_info" class="pnp-panel" style="min-height:36px;text-align:center;font-size:0.93em;color:#cbd5e1;">Click any edge (arrow) or node to explore the reduction web.</div>
 
   <div class="analogy mt">
     <h3>Analogy: A Chain of Dominoes</h3>
     <p>Cook knocked over the first domino (SAT). Karp knocked over 21 more in 1972. Now thousands of NP-complete problems are known. Each new one just needs ONE reduction from an existing NP-complete problem.</p>
   </div>
-  <span class="slide-number">16 / 22</span>
+  <span class="slide-number">16 / 23</span>
 </div>
+<script>
+(function(){
+  var pnp_red_timer = null;
+  var pnp_red_highlighted = {};
+
+  var nodes = [
+    { id:'SAT', x:380, y:25 },
+    { id:'3-SAT', x:380, y:75 },
+    { id:'Clique', x:200, y:140 },
+    { id:'Indep. Set', x:380, y:140 },
+    { id:'Vertex Cover', x:560, y:140 },
+    { id:'Subgraph Iso.', x:120, y:210 },
+    { id:'Ham. Cycle', x:340, y:210 },
+    { id:'Set Cover', x:560, y:210 },
+    { id:'TSP', x:340, y:280 },
+    { id:'Subset Sum', x:120, y:280 },
+    { id:'Knapsack', x:120, y:330 },
+    { id:'3-Coloring', x:600, y:280 },
+    { id:'k-Coloring', x:600, y:330 }
+  ];
+
+  var edges = [
+    { from:'SAT', to:'3-SAT', desc:'SAT \u2192 3-SAT: Each clause with >3 literals is split using fresh variables. Preserves satisfiability.' },
+    { from:'3-SAT', to:'Clique', desc:'3-SAT \u2192 Clique: Create a vertex for each literal in each clause. Connect vertices that can be simultaneously true (not in same clause, not contradictory). A k-clique = satisfying assignment for k clauses.' },
+    { from:'3-SAT', to:'Indep. Set', desc:'3-SAT \u2192 Independent Set: Similar to Clique reduction on the complement graph. Independent set of size k corresponds to picking one true literal per clause.' },
+    { from:'3-SAT', to:'Vertex Cover', desc:'3-SAT \u2192 Vertex Cover: Via complement of Independent Set. Vertex Cover of size n\u2212k iff Independent Set of size k.' },
+    { from:'Clique', to:'Subgraph Iso.', desc:'Clique \u2192 Subgraph Isomorphism: A clique of size k is a subgraph isomorphic to K_k. Finding any subgraph pattern is at least as hard.' },
+    { from:'Indep. Set', to:'Ham. Cycle', desc:'Independent Set \u2192 Hamiltonian Cycle: Via gadget construction replacing vertices/edges with path-forcing widgets.' },
+    { from:'Vertex Cover', to:'Set Cover', desc:'Vertex Cover \u2192 Set Cover: Each vertex becomes a set containing its incident edges. Minimum set cover = minimum vertex cover.' },
+    { from:'Ham. Cycle', to:'TSP', desc:'Hamiltonian Cycle \u2192 TSP: Set edge weight 1 if edge exists, 2 otherwise. TSP tour of weight \u2264 n iff Hamiltonian cycle exists.' },
+    { from:'3-SAT', to:'Subset Sum', desc:'3-SAT \u2192 Subset Sum: Encode variables and clauses as numbers in a table. A subset summing to target T iff formula is satisfiable.' },
+    { from:'Subset Sum', to:'Knapsack', desc:'Subset Sum \u2192 Knapsack: Subset Sum is a special case of Knapsack where value = weight for each item.' },
+    { from:'3-SAT', to:'3-Coloring', desc:'3-SAT \u2192 3-Coloring: Build a gadget graph with a "palette" triangle and variable/clause gadgets. 3-colorable iff satisfiable.' },
+    { from:'3-Coloring', to:'k-Coloring', desc:'3-Coloring \u2192 k-Coloring: Add k\u22123 extra vertices connected to all others, forcing them to use unique colors. Remaining graph must be 3-colorable.' }
+  ];
+
+  function nodeById(id){ for(var i=0;i<nodes.length;i++) if(nodes[i].id===id) return nodes[i]; return null; }
+
+  function pnp_red_draw(){
+    var svg = document.getElementById('pnp_red_svg');
+    if(!svg) return;
+    var h = '';
+    // Arrowhead marker
+    h += '<defs><marker id="pnp_red_arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,3.5 L0,7 Z" fill="#64748b"/></marker>';
+    h += '<marker id="pnp_red_arrow_hl" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,3.5 L0,7 Z" fill="#60a5fa"/></marker></defs>';
+
+    // Draw edges
+    for(var i=0;i<edges.length;i++){
+      var e = edges[i];
+      var from = nodeById(e.from), to = nodeById(e.to);
+      if(!from || !to) continue;
+      var hl = pnp_red_highlighted['e'+i];
+      var col = hl ? '#60a5fa' : '#475569';
+      var sw = hl ? 2.5 : 1.5;
+      var marker = hl ? 'url(#pnp_red_arrow_hl)' : 'url(#pnp_red_arrow)';
+      // Offset endpoints to not overlap node rect
+      var dx = to.x - from.x, dy = to.y - from.y;
+      var dist = Math.sqrt(dx*dx+dy*dy) || 1;
+      var fx = from.x + dx/dist*18, fy = from.y + 12 + dy/dist*6;
+      var tx = to.x - dx/dist*18, ty = to.y - 12 - (dy<0?6:0) + (dy>0?6:0);
+      h += '<line x1="'+fx+'" y1="'+(from.y+15)+'" x2="'+tx+'" y2="'+(to.y-8)+'" stroke="'+col+'" stroke-width="'+sw+'" marker-end="'+marker+'" style="cursor:pointer;" data-edge="'+i+'"/>';
+    }
+
+    // Draw nodes
+    for(var j=0;j<nodes.length;j++){
+      var n = nodes[j];
+      var nhl = pnp_red_highlighted['n'+n.id];
+      var nw = n.id.length * 8 + 20;
+      var fill = nhl ? 'rgba(59,130,246,0.25)' : 'rgba(30,41,59,0.95)';
+      var stroke = nhl ? '#60a5fa' : '#64748b';
+      var textCol = nhl ? '#93c5fd' : '#e2e8f0';
+      h += '<rect x="'+(n.x-nw/2)+'" y="'+(n.y-10)+'" width="'+nw+'" height="24" rx="6" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.5" style="cursor:pointer;" data-node="'+n.id+'"/>';
+      h += '<text x="'+n.x+'" y="'+(n.y+6)+'" text-anchor="middle" font-size="11" font-weight="600" fill="'+textCol+'" style="cursor:pointer;" data-node="'+n.id+'">'+n.id+'</text>';
+    }
+
+    svg.innerHTML = h;
+
+    // Attach event listeners
+    svg.querySelectorAll('[data-edge]').forEach(function(el){
+      el.addEventListener('click', function(){ pnp_red_clickEdge(+this.getAttribute('data-edge')); });
+    });
+    svg.querySelectorAll('[data-node]').forEach(function(el){
+      el.addEventListener('click', function(){ pnp_red_clickNode(this.getAttribute('data-node')); });
+    });
+  }
+
+  function pnp_red_clickEdge(idx){
+    pnp_red_highlighted = {};
+    pnp_red_highlighted['e'+idx] = true;
+    var e = edges[idx];
+    pnp_red_highlighted['n'+e.from] = true;
+    pnp_red_highlighted['n'+e.to] = true;
+    pnp_red_draw();
+    var info = document.getElementById('pnp_red_info');
+    if(info) info.innerHTML = edges[idx].desc;
+  }
+
+  function pnp_red_clickNode(id){
+    pnp_red_highlighted = {};
+    pnp_red_highlighted['n'+id] = true;
+    var descs = [];
+    for(var i=0;i<edges.length;i++){
+      if(edges[i].from===id || edges[i].to===id){
+        pnp_red_highlighted['e'+i] = true;
+        pnp_red_highlighted['n'+edges[i].from] = true;
+        pnp_red_highlighted['n'+edges[i].to] = true;
+        descs.push(edges[i].from + ' \u2192 ' + edges[i].to);
+      }
+    }
+    pnp_red_draw();
+    var info = document.getElementById('pnp_red_info');
+    if(info) info.innerHTML = '<strong style="color:#93c5fd;">'+id+'</strong> &mdash; connected reductions: ' + descs.join(', ');
+  }
+
+  window.pnp_red_chain = function(){
+    pnp_red_stopChain();
+    pnp_red_highlighted = {};
+    pnp_red_draw();
+    // BFS order from SAT
+    var order = [
+      {type:'n',val:'SAT'},
+      {type:'e',val:0},{type:'n',val:'3-SAT'},
+      {type:'e',val:1},{type:'n',val:'Clique'},
+      {type:'e',val:2},{type:'n',val:'Indep. Set'},
+      {type:'e',val:3},{type:'n',val:'Vertex Cover'},
+      {type:'e',val:4},{type:'n',val:'Subgraph Iso.'},
+      {type:'e',val:5},{type:'n',val:'Ham. Cycle'},
+      {type:'e',val:6},{type:'n',val:'Set Cover'},
+      {type:'e',val:7},{type:'n',val:'TSP'},
+      {type:'e',val:8},{type:'n',val:'Subset Sum'},
+      {type:'e',val:9},{type:'n',val:'Knapsack'},
+      {type:'e',val:10},{type:'n',val:'3-Coloring'},
+      {type:'e',val:11},{type:'n',val:'k-Coloring'}
+    ];
+    var step = 0;
+    pnp_red_timer = setInterval(function(){
+      if(step>=order.length){ pnp_red_stopChain(); return; }
+      var item = order[step];
+      if(item.type==='n') pnp_red_highlighted['n'+item.val] = true;
+      else pnp_red_highlighted['e'+item.val] = true;
+      pnp_red_draw();
+      step++;
+    }, 300);
+  };
+
+  function pnp_red_stopChain(){
+    if(pnp_red_timer){ clearInterval(pnp_red_timer); pnp_red_timer=null; }
+  }
+
+  window.pnp_red_reset = function(){
+    pnp_red_stopChain();
+    pnp_red_highlighted = {};
+    pnp_red_draw();
+    var info = document.getElementById('pnp_red_info');
+    if(info) info.innerHTML = 'Click any edge (arrow) or node to explore the reduction web.';
+  };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s16');
+    if(!slide) return;
+    if(slide.classList.contains('active')) pnp_red_draw();
+    else pnp_red_stopChain();
+  });
+  var s16 = document.getElementById('s16');
+  if(s16) obs.observe(s16, { attributes:true, attributeFilter:['class'] });
+})();
+</script>
 
 <!-- ==================== SLIDE 17: Classic NP-Complete Problems ==================== -->
 <div class="slide" id="s17">
@@ -951,7 +2419,7 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <h3>They're All Connected</h3>
     <p>If you solve ANY ONE of these in polynomial time, you've solved ALL of them (and won $1M). They all reduce to each other. They stand or fall together.</p>
   </div>
-  <span class="slide-number">17 / 22</span>
+  <span class="slide-number">17 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 18: Dealing with NP-Completeness ==================== -->
@@ -1005,7 +2473,7 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">18 / 22</span>
+  <span class="slide-number">18 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 19: Beyond NP ==================== -->
@@ -1087,7 +2555,7 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">19 / 22</span>
+  <span class="slide-number">19 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 20: What if P = NP ==================== -->
@@ -1148,7 +2616,7 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
     <h3>The Catch</h3>
     <p>Even if P = NP, the polynomial might be impractically large (e.g., O(n^1000000)). A "yes" answer doesn't guarantee practical algorithms -- but historically, polynomial algorithms are eventually improved.</p>
   </div>
-  <span class="slide-number">20 / 22</span>
+  <span class="slide-number">20 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 21: What if P != NP ==================== -->
@@ -1209,7 +2677,7 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">21 / 22</span>
+  <span class="slide-number">21 / 23</span>
 </div>
 
 <!-- ==================== SLIDE 22: Summary & Cheat Sheet ==================== -->
@@ -1301,8 +2769,147 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
       </div>
     </div>
   </div>
-  <span class="slide-number">22 / 22</span>
+  <span class="slide-number">22 / 23</span>
 </div>
+
+<!-- ==================== SLIDE 23: Challenge Quiz ==================== -->
+<div class="slide" id="s23">
+  <h1>Challenge Quiz</h1>
+  <p class="subtitle">Test your understanding of P vs NP concepts</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <!-- Q1 -->
+    <div id="pnp_q1_card1" class="pnp-panel" style="border-left:3px solid #3b82f6;">
+      <h3 style="color:#93c5fd;font-size:1em;margin-bottom:10px;">Q1: Which is NOT in NP?</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="pnp_q1_opts1">
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_1" value="0" onchange="window.pnp_q1_pick(1,0)" style="margin-right:8px;">SAT</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_1" value="1" onchange="window.pnp_q1_pick(1,1)" style="margin-right:8px;">Sorting</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_1" value="2" onchange="window.pnp_q1_pick(1,2)" style="margin-right:8px;">The Halting Problem</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_1" value="3" onchange="window.pnp_q1_pick(1,3)" style="margin-right:8px;">Graph Coloring</label>
+      </div>
+      <div id="pnp_q1_fb1" style="margin-top:8px;font-size:0.9em;min-height:20px;"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div id="pnp_q1_card2" class="pnp-panel" style="border-left:3px solid #8b5cf6;">
+      <h3 style="color:#a5b4fc;font-size:1em;margin-bottom:10px;">Q2: If 3-Coloring is solved in O(n<sup>5</sup>), what follows?</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="pnp_q1_opts2">
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_2" value="0" onchange="window.pnp_q1_pick(2,0)" style="margin-right:8px;">Only 3-Coloring becomes easy</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_2" value="1" onchange="window.pnp_q1_pick(2,1)" style="margin-right:8px;">P = NP</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_2" value="2" onchange="window.pnp_q1_pick(2,2)" style="margin-right:8px;">P &ne; NP</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_2" value="3" onchange="window.pnp_q1_pick(2,3)" style="margin-right:8px;">Nothing &mdash; 3-Coloring isn't NP-complete</label>
+      </div>
+      <div id="pnp_q1_fb2" style="margin-top:8px;font-size:0.9em;min-height:20px;"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div id="pnp_q1_card3" class="pnp-panel" style="border-left:3px solid #f59e0b;">
+      <h3 style="color:#fbbf24;font-size:1em;margin-bottom:10px;">Q3: A &le;<sub>P</sub> B means:</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="pnp_q1_opts3">
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_3" value="0" onchange="window.pnp_q1_pick(3,0)" style="margin-right:8px;">A is harder than B</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_3" value="1" onchange="window.pnp_q1_pick(3,1)" style="margin-right:8px;">B is at least as hard as A</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_3" value="2" onchange="window.pnp_q1_pick(3,2)" style="margin-right:8px;">A and B are equally hard</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_3" value="3" onchange="window.pnp_q1_pick(3,3)" style="margin-right:8px;">A is NP-complete</label>
+      </div>
+      <div id="pnp_q1_fb3" style="margin-top:8px;font-size:0.9em;min-height:20px;"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div id="pnp_q1_card4" class="pnp-panel" style="border-left:3px solid #10b981;">
+      <h3 style="color:#34d399;font-size:1em;margin-bottom:10px;">Q4: Which statement is TRUE?</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;" id="pnp_q1_opts4">
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_4" value="0" onchange="window.pnp_q1_pick(4,0)" style="margin-right:8px;">NP stands for "Non-Polynomial"</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_4" value="1" onchange="window.pnp_q1_pick(4,1)" style="margin-right:8px;">Every NP-hard problem is in NP</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_4" value="2" onchange="window.pnp_q1_pick(4,2)" style="margin-right:8px;">P &sube; NP</label>
+        <label style="cursor:pointer;color:#cbd5e1;font-size:0.95em;"><input type="radio" name="pnp_q1_4" value="3" onchange="window.pnp_q1_pick(4,3)" style="margin-right:8px;">If P &ne; NP then SAT is in P</label>
+      </div>
+      <div id="pnp_q1_fb4" style="margin-top:8px;font-size:0.9em;min-height:20px;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:12px;">
+    <button class="pnp-btn" onclick="window.pnp_q1_checkAll()" style="font-size:1em;padding:8px 28px;">Check All</button>
+    <button class="pnp-btn" onclick="window.pnp_q1_reset()" style="font-size:1em;padding:8px 28px;margin-left:8px;">Reset</button>
+    <div id="pnp_q1_score" style="margin-top:10px;font-size:1.2em;font-weight:700;min-height:28px;"></div>
+  </div>
+  <span class="slide-number">23 / 23</span>
+</div>
+<script>
+(function(){
+  var pnp_q1_answers = { 1:2, 2:1, 3:1, 4:2 };
+  var pnp_q1_explanations = {
+    1: 'The Halting Problem is undecidable, so it\'s not even in NP. NP problems must be decidable.',
+    2: '3-Coloring is NP-complete, so a polynomial algorithm for it means ALL NP problems have polynomial algorithms, hence P = NP.',
+    3: 'A reduces to B in polynomial time, meaning B is at least as hard as A. If you can solve B, you can solve A.',
+    4: 'P \u2286 NP because any problem solvable in polynomial time is also verifiable in polynomial time (just solve it and compare).'
+  };
+  var pnp_q1_picked = {};
+
+  window.pnp_q1_pick = function(q, val){
+    pnp_q1_picked[q] = val;
+  };
+
+  function pnp_q1_check(q){
+    var picked = pnp_q1_picked[q];
+    if(picked === undefined) return null;
+    var correct = picked === pnp_q1_answers[q];
+    var fb = document.getElementById('pnp_q1_fb'+q);
+    var card = document.getElementById('pnp_q1_card'+q);
+    if(fb){
+      if(correct){
+        fb.innerHTML = '<span style="color:#10b981;">\u2713 Correct!</span> ' + pnp_q1_explanations[q];
+      } else {
+        fb.innerHTML = '<span style="color:#ef4444;">\u2717 Incorrect.</span> ' + pnp_q1_explanations[q];
+      }
+    }
+    if(card){
+      card.style.background = correct ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)';
+    }
+    return correct;
+  }
+
+  window.pnp_q1_checkAll = function(){
+    var score = 0;
+    var total = 4;
+    for(var q=1;q<=4;q++){
+      var result = pnp_q1_check(q);
+      if(result === true) score++;
+      else if(result === null){
+        var fb = document.getElementById('pnp_q1_fb'+q);
+        if(fb) fb.innerHTML = '<span style="color:#f59e0b;">Please select an answer.</span>';
+      }
+    }
+    var scoreEl = document.getElementById('pnp_q1_score');
+    if(scoreEl){
+      var color = score===4 ? '#10b981' : score>=2 ? '#f59e0b' : '#ef4444';
+      scoreEl.innerHTML = '<span style="color:'+color+';">Score: '+score+' / '+total+'</span>';
+      if(score===4) scoreEl.innerHTML += ' &mdash; Perfect! You understand P vs NP!';
+    }
+  };
+
+  window.pnp_q1_reset = function(){
+    pnp_q1_picked = {};
+    for(var q=1;q<=4;q++){
+      var fb = document.getElementById('pnp_q1_fb'+q);
+      if(fb) fb.innerHTML = '';
+      var card = document.getElementById('pnp_q1_card'+q);
+      if(card) card.style.background = '#1e293b';
+      var radios = document.querySelectorAll('input[name="pnp_q1_'+q+'"]');
+      radios.forEach(function(r){ r.checked = false; });
+    }
+    var scoreEl = document.getElementById('pnp_q1_score');
+    if(scoreEl) scoreEl.innerHTML = '';
+  };
+
+  var obs = new MutationObserver(function(){
+    var slide = document.getElementById('s23');
+    if(!slide) return;
+    if(slide.classList.contains('active')) { /* quiz is static, nothing to init */ }
+  });
+  var s23 = document.getElementById('s23');
+  if(s23) obs.observe(s23, { attributes:true, attributeFilter:['class'] });
+})();
+</script>
 
 <!-- Navigation -->
 <div class="nav">
@@ -1311,7 +2918,7 @@ code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: '
 </div>
 
 <script>
-const totalSlides = 22;
+const totalSlides = 23;
 let current = 1;
 function showSlide(n) {
   document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));

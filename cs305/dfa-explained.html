@@ -66,6 +66,38 @@
   .vs-box { display: flex; gap: 30px; align-items: stretch; margin: 20px 0; }
   .vs-card { flex: 1; background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
   .vs-card h3 { text-align: center; }
+
+  /* DFA Simulator */
+  .dfa-sim-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin: 12px 0; }
+  .dfa-sim-svg { width: 100%; max-width: 500px; margin: 0 auto 16px; display: block; }
+  .dfa-sim-controls { display: flex; gap: 10px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
+  .dfa-sim-btn { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+  .dfa-sim-btn:hover { background: #475569; }
+  .dfa-sim-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .dfa-sim-input { background: #0f172a; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px; border-radius: 8px; font-family: 'SF Mono', monospace; font-size: 1.1em; width: 200px; }
+  .dfa-sim-display { font-family: 'SF Mono', monospace; font-size: 1.3em; letter-spacing: 2px; margin: 12px 0; padding: 10px; background: #0f172a; border-radius: 8px; text-align: center; min-height: 40px; }
+  .dfa-sim-status { color: #94a3b8; font-size: 1em; text-align: center; margin: 8px 0; }
+  .dfa-sim-verdict { font-size: 1.3em; font-weight: 700; text-align: center; margin: 12px 0; padding: 12px; border-radius: 10px; }
+  .dfa-sim-verdict.accept { color: #34d399; background: rgba(16,185,129,0.15); border: 2px solid #10b981; }
+  .dfa-sim-verdict.reject { color: #f87171; background: rgba(239,68,68,0.15); border: 2px solid #ef4444; }
+
+  /* Table-Filling Visualizer */
+  .dfa-tf-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin: 12px 0; }
+  .dfa-tf-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .dfa-tf-btn { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 6px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+  .dfa-tf-btn:hover { background: #475569; }
+  .dfa-tf-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .dfa-tf-step-label { color: #94a3b8; font-size: 0.9em; margin-left: auto; }
+  .dfa-tf-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+  .dfa-tf-table-cell { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid #334155; border-radius: 4px; font-size: 1.1em; font-weight: 700; background: #0f172a; transition: all 0.3s; }
+  .dfa-tf-table-cell.marked { background: rgba(239,68,68,0.2); color: #f87171; }
+  .dfa-tf-table-cell.checking { border-color: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.4); }
+  .dfa-tf-table-cell.equivalent { background: rgba(16,185,129,0.2); color: #34d399; }
+  .dfa-tf-log { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto; font-family: 'SF Mono', monospace; font-size: 0.8em; line-height: 1.8; margin-top: 12px; }
+  .dfa-tf-log-item { color: #64748b; padding: 2px 0; }
+  .dfa-tf-log-item.done { color: #34d399; }
+  .dfa-tf-log-item.current { color: #f59e0b; font-weight: 600; }
+  .dfa-tf-result { margin-top: 16px; padding: 16px; background: rgba(59,130,246,0.1); border: 1px solid #3b82f6; border-radius: 10px; text-align: center; font-size: 1.1em; color: #93c5fd; }
 </style>
 </head>
 <body>
@@ -365,54 +397,54 @@
   <div class="slide-number">7 / 20</div>
 </div>
 
-<!-- ==================== SLIDE 8: PROCESSING STRINGS ==================== -->
+<!-- ==================== SLIDE 8: DFA SIMULATOR ==================== -->
 <div class="slide" id="s8">
-  <h1>Processing Strings</h1>
-  <p class="subtitle">Tracing input through a DFA -- the mechanical procedure</p>
-  <div class="two-col">
-    <div>
-      <h3>The DFA (even number of 0s)</h3>
-      <div class="diagram small">
-       +---1---+            +---1---+
-       |       |            |       |
-       v       |            v       |
-  --&gt;(( E ))--+           ( O )---+
-        |          0          ^
-        +--------------------&gt;|
-        |&lt;--------------------+
-                   0
-      </div>
-      <h3>Trace: input = "10010"</h3>
-      <div class="step"><b>Start:</b> state = <b>E</b></div>
-      <div class="step">Read <b>'1'</b>: &delta;(E, 1) = <b>E</b></div>
-      <div class="step">Read <b>'0'</b>: &delta;(E, 0) = <b>O</b></div>
-      <div class="step">Read <b>'0'</b>: &delta;(O, 0) = <b>E</b></div>
-      <div class="step">Read <b>'1'</b>: &delta;(E, 1) = <b>E</b></div>
-      <div class="step">Read <b>'0'</b>: &delta;(E, 0) = <b>O</b></div>
-      <div class="step"><b>End:</b> state = O (not accept) &rarr; <b>REJECT</b></div>
+  <h1>DFA Simulator: Even Number of 0s</h1>
+  <p class="subtitle">Type a binary string and watch the DFA process it step by step.</p>
+  <div class="dfa-sim-container">
+    <svg id="dfa_simSvg" class="dfa-sim-svg" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="dfa_arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#93c5fd"/></marker>
+        <filter id="dfa_glowBlue"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="dfa_glowGreen"><feGaussianBlur stdDeviation="4" result="blur"/><feFlood flood-color="#10b981" flood-opacity="0.6" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="dfa_glowRed"><feGaussianBlur stdDeviation="4" result="blur"/><feFlood flood-color="#ef4444" flood-opacity="0.6" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Start arrow -->
+      <line x1="20" y1="80" x2="58" y2="80" stroke="#93c5fd" stroke-width="2" marker-end="url(#dfa_arrowhead)"/>
+      <!-- State E (double circle) -->
+      <circle id="dfa_stateE_outer" cx="100" cy="80" r="30" fill="#1e293b" stroke="#93c5fd" stroke-width="2"/>
+      <circle id="dfa_stateE_inner" cx="100" cy="80" r="25" fill="none" stroke="#93c5fd" stroke-width="1.5"/>
+      <text x="100" y="86" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="bold" font-family="system-ui">E</text>
+      <!-- State O (single circle) -->
+      <circle id="dfa_stateO" cx="300" cy="80" r="30" fill="#1e293b" stroke="#93c5fd" stroke-width="2"/>
+      <text x="300" y="86" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="bold" font-family="system-ui">O</text>
+      <!-- E -> O arrow (curved above) -->
+      <path d="M 130 68 Q 200 20 270 68" fill="none" stroke="#93c5fd" stroke-width="2" marker-end="url(#dfa_arrowhead)"/>
+      <text x="200" y="32" text-anchor="middle" fill="#a5f3fc" font-size="15" font-weight="bold" font-family="system-ui">0</text>
+      <!-- O -> E arrow (curved below) -->
+      <path d="M 270 92 Q 200 140 130 92" fill="none" stroke="#93c5fd" stroke-width="2" marker-end="url(#dfa_arrowhead)"/>
+      <text x="200" y="138" text-anchor="middle" fill="#a5f3fc" font-size="15" font-weight="bold" font-family="system-ui">0</text>
+      <!-- E self-loop (above) -->
+      <path d="M 85 52 C 75 10, 125 10, 115 52" fill="none" stroke="#93c5fd" stroke-width="2" marker-end="url(#dfa_arrowhead)"/>
+      <text x="100" y="12" text-anchor="middle" fill="#a5f3fc" font-size="15" font-weight="bold" font-family="system-ui">1</text>
+      <!-- O self-loop (above) -->
+      <path d="M 285 52 C 275 10, 325 10, 315 52" fill="none" stroke="#93c5fd" stroke-width="2" marker-end="url(#dfa_arrowhead)"/>
+      <text x="300" y="12" text-anchor="middle" fill="#a5f3fc" font-size="15" font-weight="bold" font-family="system-ui">1</text>
+    </svg>
+    <div class="dfa-sim-controls">
+      <input type="text" id="dfa_simInput" class="dfa-sim-input" placeholder="e.g. 10010" maxlength="30">
+      <button class="dfa-sim-btn" onclick="dfa_simStep()">Step</button>
+      <button class="dfa-sim-btn" onclick="dfa_simRun()">Run</button>
+      <button class="dfa-sim-btn" onclick="dfa_simReset()">Reset</button>
+      <span id="dfa_simWarn" style="color:#f87171; font-size:0.9em; display:none;">Only 0s and 1s allowed!</span>
     </div>
-    <div>
-      <h3>Trace: input = "1001"</h3>
-      <div class="step"><b>Start:</b> state = <b>E</b></div>
-      <div class="step">Read <b>'1'</b>: &delta;(E, 1) = <b>E</b></div>
-      <div class="step">Read <b>'0'</b>: &delta;(E, 0) = <b>O</b></div>
-      <div class="step">Read <b>'0'</b>: &delta;(O, 0) = <b>E</b></div>
-      <div class="step">Read <b>'1'</b>: &delta;(E, 1) = <b>E</b></div>
-      <div class="step"><b>End:</b> state = E (accept!) &rarr; <b>ACCEPT</b></div>
-      <div class="diagram small">
-  Summary of both traces:
-
-  "10010":  E -1-&gt; E -0-&gt; O -0-&gt; E -1-&gt; E -0-&gt; O   REJECT
-  "1001" :  E -1-&gt; E -0-&gt; O -0-&gt; E -1-&gt; E         ACCEPT
-  "0000" :  E -0-&gt; O -0-&gt; E -0-&gt; O -0-&gt; E         ACCEPT
-  ""     :  E                                       ACCEPT
-  "0"    :  E -0-&gt; O                                REJECT
-      </div>
-      <div class="key-idea">
-        <h3>The procedure is purely mechanical</h3>
-        <p>Start at q<sub>0</sub>. For each symbol in the input (left to right), look up the next state. At the end, check membership in F. That is all a DFA does.</p>
-      </div>
-    </div>
+    <div id="dfa_simDisplay" class="dfa-sim-display"></div>
+    <div id="dfa_simStatus" class="dfa-sim-status">Enter a binary string and press Step or Run.</div>
+    <div id="dfa_simVerdict" class="dfa-sim-verdict" style="display:none;"></div>
+  </div>
+  <div class="key-idea">
+    <h3>The procedure is purely mechanical</h3>
+    <p>Start at q<sub>0</sub>. For each symbol in the input (left to right), look up the next state. At the end, check membership in F. That is all a DFA does.</p>
   </div>
   <div class="slide-number">8 / 20</div>
 </div>
@@ -804,75 +836,75 @@
   <div class="slide-number">16 / 20</div>
 </div>
 
-<!-- ==================== SLIDE 16: MINIMIZATION WORKED EXAMPLE ==================== -->
+<!-- ==================== SLIDE 16: TABLE-FILLING VISUALIZER ==================== -->
 <div class="slide" id="s17">
-  <h1>Example: Minimizing a DFA</h1>
-  <p class="subtitle">Complete worked example with the table-filling algorithm</p>
-  <div class="two-col">
-    <div>
-      <h3>Original DFA</h3>
-      <table style="font-size: 0.9em;">
-        <tr><th></th><th>0</th><th>1</th></tr>
-        <tr><td><b>&rarr; A</b></td><td>B</td><td>C</td></tr>
-        <tr><td>B</td><td>D</td><td>E</td></tr>
-        <tr class="highlight"><td><b>*C</b></td><td>F</td><td>C</td></tr>
-        <tr><td>D</td><td>D</td><td>E</td></tr>
-        <tr class="highlight"><td><b>*E</b></td><td>F</td><td>C</td></tr>
-        <tr><td>F</td><td>D</td><td>E</td></tr>
-      </table>
-      <p style="font-size:0.9em;">Accept states: {C, E}</p>
-      <h3 style="margin-top:12px;">Step 1: Base case marks</h3>
-      <p style="font-size:0.95em;">Mark all (accept, non-accept) pairs:</p>
-      <div class="diagram small">
-       B    C    D    E    F
-  A [    | X  |    | X  |    ]
-  B      [ X  |    | X  |    ]
-  C           [ X  |    | X  ]
-  D                [ X  |    ]
-  E                     [ X  ]
-
-  X = distinguishable (one accept, one not)
+  <h1>Table-Filling Algorithm: Step-Through</h1>
+  <p class="subtitle">Watch the algorithm find equivalent state pairs.</p>
+  <div class="dfa-tf-container">
+    <div class="dfa-tf-controls">
+      <button class="dfa-tf-btn" id="dfa_tfNextBtn" onclick="dfa_tfNext()">Next Step</button>
+      <button class="dfa-tf-btn" id="dfa_tfAutoBtn" onclick="dfa_tfAuto()">Auto Play</button>
+      <button class="dfa-tf-btn" onclick="dfa_tfReset()">Reset</button>
+      <span class="dfa-tf-step-label" id="dfa_tfStepLabel">Step 0 / 17</span>
+    </div>
+    <div class="dfa-tf-grid">
+      <div>
+        <h3 style="font-size:1em; color:#a5b4fc; margin-bottom:10px;">Transition Table</h3>
+        <table style="font-size:0.85em; margin:0;">
+          <tr><th></th><th>0</th><th>1</th></tr>
+          <tr><td><b>&rarr; A</b></td><td>B</td><td>C</td></tr>
+          <tr><td>B</td><td>D</td><td>E</td></tr>
+          <tr class="highlight"><td><b>*C</b></td><td>F</td><td>C</td></tr>
+          <tr><td>D</td><td>D</td><td>E</td></tr>
+          <tr class="highlight"><td><b>*E</b></td><td>F</td><td>C</td></tr>
+          <tr><td>F</td><td>D</td><td>E</td></tr>
+        </table>
+        <p style="font-size:0.8em; color:#94a3b8; margin-top:6px;">Accept: {C, E}</p>
+      </div>
+      <div>
+        <h3 style="font-size:1em; color:#a5b4fc; margin-bottom:10px;">Distinguishability Table</h3>
+        <div style="display:grid; grid-template-columns: 30px repeat(5, 44px); gap:3px; align-items:center; justify-content:start;">
+          <div></div>
+          <div style="text-align:center; color:#93c5fd; font-size:0.85em; font-weight:600;">B</div>
+          <div style="text-align:center; color:#93c5fd; font-size:0.85em; font-weight:600;">C</div>
+          <div style="text-align:center; color:#93c5fd; font-size:0.85em; font-weight:600;">D</div>
+          <div style="text-align:center; color:#93c5fd; font-size:0.85em; font-weight:600;">E</div>
+          <div style="text-align:center; color:#93c5fd; font-size:0.85em; font-weight:600;">F</div>
+          <div style="color:#93c5fd; font-size:0.85em; font-weight:600; text-align:right;">A</div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_A_B"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_A_C"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_A_D"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_A_E"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_A_F"></div>
+          <div style="color:#93c5fd; font-size:0.85em; font-weight:600; text-align:right;">B</div>
+          <div style="width:44px;"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_B_C"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_B_D"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_B_E"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_B_F"></div>
+          <div style="color:#93c5fd; font-size:0.85em; font-weight:600; text-align:right;">C</div>
+          <div style="width:44px;"></div>
+          <div style="width:44px;"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_C_D"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_C_E"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_C_F"></div>
+          <div style="color:#93c5fd; font-size:0.85em; font-weight:600; text-align:right;">D</div>
+          <div style="width:44px;"></div>
+          <div style="width:44px;"></div>
+          <div style="width:44px;"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_D_E"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_D_F"></div>
+          <div style="color:#93c5fd; font-size:0.85em; font-weight:600; text-align:right;">E</div>
+          <div style="width:44px;"></div>
+          <div style="width:44px;"></div>
+          <div style="width:44px;"></div>
+          <div style="width:44px;"></div>
+          <div class="dfa-tf-table-cell" id="dfa_tf_E_F"></div>
+        </div>
       </div>
     </div>
-    <div>
-      <h3>Step 2: Propagate</h3>
-      <div class="diagram small">
-  Check (A,B):
-    delta(A,0)=B, delta(B,0)=D -> (B,D) unmarked
-    delta(A,1)=C, delta(B,1)=E -> (C,E) unmarked
-    No mark found. Leave unmarked.
-
-  Check (A,D):
-    delta(A,0)=B, delta(D,0)=D -> (B,D) unmarked
-    delta(A,1)=C, delta(D,1)=E -> (C,E) unmarked
-    Leave unmarked.
-
-  Check (A,F):
-    delta(A,0)=B, delta(F,0)=D -> (B,D) unmarked
-    delta(A,1)=C, delta(F,1)=E -> (C,E) unmarked
-    Leave unmarked.
-
-  Check (B,D):
-    delta(B,0)=D, delta(D,0)=D -> same! skip
-    delta(B,1)=E, delta(D,1)=E -> same! skip
-    Leave unmarked.
-
-  Check (B,F):
-    delta(B,0)=D, delta(F,0)=D -> same!
-    delta(B,1)=E, delta(F,1)=E -> same!
-    Leave unmarked.
-
-  Check (D,F): same analysis -> unmarked.
-  Check (C,E):
-    delta(C,0)=F, delta(E,0)=F -> same!
-    delta(C,1)=C, delta(E,1)=C -> same!
-    Leave unmarked.
-
-  No new marks! DONE.
-      </div>
-      <h3>Result: Equivalent classes</h3>
-      <p><b>{A, B, D, F}</b> and <b>{C, E}</b>. The 6-state DFA minimizes to <b>2 states</b>!</p>
-    </div>
+    <div class="dfa-tf-log" id="dfa_tfLog"></div>
+    <div class="dfa-tf-result" id="dfa_tfResult" style="display:none;"></div>
   </div>
   <div class="slide-number">17 / 20</div>
 </div>
@@ -1087,6 +1119,335 @@ document.addEventListener('keydown', (e) => {
     if (steps.length > 0) steps[0].classList.add('revealed');
   }
 });
+
+// ============ DFA SIMULATOR (Slide 8) ============
+var dfa_simState = 'E';
+var dfa_simPos = -1;
+var dfa_simStr = '';
+var dfa_simRunning = false;
+var dfa_simTimerId = null;
+var dfa_simDone = false;
+
+var dfa_simDelta = {
+  'E': { '0': 'O', '1': 'E' },
+  'O': { '0': 'E', '1': 'O' }
+};
+var dfa_simAccept = ['E'];
+
+function dfa_simHighlightState(state, mode) {
+  // mode: 'default', 'active', 'accepted', 'rejected'
+  var eOuter = document.getElementById('dfa_stateE_outer');
+  var eInner = document.getElementById('dfa_stateE_inner');
+  var oCircle = document.getElementById('dfa_stateO');
+
+  // Reset both to default
+  eOuter.setAttribute('fill', '#1e293b');
+  eOuter.setAttribute('stroke', '#93c5fd');
+  eOuter.removeAttribute('filter');
+  eInner.setAttribute('stroke', '#93c5fd');
+  oCircle.setAttribute('fill', '#1e293b');
+  oCircle.setAttribute('stroke', '#93c5fd');
+  oCircle.removeAttribute('filter');
+
+  if (mode === 'default') return;
+
+  var target = (state === 'E') ? eOuter : oCircle;
+  var fills = {
+    'active': 'rgba(59,130,246,0.3)',
+    'accepted': 'rgba(16,185,129,0.3)',
+    'rejected': 'rgba(239,68,68,0.2)'
+  };
+  var strokes = {
+    'active': '#3b82f6',
+    'accepted': '#10b981',
+    'rejected': '#ef4444'
+  };
+  var filters = {
+    'active': 'url(#dfa_glowBlue)',
+    'accepted': 'url(#dfa_glowGreen)',
+    'rejected': 'url(#dfa_glowRed)'
+  };
+
+  target.setAttribute('fill', fills[mode]);
+  target.setAttribute('stroke', strokes[mode]);
+  target.setAttribute('filter', filters[mode]);
+  if (state === 'E') {
+    eInner.setAttribute('stroke', strokes[mode]);
+  }
+}
+
+function dfa_simUpdateDisplay() {
+  var el = document.getElementById('dfa_simDisplay');
+  if (dfa_simStr === '') { el.innerHTML = ''; return; }
+  var html = '';
+  for (var i = 0; i < dfa_simStr.length; i++) {
+    if (i < dfa_simPos) {
+      html += '<span style="color:#64748b">' + dfa_simStr[i] + '</span>';
+    } else if (i === dfa_simPos) {
+      html += '<span style="color:#fbbf24;text-decoration:underline">' + dfa_simStr[i] + '</span>';
+    } else {
+      html += '<span style="color:#e2e8f0">' + dfa_simStr[i] + '</span>';
+    }
+  }
+  el.innerHTML = html;
+}
+
+function dfa_simStep() {
+  if (dfa_simDone) return;
+  var input = document.getElementById('dfa_simInput');
+  var warn = document.getElementById('dfa_simWarn');
+  var status = document.getElementById('dfa_simStatus');
+
+  // First step: initialize from input
+  if (dfa_simPos === -1) {
+    var val = input.value.trim();
+    if (val === '') {
+      // Empty string: immediate accept
+      dfa_simStr = '';
+      dfa_simPos = 0;
+      dfa_simState = 'E';
+      dfa_simHighlightState('E', 'active');
+      dfa_simFinish();
+      return;
+    }
+    if (!/^[01]+$/.test(val)) {
+      warn.style.display = 'inline';
+      return;
+    }
+    warn.style.display = 'none';
+    dfa_simStr = val;
+    dfa_simPos = 0;
+    input.disabled = true;
+    dfa_simState = 'E';
+    dfa_simHighlightState('E', 'active');
+    dfa_simUpdateDisplay();
+    status.textContent = 'State: E | Ready to read first symbol';
+    return;
+  }
+
+  // Process current symbol
+  if (dfa_simPos < dfa_simStr.length) {
+    var sym = dfa_simStr[dfa_simPos];
+    var prev = dfa_simState;
+    dfa_simState = dfa_simDelta[prev][sym];
+    dfa_simPos++;
+    dfa_simHighlightState(dfa_simState, 'active');
+    dfa_simUpdateDisplay();
+    if (dfa_simPos < dfa_simStr.length) {
+      status.textContent = "State: " + dfa_simState + " | Read: '" + sym + "' | \u03B4(" + prev + "," + sym + ")=" + dfa_simState;
+    } else {
+      status.textContent = "State: " + dfa_simState + " | Read: '" + sym + "' | \u03B4(" + prev + "," + sym + ")=" + dfa_simState + " | All input consumed";
+      dfa_simFinish();
+    }
+  }
+}
+
+function dfa_simFinish() {
+  dfa_simDone = true;
+  if (dfa_simRunning) {
+    clearInterval(dfa_simTimerId);
+    dfa_simRunning = false;
+  }
+  var verdict = document.getElementById('dfa_simVerdict');
+  var isAccept = dfa_simAccept.indexOf(dfa_simState) !== -1;
+  if (isAccept) {
+    verdict.className = 'dfa-sim-verdict accept';
+    verdict.textContent = 'ACCEPTED \u2713';
+    dfa_simHighlightState(dfa_simState, 'accepted');
+  } else {
+    verdict.className = 'dfa-sim-verdict reject';
+    verdict.textContent = 'REJECTED \u2717';
+    dfa_simHighlightState(dfa_simState, 'rejected');
+  }
+  verdict.style.display = 'block';
+}
+
+function dfa_simRun() {
+  if (dfa_simDone) return;
+  if (dfa_simRunning) return;
+  // If not started, do first step to initialize
+  if (dfa_simPos === -1) {
+    dfa_simStep();
+    if (dfa_simDone) return;
+  }
+  dfa_simRunning = true;
+  dfa_simTimerId = setInterval(function() {
+    dfa_simStep();
+    if (dfa_simDone) {
+      clearInterval(dfa_simTimerId);
+      dfa_simRunning = false;
+    }
+  }, 600);
+}
+
+function dfa_simReset() {
+  if (dfa_simTimerId) { clearInterval(dfa_simTimerId); dfa_simTimerId = null; }
+  dfa_simRunning = false;
+  dfa_simDone = false;
+  dfa_simState = 'E';
+  dfa_simPos = -1;
+  dfa_simStr = '';
+  var input = document.getElementById('dfa_simInput');
+  input.disabled = false;
+  input.value = '';
+  document.getElementById('dfa_simDisplay').innerHTML = '';
+  document.getElementById('dfa_simStatus').textContent = 'Enter a binary string and press Step or Run.';
+  document.getElementById('dfa_simVerdict').style.display = 'none';
+  document.getElementById('dfa_simWarn').style.display = 'none';
+  dfa_simHighlightState('E', 'default');
+}
+
+// ============ TABLE-FILLING VISUALIZER (Slide 17) ============
+var dfa_tfStepIndex = 0;
+var dfa_tfAutoTimerId = null;
+var dfa_tfAutoRunning = false;
+
+var dfa_tfSteps = [
+  { type:'mark', pair:'A_C', msg:"Base: Mark (A,C) \u2014 A\u2209F, C\u2208F" },
+  { type:'mark', pair:'A_E', msg:"Base: Mark (A,E) \u2014 A\u2209F, E\u2208F" },
+  { type:'mark', pair:'B_C', msg:"Base: Mark (B,C) \u2014 B\u2209F, C\u2208F" },
+  { type:'mark', pair:'B_E', msg:"Base: Mark (B,E) \u2014 B\u2209F, E\u2208F" },
+  { type:'mark', pair:'C_D', msg:"Base: Mark (C,D) \u2014 C\u2208F, D\u2209F" },
+  { type:'mark', pair:'C_F', msg:"Base: Mark (C,F) \u2014 C\u2208F, F\u2209F" },
+  { type:'mark', pair:'D_E', msg:"Base: Mark (D,E) \u2014 D\u2209F, E\u2208F" },
+  { type:'mark', pair:'E_F', msg:"Base: Mark (E,F) \u2014 E\u2208F, F\u2209F" },
+  { type:'check', pair:'A_B', refs:['B_D','C_E'], msg:"Check (A,B): \u03B4(A,0)=B,\u03B4(B,0)=D\u2192(B,D)\u2713 | \u03B4(A,1)=C,\u03B4(B,1)=E\u2192(C,E)\u2713 \u2014 no mark" },
+  { type:'check', pair:'A_D', refs:['B_D','C_E'], msg:"Check (A,D): \u03B4(A,0)=B,\u03B4(D,0)=D\u2192(B,D)\u2713 | \u03B4(A,1)=C,\u03B4(D,1)=E\u2192(C,E)\u2713 \u2014 no mark" },
+  { type:'check', pair:'A_F', refs:['B_D','C_E'], msg:"Check (A,F): \u03B4(A,0)=B,\u03B4(F,0)=D\u2192(B,D)\u2713 | \u03B4(A,1)=C,\u03B4(F,1)=E\u2192(C,E)\u2713 \u2014 no mark" },
+  { type:'check', pair:'B_D', refs:[], msg:"Check (B,D): \u03B4(B,0)=D,\u03B4(D,0)=D\u2192same | \u03B4(B,1)=E,\u03B4(D,1)=E\u2192same \u2014 no mark" },
+  { type:'check', pair:'B_F', refs:[], msg:"Check (B,F): \u03B4(B,0)=D,\u03B4(F,0)=D\u2192same | \u03B4(B,1)=E,\u03B4(F,1)=E\u2192same \u2014 no mark" },
+  { type:'check', pair:'C_E', refs:[], msg:"Check (C,E): \u03B4(C,0)=F,\u03B4(E,0)=F\u2192same | \u03B4(C,1)=C,\u03B4(E,1)=C\u2192same \u2014 no mark" },
+  { type:'check', pair:'D_F', refs:[], msg:"Check (D,F): \u03B4(D,0)=D,\u03B4(F,0)=D\u2192same | \u03B4(D,1)=E,\u03B4(F,1)=E\u2192same \u2014 no mark" },
+  { type:'done', pair:null, msg:"No new marks! Algorithm complete." },
+  { type:'result', pair:null, msg:"Result: Equivalent pairs \u2014 {A,B,D,F} and {C,E}. Minimized DFA has 2 states!" }
+];
+
+var dfa_tfMarkedPairs = [];
+var dfa_tfEquivPairs = ['A_B','A_D','A_F','B_D','B_F','C_E','D_F'];
+
+function dfa_tfGetCell(pair) {
+  return document.getElementById('dfa_tf_' + pair);
+}
+
+function dfa_tfClearChecking() {
+  var cells = document.querySelectorAll('.dfa-tf-table-cell.checking');
+  for (var i = 0; i < cells.length; i++) {
+    cells[i].classList.remove('checking');
+  }
+}
+
+function dfa_tfNext() {
+  if (dfa_tfStepIndex >= dfa_tfSteps.length) return;
+  dfa_tfClearChecking();
+
+  var step = dfa_tfSteps[dfa_tfStepIndex];
+
+  if (step.type === 'mark') {
+    var cell = dfa_tfGetCell(step.pair);
+    if (cell) {
+      cell.classList.add('marked');
+      cell.textContent = '\u2717';
+    }
+    dfa_tfMarkedPairs.push(step.pair);
+  } else if (step.type === 'check') {
+    var cell = dfa_tfGetCell(step.pair);
+    if (cell) cell.classList.add('checking');
+    // Briefly highlight referenced pairs
+    for (var i = 0; i < step.refs.length; i++) {
+      var refCell = dfa_tfGetCell(step.refs[i]);
+      if (refCell && !refCell.classList.contains('marked')) {
+        refCell.classList.add('checking');
+      }
+    }
+  } else if (step.type === 'done') {
+    // Mark all equivalent pairs green
+    for (var i = 0; i < dfa_tfEquivPairs.length; i++) {
+      var cell = dfa_tfGetCell(dfa_tfEquivPairs[i]);
+      if (cell) {
+        cell.classList.add('equivalent');
+        cell.textContent = '\u2261';
+      }
+    }
+  } else if (step.type === 'result') {
+    var result = document.getElementById('dfa_tfResult');
+    result.innerHTML = '<b>Equivalent classes:</b> {A, B, D, F} and {C, E}<br>The 6-state DFA minimizes to <b>2 states</b>!';
+    result.style.display = 'block';
+  }
+
+  dfa_tfUpdateLog(dfa_tfStepIndex);
+  dfa_tfStepIndex++;
+  document.getElementById('dfa_tfStepLabel').textContent = 'Step ' + dfa_tfStepIndex + ' / ' + dfa_tfSteps.length;
+
+  if (dfa_tfStepIndex >= dfa_tfSteps.length) {
+    document.getElementById('dfa_tfNextBtn').disabled = true;
+    if (dfa_tfAutoRunning) {
+      clearInterval(dfa_tfAutoTimerId);
+      dfa_tfAutoRunning = false;
+      document.getElementById('dfa_tfAutoBtn').textContent = 'Auto Play';
+    }
+  }
+}
+
+function dfa_tfAuto() {
+  if (dfa_tfAutoRunning) {
+    clearInterval(dfa_tfAutoTimerId);
+    dfa_tfAutoRunning = false;
+    document.getElementById('dfa_tfAutoBtn').textContent = 'Auto Play';
+    return;
+  }
+  if (dfa_tfStepIndex >= dfa_tfSteps.length) return;
+  dfa_tfAutoRunning = true;
+  document.getElementById('dfa_tfAutoBtn').textContent = 'Pause';
+  dfa_tfAutoTimerId = setInterval(function() {
+    dfa_tfNext();
+    if (dfa_tfStepIndex >= dfa_tfSteps.length) {
+      clearInterval(dfa_tfAutoTimerId);
+      dfa_tfAutoRunning = false;
+      document.getElementById('dfa_tfAutoBtn').textContent = 'Auto Play';
+    }
+  }, 1000);
+}
+
+function dfa_tfUpdateLog(currentIdx) {
+  var log = document.getElementById('dfa_tfLog');
+  log.innerHTML = '';
+  for (var i = 0; i <= currentIdx; i++) {
+    var div = document.createElement('div');
+    div.className = 'dfa-tf-log-item';
+    if (i === currentIdx) {
+      div.className += ' current';
+    } else if (dfa_tfSteps[i].type === 'result' || dfa_tfSteps[i].type === 'done') {
+      div.className += ' done';
+    } else {
+      div.className += ' done';
+    }
+    var prefix = (dfa_tfSteps[i].type === 'mark') ? '\u2713 ' : (dfa_tfSteps[i].type === 'check') ? '\u2192 ' : '';
+    div.textContent = prefix + dfa_tfSteps[i].msg;
+    log.appendChild(div);
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+function dfa_tfReset() {
+  if (dfa_tfAutoTimerId) { clearInterval(dfa_tfAutoTimerId); dfa_tfAutoTimerId = null; }
+  dfa_tfAutoRunning = false;
+  dfa_tfStepIndex = 0;
+  dfa_tfMarkedPairs = [];
+  document.getElementById('dfa_tfAutoBtn').textContent = 'Auto Play';
+  document.getElementById('dfa_tfNextBtn').disabled = false;
+  document.getElementById('dfa_tfStepLabel').textContent = 'Step 0 / ' + dfa_tfSteps.length;
+  document.getElementById('dfa_tfLog').innerHTML = '';
+  document.getElementById('dfa_tfResult').style.display = 'none';
+  // Clear all cells
+  var allPairs = ['A_B','A_C','A_D','A_E','A_F','B_C','B_D','B_E','B_F','C_D','C_E','C_F','D_E','D_F','E_F'];
+  for (var i = 0; i < allPairs.length; i++) {
+    var cell = dfa_tfGetCell(allPairs[i]);
+    if (cell) {
+      cell.className = 'dfa-tf-table-cell';
+      cell.textContent = '';
+    }
+  }
+}
 
 showSlide(1);
 </script>

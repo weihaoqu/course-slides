@@ -42,6 +42,96 @@ tr.highlight td { background: rgba(59,130,246,0.2); }
 .step.revealed { opacity: 1; background: rgba(59,130,246,0.08); }
 ul { padding-left: 24px; }
 ul li { margin-bottom: 8px; }
+
+@media (max-width: 900px) {
+  .two-col, .enfa-sc-container { grid-template-columns: 1fr; }
+  .slide { padding: 20px 24px; }
+  h1, h2 { font-size: 2em; }
+}
+
+/* ===== INTERACTIVE COMPONENTS ===== */
+
+/* SVG ε-NFA diagrams */
+.enfa-svg { width: 100%; max-width: 520px; margin: 0 auto; display: block; }
+.enfa-svg .state-circle { fill: #1e293b; stroke: #475569; stroke-width: 2; transition: all 0.3s; }
+.enfa-svg .state-circle.enfa-active { fill: #1e3a5f; stroke: #3b82f6; stroke-width: 3; filter: drop-shadow(0 0 8px rgba(59,130,246,0.5)); }
+.enfa-svg .state-circle.enfa-accepted { fill: #064e3b; stroke: #10b981; stroke-width: 3; filter: drop-shadow(0 0 10px rgba(16,185,129,0.6)); }
+.enfa-svg .state-circle.enfa-dead { fill: #1e293b; stroke: #ef4444; stroke-width: 2; opacity: 0.4; }
+.enfa-svg .state-label { fill: #e2e8f0; font-family: 'SF Mono', monospace; font-size: 14px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.enfa-svg .arrow-line { stroke: #475569; stroke-width: 2; fill: none; }
+.enfa-svg .arrow-label { fill: #f59e0b; font-family: 'SF Mono', monospace; font-size: 13px; text-anchor: middle; }
+.enfa-svg .eps-arrow { stroke: #8b5cf6; stroke-width: 2; fill: none; stroke-dasharray: 6 4; }
+.enfa-svg .eps-label { fill: #a78bfa; font-family: 'SF Mono', monospace; font-size: 13px; text-anchor: middle; font-style: italic; }
+.enfa-svg .accept-inner { fill: none; stroke: #475569; stroke-width: 2; transition: all 0.3s; }
+.enfa-svg .accept-inner.enfa-active { stroke: #3b82f6; }
+.enfa-svg .accept-inner.enfa-accepted { stroke: #10b981; }
+.enfa-svg .eps-arrow.enfa-glow { stroke: #c084fc; stroke-width: 3; filter: drop-shadow(0 0 6px rgba(139,92,246,0.7)); stroke-dasharray: none; }
+@keyframes enfaPulse { 0% { filter: drop-shadow(0 0 12px rgba(59,130,246,0.9)); } 100% { filter: drop-shadow(0 0 6px rgba(59,130,246,0.4)); } }
+.enfa-svg .state-circle.enfa-discover { fill: #1e3a5f; stroke: #3b82f6; stroke-width: 3; animation: enfaPulse 0.5s ease-out; filter: drop-shadow(0 0 8px rgba(59,130,246,0.5)); }
+
+/* Simulator controls */
+.enfa-sim-container { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; margin: 16px 0; }
+.enfa-sim-controls { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.enfa-sim-controls input[type="text"] {
+  background: #0f172a; border: 2px solid #475569; color: #e2e8f0; padding: 10px 16px;
+  border-radius: 8px; font-family: 'SF Mono', monospace; font-size: 1.1em; width: 180px;
+  outline: none; transition: border-color 0.2s;
+}
+.enfa-sim-controls input[type="text"]:focus { border-color: #3b82f6; }
+.sim-btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.95em; font-weight: 600; transition: all 0.2s; }
+.sim-btn.primary { background: #3b82f6; color: white; }
+.sim-btn.primary:hover { background: #2563eb; }
+.sim-btn.secondary { background: #475569; color: #e2e8f0; }
+.sim-btn.secondary:hover { background: #64748b; }
+.sim-btn.reset { background: #ef4444; color: white; }
+.sim-btn.reset:hover { background: #dc2626; }
+.sim-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.enfa-sim-status { display: flex; gap: 20px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+.enfa-sim-status .active-states { background: #0f172a; padding: 8px 16px; border-radius: 8px; font-family: monospace; font-size: 1em; color: #93c5fd; }
+.enfa-sim-status .input-display { font-family: monospace; font-size: 1.1em; color: #94a3b8; }
+.enfa-sim-status .input-display .consumed { color: #64748b; }
+.enfa-sim-status .input-display .current-char { color: #fbbf24; font-weight: bold; font-size: 1.3em; text-decoration: underline; }
+.enfa-sim-status .input-display .remaining { color: #e2e8f0; }
+.enfa-sim-verdict { margin-top: 12px; padding: 12px 20px; border-radius: 8px; font-size: 1.1em; font-weight: 600; text-align: center; }
+.enfa-sim-verdict.accept { background: rgba(16,185,129,0.2); color: #34d399; border: 2px solid #10b981; }
+.enfa-sim-verdict.reject { background: rgba(239,68,68,0.2); color: #f87171; border: 2px solid #ef4444; }
+.enfa-closure-display { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; font-family: monospace; font-size: 0.85em; color: #a78bfa; margin-top: 8px; }
+
+/* ε-Closure explorer */
+.ecl-buttons { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+.ecl-state-btn { padding: 8px 18px; border-radius: 20px; border: 2px solid #475569; background: #1e293b; color: #e2e8f0; cursor: pointer; font-family: 'SF Mono', monospace; font-size: 1em; font-weight: 600; transition: all 0.2s; }
+.ecl-state-btn:hover { border-color: #3b82f6; background: #1e3a5f; }
+.ecl-state-btn.ecl-selected { border-color: #3b82f6; background: #1e3a5f; color: #93c5fd; }
+.ecl-result { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 14px 18px; font-family: 'SF Mono', monospace; font-size: 0.92em; line-height: 1.7; color: #94a3b8; min-height: 50px; margin-top: 10px; }
+
+/* Conversion visualizer */
+.enfa-sc-container { display: grid; grid-template-columns: 1fr 1.3fr; gap: 24px; align-items: start; }
+.enfa-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
+.enfa-conv-table { border-collapse: collapse; width: 100%; margin-bottom: 12px; font-size: 0.85em; }
+.enfa-conv-table th, .enfa-conv-table td { border: 1px solid #475569; padding: 6px 10px; text-align: center; font-family: monospace; }
+.enfa-conv-table th { background: #334155; color: #93c5fd; }
+.enfa-conv-table td { background: #1e293b; color: #e2e8f0; }
+.enfa-conv-table tr.enfa-processing td { background: rgba(59,130,246,0.18); border-color: #3b82f6; }
+@keyframes enfaGlow { from { background: rgba(16,185,129,0.3); } to { background: #1e293b; } }
+.enfa-conv-table tr.enfa-new td { animation: enfaGlow 0.6s ease-out; }
+.enfa-log { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; font-family: 'SF Mono', monospace; font-size: 0.8em; line-height: 1.6; color: #94a3b8; max-height: 100px; overflow-y: auto; margin-top: 10px; }
+.enfa-log .log-new { color: #34d399; }
+.enfa-log .log-seen { color: #93c5fd; }
+.enfa-log .log-cl { color: #a78bfa; }
+.enfa-done { background: rgba(16,185,129,0.15); border: 2px solid #10b981; border-radius: 8px; padding: 10px 14px; color: #34d399; font-weight: 600; text-align: center; margin-top: 8px; }
+.enfa-controls { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+
+/* Quiz */
+.enfa-quiz-container { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; margin: 16px 0; }
+.quiz-btn { padding: 12px 28px; border-radius: 8px; border: 2px solid #475569; background: #1e293b; color: #e2e8f0; cursor: pointer; font-size: 1em; font-weight: 600; transition: all 0.2s; margin: 6px; }
+.quiz-btn:hover { border-color: #3b82f6; background: #1e3a5f; }
+.quiz-btn.correct { border-color: #10b981; background: rgba(16,185,129,0.2); color: #34d399; }
+.quiz-btn.wrong { border-color: #ef4444; background: rgba(239,68,68,0.2); color: #f87171; }
+.quiz-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+.feedback-box { margin-top: 16px; padding: 16px 20px; border-radius: 8px; font-size: 1em; line-height: 1.6; display: none; }
+.feedback-box.show { display: block; }
+.feedback-box.correct { background: rgba(16,185,129,0.15); border-left: 4px solid #10b981; color: #a7f3d0; }
+.feedback-box.wrong { background: rgba(239,68,68,0.15); border-left: 4px solid #ef4444; color: #fecaca; }
 </style>
 </head>
 <body>
@@ -70,7 +160,7 @@ ul li { margin-bottom: 8px; }
     <p class="subtitle" style="margin-top: 30px;">CS305 -- Formal Language Theory</p>
     <p style="color:#64748b; font-size:0.95em;">Arrow Keys or Space to navigate &bull; Press S to reveal steps</p>
   </div>
-  <div class="slide-number">1 / 18</div>
+  <div class="slide-number">1 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -101,7 +191,7 @@ ul li { margin-bottom: 8px; }
     <h3>Key Idea</h3>
     <p>Adding epsilon-transitions does NOT increase the power of the machine. It only makes designing automata <strong>easier and more modular</strong>. Any epsilon-NFA can be converted to an equivalent DFA.</p>
   </div>
-  <div class="slide-number">2 / 18</div>
+  <div class="slide-number">2 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -149,7 +239,7 @@ ul li { margin-bottom: 8px; }
       <p>The <strong>epsilon-transitions</strong> from q0 let us "choose" which sub-machine to enter -- no input consumed!</p>
     </div>
   </div>
-  <div class="slide-number">3 / 18</div>
+  <div class="slide-number">3 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -201,7 +291,7 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">4 / 18</div>
+  <div class="slide-number">4 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -237,7 +327,7 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">5 / 18</div>
+  <div class="slide-number">5 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -282,7 +372,7 @@ ul li { margin-bottom: 8px; }
       <p style="font-size:0.95em; color:#94a3b8;">Note the &epsilon; column -- that's what makes this an &epsilon;-NFA, not just an NFA.</p>
     </div>
   </div>
-  <div class="slide-number">6 / 18</div>
+  <div class="slide-number">6 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -335,7 +425,7 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">7 / 18</div>
+  <div class="slide-number">7 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -347,41 +437,52 @@ ul li { margin-bottom: 8px; }
 
   <div class="two-col">
     <div>
-      <h3>A Richer Example</h3>
-      <div class="diagram small">
-         &epsilon;        &epsilon;        &epsilon;
-  (q0) ....&gt; (q1) ....&gt; (q2) ....&gt; (q3)
-                |                    |
-                | &epsilon;               | a
-                v                    v
-              (q4)               (q5)
+      <h3>Interactive &epsilon;-Closure Explorer</h3>
+      <svg class="enfa-svg" viewBox="0 0 520 200">
+        <defs>
+          <marker id="enfa8Arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#475569"/></marker>
+          <marker id="enfa8ArrowEps" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/></marker>
+        </defs>
+        <!-- States row 1: q0(70,60), q1(190,60), q2(310,60), q3(430,60) -->
+        <circle id="ecl8-q0" class="state-circle" cx="70" cy="60" r="22"/>
+        <text class="state-label" x="70" y="60">q0</text>
+        <circle id="ecl8-q1" class="state-circle" cx="190" cy="60" r="22"/>
+        <text class="state-label" x="190" y="60">q1</text>
+        <circle id="ecl8-q2" class="state-circle" cx="310" cy="60" r="22"/>
+        <text class="state-label" x="310" y="60">q2</text>
+        <circle id="ecl8-q3" class="state-circle" cx="430" cy="60" r="22"/>
+        <text class="state-label" x="430" y="60">q3</text>
+        <!-- States row 2: q4(190,160), q5(430,160) -->
+        <circle id="ecl8-q4" class="state-circle" cx="190" cy="160" r="22"/>
+        <text class="state-label" x="190" y="160">q4</text>
+        <circle id="ecl8-q5" class="state-circle" cx="430" cy="160" r="22"/>
+        <text class="state-label" x="430" y="160">q5</text>
+        <!-- Start arrow -->
+        <line x1="20" y1="60" x2="46" y2="60" class="arrow-line" marker-end="url(#enfa8Arrow)"/>
+        <!-- Epsilon edges (dashed purple) -->
+        <line id="ecl8-eps-q0-q1" class="eps-arrow" x1="92" y1="60" x2="166" y2="60" marker-end="url(#enfa8ArrowEps)"/>
+        <text class="eps-label" x="130" y="50">&epsilon;</text>
+        <line id="ecl8-eps-q1-q2" class="eps-arrow" x1="212" y1="60" x2="286" y2="60" marker-end="url(#enfa8ArrowEps)"/>
+        <text class="eps-label" x="250" y="50">&epsilon;</text>
+        <line id="ecl8-eps-q1-q4" class="eps-arrow" x1="190" y1="82" x2="190" y2="136" marker-end="url(#enfa8ArrowEps)"/>
+        <text class="eps-label" x="205" y="115">&epsilon;</text>
+        <line id="ecl8-eps-q2-q3" class="eps-arrow" x1="332" y1="60" x2="406" y2="60" marker-end="url(#enfa8ArrowEps)"/>
+        <text class="eps-label" x="370" y="50">&epsilon;</text>
+        <!-- Regular edge: q3 -a-> q5 -->
+        <line class="arrow-line" x1="430" y1="82" x2="430" y2="136" marker-end="url(#enfa8Arrow)"/>
+        <text class="arrow-label" x="445" y="115">a</text>
+      </svg>
+      <p style="font-size:0.9em; color:#94a3b8; text-align:center;">Click a state to explore its &epsilon;-closure via BFS:</p>
+      <div class="ecl-buttons" style="justify-content:center;">
+        <button class="ecl-state-btn" onclick="ecl8Explore('q0')">q0</button>
+        <button class="ecl-state-btn" onclick="ecl8Explore('q1')">q1</button>
+        <button class="ecl-state-btn" onclick="ecl8Explore('q2')">q2</button>
+        <button class="ecl-state-btn" onclick="ecl8Explore('q3')">q3</button>
+        <button class="ecl-state-btn" onclick="ecl8Explore('q4')">q4</button>
+        <button class="ecl-state-btn" onclick="ecl8Explore('q5')">q5</button>
+        <button class="sim-btn reset" onclick="ecl8Reset()">Reset</button>
       </div>
-      <p>Compute CL(q0):</p>
-
-      <div class="step">
-        <strong>Step 0:</strong> Start with {q0} (always include yourself)
-        <div class="diagram small" style="margin:4px 0;">  Visited: {q0}    Queue: [q0]</div>
-      </div>
-      <div class="step">
-        <strong>Step 1:</strong> Process q0 -- &delta;(q0,&epsilon;) = {q1}. Add q1.
-        <div class="diagram small" style="margin:4px 0;">  Visited: {q0,q1}    Queue: [q1]</div>
-      </div>
-      <div class="step">
-        <strong>Step 2:</strong> Process q1 -- &delta;(q1,&epsilon;) = {q2, q4}. Add both.
-        <div class="diagram small" style="margin:4px 0;">  Visited: {q0,q1,q2,q4}  Queue: [q2,q4]</div>
-      </div>
-      <div class="step">
-        <strong>Step 3:</strong> Process q2 -- &delta;(q2,&epsilon;) = {q3}. Add q3.
-        <div class="diagram small" style="margin:4px 0;">  Visited: {q0,q1,q2,q3,q4}  Queue: [q4,q3]</div>
-      </div>
-      <div class="step">
-        <strong>Step 4:</strong> Process q4 -- &delta;(q4,&epsilon;) = &empty;. Nothing to add.
-        <div class="diagram small" style="margin:4px 0;">  Visited: {q0,q1,q2,q3,q4}  Queue: [q3]</div>
-      </div>
-      <div class="step">
-        <strong>Step 5:</strong> Process q3 -- &delta;(q3,&epsilon;) = &empty;. Done!
-        <div class="diagram small" style="margin:4px 0;">  CL(q0) = {q0, q1, q2, q3, q4}</div>
-      </div>
+      <div id="ecl8Result" class="ecl-result">Click a state above to visualize its &epsilon;-closure BFS.</div>
     </div>
     <div>
       <h3>BFS Algorithm</h3>
@@ -415,7 +516,7 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">8 / 18</div>
+  <div class="slide-number">8 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -471,7 +572,7 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">9 / 18</div>
+  <div class="slide-number">9 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -522,71 +623,80 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">10 / 18</div>
+  <div class="slide-number">10 / 19</div>
 </div>
 
 <!-- ============================================================ -->
 <!-- SLIDE 11 : WORKED EXAMPLE                                    -->
 <!-- ============================================================ -->
 <div class="slide" id="s11">
-  <h2>Worked Example: Processing "ab"</h2>
+  <h2>Interactive &epsilon;-NFA Simulator</h2>
 
   <div class="two-col">
     <div>
-      <h3>Our Epsilon-NFA</h3>
-      <div class="diagram small">
-         &epsilon;         a          b
-  --&gt;(q0) ....&gt; (q1) ---&gt; (q2) ---&gt; ((q3))
-         |
-         | &epsilon;
-         v          b
-        (q4) ------&gt; ((q5))
-      </div>
-      <table style="font-size:0.9em;">
-        <tr><th></th><th>a</th><th>b</th><th>&epsilon;</th></tr>
-        <tr><td>&#x2192; q0</td><td>&empty;</td><td>&empty;</td><td>{q1, q4}</td></tr>
-        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
-        <tr><td>q2</td><td>&empty;</td><td>{q3}</td><td>&empty;</td></tr>
-        <tr><td>*q3</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
-        <tr><td>q4</td><td>&empty;</td><td>{q5}</td><td>&empty;</td></tr>
-        <tr><td>*q5</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
-      </table>
+      <h3>State Diagram</h3>
+      <svg id="enfaSimSvg" class="enfa-svg" viewBox="0 0 520 220">
+        <defs>
+          <marker id="enfaSimArrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#475569"/></marker>
+          <marker id="enfaSimArrowEps" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/></marker>
+        </defs>
+        <!-- Row 1: q0(80,70), q1(210,70), q2(340,70), q3(470,70) -->
+        <circle id="esim-q0" class="state-circle" cx="80" cy="70" r="22"/>
+        <text class="state-label" x="80" y="70">q0</text>
+        <circle id="esim-q1" class="state-circle" cx="210" cy="70" r="22"/>
+        <text class="state-label" x="210" y="70">q1</text>
+        <circle id="esim-q2" class="state-circle" cx="340" cy="70" r="22"/>
+        <text class="state-label" x="340" y="70">q2</text>
+        <circle id="esim-q3" class="state-circle" cx="470" cy="70" r="22"/>
+        <text class="state-label" x="470" y="70">q3</text>
+        <circle id="esim-q3-inner" class="accept-inner" cx="470" cy="70" r="17"/>
+        <!-- Row 2: q4(210,180), q5(340,180) -->
+        <circle id="esim-q4" class="state-circle" cx="210" cy="180" r="22"/>
+        <text class="state-label" x="210" y="180">q4</text>
+        <circle id="esim-q5" class="state-circle" cx="340" cy="180" r="22"/>
+        <text class="state-label" x="340" y="180">q5</text>
+        <circle id="esim-q5-inner" class="accept-inner" cx="340" cy="180" r="17"/>
+        <!-- Start arrow -->
+        <line x1="30" y1="70" x2="56" y2="70" class="arrow-line" marker-end="url(#enfaSimArrow)"/>
+        <!-- Epsilon: q0->q1 -->
+        <line class="eps-arrow" x1="102" y1="70" x2="186" y2="70" marker-end="url(#enfaSimArrowEps)"/>
+        <text class="eps-label" x="145" y="60">&epsilon;</text>
+        <!-- Epsilon: q0->q4 -->
+        <line class="eps-arrow" x1="92" y1="88" x2="196" y2="166" marker-end="url(#enfaSimArrowEps)"/>
+        <text class="eps-label" x="130" y="140">&epsilon;</text>
+        <!-- a: q1->q2 -->
+        <line class="arrow-line" x1="232" y1="70" x2="316" y2="70" marker-end="url(#enfaSimArrow)"/>
+        <text class="arrow-label" x="274" y="60">a</text>
+        <!-- b: q2->q3 -->
+        <line class="arrow-line" x1="362" y1="70" x2="446" y2="70" marker-end="url(#enfaSimArrow)"/>
+        <text class="arrow-label" x="404" y="60">b</text>
+        <!-- b: q4->q5 -->
+        <line class="arrow-line" x1="232" y1="180" x2="316" y2="180" marker-end="url(#enfaSimArrow)"/>
+        <text class="arrow-label" x="274" y="172">b</text>
+      </svg>
+      <p style="font-size:0.85em; color:#94a3b8; text-align:center;">&epsilon;-NFA: accepts "ab" or "b"</p>
     </div>
     <div>
-      <h3>Process w = "ab"</h3>
-
-      <div class="step">
-        <strong>Step 0: Initial epsilon-closure</strong>
-        <div class="diagram small" style="margin:4px 0;">  CL(q0) = {q0, q1, q4}</div>
-        Current states: {q0, q1, q4}
-      </div>
-
-      <div class="step">
-        <strong>Step 1: Read 'a'</strong>
-        <div class="diagram small" style="margin:4px 0;">  &delta;(q0, a) = &empty;
-  &delta;(q1, a) = {q2}
-  &delta;(q4, a) = &empty;
-  Union = {q2}
-  CL({q2}) = {q2}</div>
-        Current states: {q2}
-      </div>
-
-      <div class="step">
-        <strong>Step 2: Read 'b'</strong>
-        <div class="diagram small" style="margin:4px 0;">  &delta;(q2, b) = {q3}
-  Union = {q3}
-  CL({q3}) = {q3}</div>
-        Current states: {q3}
-      </div>
-
-      <div class="step">
-        <strong>Step 3: Accept?</strong>
-        <div class="diagram small" style="margin:4px 0;">  {q3} &cap; F = {q3} &cap; {q3, q5} = {q3} &ne; &empty;
-  ACCEPT!</div>
+      <div class="enfa-sim-container">
+        <h3>Simulator</h3>
+        <div class="enfa-sim-controls">
+          <input type="text" id="esimInput" placeholder="e.g. ab" maxlength="20"/>
+          <button class="sim-btn primary" onclick="esimStep()">Step</button>
+          <button class="sim-btn secondary" onclick="esimRun()">Run</button>
+          <button class="sim-btn reset" onclick="esimReset()">Reset</button>
+        </div>
+        <div class="enfa-sim-status">
+          <span>Active: </span><span id="esimActiveStates" class="active-states">--</span>
+        </div>
+        <div class="enfa-sim-status">
+          <span>Input: </span><span id="esimInputDisplay" class="input-display">--</span>
+        </div>
+        <div id="esimClosure" class="enfa-closure-display" style="display:none;"></div>
+        <div id="esimVerdict" class="enfa-sim-verdict" style="display:none;"></div>
       </div>
     </div>
   </div>
-  <div class="slide-number">11 / 18</div>
+  <div class="slide-number">11 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -634,7 +744,7 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">12 / 18</div>
+  <div class="slide-number">12 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -687,71 +797,76 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">13 / 18</div>
+  <div class="slide-number">13 / 19</div>
 </div>
 
 <!-- ============================================================ -->
 <!-- SLIDE 14 : CONVERSION EXAMPLE                                -->
 <!-- ============================================================ -->
 <div class="slide" id="s14">
-  <h2>Conversion Example: Epsilon-NFA to NFA</h2>
+  <h2>Interactive: &epsilon;-NFA &rarr; NFA Conversion</h2>
 
-  <div class="two-col">
-    <div>
-      <h3>Original &epsilon;-NFA</h3>
-      <div class="diagram small">
-          &epsilon;       a        &epsilon;        b
-  --&gt;(q0) ...&gt; (q1) --&gt; (q2) ...&gt; (q3) --&gt; ((q4))
-      </div>
-      <table style="font-size:0.85em;">
+  <div class="enfa-sc-container">
+    <div class="enfa-panel">
+      <h3>&epsilon;-NFA Reference</h3>
+      <svg class="enfa-svg" viewBox="0 0 520 160">
+        <defs>
+          <marker id="econv14Arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#475569"/></marker>
+          <marker id="econv14ArrowEps" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/></marker>
+        </defs>
+        <!-- q0(70,80) q1(170,80) q2(270,80) q3(370,80) q4(470,80) -->
+        <circle class="state-circle" cx="70" cy="80" r="20"/><text class="state-label" x="70" y="80">q0</text>
+        <circle class="state-circle" cx="170" cy="80" r="20"/><text class="state-label" x="170" y="80">q1</text>
+        <circle class="state-circle" cx="270" cy="80" r="20"/><text class="state-label" x="270" y="80">q2</text>
+        <circle class="state-circle" cx="370" cy="80" r="20"/><text class="state-label" x="370" y="80">q3</text>
+        <circle class="state-circle" cx="470" cy="80" r="20"/><text class="state-label" x="470" y="80">q4</text>
+        <circle class="accept-inner" cx="470" cy="80" r="15"/>
+        <!-- start arrow -->
+        <line x1="20" y1="80" x2="48" y2="80" class="arrow-line" marker-end="url(#econv14Arrow)"/>
+        <!-- eps: q0->q1 -->
+        <line class="eps-arrow" x1="90" y1="80" x2="148" y2="80" marker-end="url(#econv14ArrowEps)"/>
+        <text class="eps-label" x="120" y="72">&epsilon;</text>
+        <!-- a: q1->q2 -->
+        <line class="arrow-line" x1="190" y1="80" x2="248" y2="80" marker-end="url(#econv14Arrow)"/>
+        <text class="arrow-label" x="220" y="72">a</text>
+        <!-- eps: q2->q3 -->
+        <line class="eps-arrow" x1="290" y1="80" x2="348" y2="80" marker-end="url(#econv14ArrowEps)"/>
+        <text class="eps-label" x="320" y="72">&epsilon;</text>
+        <!-- b: q3->q4 -->
+        <line class="arrow-line" x1="390" y1="80" x2="448" y2="80" marker-end="url(#econv14Arrow)"/>
+        <text class="arrow-label" x="420" y="72">b</text>
+      </svg>
+      <table class="enfa-conv-table" style="font-size:0.8em;">
         <tr><th></th><th>a</th><th>b</th><th>&epsilon;</th></tr>
-        <tr><td>&#x2192; q0</td><td>&empty;</td><td>&empty;</td><td>{q1}</td></tr>
+        <tr><td>&rarr; q0</td><td>&empty;</td><td>&empty;</td><td>{q1}</td></tr>
         <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
         <tr><td>q2</td><td>&empty;</td><td>&empty;</td><td>{q3}</td></tr>
         <tr><td>q3</td><td>&empty;</td><td>{q4}</td><td>&empty;</td></tr>
         <tr><td>*q4</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
       </table>
-
-      <h3 class="mt">Epsilon-Closures</h3>
-      <div class="diagram small">
-  CL(q0) = {q0, q1}
-  CL(q1) = {q1}
-  CL(q2) = {q2, q3}
-  CL(q3) = {q3}
-  CL(q4) = {q4}
-      </div>
+      <div id="econvLog" class="enfa-log">Ready. Click "Next Step" to begin.</div>
     </div>
-    <div>
-      <h3>Compute New Transitions &delta;<sub>N</sub></h3>
-      <div class="step">
-        <strong>&delta;<sub>N</sub>(q0, a):</strong> CL(q0)={q0,q1} &rarr; &delta;({q0,q1},a)={q2} &rarr; CL({q2})=<strong>{q2,q3}</strong>
+    <div class="enfa-panel">
+      <h3>NFA Being Built</h3>
+      <div class="enfa-controls">
+        <button class="sim-btn primary" onclick="econvNext()">Next Step</button>
+        <button class="sim-btn secondary" onclick="econvAuto()">Auto Run</button>
+        <button class="sim-btn reset" onclick="econvReset()">Reset</button>
+        <span id="econvStep" style="color:#94a3b8; font-size:0.9em;">Step 0 / 12</span>
       </div>
-      <div class="step">
-        <strong>&delta;<sub>N</sub>(q0, b):</strong> CL(q0)={q0,q1} &rarr; &delta;({q0,q1},b)=&empty; &rarr; CL(&empty;)=<strong>&empty;</strong>
-      </div>
-      <div class="step">
-        <strong>&delta;<sub>N</sub>(q1, a):</strong> CL(q1)={q1} &rarr; &delta;({q1},a)={q2} &rarr; CL({q2})=<strong>{q2,q3}</strong>
-      </div>
-      <div class="step">
-        <strong>&delta;<sub>N</sub>(q2, b):</strong> CL(q2)={q2,q3} &rarr; &delta;({q2,q3},b)={q4} &rarr; CL({q4})=<strong>{q4}</strong>
-      </div>
-      <div class="step">
-        <strong>&delta;<sub>N</sub>(q3, b):</strong> CL(q3)={q3} &rarr; &delta;({q3},b)={q4} &rarr; CL({q4})=<strong>{q4}</strong>
-      </div>
-
-      <h3 class="mt">Result: NFA (no &epsilon; column!)</h3>
-      <table style="font-size:0.85em;">
+      <table id="econvTable" class="enfa-conv-table">
         <tr><th></th><th>a</th><th>b</th></tr>
-        <tr><td>&#x2192; q0</td><td>{q2,q3}</td><td>&empty;</td></tr>
-        <tr><td>q1</td><td>{q2,q3}</td><td>&empty;</td></tr>
-        <tr><td>q2</td><td>&empty;</td><td>{q4}</td></tr>
-        <tr><td>q3</td><td>&empty;</td><td>{q4}</td></tr>
-        <tr><td>*q4</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr id="econvR0"><td>&rarr; q0</td><td>--</td><td>--</td></tr>
+        <tr id="econvR1"><td>q1</td><td>--</td><td>--</td></tr>
+        <tr id="econvR2"><td>q2</td><td>--</td><td>--</td></tr>
+        <tr id="econvR3"><td>q3</td><td>--</td><td>--</td></tr>
+        <tr id="econvR4"><td>*q4</td><td>--</td><td>--</td></tr>
       </table>
-      <p style="font-size:0.9em;">F' = {q4} (only CL(q4)={q4} hits F; no other closure reaches q4)</p>
+      <div id="econvAccept" style="color:#94a3b8; font-size:0.9em; margin-top:8px;"></div>
+      <div id="econvDone" class="enfa-done" style="display:none;"></div>
     </div>
   </div>
-  <div class="slide-number">14 / 18</div>
+  <div class="slide-number">14 / 19</div>
 </div>
 
 <!-- ============================================================ -->
@@ -805,70 +920,122 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">15 / 18</div>
+  <div class="slide-number">15 / 19</div>
 </div>
 
 <!-- ============================================================ -->
 <!-- SLIDE 16 : DIRECT CONVERSION EXAMPLE                         -->
 <!-- ============================================================ -->
 <div class="slide" id="s16">
-  <h2>Direct Conversion Example: &epsilon;-NFA to DFA</h2>
+  <h2>Interactive: &epsilon;-NFA &rarr; DFA Subset Construction</h2>
 
-  <div class="two-col">
-    <div>
-      <h3>&epsilon;-NFA (&Sigma; = {a, b})</h3>
-      <div class="diagram small">
-          &epsilon;       a          b
-  --&gt;(q0) ...&gt; (q1) --&gt; (q2) --&gt; ((q3))
-      </div>
-      <table style="font-size:0.85em;">
+  <div class="enfa-sc-container">
+    <div class="enfa-panel">
+      <h3>&epsilon;-NFA Reference</h3>
+      <svg class="enfa-svg" viewBox="0 0 530 160">
+        <defs>
+          <marker id="edsc16Arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#475569"/></marker>
+          <marker id="edsc16ArrowEps" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/></marker>
+        </defs>
+        <!-- q0(100,80) q1(230,80) q2(360,80) q3(470,80) -->
+        <circle class="state-circle" cx="100" cy="80" r="20"/><text class="state-label" x="100" y="80">q0</text>
+        <circle class="state-circle" cx="230" cy="80" r="20"/><text class="state-label" x="230" y="80">q1</text>
+        <circle class="state-circle" cx="360" cy="80" r="20"/><text class="state-label" x="360" y="80">q2</text>
+        <circle class="state-circle" cx="470" cy="80" r="20"/><text class="state-label" x="470" y="80">q3</text>
+        <circle class="accept-inner" cx="470" cy="80" r="15"/>
+        <!-- start arrow -->
+        <line x1="50" y1="80" x2="78" y2="80" class="arrow-line" marker-end="url(#edsc16Arrow)"/>
+        <!-- eps: q0->q1 -->
+        <line class="eps-arrow" x1="120" y1="80" x2="208" y2="80" marker-end="url(#edsc16ArrowEps)"/>
+        <text class="eps-label" x="165" y="72">&epsilon;</text>
+        <!-- a: q1->q2 -->
+        <line class="arrow-line" x1="250" y1="80" x2="338" y2="80" marker-end="url(#edsc16Arrow)"/>
+        <text class="arrow-label" x="295" y="72">a</text>
+        <!-- b: q2->q3 -->
+        <line class="arrow-line" x1="380" y1="80" x2="448" y2="80" marker-end="url(#edsc16Arrow)"/>
+        <text class="arrow-label" x="415" y="72">b</text>
+      </svg>
+      <table class="enfa-conv-table" style="font-size:0.8em;">
         <tr><th></th><th>a</th><th>b</th><th>&epsilon;</th></tr>
-        <tr><td>&#x2192; q0</td><td>&empty;</td><td>&empty;</td><td>{q1}</td></tr>
+        <tr><td>&rarr; q0</td><td>&empty;</td><td>&empty;</td><td>{q1}</td></tr>
         <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
         <tr><td>q2</td><td>&empty;</td><td>{q3}</td><td>&empty;</td></tr>
         <tr><td>*q3</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
       </table>
-      <p class="mt" style="font-size:0.95em;">Closures: CL(q0)={q0,q1}, CL(q1)={q1}, CL(q2)={q2}, CL(q3)={q3}</p>
+      <div id="edscLog" class="enfa-log">Ready. Click "Next Step" to begin.</div>
     </div>
-    <div>
-      <h3>Subset Construction</h3>
-      <div class="step">
-        <strong>DFA start:</strong> CL(q0) = {q0, q1} &rarr; call it <strong>A</strong>
+    <div class="enfa-panel">
+      <h3>DFA Being Built</h3>
+      <div class="enfa-controls">
+        <button class="sim-btn primary" onclick="edscNext()">Next Step</button>
+        <button class="sim-btn secondary" onclick="edscAuto()">Auto Run</button>
+        <button class="sim-btn reset" onclick="edscReset()">Reset</button>
+        <span id="edscStep" style="color:#94a3b8; font-size:0.9em;">Step 0 / 10</span>
       </div>
-      <div class="step">
-        <strong>&delta;(A, a):</strong> &delta;({q0,q1}, a) = {q2} &rarr; CL({q2}) = {q2} &rarr; <strong>B</strong>
-      </div>
-      <div class="step">
-        <strong>&delta;(A, b):</strong> &delta;({q0,q1}, b) = &empty; &rarr; CL(&empty;) = &empty; &rarr; <strong>DEAD</strong>
-      </div>
-      <div class="step">
-        <strong>&delta;(B, a):</strong> &delta;({q2}, a) = &empty; &rarr; <strong>DEAD</strong>
-      </div>
-      <div class="step">
-        <strong>&delta;(B, b):</strong> &delta;({q2}, b) = {q3} &rarr; CL({q3}) = {q3} &rarr; <strong>C</strong>
-      </div>
-      <div class="step">
-        <strong>&delta;(C, a):</strong> &empty; &rarr; <strong>DEAD</strong> &nbsp;&nbsp; <strong>&delta;(C, b):</strong> &empty; &rarr; <strong>DEAD</strong>
-      </div>
-
-      <h3 class="mt">Resulting DFA</h3>
-      <table style="font-size:0.85em;">
+      <table id="edscTable" class="enfa-conv-table">
         <tr><th>DFA State</th><th>&epsilon;-NFA States</th><th>a</th><th>b</th><th>Accept?</th></tr>
-        <tr><td>&#x2192; A</td><td>{q0, q1}</td><td>B</td><td>DEAD</td><td>No</td></tr>
-        <tr><td>B</td><td>{q2}</td><td>DEAD</td><td>C</td><td>No</td></tr>
-        <tr class="highlight"><td>*C</td><td>{q3}</td><td>DEAD</td><td>DEAD</td><td>Yes</td></tr>
-        <tr><td>DEAD</td><td>&empty;</td><td>DEAD</td><td>DEAD</td><td>No</td></tr>
       </table>
-      <p style="font-size:0.9em;">L = {ab} -- the DFA accepts exactly the string "ab".</p>
+      <div id="edscDone" class="enfa-done" style="display:none;"></div>
     </div>
   </div>
-  <div class="slide-number">16 / 18</div>
+  <div class="slide-number">16 / 19</div>
 </div>
 
 <!-- ============================================================ -->
-<!-- SLIDE 17 : WHY IT MATTERS                                    -->
+<!-- SLIDE 17 : CHALLENGE QUIZ                                    -->
 <!-- ============================================================ -->
 <div class="slide" id="s17">
+  <h2>Challenge Quiz: Does This &epsilon;-NFA Accept...?</h2>
+  <div class="two-col">
+    <div>
+      <h3>&epsilon;-NFA (from Slide 11)</h3>
+      <svg class="enfa-svg" viewBox="0 0 520 220">
+        <defs>
+          <marker id="eq1Arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#475569"/></marker>
+          <marker id="eq1ArrowEps" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/></marker>
+        </defs>
+        <circle class="state-circle" cx="80" cy="70" r="22"/><text class="state-label" x="80" y="70">q0</text>
+        <circle class="state-circle" cx="210" cy="70" r="22"/><text class="state-label" x="210" y="70">q1</text>
+        <circle class="state-circle" cx="340" cy="70" r="22"/><text class="state-label" x="340" y="70">q2</text>
+        <circle class="state-circle" cx="470" cy="70" r="22"/><text class="state-label" x="470" y="70">q3</text>
+        <circle class="accept-inner" cx="470" cy="70" r="17"/>
+        <circle class="state-circle" cx="210" cy="180" r="22"/><text class="state-label" x="210" y="180">q4</text>
+        <circle class="state-circle" cx="340" cy="180" r="22"/><text class="state-label" x="340" y="180">q5</text>
+        <circle class="accept-inner" cx="340" cy="180" r="17"/>
+        <line x1="30" y1="70" x2="56" y2="70" class="arrow-line" marker-end="url(#eq1Arrow)"/>
+        <line class="eps-arrow" x1="102" y1="70" x2="186" y2="70" marker-end="url(#eq1ArrowEps)"/>
+        <text class="eps-label" x="145" y="60">&epsilon;</text>
+        <line class="eps-arrow" x1="92" y1="88" x2="196" y2="166" marker-end="url(#eq1ArrowEps)"/>
+        <text class="eps-label" x="130" y="140">&epsilon;</text>
+        <line class="arrow-line" x1="232" y1="70" x2="316" y2="70" marker-end="url(#eq1Arrow)"/>
+        <text class="arrow-label" x="274" y="60">a</text>
+        <line class="arrow-line" x1="362" y1="70" x2="446" y2="70" marker-end="url(#eq1Arrow)"/>
+        <text class="arrow-label" x="404" y="60">b</text>
+        <line class="arrow-line" x1="232" y1="180" x2="316" y2="180" marker-end="url(#eq1Arrow)"/>
+        <text class="arrow-label" x="274" y="172">b</text>
+      </svg>
+      <p style="font-size:0.85em; color:#94a3b8; text-align:center;">F = {q3, q5}, &epsilon;: q0&rarr;{q1,q4}</p>
+    </div>
+    <div>
+      <div class="enfa-quiz-container" id="eq1Container">
+        <h3 id="eq1Question">Loading quiz...</h3>
+        <div id="eq1Progress" style="color:#94a3b8; margin-bottom:12px;">Question 1 / 3</div>
+        <div id="eq1Buttons" style="text-align:center;">
+          <button class="quiz-btn" onclick="eq1Answer(true)">Yes (Accept)</button>
+          <button class="quiz-btn" onclick="eq1Answer(false)">No (Reject)</button>
+        </div>
+        <div id="eq1Feedback" class="feedback-box"></div>
+        <div id="eq1Score" style="margin-top:16px; text-align:center; color:#94a3b8; font-size:1.1em;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">17 / 19</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18 : WHY IT MATTERS                                    -->
+<!-- ============================================================ -->
+<div class="slide" id="s18">
   <h2>Why Epsilon-NFA Matters</h2>
 
   <div class="two-col">
@@ -924,13 +1091,13 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">17 / 18</div>
+  <div class="slide-number">18 / 19</div>
 </div>
 
 <!-- ============================================================ -->
-<!-- SLIDE 18 : SUMMARY & CHEAT SHEET                             -->
+<!-- SLIDE 19 : SUMMARY & CHEAT SHEET                             -->
 <!-- ============================================================ -->
-<div class="slide" id="s18">
+<div class="slide" id="s19">
   <h2>Summary & Cheat Sheet</h2>
 
   <div class="two-col">
@@ -989,7 +1156,7 @@ ul li { margin-bottom: 8px; }
       </div>
     </div>
   </div>
-  <div class="slide-number">18 / 18</div>
+  <div class="slide-number">19 / 19</div>
 </div>
 
 <!-- NAVIGATION -->
@@ -999,7 +1166,7 @@ ul li { margin-bottom: 8px; }
 </div>
 
 <script>
-const totalSlides = 18;
+const totalSlides = 19;
 let current = 1;
 function showSlide(n) {
   document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
@@ -1022,6 +1189,532 @@ document.addEventListener('keydown', (e) => {
     if (steps.length > 0) steps[0].classList.add('revealed');
   }
 });
+/* ===== SLIDE 8: ε-Closure BFS Explorer ===== */
+var ecl8_timers = [];
+var ecl8_epsEdges = {
+  q0: [{to:'q1', id:'ecl8-eps-q0-q1'}],
+  q1: [{to:'q2', id:'ecl8-eps-q1-q2'}, {to:'q4', id:'ecl8-eps-q1-q4'}],
+  q2: [{to:'q3', id:'ecl8-eps-q2-q3'}],
+  q3: [], q4: [], q5: []
+};
+var ecl8_allStates = ['q0','q1','q2','q3','q4','q5'];
+
+function ecl8Reset() {
+  ecl8_timers.forEach(function(t) { clearTimeout(t); });
+  ecl8_timers = [];
+  ecl8_allStates.forEach(function(s) {
+    var el = document.getElementById('ecl8-' + s);
+    if (el) el.className.baseVal = 'state-circle';
+  });
+  ['ecl8-eps-q0-q1','ecl8-eps-q1-q2','ecl8-eps-q1-q4','ecl8-eps-q2-q3'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.className.baseVal = 'eps-arrow';
+  });
+  document.getElementById('ecl8Result').innerHTML = 'Click a state above to visualize its &epsilon;-closure BFS.';
+}
+
+function ecl8Explore(startState) {
+  ecl8Reset();
+  var visited = [startState];
+  var queue = [startState];
+  var waves = [[startState]]; // group by BFS wave
+  // BFS
+  var waveFrontier = [startState];
+  while (waveFrontier.length > 0) {
+    var nextWave = [];
+    var nextEdges = [];
+    waveFrontier.forEach(function(s) {
+      ecl8_epsEdges[s].forEach(function(e) {
+        if (visited.indexOf(e.to) === -1) {
+          visited.push(e.to);
+          nextWave.push(e.to);
+          nextEdges.push(e.id);
+        }
+      });
+    });
+    if (nextWave.length > 0) {
+      waves.push(nextWave);
+    }
+    waveFrontier = nextWave;
+  }
+  // Animate wave by wave
+  var resultEl = document.getElementById('ecl8Result');
+  // Wave 0: highlight start
+  var el0 = document.getElementById('ecl8-' + startState);
+  if (el0) el0.className.baseVal = 'state-circle enfa-active';
+  resultEl.innerHTML = 'BFS Wave 0: {' + startState + '}';
+
+  var delay = 500;
+  for (var w = 1; w < waves.length; w++) {
+    (function(wave, wIdx, allWavesSoFar) {
+      var t = setTimeout(function() {
+        // Glow edges to these states
+        ecl8_allStates.forEach(function(s) {
+          ecl8_epsEdges[s].forEach(function(e) {
+            if (wave.indexOf(e.to) !== -1) {
+              var edgeEl = document.getElementById(e.id);
+              if (edgeEl) edgeEl.className.baseVal = 'eps-arrow enfa-glow';
+            }
+          });
+        });
+        // Highlight discovered states
+        wave.forEach(function(s) {
+          var sEl = document.getElementById('ecl8-' + s);
+          if (sEl) sEl.className.baseVal = 'state-circle enfa-discover';
+        });
+        resultEl.innerHTML = 'BFS Wave ' + wIdx + ': discovered {' + wave.join(', ') + '}<br>CL(' + startState + ') so far = {' + allWavesSoFar.join(', ') + '}';
+      }, delay * wIdx);
+      ecl8_timers.push(t);
+    })(waves[w], w, visited.slice(0, waves.slice(0, w + 1).reduce(function(a, b) { return a + b.length; }, 0)));
+  }
+  // Final result
+  var tFinal = setTimeout(function() {
+    resultEl.innerHTML = '<strong>CL(' + startState + ') = {' + visited.join(', ') + '}</strong>';
+    visited.forEach(function(s) {
+      var sEl = document.getElementById('ecl8-' + s);
+      if (sEl) sEl.className.baseVal = 'state-circle enfa-active';
+    });
+  }, delay * waves.length);
+  ecl8_timers.push(tFinal);
+}
+
+/* ===== SLIDE 11: ε-NFA Simulator ===== */
+var esimTimers = [];
+var esimState = { active: null, pos: -1, input: '', running: false, done: false };
+var esimTransitions = {
+  q0: { a: [], b: [], eps: ['q1', 'q4'] },
+  q1: { a: ['q2'], b: [], eps: [] },
+  q2: { a: [], b: ['q3'], eps: [] },
+  q3: { a: [], b: [], eps: [] },
+  q4: { a: [], b: ['q5'], eps: [] },
+  q5: { a: [], b: [], eps: [] }
+};
+var esimAccept = ['q3', 'q5'];
+var esimAllStates = ['q0','q1','q2','q3','q4','q5'];
+
+function esimClosure(stateSet) {
+  var result = stateSet.slice();
+  var queue = stateSet.slice();
+  while (queue.length > 0) {
+    var s = queue.shift();
+    var eps = esimTransitions[s].eps;
+    for (var i = 0; i < eps.length; i++) {
+      if (result.indexOf(eps[i]) === -1) {
+        result.push(eps[i]);
+        queue.push(eps[i]);
+      }
+    }
+  }
+  result.sort();
+  return result;
+}
+
+function esimFormatSet(arr) {
+  if (!arr || arr.length === 0) return '\u2205';
+  return '{' + arr.join(', ') + '}';
+}
+
+function esimInit() {
+  var inputEl = document.getElementById('esimInput');
+  var raw = inputEl.value.trim();
+  if (!/^[ab]*$/.test(raw)) {
+    alert('Input must contain only a and b characters.');
+    return false;
+  }
+  esimState.input = raw;
+  esimState.pos = 0;
+  esimState.active = esimClosure(['q0']);
+  esimState.done = false;
+  esimState.running = false;
+  document.getElementById('esimVerdict').style.display = 'none';
+  document.getElementById('esimClosure').style.display = 'block';
+  document.getElementById('esimClosure').innerHTML = 'Initial: CL({q0}) = ' + esimFormatSet(esimState.active);
+  esimUpdateDisplay();
+  return true;
+}
+
+function esimUpdateDisplay() {
+  // Update SVG
+  esimAllStates.forEach(function(s) {
+    var el = document.getElementById('esim-' + s);
+    if (!el) return;
+    if (esimState.active && esimState.active.indexOf(s) !== -1) {
+      el.className.baseVal = 'state-circle enfa-active';
+      var inner = document.getElementById('esim-' + s + '-inner');
+      if (inner) inner.className.baseVal = 'accept-inner enfa-active';
+    } else {
+      el.className.baseVal = 'state-circle';
+      var inner = document.getElementById('esim-' + s + '-inner');
+      if (inner) inner.className.baseVal = 'accept-inner';
+    }
+  });
+  // Active states text
+  document.getElementById('esimActiveStates').textContent = esimState.active ? esimFormatSet(esimState.active) : '--';
+  // Input display
+  var dispEl = document.getElementById('esimInputDisplay');
+  if (esimState.active === null) {
+    dispEl.innerHTML = '--';
+  } else if (esimState.input === '') {
+    dispEl.innerHTML = '<span style="color:#a78bfa;">\u03b5 (empty string)</span>';
+  } else {
+    var consumed = esimState.input.substring(0, esimState.pos);
+    var curr = esimState.pos < esimState.input.length ? esimState.input[esimState.pos] : '';
+    var remaining = esimState.input.substring(esimState.pos + 1);
+    var html = '<span class="consumed">' + consumed + '</span>';
+    if (curr) html += '<span class="current-char">' + curr + '</span>';
+    html += '<span class="remaining">' + remaining + '</span>';
+    dispEl.innerHTML = html;
+  }
+}
+
+function esimStep() {
+  if (esimState.active === null) {
+    if (!esimInit()) return;
+    if (esimState.input === '') {
+      esimFinish();
+    }
+    return;
+  }
+  if (esimState.done) return;
+  if (esimState.pos >= esimState.input.length) {
+    esimFinish();
+    return;
+  }
+  var sym = esimState.input[esimState.pos];
+  var moved = [];
+  esimState.active.forEach(function(s) {
+    var targets = esimTransitions[s][sym] || [];
+    targets.forEach(function(t) {
+      if (moved.indexOf(t) === -1) moved.push(t);
+    });
+  });
+  var closed = esimClosure(moved);
+  var closureEl = document.getElementById('esimClosure');
+  closureEl.innerHTML = 'Read \'' + sym + '\': \u03b4(' + esimFormatSet(esimState.active) + ', ' + sym + ') = ' + esimFormatSet(moved) + '<br>CL(' + esimFormatSet(moved) + ') = ' + esimFormatSet(closed);
+  esimState.active = closed;
+  esimState.pos++;
+  esimUpdateDisplay();
+  if (esimState.pos >= esimState.input.length) {
+    esimFinish();
+  }
+}
+
+function esimFinish() {
+  esimState.done = true;
+  var hasAccept = false;
+  esimState.active.forEach(function(s) {
+    if (esimAccept.indexOf(s) !== -1) hasAccept = true;
+  });
+  var verdictEl = document.getElementById('esimVerdict');
+  verdictEl.style.display = 'block';
+  if (hasAccept) {
+    verdictEl.className = 'enfa-sim-verdict accept';
+    verdictEl.textContent = 'ACCEPTED! ' + esimFormatSet(esimState.active) + ' contains accept state(s).';
+    esimState.active.forEach(function(s) {
+      if (esimAccept.indexOf(s) !== -1) {
+        var el = document.getElementById('esim-' + s);
+        if (el) el.className.baseVal = 'state-circle enfa-accepted';
+        var inner = document.getElementById('esim-' + s + '-inner');
+        if (inner) inner.className.baseVal = 'accept-inner enfa-accepted';
+      }
+    });
+  } else {
+    verdictEl.className = 'enfa-sim-verdict reject';
+    verdictEl.textContent = 'REJECTED. ' + esimFormatSet(esimState.active) + ' has no accept state.';
+    esimState.active.forEach(function(s) {
+      var el = document.getElementById('esim-' + s);
+      if (el) el.className.baseVal = 'state-circle enfa-dead';
+    });
+  }
+}
+
+function esimRun() {
+  if (esimState.active === null) {
+    if (!esimInit()) return;
+    if (esimState.input === '') {
+      esimFinish();
+      return;
+    }
+  }
+  if (esimState.done || esimState.running) return;
+  esimState.running = true;
+  function doStep() {
+    if (esimState.done) { esimState.running = false; return; }
+    esimStep();
+    if (!esimState.done) {
+      var t = setTimeout(doStep, 700);
+      esimTimers.push(t);
+    } else {
+      esimState.running = false;
+    }
+  }
+  var t = setTimeout(doStep, 700);
+  esimTimers.push(t);
+}
+
+function esimReset() {
+  esimTimers.forEach(function(t) { clearTimeout(t); });
+  esimTimers = [];
+  esimState = { active: null, pos: -1, input: '', running: false, done: false };
+  esimAllStates.forEach(function(s) {
+    var el = document.getElementById('esim-' + s);
+    if (el) el.className.baseVal = 'state-circle';
+    var inner = document.getElementById('esim-' + s + '-inner');
+    if (inner) inner.className.baseVal = 'accept-inner';
+  });
+  document.getElementById('esimActiveStates').textContent = '--';
+  document.getElementById('esimInputDisplay').innerHTML = '--';
+  document.getElementById('esimClosure').style.display = 'none';
+  document.getElementById('esimVerdict').style.display = 'none';
+}
+
+/* ===== SLIDE 14: ε-NFA→NFA Conversion Visualizer ===== */
+var econvTimers = [];
+var econvCurrent = 0;
+var econvSteps = [];
+
+function econvBuildSteps() {
+  econvSteps = [
+    { type:'info', msg:'<span class="log-cl">Closures: CL(q0)={q0,q1}, CL(q1)={q1}, CL(q2)={q2,q3}, CL(q3)={q3}, CL(q4)={q4}</span>' },
+    { type:'fill', row:0, col:1, val:'{q2,q3}', msg:'<span class="log-new">\u03b4_N(q0,a): CL(q0)={q0,q1}, \u03b4({q0,q1},a)={q2}, CL({q2})={q2,q3}</span>' },
+    { type:'fill', row:0, col:2, val:'\u2205', msg:'\u03b4_N(q0,b): CL(q0)={q0,q1}, \u03b4({q0,q1},b)=\u2205' },
+    { type:'fill', row:1, col:1, val:'{q2,q3}', msg:'<span class="log-seen">\u03b4_N(q1,a): CL(q1)={q1}, \u03b4({q1},a)={q2}, CL({q2})={q2,q3}</span>' },
+    { type:'fill', row:1, col:2, val:'\u2205', msg:'\u03b4_N(q1,b): CL(q1)={q1}, \u03b4({q1},b)=\u2205' },
+    { type:'fill', row:2, col:1, val:'\u2205', msg:'\u03b4_N(q2,a): CL(q2)={q2,q3}, \u03b4({q2,q3},a)=\u2205' },
+    { type:'fill', row:2, col:2, val:'{q4}', msg:'<span class="log-new">\u03b4_N(q2,b): CL(q2)={q2,q3}, \u03b4({q2,q3},b)={q4}, CL({q4})={q4}</span>' },
+    { type:'fill', row:3, col:1, val:'\u2205', msg:'\u03b4_N(q3,a): CL(q3)={q3}, \u03b4({q3},a)=\u2205' },
+    { type:'fill', row:3, col:2, val:'{q4}', msg:'<span class="log-seen">\u03b4_N(q3,b): CL(q3)={q3}, \u03b4({q3},b)={q4}, CL({q4})={q4}</span>' },
+    { type:'fill', row:4, col:1, val:'\u2205', msg:'\u03b4_N(q4,a): \u2205' },
+    { type:'fill', row:4, col:2, val:'\u2205', msg:'\u03b4_N(q4,b): \u2205' },
+    { type:'done', msg:'<span class="log-new">Done! F\' = {q4} (only CL(q4)={q4} intersects F={q4})</span>' }
+  ];
+}
+
+function econvNext() {
+  if (econvSteps.length === 0) econvBuildSteps();
+  if (econvCurrent >= econvSteps.length) return;
+  var step = econvSteps[econvCurrent];
+  var logEl = document.getElementById('econvLog');
+  logEl.innerHTML = step.msg;
+  logEl.scrollTop = logEl.scrollHeight;
+  document.getElementById('econvStep').textContent = 'Step ' + (econvCurrent + 1) + ' / ' + econvSteps.length;
+
+  if (step.type === 'fill') {
+    var row = document.getElementById('econvR' + step.row);
+    if (row) {
+      row.cells[step.col].textContent = step.val;
+      row.className = 'enfa-new';
+      setTimeout(function() { row.className = ''; }, 600);
+    }
+  } else if (step.type === 'done') {
+    document.getElementById('econvAccept').innerHTML = '<strong>New accept states F\' = {q4}</strong>';
+    var doneEl = document.getElementById('econvDone');
+    doneEl.style.display = 'block';
+    doneEl.textContent = 'Conversion complete! NFA has no \u03b5-column.';
+  }
+  econvCurrent++;
+}
+
+function econvAuto() {
+  if (econvSteps.length === 0) econvBuildSteps();
+  function doNext() {
+    if (econvCurrent >= econvSteps.length) return;
+    econvNext();
+    var t = setTimeout(doNext, 800);
+    econvTimers.push(t);
+  }
+  doNext();
+}
+
+function econvReset() {
+  econvTimers.forEach(function(t) { clearTimeout(t); });
+  econvTimers = [];
+  econvCurrent = 0;
+  econvBuildSteps();
+  document.getElementById('econvStep').textContent = 'Step 0 / ' + econvSteps.length;
+  document.getElementById('econvLog').innerHTML = 'Ready. Click "Next Step" to begin.';
+  document.getElementById('econvAccept').innerHTML = '';
+  document.getElementById('econvDone').style.display = 'none';
+  // Reset table cells
+  for (var r = 0; r < 5; r++) {
+    var row = document.getElementById('econvR' + r);
+    if (row) {
+      row.cells[1].textContent = '--';
+      row.cells[2].textContent = '--';
+      row.className = '';
+    }
+  }
+}
+
+/* ===== SLIDE 16: ε-NFA→DFA Subset Construction ===== */
+var edscTimers = [];
+var edscCurrent = 0;
+var edscSteps = [];
+
+function edscBuildSteps() {
+  edscSteps = [
+    { type:'row', name:'\u2192 A', states:'{q0, q1}', a:'--', b:'--', accept:'No', msg:'<span class="log-cl">Start: CL(q0)={q0,q1} \u2192 DFA state A</span>' },
+    { type:'fill', row:0, col:'a', val:'B', msg:'<span class="log-new">\u03b4(A,a): \u03b4({q0,q1},a)={q2}, CL={q2} \u2192 B (NEW)</span>', newRow:{ name:'B', states:'{q2}', a:'--', b:'--', accept:'No' } },
+    { type:'fill', row:0, col:'b', val:'DEAD', msg:'<span class="log-new">\u03b4(A,b): \u03b4({q0,q1},b)=\u2205 \u2192 DEAD (NEW)</span>', newRow:{ name:'DEAD', states:'\u2205', a:'--', b:'--', accept:'No' } },
+    { type:'fill', row:1, col:'a', val:'DEAD', msg:'<span class="log-seen">\u03b4(B,a): \u03b4({q2},a)=\u2205 \u2192 DEAD (seen)</span>' },
+    { type:'fill', row:1, col:'b', val:'C', msg:'<span class="log-new">\u03b4(B,b): \u03b4({q2},b)={q3}, CL={q3} \u2192 C (NEW, ACCEPT)</span>', newRow:{ name:'*C', states:'{q3}', a:'--', b:'--', accept:'Yes' } },
+    { type:'fill', row:2, col:'a', val:'DEAD', msg:'<span class="log-seen">\u03b4(DEAD,a): \u2205 \u2192 DEAD (seen)</span>' },
+    { type:'fill', row:2, col:'b', val:'DEAD', msg:'<span class="log-seen">\u03b4(DEAD,b): \u2205 \u2192 DEAD (seen)</span>' },
+    { type:'fill', row:3, col:'a', val:'DEAD', msg:'<span class="log-seen">\u03b4(C,a): \u03b4({q3},a)=\u2205 \u2192 DEAD (seen)</span>' },
+    { type:'fill', row:3, col:'b', val:'DEAD', msg:'<span class="log-seen">\u03b4(C,b): \u03b4({q3},b)=\u2205 \u2192 DEAD (seen)</span>' },
+    { type:'done', msg:'<span class="log-new">Done! DFA accepts exactly "ab". Accept states: {C}</span>' }
+  ];
+}
+
+function edscNext() {
+  if (edscSteps.length === 0) edscBuildSteps();
+  if (edscCurrent >= edscSteps.length) return;
+  var step = edscSteps[edscCurrent];
+  var logEl = document.getElementById('edscLog');
+  logEl.innerHTML = step.msg;
+  logEl.scrollTop = logEl.scrollHeight;
+  document.getElementById('edscStep').textContent = 'Step ' + (edscCurrent + 1) + ' / ' + edscSteps.length;
+  var table = document.getElementById('edscTable');
+
+  if (step.type === 'row') {
+    var tr = table.insertRow(-1);
+    tr.innerHTML = '<td>' + step.name + '</td><td>' + step.states + '</td><td>' + step.a + '</td><td>' + step.b + '</td><td>' + step.accept + '</td>';
+    tr.className = 'enfa-new';
+    setTimeout(function() { tr.className = ''; }, 600);
+  } else if (step.type === 'fill') {
+    var colIdx = step.col === 'a' ? 2 : 3;
+    var rows = table.rows;
+    var dataRow = rows[step.row + 1]; // +1 for header
+    if (dataRow) {
+      dataRow.cells[colIdx].textContent = step.val;
+      dataRow.className = 'enfa-processing';
+      setTimeout(function() { dataRow.className = ''; }, 600);
+    }
+    if (step.newRow) {
+      var tr = table.insertRow(-1);
+      tr.innerHTML = '<td>' + step.newRow.name + '</td><td>' + step.newRow.states + '</td><td>' + step.newRow.a + '</td><td>' + step.newRow.b + '</td><td>' + step.newRow.accept + '</td>';
+      tr.className = 'enfa-new';
+      setTimeout(function() { tr.className = ''; }, 600);
+    }
+  } else if (step.type === 'done') {
+    var doneEl = document.getElementById('edscDone');
+    doneEl.style.display = 'block';
+    doneEl.textContent = 'Subset construction complete! L = {ab}';
+  }
+  edscCurrent++;
+}
+
+function edscAuto() {
+  if (edscSteps.length === 0) edscBuildSteps();
+  function doNext() {
+    if (edscCurrent >= edscSteps.length) return;
+    edscNext();
+    var t = setTimeout(doNext, 800);
+    edscTimers.push(t);
+  }
+  doNext();
+}
+
+function edscReset() {
+  edscTimers.forEach(function(t) { clearTimeout(t); });
+  edscTimers = [];
+  edscCurrent = 0;
+  edscBuildSteps();
+  document.getElementById('edscStep').textContent = 'Step 0 / ' + edscSteps.length;
+  document.getElementById('edscLog').innerHTML = 'Ready. Click "Next Step" to begin.';
+  document.getElementById('edscDone').style.display = 'none';
+  // Reset table - remove all data rows
+  var table = document.getElementById('edscTable');
+  while (table.rows.length > 1) {
+    table.deleteRow(1);
+  }
+}
+
+/* ===== SLIDE 17: Challenge Quiz ===== */
+var eq1Problems = [
+  { str: 'ab', accept: true, trace: 'q0 \u2192[\u03b5] {q0,q1,q4} \u2192[a] {q2} \u2192[b] {q3*} \u2714 Accept' },
+  { str: 'b', accept: true, trace: 'q0 \u2192[\u03b5] {q0,q1,q4} \u2192[b] {q5*} \u2714 Accept' },
+  { str: 'a', accept: false, trace: 'q0 \u2192[\u03b5] {q0,q1,q4} \u2192[a] {q2} -- no accept state \u2718 Reject' },
+  { str: 'ba', accept: false, trace: 'q0 \u2192[\u03b5] {q0,q1,q4} \u2192[b] {q5} \u2192[a] \u2205 -- stuck \u2718 Reject' },
+  { str: '\u03b5', accept: false, trace: 'CL(q0)={q0,q1,q4}, none in F={q3,q5} \u2718 Reject' },
+  { str: 'bb', accept: false, trace: 'q0 \u2192[\u03b5] {q0,q1,q4} \u2192[b] {q5} \u2192[b] \u2205 -- stuck \u2718 Reject' }
+];
+var eq1Shuffled = [];
+var eq1Idx = 0;
+var eq1Score = 0;
+var eq1Total = 3;
+var eq1Timers = [];
+
+function eq1Shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function eq1Init() {
+  eq1Timers.forEach(function(t) { clearTimeout(t); });
+  eq1Timers = [];
+  eq1Shuffled = eq1Shuffle(eq1Problems).slice(0, eq1Total);
+  eq1Idx = 0;
+  eq1Score = 0;
+  document.getElementById('eq1Score').textContent = '';
+  eq1Render();
+}
+
+function eq1Render() {
+  if (eq1Idx >= eq1Total) {
+    document.getElementById('eq1Question').textContent = 'Quiz Complete!';
+    document.getElementById('eq1Progress').textContent = '';
+    document.getElementById('eq1Buttons').style.display = 'none';
+    document.getElementById('eq1Feedback').className = 'feedback-box';
+    document.getElementById('eq1Feedback').style.display = 'none';
+    document.getElementById('eq1Score').textContent = 'Score: ' + eq1Score + ' / ' + eq1Total;
+    return;
+  }
+  var p = eq1Shuffled[eq1Idx];
+  var displayStr = p.str === '\u03b5' ? '\u03b5 (empty string)' : '"' + p.str + '"';
+  document.getElementById('eq1Question').textContent = 'Does this \u03b5-NFA accept ' + displayStr + '?';
+  document.getElementById('eq1Progress').textContent = 'Question ' + (eq1Idx + 1) + ' / ' + eq1Total;
+  document.getElementById('eq1Buttons').style.display = 'block';
+  var btns = document.getElementById('eq1Buttons').querySelectorAll('.quiz-btn');
+  btns.forEach(function(b) { b.disabled = false; b.className = 'quiz-btn'; });
+  document.getElementById('eq1Feedback').className = 'feedback-box';
+  document.getElementById('eq1Feedback').style.display = 'none';
+}
+
+function eq1Answer(guess) {
+  var p = eq1Shuffled[eq1Idx];
+  var correct = (guess === p.accept);
+  if (correct) eq1Score++;
+  var btns = document.getElementById('eq1Buttons').querySelectorAll('.quiz-btn');
+  btns.forEach(function(b) { b.disabled = true; });
+  // Highlight buttons
+  if (guess === true) {
+    btns[0].className = correct ? 'quiz-btn correct' : 'quiz-btn wrong';
+    if (!correct) btns[1].className = 'quiz-btn correct';
+  } else {
+    btns[1].className = correct ? 'quiz-btn correct' : 'quiz-btn wrong';
+    if (!correct) btns[0].className = 'quiz-btn correct';
+  }
+  var fb = document.getElementById('eq1Feedback');
+  fb.className = 'feedback-box show ' + (correct ? 'correct' : 'wrong');
+  fb.style.display = 'block';
+  fb.innerHTML = (correct ? '<strong>Correct!</strong> ' : '<strong>Wrong.</strong> ') + p.trace;
+  eq1Idx++;
+  var t = setTimeout(eq1Render, 2500);
+  eq1Timers.push(t);
+}
+
+// Initialize quiz when slide 17 is shown
+var origShowSlide = showSlide;
+showSlide = function(n) {
+  origShowSlide(n);
+  if (n === 17) eq1Init();
+};
+
 showSlide(1);
 </script>
 
