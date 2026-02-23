@@ -1,0 +1,2480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Singly Linked Lists - CS205 Data Structures (Enhanced)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+
+/* SVG container styling */
+.svg-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin: 16px 0; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+.svg-container svg { max-width: 100%; }
+
+/* Interactive controls */
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.controls input[type="number"], .controls input[type="text"] {
+  background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; width: 80px; outline: none; transition: border-color 0.2s;
+}
+.controls input:focus { border-color: #3b82f6; }
+.controls button, .step-btn {
+  background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; color: #fff;
+  padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+  transition: all 0.2s; white-space: nowrap;
+}
+.controls button:hover, .step-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.controls button:active, .step-btn:active { transform: translateY(0); }
+.controls button.danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.controls button.success { background: linear-gradient(135deg, #10b981, #059669); }
+.controls button.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.controls button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.controls label { color: #94a3b8; font-size: 14px; }
+.status-msg { color: #94a3b8; font-size: 0.95em; min-height: 1.5em; margin: 8px 0; padding: 6px 12px; border-radius: 6px; background: rgba(30,41,59,0.5); }
+.status-msg.success { color: #34d399; }
+.status-msg.error { color: #f87171; }
+
+/* Code block with line highlighting */
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.85em; line-height: 1.8; white-space: pre; overflow-x: auto; margin: 12px 0; color: #e2e8f0; position: relative; }
+.code-block .line { display: block; padding: 0 8px; border-radius: 4px; transition: background 0.3s; }
+.code-block .line.active { background: rgba(59,130,246,0.25); border-left: 3px solid #3b82f6; padding-left: 5px; }
+.code-block .kw { color: #c084fc; }
+.code-block .type { color: #67e8f9; }
+.code-block .str { color: #86efac; }
+.code-block .cmt { color: #64748b; font-style: italic; }
+.code-block .fn { color: #93c5fd; }
+.code-block .num { color: #fbbf24; }
+.code-block .op { color: #f472b6; }
+
+/* Step reveal */
+.step { opacity: 0; transition: opacity 0.4s ease, transform 0.4s ease; transform: translateY(8px); }
+.step.visible { opacity: 1; transform: translateY(0); }
+
+/* Playground panel */
+.playground { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin: 16px 0; }
+.playground h3 { font-size: 1.1em; margin-bottom: 12px; }
+
+/* Tags */
+.tag { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 0.85em; margin-right: 6px; }
+.tag.blue { background: rgba(59,130,246,0.2); color: #93c5fd; }
+.tag.green { background: rgba(16,185,129,0.2); color: #34d399; }
+.tag.yellow { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.tag.red { background: rgba(239,68,68,0.2); color: #f87171; }
+
+/* Tooltip */
+.tooltip { position: relative; display: inline-block; cursor: help; border-bottom: 1px dashed #64748b; }
+.tooltip .tooltip-text { visibility: hidden; background: #334155; color: #e2e8f0; padding: 8px 12px; border-radius: 8px; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.85em; z-index: 10; opacity: 0; transition: opacity 0.2s; }
+.tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SVG UTILITY FUNCTIONS ==================== -->
+<script>
+// ── SVG Drawing Utilities ──
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function createSVG(w, h) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', h);
+  // Arrow marker definition
+  const defs = document.createElementNS(SVG_NS, 'defs');
+  const marker = document.createElementNS(SVG_NS, 'marker');
+  marker.setAttribute('id', 'arrowhead');
+  marker.setAttribute('markerWidth', '10');
+  marker.setAttribute('markerHeight', '7');
+  marker.setAttribute('refX', '10');
+  marker.setAttribute('refY', '3.5');
+  marker.setAttribute('orient', 'auto');
+  const polygon = document.createElementNS(SVG_NS, 'polygon');
+  polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+  polygon.setAttribute('fill', '#60a5fa');
+  marker.appendChild(polygon);
+  defs.appendChild(marker);
+
+  // Red arrow for highlighting
+  const markerRed = marker.cloneNode(true);
+  markerRed.setAttribute('id', 'arrowhead-red');
+  markerRed.querySelector('polygon').setAttribute('fill', '#f87171');
+  defs.appendChild(markerRed);
+
+  // Green arrow
+  const markerGreen = marker.cloneNode(true);
+  markerGreen.setAttribute('id', 'arrowhead-green');
+  markerGreen.querySelector('polygon').setAttribute('fill', '#34d399');
+  defs.appendChild(markerGreen);
+
+  // Yellow arrow
+  const markerYellow = marker.cloneNode(true);
+  markerYellow.setAttribute('id', 'arrowhead-yellow');
+  markerYellow.querySelector('polygon').setAttribute('fill', '#fbbf24');
+  defs.appendChild(markerYellow);
+
+  svg.appendChild(defs);
+  return svg;
+}
+
+function drawNode(svg, x, y, value, opts = {}) {
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('class', 'svg-node');
+  g.setAttribute('transform', `translate(${x},${y})`);
+
+  const w = opts.width || 100, h = opts.height || 50;
+  const splitX = w * 0.6;
+  const color = opts.color || '#334155';
+  const borderColor = opts.borderColor || '#475569';
+  const textColor = opts.textColor || '#e2e8f0';
+  const highlight = opts.highlight || null;
+
+  // Main rect
+  const rect = document.createElementNS(SVG_NS, 'rect');
+  rect.setAttribute('width', w);
+  rect.setAttribute('height', h);
+  rect.setAttribute('rx', 8);
+  rect.setAttribute('fill', color);
+  rect.setAttribute('stroke', highlight || borderColor);
+  rect.setAttribute('stroke-width', highlight ? 2.5 : 1.5);
+  if (opts.opacity !== undefined) rect.setAttribute('opacity', opts.opacity);
+  g.appendChild(rect);
+
+  // Divider line
+  const line = document.createElementNS(SVG_NS, 'line');
+  line.setAttribute('x1', splitX); line.setAttribute('y1', 0);
+  line.setAttribute('x2', splitX); line.setAttribute('y2', h);
+  line.setAttribute('stroke', borderColor); line.setAttribute('stroke-width', 1);
+  if (opts.opacity !== undefined) line.setAttribute('opacity', opts.opacity);
+  g.appendChild(line);
+
+  // Data text
+  const dataText = document.createElementNS(SVG_NS, 'text');
+  dataText.setAttribute('x', splitX / 2);
+  dataText.setAttribute('y', h / 2 + 1);
+  dataText.setAttribute('text-anchor', 'middle');
+  dataText.setAttribute('dominant-baseline', 'middle');
+  dataText.setAttribute('fill', textColor);
+  dataText.setAttribute('font-family', "'SF Mono', 'Fira Code', monospace");
+  dataText.setAttribute('font-size', opts.fontSize || '16');
+  dataText.setAttribute('font-weight', '600');
+  if (opts.opacity !== undefined) dataText.setAttribute('opacity', opts.opacity);
+  dataText.textContent = value;
+  g.appendChild(dataText);
+
+  // Next section - dot or "null"
+  const nextText = document.createElementNS(SVG_NS, 'text');
+  nextText.setAttribute('x', splitX + (w - splitX) / 2);
+  nextText.setAttribute('y', h / 2 + 1);
+  nextText.setAttribute('text-anchor', 'middle');
+  nextText.setAttribute('dominant-baseline', 'middle');
+  nextText.setAttribute('fill', opts.isLast ? '#f87171' : '#60a5fa');
+  nextText.setAttribute('font-family', "'SF Mono', 'Fira Code', monospace");
+  nextText.setAttribute('font-size', opts.isLast ? '11' : '20');
+  nextText.setAttribute('font-weight', '600');
+  if (opts.opacity !== undefined) nextText.setAttribute('opacity', opts.opacity);
+  nextText.textContent = opts.isLast ? 'null' : '●';
+  g.appendChild(nextText);
+
+  // Optional label above
+  if (opts.label) {
+    const label = document.createElementNS(SVG_NS, 'text');
+    label.setAttribute('x', w / 2);
+    label.setAttribute('y', -10);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('fill', opts.labelColor || '#94a3b8');
+    label.setAttribute('font-size', '13');
+    label.setAttribute('font-family', "'SF Mono', 'Fira Code', monospace");
+    label.textContent = opts.label;
+    g.appendChild(label);
+  }
+
+  // Optional label below
+  if (opts.labelBelow) {
+    const label = document.createElementNS(SVG_NS, 'text');
+    label.setAttribute('x', w / 2);
+    label.setAttribute('y', h + 18);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('fill', opts.labelBelowColor || '#94a3b8');
+    label.setAttribute('font-size', '12');
+    label.setAttribute('font-family', "'SF Mono', 'Fira Code', monospace");
+    label.textContent = opts.labelBelow;
+    g.appendChild(label);
+  }
+
+  svg.appendChild(g);
+  return g;
+}
+
+function drawArrow(svg, x1, y1, x2, y2, opts = {}) {
+  const line = document.createElementNS(SVG_NS, 'line');
+  line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+  line.setAttribute('stroke', opts.color || '#60a5fa');
+  line.setAttribute('stroke-width', opts.width || 2);
+  const markerType = opts.markerColor === 'red' ? 'arrowhead-red' :
+                     opts.markerColor === 'green' ? 'arrowhead-green' :
+                     opts.markerColor === 'yellow' ? 'arrowhead-yellow' : 'arrowhead';
+  line.setAttribute('marker-end', `url(#${markerType})`);
+  if (opts.opacity !== undefined) line.setAttribute('opacity', opts.opacity);
+  if (opts.dashed) line.setAttribute('stroke-dasharray', '6,4');
+  svg.appendChild(line);
+  return line;
+}
+
+function drawCurvedArrow(svg, x1, y1, x2, y2, opts = {}) {
+  const path = document.createElementNS(SVG_NS, 'path');
+  const midX = (x1 + x2) / 2;
+  const curveY = Math.min(y1, y2) - (opts.curve || 30);
+  path.setAttribute('d', `M ${x1} ${y1} Q ${midX} ${curveY} ${x2} ${y2}`);
+  path.setAttribute('stroke', opts.color || '#60a5fa');
+  path.setAttribute('stroke-width', opts.width || 2);
+  path.setAttribute('fill', 'none');
+  const markerType = opts.markerColor === 'red' ? 'arrowhead-red' :
+                     opts.markerColor === 'green' ? 'arrowhead-green' :
+                     opts.markerColor === 'yellow' ? 'arrowhead-yellow' : 'arrowhead';
+  path.setAttribute('marker-end', `url(#${markerType})`);
+  if (opts.dashed) path.setAttribute('stroke-dasharray', '6,4');
+  if (opts.opacity !== undefined) path.setAttribute('opacity', opts.opacity);
+  svg.appendChild(path);
+  return path;
+}
+
+function drawHeadPointer(svg, x, y, targetX, targetY) {
+  const g = document.createElementNS(SVG_NS, 'g');
+  const label = document.createElementNS(SVG_NS, 'text');
+  label.setAttribute('x', x);
+  label.setAttribute('y', y);
+  label.setAttribute('text-anchor', 'middle');
+  label.setAttribute('fill', '#fbbf24');
+  label.setAttribute('font-size', '14');
+  label.setAttribute('font-weight', '700');
+  label.setAttribute('font-family', "'SF Mono', 'Fira Code', monospace");
+  label.textContent = 'head';
+  g.appendChild(label);
+  drawArrow(svg, x, y + 4, targetX, targetY, { color: '#fbbf24', markerColor: 'yellow' });
+  svg.appendChild(g);
+  return g;
+}
+
+function drawNullBox(svg, x, y) {
+  const text = document.createElementNS(SVG_NS, 'text');
+  text.setAttribute('x', x);
+  text.setAttribute('y', y);
+  text.setAttribute('text-anchor', 'middle');
+  text.setAttribute('dominant-baseline', 'middle');
+  text.setAttribute('fill', '#f87171');
+  text.setAttribute('font-size', '14');
+  text.setAttribute('font-weight', '700');
+  text.setAttribute('font-family', "'SF Mono', 'Fira Code', monospace");
+  text.textContent = 'null';
+  svg.appendChild(text);
+  return text;
+}
+
+function drawLabel(svg, x, y, text, opts = {}) {
+  const el = document.createElementNS(SVG_NS, 'text');
+  el.setAttribute('x', x);
+  el.setAttribute('y', y);
+  el.setAttribute('text-anchor', opts.anchor || 'middle');
+  el.setAttribute('dominant-baseline', 'middle');
+  el.setAttribute('fill', opts.color || '#94a3b8');
+  el.setAttribute('font-size', opts.fontSize || '13');
+  el.setAttribute('font-family', "'SF Mono', 'Fira Code', monospace");
+  if (opts.bold) el.setAttribute('font-weight', '700');
+  el.textContent = text;
+  svg.appendChild(el);
+  return el;
+}
+
+// Draw a linked list from an array of values, returns { svg, nodePositions }
+function drawLinkedList(container, values, opts = {}) {
+  const nodeW = opts.nodeWidth || 100;
+  const nodeH = opts.nodeHeight || 50;
+  const gap = opts.gap || 50;
+  const padLeft = opts.padLeft || 60;
+  const padTop = opts.padTop || 50;
+  const totalW = padLeft + values.length * (nodeW + gap) + 60;
+  const totalH = padTop + nodeH + 50;
+
+  const svg = createSVG(totalW, totalH);
+  const positions = [];
+
+  // Head pointer
+  if (values.length > 0) {
+    drawHeadPointer(svg, padLeft + nodeW / 2, padTop - 30, padLeft + nodeW / 2, padTop);
+  }
+
+  values.forEach((val, i) => {
+    const x = padLeft + i * (nodeW + gap);
+    const y = padTop;
+    const isLast = i === values.length - 1;
+    const nodeOpts = {
+      isLast,
+      ...(opts.highlightIndex === i ? { highlight: opts.highlightColor || '#3b82f6' } : {}),
+      ...(opts.nodeLabels && opts.nodeLabels[i] ? { labelBelow: opts.nodeLabels[i], labelBelowColor: opts.labelColors?.[i] || '#94a3b8' } : {})
+    };
+    drawNode(svg, x, y, val, nodeOpts);
+    positions.push({ x, y, w: nodeW, h: nodeH });
+
+    // Arrow to next node
+    if (!isLast) {
+      drawArrow(svg, x + nodeW - 8, y + nodeH / 2, x + nodeW + gap - 2, y + nodeH / 2);
+    }
+  });
+
+  container.innerHTML = '';
+  container.appendChild(svg);
+  return { svg, positions };
+}
+</script>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>Singly Linked Lists</h1>
+    <p class="subtitle">CS205 Data Structures</p>
+    <div class="svg-container" id="title-svg" style="display:inline-block;"></div>
+    <p class="mt" style="color:#64748b;">Use arrow keys or buttons to navigate &bull; Interactive slides ahead!</p>
+  </div>
+  <div class="slide-number">1 / 21</div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('title-svg');
+  const svg = createSVG(680, 120);
+  drawHeadPointer(svg, 90, 20, 90, 40);
+  const vals = [10, 20, 30, 40];
+  vals.forEach((v, i) => {
+    const x = 40 + i * 150;
+    drawNode(svg, x, 40, v, { isLast: i === 3 });
+    if (i < 3) drawArrow(svg, x + 100 - 8, 65, x + 150 - 2, 65);
+  });
+  c.appendChild(svg);
+
+  // Animate nodes appearing one by one
+  const nodes = svg.querySelectorAll('.svg-node');
+  nodes.forEach((n, i) => {
+    n.style.opacity = '0';
+    n.style.transition = 'opacity 0.5s ease';
+    setTimeout(() => { n.style.opacity = '1'; }, 300 + i * 250);
+  });
+})();
+</script>
+
+<!-- ==================== SLIDE 2: WHAT IS A LINKED LIST? ==================== -->
+<div class="slide" id="s2">
+  <h2>What is a Linked List?</h2>
+  <p>A <strong>linked list</strong> is a linear data structure where each element (called a <strong>node</strong>) contains data and a reference (pointer) to the next node.</p>
+
+  <div class="svg-container" id="s2-svg"></div>
+
+  <div class="two-col mt">
+    <div class="analogy">
+      <h3>Analogy: Treasure Hunt</h3>
+      <p>Each clue tells you where to find the next clue. You can only follow the chain forward — you cannot jump directly to clue #5.</p>
+    </div>
+    <div class="analogy">
+      <h3>Analogy: Train Cars</h3>
+      <p>Each car (node) carries cargo (data) and is coupled to the next car (next pointer). The engine is the <strong>head</strong>. The last car points to <code>null</code>.</p>
+    </div>
+  </div>
+  <div class="key-idea mt">
+    <h3>Key Idea</h3>
+    <p>Unlike arrays, linked list nodes do NOT need to be stored contiguously in memory. They can be scattered anywhere — the pointers connect them into a logical sequence.</p>
+  </div>
+  <div class="slide-number">2 / 21</div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('s2-svg');
+  const svg = createSVG(720, 130);
+
+  // Draw annotated node anatomy
+  drawLabel(svg, 360, 14, 'Each node has two parts:', { fontSize: '14', color: '#94a3b8' });
+
+  const vals = ['data', 'data', 'data'];
+  const labels = ['value stored', '', 'pointer to next'];
+  for (let i = 0; i < 3; i++) {
+    const x = 80 + i * 220;
+    drawNode(svg, x, 35, vals[i], { isLast: i === 2, width: 120, textColor: '#a5f3fc' });
+    if (i < 2) drawArrow(svg, x + 120 - 8, 60, x + 220 - 2, 60);
+  }
+  // null at end
+  drawNullBox(svg, 80 + 3 * 220 - 50, 60);
+
+  // Annotation arrows
+  drawLabel(svg, 140, 112, '"data" = the value stored', { fontSize: '12', color: '#67e8f9' });
+  drawLabel(svg, 480, 112, '"next" = pointer to the next node', { fontSize: '12', color: '#60a5fa' });
+
+  c.appendChild(svg);
+})();
+</script>
+
+<!-- ==================== SLIDE 3: ARRAY VS LINKED LIST ==================== -->
+<div class="slide" id="s3">
+  <h2>Array vs. Linked List</h2>
+  <div class="two-col">
+    <div>
+      <h3>Array: Contiguous Memory</h3>
+      <div class="svg-container" id="s3-array"></div>
+    </div>
+    <div>
+      <h3>Linked List: Scattered Memory</h3>
+      <div class="svg-container" id="s3-ll"></div>
+    </div>
+  </div>
+
+  <table class="mt" style="width:100%;">
+    <tr><th>Operation</th><th>Array</th><th>Linked List</th><th>Winner</th></tr>
+    <tr><td>Access by index</td><td>O(1)</td><td>O(n)</td><td><span class="tag blue">Array</span></td></tr>
+    <tr><td>Insert at front</td><td>O(n)</td><td>O(1)</td><td><span class="tag green">Linked List</span></td></tr>
+    <tr><td>Insert at end</td><td>O(1)*</td><td>O(n)</td><td><span class="tag blue">Array</span></td></tr>
+    <tr><td>Insert at middle</td><td>O(n)</td><td>O(n)</td><td><span class="tag yellow">Tie</span></td></tr>
+    <tr><td>Delete at front</td><td>O(n)</td><td>O(1)</td><td><span class="tag green">Linked List</span></td></tr>
+    <tr><td>Search</td><td>O(n)</td><td>O(n)</td><td><span class="tag yellow">Tie</span></td></tr>
+    <tr><td>Memory overhead</td><td>Low</td><td>Higher (ptrs)</td><td><span class="tag blue">Array</span></td></tr>
+  </table>
+  <p style="font-size:0.9em; color:#64748b;">* Amortized O(1) for dynamic arrays. Worst case O(n) when resizing.</p>
+  <div class="slide-number">3 / 21</div>
+</div>
+<script>
+(function() {
+  // Array visualization
+  const ac = document.getElementById('s3-array');
+  const asvg = createSVG(340, 100);
+  const addrs = ['0x100', '0x104', '0x108', '0x10C', '0x110'];
+  const avals = [10, 20, 30, 40, 50];
+  for (let i = 0; i < 5; i++) {
+    const x = 10 + i * 64;
+    const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.setAttribute('x', x); rect.setAttribute('y', 30);
+    rect.setAttribute('width', 58); rect.setAttribute('height', 40);
+    rect.setAttribute('rx', 4); rect.setAttribute('fill', '#334155'); rect.setAttribute('stroke', '#3b82f6'); rect.setAttribute('stroke-width', 1.5);
+    asvg.appendChild(rect);
+    drawLabel(asvg, x + 29, 50, avals[i], { fontSize: '15', color: '#e2e8f0', bold: true });
+    drawLabel(asvg, x + 29, 22, addrs[i], { fontSize: '9', color: '#64748b' });
+    drawLabel(asvg, x + 29, 82, `[${i}]`, { fontSize: '11', color: '#94a3b8' });
+  }
+  drawLabel(asvg, 170, 97, 'Direct access: arr[3] → O(1)', { fontSize: '10', color: '#34d399' });
+  ac.appendChild(asvg);
+
+  // Linked List visualization
+  const lc = document.getElementById('s3-ll');
+  const lsvg = createSVG(340, 100);
+  const laddrs = ['0x200', '0x580', '0x340', '0x710'];
+  const lvals = [10, 20, 30, 40];
+  for (let i = 0; i < 4; i++) {
+    const x = 10 + i * 82;
+    drawNode(lsvg, x, 30, lvals[i], { width: 70, height: 38, isLast: i === 3, fontSize: '13' });
+    drawLabel(lsvg, x + 35, 22, laddrs[i], { fontSize: '9', color: '#64748b' });
+    if (i < 3) drawArrow(lsvg, x + 62, 49, x + 80, 49);
+  }
+  drawLabel(lsvg, 170, 87, 'Access [3]: must walk 0→1→2→3 → O(n)', { fontSize: '10', color: '#f87171' });
+  lc.appendChild(lsvg);
+})();
+</script>
+
+<!-- ==================== SLIDE 4: THE NODE CLASS ==================== -->
+<div class="slide" id="s4">
+  <h2>The Node Class</h2>
+  <p>Every linked list is built from <strong>Node</strong> objects. Each node stores data and a reference to the next node.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Java Implementation</h3>
+      <div class="code-block"><span class="kw">public class</span> <span class="type">Node</span> {
+    <span class="type">int</span> data;       <span class="cmt">// the value stored</span>
+    <span class="type">Node</span> next;      <span class="cmt">// pointer to next node</span>
+
+    <span class="kw">public</span> <span class="fn">Node</span>(<span class="type">int</span> data) {
+        <span class="kw">this</span>.data = data;
+        <span class="kw">this</span>.next = <span class="kw">null</span>;
+    }
+}</div>
+      <p class="mt">The <code>next</code> field is itself a <code>Node</code> reference — this creates the chain. When <code>next</code> is <code>null</code>, we've reached the end.</p>
+    </div>
+    <div>
+      <h3>Anatomy of a Single Node</h3>
+      <div class="svg-container" id="s4-svg"></div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>A Node is a <strong>self-referential</strong> structure: it contains a reference to another object of its own type. This is the fundamental building block for all linked structures.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">4 / 21</div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('s4-svg');
+  const svg = createSVG(300, 120);
+
+  drawLabel(svg, 150, 16, 'Node myNode = new Node(42);', { fontSize: '12', color: '#c084fc' });
+  drawLabel(svg, 50, 50, 'myNode', { fontSize: '13', color: '#fbbf24', bold: true });
+  drawArrow(svg, 78, 50, 95, 50, { color: '#fbbf24', markerColor: 'yellow' });
+  drawNode(svg, 100, 30, '42', { isLast: true, width: 140, highlight: '#6366f1' });
+  drawLabel(svg, 138, 100, 'data: 42', { fontSize: '11', color: '#67e8f9' });
+  drawLabel(svg, 218, 100, 'next: null', { fontSize: '11', color: '#f87171' });
+  c.appendChild(svg);
+})();
+</script>
+
+<!-- ==================== SLIDE 5: SINGLY LINKED LIST STRUCTURE ==================== -->
+<div class="slide" id="s5">
+  <h2>Singly Linked List Structure</h2>
+  <p>A singly linked list has: a <strong>head pointer</strong>, <strong>one-way traversal</strong>, and a <strong>null terminator</strong>.</p>
+
+  <div class="svg-container" id="s5-svg"></div>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Java Wrapper Class</h3>
+      <div class="code-block"><span class="kw">public class</span> <span class="type">SinglyLinkedList</span> {
+    <span class="kw">private</span> <span class="type">Node</span> head;  <span class="cmt">// entry point</span>
+    <span class="kw">private int</span> size;   <span class="cmt">// # of elements</span>
+
+    <span class="kw">public</span> <span class="fn">SinglyLinkedList</span>() {
+        <span class="kw">this</span>.head = <span class="kw">null</span>;
+        <span class="kw">this</span>.size = <span class="num">0</span>;
+    }
+}</div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Three Things to Remember</h3>
+        <ul>
+          <li><strong>head</strong> — the only entry point into the list. Lose it and you lose everything.</li>
+          <li><strong>Singly linked</strong> — each node only knows about the next node.</li>
+          <li><strong>null terminator</strong> — the last node's <code>next</code> is <code>null</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">5 / 21</div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('s5-svg');
+  const svg = createSVG(700, 110);
+  drawHeadPointer(svg, 90, 15, 90, 35);
+  const vals = [10, 20, 30, 40];
+  vals.forEach((v, i) => {
+    const x = 40 + i * 150;
+    drawNode(svg, x, 35, v, { isLast: i === 3 });
+    if (i < 3) drawArrow(svg, x + 92, 60, x + 148, 60);
+  });
+  // Traversal direction arrow
+  drawLabel(svg, 360, 100, 'Traversal direction: ════════════════════════════▶   (one way only)', { fontSize: '11', color: '#34d399' });
+  c.appendChild(svg);
+})();
+</script>
+
+<!-- ==================== SLIDE 6: CREATING A LINKED LIST (INTERACTIVE) ==================== -->
+<div class="slide" id="s6">
+  <h2>Creating a Linked List (Step by Step)</h2>
+  <p>Build the list <code>10 → 20 → 30</code> from scratch. Click through each step.</p>
+
+  <div class="svg-container" id="s6-svg" style="min-height: 130px;"></div>
+  <div class="controls" style="justify-content:center;">
+    <button id="s6-prev" onclick="s6Step(-1)" disabled>← Back</button>
+    <span id="s6-label" style="color:#94a3b8; min-width:200px; text-align:center;">Step 0 / 3 — Click Next</span>
+    <button id="s6-next" onclick="s6Step(1)">Next Step →</button>
+  </div>
+  <div id="s6-code" class="code-block" style="max-width:600px; margin:8px auto;"><span class="cmt">// Click "Next Step" to begin building the list</span></div>
+
+  <div class="warning mt">
+    <h3>Warning: Never Lose the Head!</h3>
+    <p>If you accidentally reassign <code>head</code> without saving the old reference, all nodes become unreachable.</p>
+  </div>
+  <div class="slide-number">6 / 21</div>
+</div>
+<script>
+let s6State = 0;
+function s6Step(delta) {
+  s6State = Math.max(0, Math.min(3, s6State + delta));
+  document.getElementById('s6-prev').disabled = s6State === 0;
+  document.getElementById('s6-next').disabled = s6State === 3;
+  document.getElementById('s6-label').textContent = `Step ${s6State} / 3`;
+
+  const c = document.getElementById('s6-svg');
+  const code = document.getElementById('s6-code');
+  c.innerHTML = '';
+
+  const svg = createSVG(600, 110);
+
+  if (s6State === 0) {
+    drawLabel(svg, 300, 55, '(empty list — head = null)', { fontSize: '16', color: '#64748b' });
+    code.innerHTML = '<span class="cmt">// Click "Next Step" to begin building the list</span>';
+  } else if (s6State === 1) {
+    drawHeadPointer(svg, 90, 15, 90, 35);
+    drawNode(svg, 40, 35, '10', { isLast: true, highlight: '#34d399' });
+    code.innerHTML = '<span class="type">Node</span> a = <span class="kw">new</span> <span class="fn">Node</span>(<span class="num">10</span>);\nhead = a;';
+  } else if (s6State === 2) {
+    drawHeadPointer(svg, 90, 15, 90, 35);
+    drawNode(svg, 40, 35, '10', {});
+    drawArrow(svg, 132, 60, 188, 60);
+    drawNode(svg, 190, 35, '20', { isLast: true, highlight: '#34d399' });
+    code.innerHTML = '<span class="type">Node</span> b = <span class="kw">new</span> <span class="fn">Node</span>(<span class="num">20</span>);\na.next = b;';
+  } else {
+    drawHeadPointer(svg, 90, 15, 90, 35);
+    drawNode(svg, 40, 35, '10', {});
+    drawArrow(svg, 132, 60, 188, 60);
+    drawNode(svg, 190, 35, '20', {});
+    drawArrow(svg, 282, 60, 338, 60);
+    drawNode(svg, 340, 35, '30', { isLast: true, highlight: '#34d399' });
+    code.innerHTML = '<span class="type">Node</span> c = <span class="kw">new</span> <span class="fn">Node</span>(<span class="num">30</span>);\nb.next = c;  <span class="cmt">// List complete: 10 → 20 → 30 → null</span>';
+  }
+  c.appendChild(svg);
+}
+s6Step(0);
+</script>
+
+<!-- ==================== SLIDE 7: TRAVERSAL (ANIMATED) ==================== -->
+<div class="slide" id="s7">
+  <h2>Traversal</h2>
+  <p>Walking through every node using a temporary <code>current</code> pointer.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Java Code</h3>
+      <div class="code-block" id="s7-code"><span class="line" id="s7-l1"><span class="kw">public void</span> <span class="fn">printList</span>() {</span>
+<span class="line" id="s7-l2">    <span class="type">Node</span> current = head;</span>
+<span class="line" id="s7-l3">    <span class="kw">while</span> (current != <span class="kw">null</span>) {</span>
+<span class="line" id="s7-l4">        System.out.<span class="fn">print</span>(current.data + <span class="str">" → "</span>);</span>
+<span class="line" id="s7-l5">        current = current.next;</span>
+<span class="line" id="s7-l6">    }</span>
+<span class="line" id="s7-l7">    System.out.<span class="fn">println</span>(<span class="str">"null"</span>);</span>
+<span class="line" id="s7-l8">}</span></div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Use a <strong>temporary pointer</strong> so we don't modify <code>head</code>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Step-by-Step</h3>
+      <div class="svg-container" id="s7-svg" style="min-height: 100px;"></div>
+      <div class="controls" style="justify-content:center;">
+        <button id="s7-btn" onclick="s7Advance()">▶ Start Traversal</button>
+        <button onclick="s7Reset()">↺ Reset</button>
+      </div>
+      <div class="status-msg" id="s7-status">Click "Start Traversal" to watch <code>current</code> walk through the list.</div>
+    </div>
+  </div>
+  <div class="slide-number">7 / 21</div>
+</div>
+<script>
+let s7Step = -1;
+const s7Vals = [10, 20, 30];
+const s7Lines = [[], ['s7-l2'], ['s7-l3','s7-l4'], ['s7-l5'], ['s7-l3','s7-l4'], ['s7-l5'], ['s7-l3','s7-l4'], ['s7-l5'], ['s7-l3'], ['s7-l7']];
+const s7Msgs = [
+  'Click ▶ to start',
+  'current = head → points to node(10)',
+  'current(10) != null → print "10 → "',
+  'current = current.next → move to node(20)',
+  'current(20) != null → print "20 → "',
+  'current = current.next → move to node(30)',
+  'current(30) != null → print "30 → "',
+  'current = current.next → move to null',
+  'current == null → loop ends',
+  'Print "null". Output: 10 → 20 → 30 → null'
+];
+
+function s7Draw() {
+  const c = document.getElementById('s7-svg');
+  c.innerHTML = '';
+  const svg = createSVG(450, 90);
+  drawHeadPointer(svg, 90, 12, 90, 30);
+
+  const curIdx = s7Step <= 0 ? -1 : Math.floor((s7Step - 1) / 2);
+  s7Vals.forEach((v, i) => {
+    const x = 40 + i * 140;
+    const hl = curIdx === i ? '#3b82f6' : null;
+    drawNode(svg, x, 30, v, { isLast: i === 2, highlight: hl, labelBelow: curIdx === i ? '▲ cur' : '', labelBelowColor: '#3b82f6' });
+    if (i < 2) drawArrow(svg, x + 92, 55, x + 138, 55);
+  });
+  if (curIdx >= 3) {
+    drawLabel(svg, 40 + 3 * 140, 55, 'null  ← cur', { fontSize: '12', color: '#f87171' });
+  }
+  c.appendChild(svg);
+
+  // Highlight code lines
+  document.querySelectorAll('#s7-code .line').forEach(l => l.classList.remove('active'));
+  const step = Math.min(s7Step, s7Lines.length - 1);
+  if (step >= 0) {
+    (s7Lines[step] || []).forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('active'); });
+  }
+  document.getElementById('s7-status').innerHTML = s7Msgs[Math.max(0, Math.min(step, s7Msgs.length - 1))];
+}
+
+function s7Advance() {
+  s7Step++;
+  if (s7Step >= s7Msgs.length) s7Step = s7Msgs.length - 1;
+  s7Draw();
+}
+function s7Reset() { s7Step = -1; s7Draw(); }
+s7Draw();
+</script>
+
+<!-- ==================== SLIDE 8: INSERT AT HEAD (INTERACTIVE) ==================== -->
+<div class="slide" id="s8">
+  <h2>Insert at Head — O(1)</h2>
+  <p>The fastest insertion: add a new node at the front.</p>
+
+  <div class="svg-container" id="s8-svg" style="min-height: 140px;"></div>
+  <div class="controls" style="justify-content:center;">
+    <button id="s8-prev" onclick="s8Anim(-1)" disabled>← Back</button>
+    <span id="s8-label" style="color:#94a3b8; min-width:260px; text-align:center;">Insert value 5 at head — Click Next</span>
+    <button id="s8-next" onclick="s8Anim(1)">Next Step →</button>
+  </div>
+
+  <div class="two-col mt">
+    <div class="code-block" id="s8-code"><span class="line" id="s8-l1"><span class="kw">public void</span> <span class="fn">insertAtHead</span>(<span class="type">int</span> data) {</span>
+<span class="line" id="s8-l2">    <span class="type">Node</span> newNode = <span class="kw">new</span> <span class="fn">Node</span>(data);</span>
+<span class="line" id="s8-l3">    newNode.next = head;  <span class="cmt">// link first!</span></span>
+<span class="line" id="s8-l4">    head = newNode;       <span class="cmt">// then move head</span></span>
+<span class="line" id="s8-l5">    size++;</span>
+<span class="line" id="s8-l6">}</span></div>
+    <div class="warning">
+      <h3>Order Matters!</h3>
+      <p><strong>WRONG:</strong> <code>head = newNode</code> first → self-loop, list lost!</p>
+      <p><strong>RIGHT:</strong> Link first, then move head.</p>
+    </div>
+  </div>
+  <div class="slide-number">8 / 21</div>
+</div>
+<script>
+let s8State = 0;
+const s8Steps = [
+  { label: 'BEFORE: list = [10, 20, 30]', lines: [] },
+  { label: 'Step 1: Create newNode(5)', lines: ['s8-l2'] },
+  { label: 'Step 2: newNode.next = head', lines: ['s8-l3'] },
+  { label: 'Step 3: head = newNode — Done!', lines: ['s8-l4', 's8-l5'] }
+];
+
+function s8Anim(delta) {
+  s8State = Math.max(0, Math.min(3, s8State + delta));
+  document.getElementById('s8-prev').disabled = s8State === 0;
+  document.getElementById('s8-next').disabled = s8State === 3;
+  document.getElementById('s8-label').textContent = s8Steps[s8State].label;
+
+  // Code highlighting
+  document.querySelectorAll('#s8-code .line').forEach(l => l.classList.remove('active'));
+  s8Steps[s8State].lines.forEach(id => document.getElementById(id)?.classList.add('active'));
+
+  const c = document.getElementById('s8-svg');
+  c.innerHTML = '';
+  const svg = createSVG(750, 130);
+
+  if (s8State === 0) {
+    // Original list
+    drawHeadPointer(svg, 110, 20, 110, 40);
+    [10, 20, 30].forEach((v, i) => {
+      const x = 60 + i * 150;
+      drawNode(svg, x, 40, v, { isLast: i === 2 });
+      if (i < 2) drawArrow(svg, x + 92, 65, x + 148, 65);
+    });
+  } else if (s8State === 1) {
+    // New node created, floating above
+    drawNode(svg, 60, 10, '5', { isLast: true, highlight: '#34d399', label: 'newNode' , labelColor: '#34d399' });
+    drawHeadPointer(svg, 260, 55, 260, 70);
+    [10, 20, 30].forEach((v, i) => {
+      const x = 210 + i * 150;
+      drawNode(svg, x, 70, v, { isLast: i === 2 });
+      if (i < 2) drawArrow(svg, x + 92, 95, x + 148, 95);
+    });
+  } else if (s8State === 2) {
+    // newNode.next = head
+    drawNode(svg, 60, 10, '5', { highlight: '#34d399', label: 'newNode', labelColor: '#34d399' });
+    drawCurvedArrow(svg, 152, 35, 208, 70, { color: '#34d399', markerColor: 'green', curve: 20 });
+    drawHeadPointer(svg, 260, 55, 260, 70);
+    [10, 20, 30].forEach((v, i) => {
+      const x = 210 + i * 150;
+      drawNode(svg, x, 70, v, { isLast: i === 2 });
+      if (i < 2) drawArrow(svg, x + 92, 95, x + 148, 95);
+    });
+  } else {
+    // head = newNode, final state
+    drawHeadPointer(svg, 110, 20, 110, 40);
+    [5, 10, 20, 30].forEach((v, i) => {
+      const x = 60 + i * 150;
+      drawNode(svg, x, 40, v, { isLast: i === 3, highlight: i === 0 ? '#34d399' : null });
+      if (i < 3) drawArrow(svg, x + 92, 65, x + 148, 65);
+    });
+  }
+  c.appendChild(svg);
+}
+s8Anim(0);
+</script>
+
+<!-- ==================== SLIDE 9: INSERT AT TAIL (INTERACTIVE) ==================== -->
+<div class="slide" id="s9">
+  <h2>Insert at Tail — O(n)</h2>
+  <p>Must traverse the entire list to find the last node before appending.</p>
+
+  <div class="svg-container" id="s9-svg" style="min-height: 120px;"></div>
+  <div class="controls" style="justify-content:center;">
+    <button id="s9-prev" onclick="s9Anim(-1)" disabled>← Back</button>
+    <span id="s9-label" style="color:#94a3b8; min-width:280px; text-align:center;">Insert 40 at tail — Click Next</span>
+    <button id="s9-next" onclick="s9Anim(1)">Next Step →</button>
+  </div>
+
+  <div class="two-col mt">
+    <div class="code-block"><span class="kw">public void</span> <span class="fn">insertAtTail</span>(<span class="type">int</span> data) {
+    <span class="type">Node</span> newNode = <span class="kw">new</span> <span class="fn">Node</span>(data);
+    <span class="kw">if</span> (head == <span class="kw">null</span>) {
+        head = newNode;
+    } <span class="kw">else</span> {
+        <span class="type">Node</span> current = head;
+        <span class="kw">while</span> (current.next != <span class="kw">null</span>)
+            current = current.next;
+        current.next = newNode;
+    }
+    size++;
+}</div>
+    <div class="key-idea">
+      <h3>Why O(n)?</h3>
+      <p>No direct reference to the tail, so we walk all <em>n</em> nodes. A <code>tail</code> pointer makes this O(1).</p>
+    </div>
+  </div>
+  <div class="slide-number">9 / 21</div>
+</div>
+<script>
+let s9State = 0;
+const s9Labels = [
+  'BEFORE: list = [10, 20, 30]',
+  'Create newNode(40)',
+  'Traverse: current at node(10)...',
+  'Traverse: current at node(20)...',
+  'Traverse: current at node(30) — last node!',
+  'current.next = newNode — Done!'
+];
+function s9Anim(delta) {
+  s9State = Math.max(0, Math.min(5, s9State + delta));
+  document.getElementById('s9-prev').disabled = s9State === 0;
+  document.getElementById('s9-next').disabled = s9State === 5;
+  document.getElementById('s9-label').textContent = s9Labels[s9State];
+
+  const c = document.getElementById('s9-svg');
+  c.innerHTML = '';
+  const svg = createSVG(750, 110);
+
+  const vals = [10, 20, 30];
+  const curIdx = s9State >= 2 ? s9State - 2 : -1; // 0,1,2
+
+  drawHeadPointer(svg, 90, 15, 90, 30);
+  vals.forEach((v, i) => {
+    const x = 40 + i * 150;
+    const isLast = (s9State < 5) ? (i === 2) : false;
+    drawNode(svg, x, 30, v, {
+      isLast,
+      highlight: curIdx === i ? '#3b82f6' : null,
+      labelBelow: curIdx === i ? '▲ current' : '',
+      labelBelowColor: '#3b82f6'
+    });
+    if (i < 2) drawArrow(svg, x + 92, 55, x + 148, 55);
+  });
+
+  if (s9State >= 1) {
+    const nx = s9State < 5 ? 560 : 40 + 3 * 150;
+    const ny = s9State < 5 ? 10 : 30;
+    if (s9State < 5) {
+      drawNode(svg, nx, ny, '40', { isLast: true, highlight: '#34d399', label: 'newNode', labelColor: '#34d399' });
+    } else {
+      drawArrow(svg, 40 + 2 * 150 + 92, 55, 40 + 3 * 150 - 2, 55);
+      drawNode(svg, nx, ny, '40', { isLast: true, highlight: '#34d399' });
+    }
+  }
+  c.appendChild(svg);
+}
+s9Anim(0);
+</script>
+
+<!-- ==================== SLIDE 10: INSERT AT POSITION ==================== -->
+<div class="slide" id="s10">
+  <h2>Insert at Position — O(n)</h2>
+  <p>Insert at index <code>k</code> by finding the node at <code>k-1</code> and rewiring pointers.</p>
+
+  <div class="svg-container" id="s10-svg" style="min-height: 130px;"></div>
+  <div class="controls" style="justify-content:center;">
+    <button id="s10-prev" onclick="s10Anim(-1)" disabled>← Back</button>
+    <span id="s10-label" style="color:#94a3b8; min-width:280px; text-align:center;">Insert 25 at index 2 — Click Next</span>
+    <button id="s10-next" onclick="s10Anim(1)">Next Step →</button>
+  </div>
+  <div class="two-col mt">
+    <div class="code-block"><span class="kw">public void</span> <span class="fn">insertAt</span>(<span class="type">int</span> index, <span class="type">int</span> data) {
+    <span class="kw">if</span> (index == <span class="num">0</span>) { insertAtHead(data); <span class="kw">return</span>; }
+    <span class="type">Node</span> newNode = <span class="kw">new</span> <span class="fn">Node</span>(data);
+    <span class="type">Node</span> prev = head;
+    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; index - <span class="num">1</span>; i++)
+        prev = prev.next;
+    newNode.next = prev.next;  <span class="cmt">// link first!</span>
+    prev.next = newNode;       <span class="cmt">// then rewire</span>
+    size++;
+}</div>
+    <div class="warning">
+      <h3>Order of Assignments</h3>
+      <p><strong>WRONG:</strong> <code>prev.next = newNode</code> first — breaks the chain!</p>
+      <p><strong>RIGHT:</strong> Set <code>newNode.next</code> FIRST, THEN <code>prev.next</code>.</p>
+    </div>
+  </div>
+  <div class="slide-number">10 / 21</div>
+</div>
+<script>
+let s10State = 0;
+const s10Labels = [
+  'BEFORE: list = [10, 20, 30, 40]',
+  'Traverse: find node at index 1 (prev)',
+  'Create newNode(25), link: newNode.next = prev.next',
+  'Rewire: prev.next = newNode — Done!'
+];
+function s10Anim(delta) {
+  s10State = Math.max(0, Math.min(3, s10State + delta));
+  document.getElementById('s10-prev').disabled = s10State === 0;
+  document.getElementById('s10-next').disabled = s10State === 3;
+  document.getElementById('s10-label').textContent = s10Labels[s10State];
+
+  const c = document.getElementById('s10-svg');
+  c.innerHTML = '';
+
+  if (s10State <= 1) {
+    const svg = createSVG(700, 110);
+    drawHeadPointer(svg, 70, 15, 70, 30);
+    [10, 20, 30, 40].forEach((v, i) => {
+      const x = 20 + i * 150;
+      drawNode(svg, x, 30, v, { isLast: i === 3, highlight: (s10State === 1 && i === 1) ? '#3b82f6' : null, labelBelow: (s10State === 1 && i === 1) ? '▲ prev' : `idx ${i}`, labelBelowColor: (s10State === 1 && i === 1) ? '#3b82f6' : '#64748b' });
+      if (i < 3) drawArrow(svg, x + 92, 55, x + 148, 55);
+    });
+    c.appendChild(svg);
+  } else if (s10State === 2) {
+    const svg = createSVG(700, 140);
+    drawHeadPointer(svg, 70, 15, 70, 35);
+    [10, 20, 30, 40].forEach((v, i) => {
+      const x = 20 + i * 150;
+      drawNode(svg, x, 35, v, { isLast: i === 3, highlight: i === 1 ? '#3b82f6' : null, labelBelow: i === 1 ? '▲ prev' : '', labelBelowColor: '#3b82f6' });
+      if (i < 3) drawArrow(svg, x + 92, 60, x + 148, 60);
+    });
+    // New node below
+    drawNode(svg, 230, 95, '25', { highlight: '#34d399', label: 'newNode', labelColor: '#34d399' });
+    drawArrow(svg, 322, 120, 318, 60, { color: '#34d399', markerColor: 'green' });
+    c.appendChild(svg);
+  } else {
+    const svg = createSVG(850, 110);
+    drawHeadPointer(svg, 70, 15, 70, 30);
+    [10, 20, 25, 30, 40].forEach((v, i) => {
+      const x = 20 + i * 150;
+      drawNode(svg, x, 30, v, { isLast: i === 4, highlight: i === 2 ? '#34d399' : null });
+      if (i < 4) drawArrow(svg, x + 92, 55, x + 148, 55);
+    });
+    c.appendChild(svg);
+  }
+}
+s10Anim(0);
+</script>
+
+<!-- ==================== SLIDE 11: DELETE FROM HEAD (INTERACTIVE) ==================== -->
+<div class="slide" id="s11">
+  <h2>Delete from Head — O(1)</h2>
+  <p>Remove the first node by advancing the head pointer.</p>
+
+  <div class="svg-container" id="s11-svg" style="min-height: 120px;"></div>
+  <div class="controls" style="justify-content:center;">
+    <button id="s11-prev" onclick="s11Anim(-1)" disabled>← Back</button>
+    <span id="s11-label" style="color:#94a3b8; min-width:260px; text-align:center;">Delete head node — Click Next</span>
+    <button id="s11-next" onclick="s11Anim(1)">Next Step →</button>
+  </div>
+  <div class="two-col mt">
+    <div class="code-block"><span class="kw">public int</span> <span class="fn">deleteFromHead</span>() {
+    <span class="kw">if</span> (head == <span class="kw">null</span>)
+        <span class="kw">throw new</span> <span class="type">NoSuchElementException</span>();
+    <span class="type">int</span> data = head.data;
+    head = head.next;
+    size--;
+    <span class="kw">return</span> data;
+}</div>
+    <div class="key-idea">
+      <h3>Memory Management</h3>
+      <ul>
+        <li><strong>Java / Python:</strong> Garbage collector frees the orphaned node.</li>
+        <li><strong>C / C++:</strong> You must manually <code>free()</code> the removed node.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-number">11 / 21</div>
+</div>
+<script>
+let s11State = 0;
+function s11Anim(delta) {
+  s11State = Math.max(0, Math.min(2, s11State + delta));
+  document.getElementById('s11-prev').disabled = s11State === 0;
+  document.getElementById('s11-next').disabled = s11State === 2;
+
+  const labels = ['BEFORE: list = [10, 20, 30]', 'Save head.data, then head = head.next', 'AFTER: node(10) is orphaned and garbage collected'];
+  document.getElementById('s11-label').textContent = labels[s11State];
+
+  const c = document.getElementById('s11-svg');
+  c.innerHTML = '';
+  const svg = createSVG(600, 110);
+
+  if (s11State === 0) {
+    drawHeadPointer(svg, 90, 15, 90, 35);
+    [10, 20, 30].forEach((v, i) => {
+      const x = 40 + i * 150;
+      drawNode(svg, x, 35, v, { isLast: i === 2 });
+      if (i < 2) drawArrow(svg, x + 92, 60, x + 148, 60);
+    });
+  } else if (s11State === 1) {
+    drawNode(svg, 40, 35, '10', { isLast: false, highlight: '#f87171', labelBelow: '✕ removed', labelBelowColor: '#f87171' });
+    drawArrow(svg, 132, 60, 188, 60, { dashed: true, opacity: 0.3 });
+    drawHeadPointer(svg, 240, 15, 240, 35);
+    drawNode(svg, 190, 35, '20', {});
+    drawArrow(svg, 282, 60, 338, 60);
+    drawNode(svg, 340, 35, '30', { isLast: true });
+  } else {
+    drawHeadPointer(svg, 90, 15, 90, 35);
+    drawNode(svg, 40, 35, '20', {});
+    drawArrow(svg, 132, 60, 188, 60);
+    drawNode(svg, 190, 35, '30', { isLast: true });
+  }
+  c.appendChild(svg);
+}
+s11Anim(0);
+</script>
+
+<!-- ==================== SLIDE 12: DELETE FROM TAIL ==================== -->
+<div class="slide" id="s12">
+  <h2>Delete from Tail — O(n)</h2>
+  <p>Find the <strong>second-to-last</strong> node, set its <code>next</code> to <code>null</code>.</p>
+
+  <div class="svg-container" id="s12-svg" style="min-height: 110px;"></div>
+  <div class="controls" style="justify-content:center;">
+    <button id="s12-prev" onclick="s12Anim(-1)" disabled>← Back</button>
+    <span id="s12-label" style="color:#94a3b8; min-width:300px; text-align:center;">Delete tail node — Click Next</span>
+    <button id="s12-next" onclick="s12Anim(1)">Next Step →</button>
+  </div>
+  <div class="two-col mt">
+    <div class="code-block"><span class="kw">public int</span> <span class="fn">deleteFromTail</span>() {
+    <span class="kw">if</span> (head == <span class="kw">null</span>) <span class="kw">throw new</span> <span class="type">NoSuchElementException</span>();
+    <span class="kw">if</span> (head.next == <span class="kw">null</span>) {
+        <span class="type">int</span> data = head.data; head = <span class="kw">null</span>; size--; <span class="kw">return</span> data;
+    }
+    <span class="type">Node</span> current = head;
+    <span class="kw">while</span> (current.next.next != <span class="kw">null</span>)
+        current = current.next;
+    <span class="type">int</span> data = current.next.data;
+    current.next = <span class="kw">null</span>;
+    size--;
+    <span class="kw">return</span> data;
+}</div>
+    <div class="key-idea">
+      <h3>Why O(n)?</h3>
+      <p>No backwards pointer. Must traverse from head to second-to-last. A <strong>doubly linked list</strong> solves this.</p>
+    </div>
+  </div>
+  <div class="slide-number">12 / 21</div>
+</div>
+<script>
+let s12State = 0;
+const s12Labels = ['BEFORE: [10, 20, 30]', 'Traverse: current at 10, check next.next...', 'current at 20 — next.next is null → stop!', 'current.next = null — node(30) removed'];
+function s12Anim(delta) {
+  s12State = Math.max(0, Math.min(3, s12State + delta));
+  document.getElementById('s12-prev').disabled = s12State === 0;
+  document.getElementById('s12-next').disabled = s12State === 3;
+  document.getElementById('s12-label').textContent = s12Labels[s12State];
+
+  const c = document.getElementById('s12-svg');
+  c.innerHTML = '';
+  const svg = createSVG(600, 100);
+  drawHeadPointer(svg, 90, 10, 90, 25);
+
+  if (s12State <= 2) {
+    const curIdx = s12State === 0 ? -1 : s12State - 1;
+    [10, 20, 30].forEach((v, i) => {
+      const x = 40 + i * 150;
+      drawNode(svg, x, 25, v, { isLast: i === 2, highlight: curIdx === i ? '#3b82f6' : null, labelBelow: curIdx === i ? '▲ current' : '', labelBelowColor: '#3b82f6' });
+      if (i < 2) drawArrow(svg, x + 92, 50, x + 148, 50);
+    });
+  } else {
+    [10, 20].forEach((v, i) => {
+      const x = 40 + i * 150;
+      drawNode(svg, x, 25, v, { isLast: i === 1 });
+      if (i < 1) drawArrow(svg, x + 92, 50, x + 148, 50);
+    });
+    drawNode(svg, 400, 25, '30', { isLast: true, highlight: '#f87171', labelBelow: '✕ orphaned', labelBelowColor: '#f87171' });
+  }
+  c.appendChild(svg);
+}
+s12Anim(0);
+</script>
+
+<!-- ==================== SLIDE 13: DELETE BY VALUE ==================== -->
+<div class="slide" id="s13">
+  <h2>Delete by Value — O(n)</h2>
+  <p>Find the node containing value <strong>20</strong> and remove it using two pointers.</p>
+
+  <div class="svg-container" id="s13-svg" style="min-height: 110px;"></div>
+  <div class="controls" style="justify-content:center;">
+    <button id="s13-prev" onclick="s13Anim(-1)" disabled>← Back</button>
+    <span id="s13-label" style="color:#94a3b8; min-width:300px; text-align:center;">Delete value 20 — Click Next</span>
+    <button id="s13-next" onclick="s13Anim(1)">Next Step →</button>
+  </div>
+  <div class="two-col mt">
+    <div class="code-block"><span class="kw">public boolean</span> <span class="fn">deleteByValue</span>(<span class="type">int</span> target) {
+    <span class="kw">if</span> (head == <span class="kw">null</span>) <span class="kw">return false</span>;
+    <span class="kw">if</span> (head.data == target) {
+        head = head.next; size--; <span class="kw">return true</span>;
+    }
+    <span class="type">Node</span> prev = head;
+    <span class="type">Node</span> current = head.next;
+    <span class="kw">while</span> (current != <span class="kw">null</span>) {
+        <span class="kw">if</span> (current.data == target) {
+            prev.next = current.next;
+            size--; <span class="kw">return true</span>;
+        }
+        prev = current;
+        current = current.next;
+    }
+    <span class="kw">return false</span>;
+}</div>
+    <div class="key-idea">
+      <h3>Two-Pointer Technique</h3>
+      <p>We track <code>prev</code> and <code>current</code> because removing a node requires updating the <strong>previous</strong> node's <code>next</code>. We can't go backwards in a singly linked list.</p>
+    </div>
+  </div>
+  <div class="slide-number">13 / 21</div>
+</div>
+<script>
+let s13State = 0;
+const s13Labels = [
+  'BEFORE: [10, 20, 30, 40] — delete 20',
+  'prev=head(10), current=head.next(20)',
+  'current.data == 20 → FOUND!',
+  'prev.next = current.next → bypass node(20)',
+  'AFTER: [10, 30, 40] — node(20) removed'
+];
+function s13Anim(delta) {
+  s13State = Math.max(0, Math.min(4, s13State + delta));
+  document.getElementById('s13-prev').disabled = s13State === 0;
+  document.getElementById('s13-next').disabled = s13State === 4;
+  document.getElementById('s13-label').textContent = s13Labels[s13State];
+
+  const c = document.getElementById('s13-svg');
+  c.innerHTML = '';
+  const svg = createSVG(700, 100);
+  drawHeadPointer(svg, 70, 10, 70, 25);
+
+  if (s13State <= 2) {
+    [10, 20, 30, 40].forEach((v, i) => {
+      const x = 20 + i * 145;
+      const hl = (s13State >= 1 && i === 0) ? '#fbbf24' : (s13State >= 1 && i === 1) ? (s13State === 2 ? '#f87171' : '#3b82f6') : null;
+      const lbl = (s13State >= 1 && i === 0) ? '▲ prev' : (s13State >= 1 && i === 1) ? '▲ current' : '';
+      const lc = (i === 0) ? '#fbbf24' : (i === 1 && s13State === 2) ? '#f87171' : '#3b82f6';
+      drawNode(svg, x, 25, v, { isLast: i === 3, highlight: hl, labelBelow: lbl, labelBelowColor: lc });
+      if (i < 3) drawArrow(svg, x + 92, 50, x + 143, 50);
+    });
+  } else if (s13State === 3) {
+    [10, 20, 30, 40].forEach((v, i) => {
+      const x = 20 + i * 145;
+      const hl = i === 1 ? '#f87171' : null;
+      drawNode(svg, x, 25, v, { isLast: i === 3, highlight: hl, opacity: i === 1 ? 0.4 : 1 });
+      if (i === 0) {
+        // Arrow from 10 bypassing 20 to 30
+        drawCurvedArrow(svg, x + 92, 50, x + 2 * 145 - 2, 50, { color: '#34d399', markerColor: 'green', curve: 40 });
+      }
+      if (i >= 2 && i < 3) drawArrow(svg, x + 92, 50, x + 143, 50);
+    });
+  } else {
+    [10, 30, 40].forEach((v, i) => {
+      const x = 20 + i * 150;
+      drawNode(svg, x, 25, v, { isLast: i === 2 });
+      if (i < 2) drawArrow(svg, x + 92, 50, x + 148, 50);
+    });
+  }
+  c.appendChild(svg);
+}
+s13Anim(0);
+</script>
+
+<!-- ==================== SLIDE 14: SEARCH / CONTAINS (INTERACTIVE) ==================== -->
+<div class="slide" id="s14">
+  <h2>Search / Contains — O(n)</h2>
+  <p>Linear search to find a value. Try it below!</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Java Code</h3>
+      <div class="code-block"><span class="kw">public boolean</span> <span class="fn">contains</span>(<span class="type">int</span> target) {
+    <span class="type">Node</span> current = head;
+    <span class="kw">while</span> (current != <span class="kw">null</span>) {
+        <span class="kw">if</span> (current.data == target)
+            <span class="kw">return true</span>;
+        current = current.next;
+    }
+    <span class="kw">return false</span>;
+}</div>
+      <div class="key-idea">
+        <h3>No Random Access</h3>
+        <p>Unlike arrays (<code>arr[i]</code> in O(1)), linked lists require walking from the head. Searching is always <strong>O(n)</strong> worst case.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Interactive Search</h3>
+      <div class="svg-container" id="s14-svg" style="min-height: 100px;"></div>
+      <div class="controls">
+        <label>Search for:</label>
+        <input type="number" id="s14-input" value="30" style="width:60px;">
+        <button class="success" onclick="s14Search()">▶ Search</button>
+        <button onclick="s14Reset()">↺ Reset</button>
+      </div>
+      <div class="status-msg" id="s14-status">Enter a value and click Search to animate.</div>
+    </div>
+  </div>
+  <div class="slide-number">14 / 21</div>
+</div>
+<script>
+const s14Vals = [10, 20, 30, 40, 50];
+let s14Timer = null;
+let s14Cur = -1;
+
+function s14Draw(highlightIdx, found) {
+  const c = document.getElementById('s14-svg');
+  c.innerHTML = '';
+  const svg = createSVG(560, 90);
+  drawHeadPointer(svg, 60, 10, 60, 25);
+  s14Vals.forEach((v, i) => {
+    const x = 10 + i * 110;
+    let hl = null, lbl = '';
+    if (highlightIdx === i) {
+      hl = found ? '#34d399' : '#3b82f6';
+      lbl = found ? '✓ FOUND!' : '▲ cur';
+    } else if (highlightIdx > i) {
+      hl = '#475569'; // already checked
+    }
+    drawNode(svg, x, 25, v, { isLast: i === 4, width: 90, highlight: hl, labelBelow: lbl, labelBelowColor: found ? '#34d399' : '#3b82f6', fontSize: '14' });
+    if (i < 4) drawArrow(svg, x + 82, 50, x + 108, 50);
+  });
+  c.appendChild(svg);
+}
+
+function s14Search() {
+  if (s14Timer) clearInterval(s14Timer);
+  const target = parseInt(document.getElementById('s14-input').value);
+  s14Cur = 0;
+  const status = document.getElementById('s14-status');
+
+  s14Timer = setInterval(() => {
+    if (s14Cur >= s14Vals.length) {
+      clearInterval(s14Timer);
+      s14Draw(s14Vals.length, false);
+      status.innerHTML = `<span style="color:#f87171">Value ${target} NOT found! Reached end of list.</span>`;
+      return;
+    }
+    if (s14Vals[s14Cur] === target) {
+      s14Draw(s14Cur, true);
+      status.innerHTML = `<span style="color:#34d399">Found ${target} at index ${s14Cur}!</span>`;
+      clearInterval(s14Timer);
+      return;
+    }
+    s14Draw(s14Cur, false);
+    status.textContent = `Checking index ${s14Cur}: ${s14Vals[s14Cur]} == ${target}? No.`;
+    s14Cur++;
+  }, 600);
+}
+function s14Reset() { if (s14Timer) clearInterval(s14Timer); s14Cur = -1; s14Draw(-1, false); document.getElementById('s14-status').textContent = 'Enter a value and click Search to animate.'; }
+s14Draw(-1, false);
+</script>
+
+<!-- ==================== SLIDE 15: GET SIZE / LENGTH ==================== -->
+<div class="slide" id="s15">
+  <h2>Get Size / Length</h2>
+  <p>Two approaches: traverse and count, or maintain a <code>size</code> variable.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Approach 1: Count by Traversal — O(n)</h3>
+      <div class="code-block"><span class="kw">public int</span> <span class="fn">getSize</span>() {
+    <span class="type">int</span> count = <span class="num">0</span>;
+    <span class="type">Node</span> current = head;
+    <span class="kw">while</span> (current != <span class="kw">null</span>) {
+        count++;
+        current = current.next;
+    }
+    <span class="kw">return</span> count;
+}</div>
+      <div class="svg-container" id="s15-svg" style="min-height: 80px;"></div>
+    </div>
+    <div>
+      <h3>Approach 2: Maintain Size Field — O(1)</h3>
+      <div class="code-block"><span class="kw">public class</span> <span class="type">SinglyLinkedList</span> {
+    <span class="kw">private</span> <span class="type">Node</span> head;
+    <span class="kw">private int</span> size;   <span class="cmt">// track it!</span>
+
+    <span class="kw">public int</span> <span class="fn">getSize</span>() {
+        <span class="kw">return</span> size;    <span class="cmt">// O(1)!</span>
+    }
+
+    <span class="kw">public void</span> <span class="fn">insertAtHead</span>(<span class="type">int</span> data) {
+        <span class="cmt">// ... insertion logic ...</span>
+        size++;   <span class="cmt">// increment on insert</span>
+    }
+}</div>
+      <div class="key-idea">
+        <h3>Best Practice</h3>
+        <p>Always maintain a <code>size</code> field. Increment on insert, decrement on delete → O(1) size queries.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">15 / 21</div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('s15-svg');
+  const svg = createSVG(400, 70);
+  drawHeadPointer(svg, 55, 8, 55, 20);
+  [10, 20, 30].forEach((v, i) => {
+    const x = 5 + i * 130;
+    drawNode(svg, x, 20, v, { isLast: i === 2, width: 90, height: 40, fontSize: '13', labelBelow: `count=${i + 1}`, labelBelowColor: '#34d399' });
+    if (i < 2) drawArrow(svg, x + 82, 40, x + 128, 40);
+  });
+  c.appendChild(svg);
+})();
+</script>
+
+<!-- ==================== SLIDE 16: SENTINEL / DUMMY NODE ==================== -->
+<div class="slide" id="s16">
+  <h2>Sentinel / Dummy Head Node</h2>
+  <p>A dummy node at the front eliminates special cases for empty list or head insertion/deletion.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Without Dummy</h3>
+      <div class="svg-container" id="s16-no-dummy"></div>
+      <p style="font-size:0.95em;">Must check <code>if (head == null)</code> everywhere. Special case for head operations!</p>
+    </div>
+    <div>
+      <h3>With Dummy</h3>
+      <div class="svg-container" id="s16-dummy"></div>
+      <p style="font-size:0.95em;">Head is <strong>never null</strong>. Same logic for all positions. Simpler code!</p>
+    </div>
+  </div>
+
+  <div class="two-col mt">
+    <div class="code-block" style="font-size:0.8em;"><span class="cmt">// With dummy: insert at front — no special case!</span>
+<span class="kw">public void</span> <span class="fn">insertAtFront</span>(<span class="type">int</span> data) {
+    <span class="type">Node</span> newNode = <span class="kw">new</span> <span class="fn">Node</span>(data);
+    newNode.next = head.next;
+    head.next = newNode;
+    size++;
+}</div>
+    <div class="key-idea">
+      <h3>Why Use a Sentinel?</h3>
+      <ul>
+        <li><code>head</code> is never null</li>
+        <li>Front insert/delete = same logic as any position</li>
+        <li>Trade-off: one extra node of memory</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-number">16 / 21</div>
+</div>
+<script>
+(function() {
+  // No dummy
+  const c1 = document.getElementById('s16-no-dummy');
+  const svg1 = createSVG(360, 80);
+  drawHeadPointer(svg1, 60, 8, 60, 22);
+  [10, 20].forEach((v, i) => {
+    const x = 10 + i * 130;
+    drawNode(svg1, x, 22, v, { isLast: i === 1, width: 90, height: 38, fontSize: '13' });
+    if (i < 1) drawArrow(svg1, x + 82, 41, x + 128, 41);
+  });
+  drawLabel(svg1, 300, 60, '⚠ head can be null!', { fontSize: '11', color: '#fbbf24' });
+  c1.appendChild(svg1);
+
+  // With dummy
+  const c2 = document.getElementById('s16-dummy');
+  const svg2 = createSVG(440, 80);
+  drawHeadPointer(svg2, 55, 8, 55, 22);
+  const dvals = ['DUM', 10, 20];
+  dvals.forEach((v, i) => {
+    const x = 5 + i * 130;
+    const opts = { isLast: i === 2, width: 90, height: 38, fontSize: '13' };
+    if (i === 0) { opts.color = '#1e3a5f'; opts.borderColor = '#3b82f6'; opts.textColor = '#64748b'; }
+    drawNode(svg2, x, 22, v, opts);
+    if (i < 2) drawArrow(svg2, x + 82, 41, x + 128, 41);
+  });
+  drawLabel(svg2, 380, 60, '✓ head never null', { fontSize: '11', color: '#34d399' });
+  c2.appendChild(svg2);
+})();
+</script>
+
+<!-- ==================== SLIDE 17: COMMON PITFALLS ==================== -->
+<div class="slide" id="s17">
+  <h2>Common Pitfalls</h2>
+  <p>Bugs that trip up nearly every student implementing a linked list for the first time.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="warning">
+        <h3>1. NullPointerException</h3>
+        <p>Calling <code>current.next</code> when <code>current</code> is <code>null</code>. Always check first!</p>
+      </div>
+      <div class="warning">
+        <h3>2. Losing References</h3>
+        <div class="svg-container" id="s17-bug" style="padding: 8px;"></div>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>3. Off-by-One Errors</h3>
+        <p>Traversing to index <code>k</code>? Stop at <code>k-1</code> for insertion. <code>&lt;</code> vs <code>&lt;=</code> matters!</p>
+      </div>
+      <div class="warning">
+        <h3>4. Forgetting to Update Size</h3>
+        <p>Every insert: <code>size++</code>. Every delete: <code>size--</code>. One miss corrupts everything.</p>
+      </div>
+      <div class="warning">
+        <h3>5. Not Handling Edge Cases</h3>
+        <ul>
+          <li>Empty list (<code>head == null</code>)</li>
+          <li>Single-element list</li>
+          <li>Deleting the head node</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">17 / 21</div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('s17-bug');
+  const svg = createSVG(340, 100);
+
+  // Bug: head = newNode first
+  drawLabel(svg, 170, 12, '❌ WRONG order:', { fontSize: '11', color: '#f87171', bold: true });
+  drawNode(svg, 10, 22, '5', { width: 70, height: 32, fontSize: '12', highlight: '#f87171' });
+  // Self-loop arrow
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', 'M 72 38 C 90 10, 30 10, 18 30');
+  path.setAttribute('stroke', '#f87171'); path.setAttribute('stroke-width', 1.5);
+  path.setAttribute('fill', 'none'); path.setAttribute('marker-end', 'url(#arrowhead-red)');
+  svg.appendChild(path);
+  drawLabel(svg, 130, 38, '→ self-loop!', { fontSize: '10', color: '#f87171' });
+
+  // Fix
+  drawLabel(svg, 170, 65, '✓ RIGHT order:', { fontSize: '11', color: '#34d399', bold: true });
+  drawNode(svg, 10, 72, '5', { width: 70, height: 28, fontSize: '12', highlight: '#34d399' });
+  drawArrow(svg, 72, 86, 100, 86, { color: '#34d399', markerColor: 'green' });
+  drawNode(svg, 102, 72, '10', { width: 70, height: 28, fontSize: '12' });
+  drawArrow(svg, 164, 86, 192, 86, { color: '#60a5fa' });
+  drawNode(svg, 194, 72, '...', { width: 50, height: 28, fontSize: '12', isLast: true });
+
+  c.appendChild(svg);
+})();
+</script>
+
+<!-- ==================== SLIDE 18: TIME COMPLEXITY SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Time Complexity Summary</h2>
+
+  <table style="width:100%; margin-top:12px;">
+    <tr><th>Operation</th><th>Singly Linked List</th><th>Array (fixed)</th><th>ArrayList (dynamic)</th></tr>
+    <tr class="highlight"><td>Insert at head</td><td><strong>O(1)</strong></td><td>O(n)</td><td>O(n)</td></tr>
+    <tr><td>Insert at tail</td><td>O(n)*</td><td>O(1)†</td><td><strong>O(1) amortized</strong></td></tr>
+    <tr><td>Insert at index k</td><td>O(k)</td><td>O(n)</td><td>O(n)</td></tr>
+    <tr class="highlight"><td>Delete at head</td><td><strong>O(1)</strong></td><td>O(n)</td><td>O(n)</td></tr>
+    <tr><td>Delete at tail</td><td>O(n)</td><td>O(1)</td><td><strong>O(1)</strong></td></tr>
+    <tr><td>Delete by value</td><td>O(n)</td><td>O(n)</td><td>O(n)</td></tr>
+    <tr><td>Access by index</td><td>O(n)</td><td><strong>O(1)</strong></td><td><strong>O(1)</strong></td></tr>
+    <tr><td>Search</td><td>O(n)</td><td>O(n)</td><td>O(n)</td></tr>
+    <tr><td>Get size</td><td>O(1)‡</td><td>O(1)</td><td>O(1)</td></tr>
+  </table>
+  <p style="font-size:0.9em; color:#64748b; margin-top:12px;">
+    * O(1) with tail pointer &nbsp;&nbsp; † Only if space available &nbsp;&nbsp; ‡ If you maintain a size field
+  </p>
+  <div class="key-idea mt">
+    <h3>When to Choose a Linked List</h3>
+    <p>Use when you need <strong>frequent insertions/deletions at the head</strong>, don't need random access, and size is unpredictable. Use an array for <strong>fast random access</strong> with stable size.</p>
+  </div>
+  <div class="slide-number">18 / 21</div>
+</div>
+
+<!-- ==================== SLIDE 19: REAL-WORLD APPLICATIONS ==================== -->
+<div class="slide" id="s19">
+  <h2>Real-World Applications</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Implementing Stacks & Queues</h3>
+      <div class="svg-container" id="s19-stack"></div>
+
+      <h3 class="mt">Music Playlist</h3>
+      <div class="svg-container" id="s19-music"></div>
+    </div>
+    <div>
+      <h3>Undo Functionality</h3>
+      <div class="svg-container" id="s19-undo"></div>
+
+      <div class="analogy mt">
+        <h3>Also Used In...</h3>
+        <ul>
+          <li>Operating system process scheduling</li>
+          <li>Hash table chaining (collision resolution)</li>
+          <li>Graph adjacency lists</li>
+          <li>Memory allocation (free lists)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">19 / 21</div>
+</div>
+<script>
+(function() {
+  // Stack
+  const sc = document.getElementById('s19-stack');
+  const ssvg = createSVG(400, 70);
+  drawLabel(ssvg, 200, 12, 'Stack (LIFO): push/pop at head', { fontSize: '11', color: '#c084fc' });
+  ['3', '2', '1'].forEach((v, i) => {
+    const x = 60 + i * 110;
+    drawNode(ssvg, x, 22, v, { isLast: i === 2, width: 80, height: 36, fontSize: '14' });
+    if (i < 2) drawArrow(ssvg, x + 72, 40, x + 108, 40);
+  });
+  drawLabel(ssvg, 100, 68, '↑ push/pop here', { fontSize: '10', color: '#34d399' });
+  sc.appendChild(ssvg);
+
+  // Music
+  const mc = document.getElementById('s19-music');
+  const msvg = createSVG(400, 70);
+  ['♫ A', '♫ B', '♫ C'].forEach((v, i) => {
+    const x = 30 + i * 130;
+    drawNode(msvg, x, 15, v, { isLast: i === 2, width: 90, height: 36, fontSize: '12', highlight: i === 0 ? '#34d399' : null });
+    if (i < 2) drawArrow(msvg, x + 82, 33, x + 128, 33);
+  });
+  drawLabel(msvg, 75, 62, '▶ now playing', { fontSize: '10', color: '#34d399' });
+  mc.appendChild(msvg);
+
+  // Undo
+  const uc = document.getElementById('s19-undo');
+  const usvg = createSVG(400, 70);
+  drawLabel(usvg, 200, 12, 'Undo = delete from head, Do = insert at head', { fontSize: '10', color: '#fbbf24' });
+  ['act3', 'act2', 'act1'].forEach((v, i) => {
+    const x = 40 + i * 120;
+    drawNode(usvg, x, 22, v, { isLast: i === 2, width: 90, height: 36, fontSize: '11' });
+    if (i < 2) drawArrow(usvg, x + 82, 40, x + 118, 40);
+  });
+  uc.appendChild(usvg);
+})();
+</script>
+
+<!-- ==================== SLIDE 20: SUMMARY & CHEAT SHEET ==================== -->
+<div class="slide" id="s20">
+  <h2>Summary & Cheat Sheet</h2>
+
+  <div class="two-col">
+    <div>
+      <div class="svg-container" id="s20-svg" style="padding: 12px;"></div>
+      <div class="code-block" style="font-size:0.8em;"><span class="cmt">INSERT AT HEAD:        O(1)</span>
+  newNode.next = head;
+  head = newNode;
+
+<span class="cmt">INSERT AT TAIL:        O(n)</span>
+  traverse to last node
+  last.next = newNode;
+
+<span class="cmt">DELETE FROM HEAD:      O(1)</span>
+  head = head.next;
+
+<span class="cmt">SEARCH:                O(n)</span>
+  traverse, compare each
+
+<span class="cmt">TRAVERSAL PATTERN:</span>
+  Node cur = head;
+  while (cur != null) {
+      <span class="cmt">// process cur.data</span>
+      cur = cur.next;
+  }</div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Golden Rules</h3>
+        <ul>
+          <li><strong>Never lose the head</strong> — always use a temporary pointer.</li>
+          <li><strong>Link before you redirect</strong> — set <code>newNode.next</code> before <code>head</code>.</li>
+          <li><strong>Check for null</strong> — before accessing <code>.data</code> or <code>.next</code>.</li>
+          <li><strong>Handle edge cases</strong> — empty list, single element, head deletion.</li>
+          <li><strong>Maintain size</strong> — increment/decrement on every insert/delete.</li>
+        </ul>
+      </div>
+      <div class="analogy mt">
+        <h3>Train Cars Recap</h3>
+        <p><strong>Engine</strong> = head &nbsp; <strong>Car</strong> = node &nbsp; <strong>Coupling</strong> = next pointer</p>
+        <p><strong>Last car</strong> → null &nbsp; <strong>Insert</strong> = couple in &nbsp; <strong>Delete</strong> = uncouple</p>
+      </div>
+      <div class="key-idea mt">
+        <h3>Coming Next</h3>
+        <p>Doubly Linked Lists — adding a <code>prev</code> pointer for backward traversal and O(1) tail ops.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">20 / 21</div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('s20-svg');
+  const svg = createSVG(380, 60);
+  drawLabel(svg, 35, 12, 'head', { fontSize: '12', color: '#fbbf24', bold: true });
+  drawArrow(svg, 35, 16, 35, 25, { color: '#fbbf24', markerColor: 'yellow' });
+  ['data', 'data', 'data'].forEach((v, i) => {
+    const x = 5 + i * 120;
+    drawNode(svg, x, 25, v, { isLast: i === 2, width: 80, height: 30, fontSize: '11', textColor: '#94a3b8' });
+    if (i < 2) drawArrow(svg, x + 72, 40, x + 118, 40);
+  });
+  c.appendChild(svg);
+})();
+</script>
+
+<!-- ==================== CHALLENGE A: FIX THE BUG (after Insert at Head) ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Fix the Bug!</h2>
+  <p>This <code>insertAtHead</code> has a critical bug. Can you spot it?</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Buggy Code</h3>
+      <div class="code-block" id="ca-code" style="font-size:0.95em; cursor:pointer;">
+<span class="line ca-line" data-line="1" onclick="caClick(1)"><span class="kw">public void</span> <span class="fn">insertAtHead</span>(<span class="type">int</span> data) {</span>
+<span class="line ca-line" data-line="2" onclick="caClick(2)">    <span class="type">Node</span> newNode = <span class="kw">new</span> <span class="fn">Node</span>(data);</span>
+<span class="line ca-line" data-line="3" onclick="caClick(3)">    head = newNode;       <span class="cmt">// line 3</span></span>
+<span class="line ca-line" data-line="4" onclick="caClick(4)">    newNode.next = head;  <span class="cmt">// line 4</span></span>
+<span class="line ca-line" data-line="5" onclick="caClick(5)">    size++;</span>
+<span class="line ca-line" data-line="6" onclick="caClick(6)">}</span></div>
+      <p style="color:#94a3b8; font-size:0.95em;">Click the line(s) you think are wrong.</p>
+      <div class="status-msg" id="ca-status">Which line has the bug?</div>
+      <div class="controls">
+        <button onclick="caReveal()" class="warning">Reveal Answer</button>
+        <button onclick="caReset()">↺ Reset</button>
+      </div>
+    </div>
+    <div>
+      <h3 id="ca-viz-title">What happens with this code?</h3>
+      <div class="svg-container" id="ca-svg" style="min-height:130px;"></div>
+      <div id="ca-explanation" style="display:none;">
+        <div class="key-idea">
+          <h3>The Fix</h3>
+          <p><strong>Swap lines 3 and 4!</strong> You must link <code>newNode.next = head</code> BEFORE overwriting <code>head</code>. Otherwise <code>head</code> already points to <code>newNode</code>, so line 4 creates a self-loop and the original list is lost forever.</p>
+        </div>
+        <div class="code-block" style="font-size:0.9em;">
+<span class="line" style="background:rgba(52,211,153,0.15);">    newNode.next = head;  <span class="cmt">// ✓ link first!</span></span>
+<span class="line" style="background:rgba(52,211,153,0.15);">    head = newNode;       <span class="cmt">// ✓ then move head</span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+let caRevealed = false;
+function caClick(line) {
+  if (caRevealed) return;
+  const el = document.querySelector(`.ca-line[data-line="${line}"]`);
+  el.classList.toggle('active');
+  // Check if they got it right (lines 3 and 4 are the problem)
+  const selected = [...document.querySelectorAll('.ca-line.active')].map(e => parseInt(e.dataset.line));
+  const status = document.getElementById('ca-status');
+  if (selected.includes(3) && selected.includes(4) && selected.length === 2) {
+    status.innerHTML = '<span style="color:#34d399">✓ Correct! Lines 3 & 4 are in the wrong order. Click "Reveal Answer" for the full explanation.</span>';
+  } else if (selected.includes(3) || selected.includes(4)) {
+    status.innerHTML = '<span style="color:#fbbf24">Getting warm! The bug involves BOTH lines 3 and 4...</span>';
+  } else if (selected.length > 0) {
+    status.innerHTML = '<span style="color:#f87171">Not quite. Think about what happens when you overwrite head before linking...</span>';
+  }
+}
+
+function caReveal() {
+  caRevealed = true;
+  document.querySelectorAll('.ca-line').forEach(l => l.classList.remove('active'));
+  document.querySelector('.ca-line[data-line="3"]').style.background = 'rgba(248,113,113,0.25)';
+  document.querySelector('.ca-line[data-line="3"]').style.borderLeft = '3px solid #f87171';
+  document.querySelector('.ca-line[data-line="4"]').style.background = 'rgba(248,113,113,0.25)';
+  document.querySelector('.ca-line[data-line="4"]').style.borderLeft = '3px solid #f87171';
+  document.getElementById('ca-status').innerHTML = '<span style="color:#34d399">Lines 3 & 4 are swapped! See the explanation →</span>';
+  document.getElementById('ca-explanation').style.display = 'block';
+
+  // Draw the bug visualization
+  const c = document.getElementById('ca-svg');
+  c.innerHTML = '';
+  const svg = createSVG(350, 120);
+  drawLabel(svg, 175, 14, '❌ What the bug produces:', { fontSize: '12', color: '#f87171', bold: true });
+  drawNode(svg, 80, 30, '5', { highlight: '#f87171', width: 90 });
+  // Self-loop
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', 'M 162 55 C 200 20, 200 90, 162 60');
+  path.setAttribute('stroke', '#f87171'); path.setAttribute('stroke-width', 2);
+  path.setAttribute('fill', 'none'); path.setAttribute('marker-end', 'url(#arrowhead-red)');
+  svg.appendChild(path);
+  drawLabel(svg, 220, 55, '← self-loop!', { fontSize: '12', color: '#f87171' });
+  drawLabel(svg, 175, 95, 'Original list [10→20→30] is LOST', { fontSize: '11', color: '#f87171' });
+  drawLabel(svg, 175, 112, 'head points to newNode which points to itself', { fontSize: '10', color: '#94a3b8' });
+  c.appendChild(svg);
+  document.getElementById('ca-viz-title').textContent = 'The bug creates a self-loop:';
+}
+
+function caReset() {
+  caRevealed = false;
+  document.querySelectorAll('.ca-line').forEach(l => {
+    l.classList.remove('active');
+    l.style.background = '';
+    l.style.borderLeft = '';
+  });
+  document.getElementById('ca-status').textContent = 'Which line has the bug?';
+  document.getElementById('ca-explanation').style.display = 'none';
+  document.getElementById('ca-viz-title').textContent = 'What happens with this code?';
+  const c = document.getElementById('ca-svg');
+  c.innerHTML = '';
+  const svg = createSVG(350, 100);
+  drawLabel(svg, 175, 50, 'Click buggy lines, then reveal!', { fontSize: '14', color: '#64748b' });
+  c.appendChild(svg);
+}
+caReset();
+</script>
+
+<!-- ==================== CHALLENGE B: PREDICT THE STATE (after Delete by Value) ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Predict the State</h2>
+  <p>Starting with list <code>[5, 10, 15, 20, 25]</code>, what does the list look like after these operations?</p>
+
+  <div class="svg-container" id="cb-start"></div>
+
+  <div class="code-block" style="max-width:400px; margin: 8px auto; font-size:0.95em;">deleteFromHead();
+insertAtTail(<span class="num">30</span>);
+deleteByValue(<span class="num">15</span>);
+insertAtHead(<span class="num">1</span>);</div>
+
+  <h3 style="text-align:center; margin-top:16px;">What's the final list?</h3>
+  <div class="controls" style="justify-content:center; flex-wrap:wrap; gap:8px;">
+    <button class="cb-opt" onclick="cbAnswer(0)">[1, 10, 20, 25, 30]</button>
+    <button class="cb-opt" onclick="cbAnswer(1)">[1, 5, 10, 20, 25, 30]</button>
+    <button class="cb-opt" onclick="cbAnswer(2)">[1, 10, 15, 20, 30]</button>
+    <button class="cb-opt" onclick="cbAnswer(3)">[10, 20, 25, 30, 1]</button>
+  </div>
+  <div class="status-msg" id="cb-status" style="text-align:center;">Pick your answer!</div>
+  <div id="cb-reveal" style="display:none;">
+    <div class="svg-container" id="cb-result"></div>
+    <div class="key-idea" style="max-width:700px; margin:0 auto;">
+      <h3>Step-by-step trace:</h3>
+      <p>1. <code>deleteFromHead()</code> → removes 5 → <strong>[10, 15, 20, 25]</strong></p>
+      <p>2. <code>insertAtTail(30)</code> → append 30 → <strong>[10, 15, 20, 25, 30]</strong></p>
+      <p>3. <code>deleteByValue(15)</code> → removes 15 → <strong>[10, 20, 25, 30]</strong></p>
+      <p>4. <code>insertAtHead(1)</code> → prepend 1 → <strong>[1, 10, 20, 25, 30]</strong></p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('cb-start');
+  const svg = createSVG(620, 80);
+  drawHeadPointer(svg, 60, 8, 60, 22);
+  [5, 10, 15, 20, 25].forEach((v, i) => {
+    const x = 10 + i * 120;
+    drawNode(svg, x, 22, v, { isLast: i === 4, width: 90, height: 38, fontSize: '14' });
+    if (i < 4) drawArrow(svg, x + 82, 41, x + 118, 41);
+  });
+  c.appendChild(svg);
+})();
+
+let cbAnswered = false;
+function cbAnswer(idx) {
+  if (cbAnswered) return;
+  cbAnswered = true;
+  const btns = document.querySelectorAll('.cb-opt');
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === 0) b.style.border = '2px solid #34d399';
+    if (i === idx && idx !== 0) b.style.border = '2px solid #f87171';
+  });
+  const status = document.getElementById('cb-status');
+  if (idx === 0) {
+    status.innerHTML = '<span style="color:#34d399">✓ Correct! [1, 10, 20, 25, 30]</span>';
+  } else {
+    status.innerHTML = '<span style="color:#f87171">✗ Not quite! The answer is [1, 10, 20, 25, 30]. See the trace below.</span>';
+  }
+  document.getElementById('cb-reveal').style.display = 'block';
+
+  // Draw result
+  const c = document.getElementById('cb-result');
+  const svg = createSVG(620, 80);
+  drawHeadPointer(svg, 60, 8, 60, 22);
+  [1, 10, 20, 25, 30].forEach((v, i) => {
+    const x = 10 + i * 120;
+    drawNode(svg, x, 22, v, { isLast: i === 4, width: 90, height: 38, fontSize: '14', highlight: '#34d399' });
+    if (i < 4) drawArrow(svg, x + 82, 41, x + 118, 41);
+  });
+  c.appendChild(svg);
+}
+</script>
+
+<!-- ==================== CHALLENGE C: WHAT'S THE OUTPUT? (after Search) ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: What's the Output?</h2>
+  <p>Trace this code carefully. What gets printed?</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block" style="font-size:0.9em;"><span class="type">SinglyLinkedList</span> list = <span class="kw">new</span> <span class="fn">SinglyLinkedList</span>();
+list.<span class="fn">insertAtHead</span>(<span class="num">3</span>);
+list.<span class="fn">insertAtHead</span>(<span class="num">7</span>);
+list.<span class="fn">insertAtTail</span>(<span class="num">9</span>);
+list.<span class="fn">insertAtHead</span>(<span class="num">1</span>);
+list.<span class="fn">deleteFromHead</span>();
+list.<span class="fn">insertAtTail</span>(<span class="num">5</span>);
+
+System.out.<span class="fn">println</span>(list.<span class="fn">contains</span>(<span class="num">1</span>));
+System.out.<span class="fn">println</span>(list.<span class="fn">contains</span>(<span class="num">7</span>));
+System.out.<span class="fn">println</span>(list.<span class="fn">getSize</span>());
+list.<span class="fn">printList</span>();</div>
+
+      <h3 style="margin-top:16px;">Your answer:</h3>
+      <div class="controls" style="flex-direction:column; gap:6px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label style="width:130px;">contains(1):</label>
+          <button class="cc-btn" data-q="q1" data-a="true" onclick="ccSelect(this)">true</button>
+          <button class="cc-btn" data-q="q1" data-a="false" onclick="ccSelect(this)">false</button>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label style="width:130px;">contains(7):</label>
+          <button class="cc-btn" data-q="q2" data-a="true" onclick="ccSelect(this)">true</button>
+          <button class="cc-btn" data-q="q2" data-a="false" onclick="ccSelect(this)">false</button>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label style="width:130px;">getSize():</label>
+          <button class="cc-btn" data-q="q3" data-a="3" onclick="ccSelect(this)">3</button>
+          <button class="cc-btn" data-q="q3" data-a="4" onclick="ccSelect(this)">4</button>
+        </div>
+      </div>
+      <div class="controls mt">
+        <button class="success" onclick="ccCheck()">Check Answers</button>
+        <button onclick="ccReveal()" class="warning">Reveal All</button>
+      </div>
+      <div class="status-msg" id="cc-status">Select your answers, then check!</div>
+    </div>
+    <div>
+      <h3>Trace Visualization</h3>
+      <div id="cc-trace" style="display:none;">
+        <div class="svg-container" id="cc-svg"></div>
+        <div class="key-idea" style="font-size:0.9em;">
+          <p><code>insertAtHead(3)</code> → [<strong>3</strong>]</p>
+          <p><code>insertAtHead(7)</code> → [<strong>7</strong>, 3]</p>
+          <p><code>insertAtTail(9)</code> → [7, 3, <strong>9</strong>]</p>
+          <p><code>insertAtHead(1)</code> → [<strong>1</strong>, 7, 3, 9]</p>
+          <p><code>deleteFromHead()</code> → [7, 3, 9]  <span style="color:#f87171;">(1 is removed!)</span></p>
+          <p><code>insertAtTail(5)</code> → [7, 3, 9, <strong>5</strong>]</p>
+          <p style="margin-top:8px;"><code>contains(1)</code> → <strong style="color:#f87171;">false</strong> (1 was deleted)</p>
+          <p><code>contains(7)</code> → <strong style="color:#34d399;">true</strong></p>
+          <p><code>getSize()</code> → <strong>4</strong></p>
+          <p><code>printList()</code> → <strong>7 → 3 → 9 → 5 → null</strong></p>
+        </div>
+      </div>
+      <div id="cc-placeholder" class="svg-container" style="min-height:200px;">
+        <p style="color:#64748b; font-size:1.1em;">Answer the questions first, then reveal the trace!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const ccAnswers = { q1: 'false', q2: 'true', q3: '4' };
+const ccSelections = {};
+
+function ccSelect(btn) {
+  const q = btn.dataset.q;
+  ccSelections[q] = btn.dataset.a;
+  document.querySelectorAll(`.cc-btn[data-q="${q}"]`).forEach(b => {
+    b.style.border = '1px solid #475569';
+    b.style.background = '';
+  });
+  btn.style.border = '2px solid #3b82f6';
+  btn.style.background = 'rgba(59,130,246,0.2)';
+}
+
+function ccCheck() {
+  let correct = 0;
+  for (const q of ['q1', 'q2', 'q3']) {
+    if (ccSelections[q] === ccAnswers[q]) correct++;
+    document.querySelectorAll(`.cc-btn[data-q="${q}"]`).forEach(b => {
+      if (b.dataset.a === ccAnswers[q]) {
+        b.style.border = '2px solid #34d399';
+        b.style.background = 'rgba(52,211,153,0.2)';
+      } else if (b.dataset.a === ccSelections[q] && ccSelections[q] !== ccAnswers[q]) {
+        b.style.border = '2px solid #f87171';
+        b.style.background = 'rgba(248,113,113,0.2)';
+      }
+    });
+  }
+  document.getElementById('cc-status').innerHTML = `<span style="color:${correct === 3 ? '#34d399' : '#fbbf24'}">${correct}/3 correct! ${correct === 3 ? 'Perfect!' : 'Click "Reveal All" to see the trace.'}</span>`;
+}
+
+function ccReveal() {
+  ccCheck();
+  document.getElementById('cc-trace').style.display = 'block';
+  document.getElementById('cc-placeholder').style.display = 'none';
+  const c = document.getElementById('cc-svg');
+  c.innerHTML = '';
+  const svg = createSVG(500, 80);
+  drawHeadPointer(svg, 55, 8, 55, 22);
+  [7, 3, 9, 5].forEach((v, i) => {
+    const x = 5 + i * 120;
+    drawNode(svg, x, 22, v, { isLast: i === 3, width: 90, height: 38, fontSize: '15', highlight: '#34d399' });
+    if (i < 3) drawArrow(svg, x + 82, 41, x + 118, 41);
+  });
+  c.appendChild(svg);
+}
+</script>
+
+<!-- ==================== FINAL CHALLENGE 1: QUIZ ROUND ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Final Challenge: Quick-Fire Quiz</h2>
+  <p>5 questions. How many can you get right?</p>
+
+  <div id="quiz-area"></div>
+  <div class="controls" style="justify-content:center; margin-top:16px;">
+    <button id="quiz-submit" class="success" onclick="quizSubmit()">Submit All Answers</button>
+    <span id="quiz-score" style="color:#94a3b8; margin-left:16px;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const quizData = [
+  { q: 'What is the time complexity of inserting at the HEAD of a singly linked list?',
+    opts: ['O(n)', 'O(1)', 'O(log n)', 'O(n²)'], ans: 1 },
+  { q: 'In a singly linked list with n nodes and NO tail pointer, what is the cost of inserting at the TAIL?',
+    opts: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'], ans: 2 },
+  { q: 'What happens if you execute: head = newNode; newNode.next = head; ?',
+    opts: ['The node is correctly inserted at head', 'A self-loop is created and the list is lost', 'A NullPointerException occurs', 'The node is inserted at the tail'], ans: 1 },
+  { q: 'Why do we use a "prev" pointer when deleting by value?',
+    opts: ['To speed up the search to O(log n)', 'Because we cannot go backwards in a singly linked list', 'To handle the empty list case', 'To count the number of nodes'], ans: 1 },
+  { q: 'A sentinel (dummy) head node eliminates special cases for which scenarios?',
+    opts: ['Inserting at tail only', 'Empty list and head operations', 'Search operations', 'All operations become O(1)'], ans: 1 }
+];
+
+(function() {
+  const area = document.getElementById('quiz-area');
+  quizData.forEach((q, qi) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'background:#1e293b; border:1px solid #334155; border-radius:12px; padding:16px 20px; margin:10px 0;';
+    div.innerHTML = `<p style="margin-bottom:8px;"><strong style="color:#93c5fd;">Q${qi + 1}.</strong> ${q.q}</p>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        ${q.opts.map((o, oi) => `<button class="quiz-opt" data-qi="${qi}" data-oi="${oi}" onclick="quizSelect(${qi},${oi})" style="background:#334155; border:1px solid #475569; color:#e2e8f0; padding:6px 16px; border-radius:6px; cursor:pointer; font-size:0.9em; transition:all 0.2s;">${o}</button>`).join('')}
+      </div>`;
+    area.appendChild(div);
+  });
+})();
+
+const quizSelections = {};
+function quizSelect(qi, oi) {
+  quizSelections[qi] = oi;
+  document.querySelectorAll(`.quiz-opt[data-qi="${qi}"]`).forEach(b => {
+    b.style.border = '1px solid #475569';
+    b.style.background = '#334155';
+  });
+  const btn = document.querySelector(`.quiz-opt[data-qi="${qi}"][data-oi="${oi}"]`);
+  btn.style.border = '2px solid #3b82f6';
+  btn.style.background = 'rgba(59,130,246,0.2)';
+}
+
+function quizSubmit() {
+  let score = 0;
+  quizData.forEach((q, qi) => {
+    document.querySelectorAll(`.quiz-opt[data-qi="${qi}"]`).forEach(b => {
+      const oi = parseInt(b.dataset.oi);
+      if (oi === q.ans) {
+        b.style.border = '2px solid #34d399';
+        b.style.background = 'rgba(52,211,153,0.2)';
+      } else if (oi === quizSelections[qi] && quizSelections[qi] !== q.ans) {
+        b.style.border = '2px solid #f87171';
+        b.style.background = 'rgba(248,113,113,0.2)';
+      }
+      b.disabled = true;
+    });
+    if (quizSelections[qi] === q.ans) score++;
+  });
+  const el = document.getElementById('quiz-score');
+  const pct = Math.round(score / quizData.length * 100);
+  el.innerHTML = `<strong style="color:${pct >= 80 ? '#34d399' : pct >= 60 ? '#fbbf24' : '#f87171'}; font-size:1.2em;">${score}/${quizData.length} (${pct}%)</strong>`;
+  document.getElementById('quiz-submit').disabled = true;
+}
+</script>
+
+<!-- ==================== FINAL CHALLENGE 2: DEBUG THIS CODE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Final Challenge: Find All the Bugs</h2>
+  <p>This <code>deleteByValue</code> method has <strong>3 bugs</strong>. Click on every buggy line!</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block" id="debug-code" style="font-size:0.95em; cursor:pointer;">
+<span class="line dbg-line" data-line="1" onclick="dbgClick(1)"><span class="kw">public boolean</span> <span class="fn">deleteByValue</span>(<span class="type">int</span> target) {</span>
+<span class="line dbg-line" data-line="2" onclick="dbgClick(2)">    <span class="type">Node</span> prev = <span class="kw">null</span>;</span>
+<span class="line dbg-line" data-line="3" onclick="dbgClick(3)">    <span class="type">Node</span> current = head;</span>
+<span class="line dbg-line" data-line="4" onclick="dbgClick(4)">    <span class="kw">while</span> (current != <span class="kw">null</span>) {</span>
+<span class="line dbg-line" data-line="5" onclick="dbgClick(5)">        <span class="kw">if</span> (current.data == target) {</span>
+<span class="line dbg-line" data-line="6" onclick="dbgClick(6)">            prev.next = current.next;  <span class="cmt">// line 6</span></span>
+<span class="line dbg-line" data-line="7" onclick="dbgClick(7)">            <span class="kw">return true</span>;</span>
+<span class="line dbg-line" data-line="8" onclick="dbgClick(8)">        }</span>
+<span class="line dbg-line" data-line="9" onclick="dbgClick(9)">        current = current.next;  <span class="cmt">// line 9</span></span>
+<span class="line dbg-line" data-line="10" onclick="dbgClick(10)">    }</span>
+<span class="line dbg-line" data-line="11" onclick="dbgClick(11)">    <span class="kw">return false</span>;</span>
+<span class="line dbg-line" data-line="12" onclick="dbgClick(12)">}</span></div>
+
+      <div class="controls">
+        <span id="dbg-count" style="color:#94a3b8;">0 / 3 bugs found</span>
+        <button onclick="dbgReveal()" class="warning">Reveal All</button>
+        <button onclick="dbgReset()">↺ Reset</button>
+      </div>
+      <div class="status-msg" id="dbg-status">Click on the 3 buggy lines.</div>
+    </div>
+    <div id="dbg-hints">
+      <div class="warning" style="margin-bottom:12px;">
+        <h3>Hint 1</h3>
+        <p>What if the target is at the <strong>head</strong> of the list? What is <code>prev</code> when <code>current == head</code>?</p>
+      </div>
+      <div class="warning" style="margin-bottom:12px;">
+        <h3>Hint 2</h3>
+        <p>After finding and removing the node, should we update anything else?</p>
+      </div>
+      <div class="warning">
+        <h3>Hint 3</h3>
+        <p>When we DON'T find a match, how do <code>prev</code> and <code>current</code> advance?</p>
+      </div>
+      <div id="dbg-answers" style="display:none;" class="key-idea mt">
+        <h3>The 3 Bugs:</h3>
+        <p><strong style="color:#f87171;">Line 6:</strong> <code>prev</code> is <code>null</code> when deleting head → NullPointerException! Need: <code>if (prev == null) head = current.next; else prev.next = current.next;</code></p>
+        <p><strong style="color:#f87171;">Line 7:</strong> Missing <code>size--</code> before return. Size counter becomes inconsistent.</p>
+        <p><strong style="color:#f87171;">Line 9:</strong> Missing <code>prev = current;</code> before advancing current. The prev pointer never moves, so bypass always goes from head!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const dbgBugs = new Set([6, 7, 9]);
+const dbgSelected = new Set();
+
+function dbgClick(line) {
+  const el = document.querySelector(`.dbg-line[data-line="${line}"]`);
+  if (dbgSelected.has(line)) {
+    dbgSelected.delete(line);
+    el.classList.remove('active');
+  } else {
+    dbgSelected.add(line);
+    el.classList.add('active');
+  }
+  const found = [...dbgSelected].filter(l => dbgBugs.has(l)).length;
+  document.getElementById('dbg-count').textContent = `${found} / 3 bugs found`;
+  const status = document.getElementById('dbg-status');
+  if (found === 3 && dbgSelected.size === 3) {
+    status.innerHTML = '<span style="color:#34d399">✓ Perfect! You found all 3 bugs with no false positives!</span>';
+    document.getElementById('dbg-answers').style.display = 'block';
+  } else if (found === 3) {
+    status.innerHTML = '<span style="color:#fbbf24">You found all 3, but some extra lines are marked. Deselect the wrong ones!</span>';
+  } else {
+    const wrong = [...dbgSelected].filter(l => !dbgBugs.has(l)).length;
+    if (wrong > 0) status.innerHTML = `<span style="color:#f87171">${wrong} false positive(s). Not every selected line is buggy.</span>`;
+    else status.textContent = `${found}/3 bugs found so far. Keep looking!`;
+  }
+}
+
+function dbgReveal() {
+  document.querySelectorAll('.dbg-line').forEach(l => {
+    l.classList.remove('active');
+    l.style.background = '';
+    l.style.borderLeft = '';
+  });
+  dbgBugs.forEach(line => {
+    const el = document.querySelector(`.dbg-line[data-line="${line}"]`);
+    el.style.background = 'rgba(248,113,113,0.25)';
+    el.style.borderLeft = '3px solid #f87171';
+  });
+  document.getElementById('dbg-count').textContent = '3 / 3 bugs revealed';
+  document.getElementById('dbg-status').innerHTML = '<span style="color:#34d399">All 3 bugs revealed. See explanations →</span>';
+  document.getElementById('dbg-answers').style.display = 'block';
+}
+
+function dbgReset() {
+  dbgSelected.clear();
+  document.querySelectorAll('.dbg-line').forEach(l => {
+    l.classList.remove('active');
+    l.style.background = '';
+    l.style.borderLeft = '';
+  });
+  document.getElementById('dbg-count').textContent = '0 / 3 bugs found';
+  document.getElementById('dbg-status').textContent = 'Click on the 3 buggy lines.';
+  document.getElementById('dbg-answers').style.display = 'none';
+}
+</script>
+
+<!-- ==================== FINAL CHALLENGE 3: BUILD THE TARGET ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Final Challenge: Build the Target List</h2>
+  <p>Using only the buttons below, build this exact list in as few operations as possible:</p>
+
+  <div class="svg-container" id="target-svg" style="padding:12px;"></div>
+  <p style="text-align:center; color:#fbbf24; font-weight:600;">Target: [42, 7, 15, 99, 3]</p>
+
+  <div class="svg-container" id="build-svg" style="min-height: 90px;"></div>
+  <div class="status-msg" id="build-status" style="text-align:center;">Your list is empty. Start building!</div>
+  <div class="controls" style="justify-content:center; flex-wrap:wrap;">
+    <input type="number" id="build-val" value="7" style="width:70px;">
+    <button class="success" onclick="buildInsertHead()">Insert Head</button>
+    <button class="success" onclick="buildInsertTail()">Insert Tail</button>
+    <button class="danger" onclick="buildDeleteHead()">Delete Head</button>
+    <button class="danger" onclick="buildDeleteTail()">Delete Tail</button>
+    <button onclick="buildReset()">↺ Reset</button>
+  </div>
+  <div style="text-align:center; margin-top:8px;">
+    <span style="color:#94a3b8;">Operations used: </span><strong id="build-ops" style="color:#93c5fd;">0</strong>
+    <span style="color:#94a3b8; margin-left:16px;">Par: </span><strong style="color:#34d399;">5</strong>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const buildTarget = [42, 7, 15, 99, 3];
+let buildList = [];
+let buildOps = 0;
+
+(function() {
+  const c = document.getElementById('target-svg');
+  const svg = createSVG(580, 70);
+  drawLabel(svg, 25, 30, '🎯', { fontSize: '18' });
+  buildTarget.forEach((v, i) => {
+    const x = 40 + i * 110;
+    drawNode(svg, x, 10, v, { isLast: i === 4, width: 85, height: 38, fontSize: '14', highlight: '#fbbf24' });
+    if (i < 4) drawArrow(svg, x + 77, 29, x + 108, 29);
+  });
+  c.appendChild(svg);
+})();
+
+function buildDraw() {
+  const c = document.getElementById('build-svg');
+  c.innerHTML = '';
+  if (buildList.length === 0) {
+    const svg = createSVG(300, 50);
+    drawLabel(svg, 150, 25, 'head → null', { fontSize: '14', color: '#64748b' });
+    c.appendChild(svg);
+  } else {
+    const nw = buildList.length > 6 ? 70 : 85;
+    const gap = buildList.length > 6 ? 25 : 35;
+    const svg = createSVG(Math.max(50 + buildList.length * (nw + gap), 300), 70);
+    drawHeadPointer(svg, 40 + nw / 2, 5, 40 + nw / 2, 18);
+    buildList.forEach((v, i) => {
+      const x = 40 + i * (nw + gap);
+      const match = buildTarget[i] === v;
+      drawNode(svg, x, 18, v, { isLast: i === buildList.length - 1, width: nw, height: 36, fontSize: '13', highlight: match ? '#34d399' : null });
+      if (i < buildList.length - 1) drawArrow(svg, x + nw - 8, 36, x + nw + gap - 2, 36);
+    });
+    c.appendChild(svg);
+  }
+
+  document.getElementById('build-ops').textContent = buildOps;
+
+  // Check win
+  if (buildList.length === buildTarget.length && buildList.every((v, i) => v === buildTarget[i])) {
+    const msg = buildOps <= 5 ? '🏆 Perfect! Built in par!' : buildOps <= 7 ? '✓ Nice! Can you do it in fewer moves?' : '✓ Done! Try to beat par (5 ops).';
+    document.getElementById('build-status').innerHTML = `<span style="color:#34d399; font-size:1.1em;">${msg} (${buildOps} operations)</span>`;
+  } else {
+    const matching = buildList.reduce((count, v, i) => count + (buildTarget[i] === v ? 1 : 0), 0);
+    document.getElementById('build-status').textContent = `${matching}/${buildTarget.length} positions correct. Keep going!`;
+  }
+}
+
+function buildInsertHead() {
+  const val = parseInt(document.getElementById('build-val').value) || 0;
+  buildList.unshift(val); buildOps++;
+  buildDraw();
+}
+function buildInsertTail() {
+  const val = parseInt(document.getElementById('build-val').value) || 0;
+  buildList.push(val); buildOps++;
+  buildDraw();
+}
+function buildDeleteHead() {
+  if (buildList.length === 0) return;
+  buildList.shift(); buildOps++;
+  buildDraw();
+}
+function buildDeleteTail() {
+  if (buildList.length === 0) return;
+  buildList.pop(); buildOps++;
+  buildDraw();
+}
+function buildReset() {
+  buildList = []; buildOps = 0;
+  buildDraw();
+}
+buildDraw();
+</script>
+
+<!-- ==================== SLIDE 21: INTERACTIVE PLAYGROUND ==================== -->
+<div class="slide" id="s21">
+  <h2>Interactive Linked List Playground</h2>
+  <p>Build and manipulate a linked list in real time. Try all the operations!</p>
+
+  <div class="svg-container" id="playground-svg" style="min-height: 110px; transition: all 0.3s;"></div>
+  <div class="status-msg" id="playground-status">List is empty. Insert some values to get started!</div>
+
+  <div class="controls" style="justify-content:center; flex-wrap: wrap;">
+    <input type="number" id="pg-val" value="10" placeholder="Value">
+    <button class="success" onclick="pgInsertHead()">Insert at Head</button>
+    <button class="success" onclick="pgInsertTail()">Insert at Tail</button>
+    <input type="number" id="pg-idx" value="0" placeholder="Index" style="width:60px;">
+    <button onclick="pgInsertAt()">Insert at Index</button>
+    <button class="danger" onclick="pgDeleteHead()">Delete Head</button>
+    <button class="danger" onclick="pgDeleteTail()">Delete Tail</button>
+    <input type="number" id="pg-search" value="" placeholder="Search">
+    <button class="warning" onclick="pgSearch()">Search</button>
+    <button onclick="pgClear()">Clear All</button>
+  </div>
+
+  <div class="two-col mt">
+    <div class="playground">
+      <h3>Operation Log</h3>
+      <div id="pg-log" style="font-family:monospace; font-size:0.85em; color:#94a3b8; max-height:150px; overflow-y:auto;"></div>
+    </div>
+    <div class="playground">
+      <h3>List State</h3>
+      <div id="pg-state" style="font-family:monospace; font-size:0.95em; color:#e2e8f0;">
+        <p>Size: <span id="pg-size">0</span></p>
+        <p>Values: <span id="pg-values">(empty)</span></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number">21 / 21</div>
+</div>
+<script>
+// ── Playground Linked List ──
+let pgList = [];
+let pgHighlight = -1;
+
+function pgDraw() {
+  const c = document.getElementById('playground-svg');
+  c.innerHTML = '';
+
+  if (pgList.length === 0) {
+    const svg = createSVG(300, 60);
+    drawLabel(svg, 150, 30, 'head → null (empty list)', { fontSize: '16', color: '#64748b' });
+    c.appendChild(svg);
+  } else {
+    const nodeW = pgList.length > 8 ? 70 : (pgList.length > 5 ? 85 : 100);
+    const gap = pgList.length > 8 ? 30 : (pgList.length > 5 ? 35 : 50);
+    const fontSize = pgList.length > 8 ? '11' : (pgList.length > 5 ? '13' : '16');
+    const padLeft = 50;
+    const totalW = padLeft + pgList.length * (nodeW + gap) + 40;
+    const svg = createSVG(Math.max(totalW, 300), 100);
+
+    drawHeadPointer(svg, padLeft + nodeW / 2, 12, padLeft + nodeW / 2, 30);
+
+    pgList.forEach((v, i) => {
+      const x = padLeft + i * (nodeW + gap);
+      const hl = pgHighlight === i ? '#34d399' : null;
+      drawNode(svg, x, 30, v, { isLast: i === pgList.length - 1, width: nodeW, highlight: hl, fontSize });
+      if (i < pgList.length - 1) {
+        drawArrow(svg, x + nodeW - 8, 55, x + nodeW + gap - 2, 55);
+      }
+    });
+    c.appendChild(svg);
+  }
+
+  document.getElementById('pg-size').textContent = pgList.length;
+  document.getElementById('pg-values').textContent = pgList.length === 0 ? '(empty)' : pgList.join(' → ') + ' → null';
+}
+
+function pgLog(msg) {
+  const log = document.getElementById('pg-log');
+  const line = document.createElement('div');
+  line.textContent = `> ${msg}`;
+  line.style.marginBottom = '2px';
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function pgSetStatus(msg, type) {
+  const el = document.getElementById('playground-status');
+  el.innerHTML = msg;
+  el.className = 'status-msg' + (type ? ' ' + type : '');
+}
+
+function pgInsertHead() {
+  const val = parseInt(document.getElementById('pg-val').value) || 0;
+  pgList.unshift(val);
+  pgHighlight = 0;
+  pgLog(`insertAtHead(${val}) → [${pgList.join(', ')}]`);
+  pgSetStatus(`Inserted ${val} at head. Size: ${pgList.length}`, 'success');
+  pgDraw();
+  setTimeout(() => { pgHighlight = -1; pgDraw(); }, 1000);
+}
+
+function pgInsertTail() {
+  const val = parseInt(document.getElementById('pg-val').value) || 0;
+  pgList.push(val);
+  pgHighlight = pgList.length - 1;
+  pgLog(`insertAtTail(${val}) → [${pgList.join(', ')}]`);
+  pgSetStatus(`Inserted ${val} at tail. Size: ${pgList.length}`, 'success');
+  pgDraw();
+  setTimeout(() => { pgHighlight = -1; pgDraw(); }, 1000);
+}
+
+function pgInsertAt() {
+  const val = parseInt(document.getElementById('pg-val').value) || 0;
+  const idx = parseInt(document.getElementById('pg-idx').value) || 0;
+  if (idx < 0 || idx > pgList.length) {
+    pgSetStatus(`Index ${idx} out of bounds! Valid: 0-${pgList.length}`, 'error');
+    pgLog(`insertAt(${idx}, ${val}) → ERROR: index out of bounds`);
+    return;
+  }
+  pgList.splice(idx, 0, val);
+  pgHighlight = idx;
+  pgLog(`insertAt(${idx}, ${val}) → [${pgList.join(', ')}]`);
+  pgSetStatus(`Inserted ${val} at index ${idx}. Size: ${pgList.length}`, 'success');
+  pgDraw();
+  setTimeout(() => { pgHighlight = -1; pgDraw(); }, 1000);
+}
+
+function pgDeleteHead() {
+  if (pgList.length === 0) {
+    pgSetStatus('Cannot delete from empty list!', 'error');
+    pgLog('deleteFromHead() → ERROR: empty list');
+    return;
+  }
+  const removed = pgList.shift();
+  pgLog(`deleteFromHead() → removed ${removed}, list: [${pgList.join(', ')}]`);
+  pgSetStatus(`Removed ${removed} from head. Size: ${pgList.length}`, 'success');
+  pgDraw();
+}
+
+function pgDeleteTail() {
+  if (pgList.length === 0) {
+    pgSetStatus('Cannot delete from empty list!', 'error');
+    pgLog('deleteFromTail() → ERROR: empty list');
+    return;
+  }
+  const removed = pgList.pop();
+  pgLog(`deleteFromTail() → removed ${removed}, list: [${pgList.join(', ')}]`);
+  pgSetStatus(`Removed ${removed} from tail. Size: ${pgList.length}`, 'success');
+  pgDraw();
+}
+
+function pgSearch() {
+  const val = parseInt(document.getElementById('pg-search').value);
+  if (isNaN(val)) { pgSetStatus('Enter a value to search for.', 'error'); return; }
+  const idx = pgList.indexOf(val);
+  if (idx >= 0) {
+    pgHighlight = idx;
+    pgSetStatus(`Found ${val} at index ${idx}!`, 'success');
+    pgLog(`search(${val}) → found at index ${idx}`);
+    pgDraw();
+    setTimeout(() => { pgHighlight = -1; pgDraw(); }, 1500);
+  } else {
+    pgSetStatus(`Value ${val} not found in list.`, 'error');
+    pgLog(`search(${val}) → not found`);
+  }
+}
+
+function pgClear() {
+  pgList = [];
+  pgHighlight = -1;
+  document.getElementById('pg-log').innerHTML = '';
+  pgSetStatus('List cleared.', '');
+  pgLog('clear() → empty list');
+  pgDraw();
+}
+
+pgDraw();
+</script>
+
+<!-- NAVIGATION -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+// Slide order: original slides + inline challenges + final challenges
+const slideOrder = [
+  's1','s2','s3','s4','s5','s6','s7','s8',
+  'sCA',   // Challenge: Fix the Bug (after Insert at Head)
+  's9','s10','s11','s12','s13',
+  'sCB',   // Challenge: Predict the State (after Delete by Value)
+  's14',
+  'sCC',   // Challenge: What's the Output? (after Search)
+  's15','s16','s17','s18','s19','s20','s21',
+  'sQ1',   // Final: Quiz Round
+  'sQ2',   // Final: Debug This Code
+  'sQ3'    // Final: Build the Target
+];
+const totalSlides = slideOrder.length;
+let currentSlide = 0; // index into slideOrder
+
+function showSlide(idx) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slideId = slideOrder[idx];
+  const slide = document.getElementById(slideId);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === totalSlides - 1);
+  document.getElementById('progress').style.width = (((idx + 1) / totalSlides) * 100) + '%';
+  // Update slide number text
+  document.querySelectorAll('.slide-number').forEach(el => {
+    if (el.closest('.slide') === slide) {
+      el.textContent = `${idx + 1} / ${totalSlides}`;
+    }
+  });
+}
+function changeSlide(delta) {
+  const next = currentSlide + delta;
+  if (next >= 0 && next < totalSlides) { currentSlide = next; showSlide(currentSlide); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+});
+showSlide(0);
+</script>
+
+</body>
+</html>

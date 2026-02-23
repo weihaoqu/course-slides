@@ -1,0 +1,2199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArrayLists & Node Lists - CS205 Data Structures (Enhanced)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.95em; line-height: 1.7; margin: 16px 0; overflow-x: auto; color: #e2e8f0; }
+.code-block .line { padding: 2px 8px; border-radius: 4px; transition: background 0.3s; }
+.code-block .line.active { background: rgba(59,130,246,0.25); border-left: 3px solid #3b82f6; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.controls input[type="number"], .controls input[type="text"], .controls select {
+  background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.controls input:focus, .controls select:focus { border-color: #3b82f6; }
+.btn { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; color: white; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+.btn:active { transform: translateY(0); }
+.btn-outline { background: transparent; border: 1px solid #475569; color: #e2e8f0; font-weight: 400; }
+.btn-outline:hover { background: #334155; box-shadow: none; transform: none; }
+.status { padding: 8px 16px; border-radius: 8px; font-size: 0.95em; }
+.status.success { background: rgba(16,185,129,0.15); color: #86efac; }
+.status.error { background: rgba(239,68,68,0.15); color: #fca5a5; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE s1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>ArrayLists & Node Lists</h1>
+    <p class="subtitle">Array List ADT, Dynamic Resizing, Position-Based Lists, and Iterators</p>
+    <canvas id="s1canvas" width="800" height="180" style="background:#1e293b; border-radius:12px; border:1px solid #334155; margin:20px auto; display:block;"></canvas>
+    <p style="color: #64748b;">CS205 Data Structures</p>
+    <p style="color: #64748b; font-size: 0.9em;">Arrow keys to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('s1canvas'); if(!c)return;
+  const ctx=c.getContext('2d');
+  // Static illustration: array on top, linked list on bottom
+  // Array
+  const cellW=70, cellH=45, y1=25, sx=80;
+  const vals=['A','B','C','D','E','F'];
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4'];
+  ctx.fillStyle='#94a3b8'; ctx.font='bold 14px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('ArrayList (index-based)',sx,y1-4);
+  for(let i=0;i<vals.length;i++){
+    const x=sx+i*cellW;
+    ctx.fillStyle=colors[i]; ctx.globalAlpha=0.25; ctx.fillRect(x,y1,cellW-4,cellH); ctx.globalAlpha=1;
+    ctx.strokeStyle=colors[i]; ctx.lineWidth=2; ctx.strokeRect(x,y1,cellW-4,cellH);
+    ctx.fillStyle='#e2e8f0'; ctx.font='bold 22px monospace'; ctx.textAlign='center';
+    ctx.fillText(vals[i],x+cellW/2-2,y1+cellH/2+8);
+    ctx.fillStyle='#64748b'; ctx.font='11px sans-serif';
+    ctx.fillText(i,x+cellW/2-2,y1+cellH+14);
+  }
+  ctx.fillStyle='#86efac'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('O(1) index access',sx,y1+cellH+30);
+  // Linked list
+  const y2=110, nodeW=55, nodeH=40, gap=25;
+  ctx.fillStyle='#94a3b8'; ctx.font='bold 14px sans-serif';
+  ctx.fillText('Node List (position-based)',sx,y2-4);
+  for(let i=0;i<vals.length;i++){
+    const x=sx+i*(nodeW+gap);
+    ctx.fillStyle=colors[i]; ctx.globalAlpha=0.2; ctx.fillRect(x,y2,nodeW,nodeH); ctx.globalAlpha=1;
+    ctx.strokeStyle=colors[i]; ctx.lineWidth=2; ctx.strokeRect(x,y2,nodeW,nodeH);
+    ctx.fillStyle='#e2e8f0'; ctx.font='bold 18px monospace'; ctx.textAlign='center';
+    ctx.fillText(vals[i],x+nodeW/2,y2+nodeH/2+6);
+    if(i<vals.length-1){
+      ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+      const ax=x+nodeW, ay=y2+nodeH/2;
+      ctx.beginPath();ctx.moveTo(ax,ay-5);ctx.lineTo(ax+gap-2,ay-5);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ax+gap-2,ay+5);ctx.lineTo(ax,ay+5);ctx.stroke();
+      // arrowheads
+      ctx.beginPath();ctx.moveTo(ax+gap-2,ay-8);ctx.lineTo(ax+gap+3,ay-5);ctx.lineTo(ax+gap-2,ay-2);ctx.fillStyle='#94a3b8';ctx.fill();
+      ctx.beginPath();ctx.moveTo(ax,ay+2);ctx.lineTo(ax-5,ay+5);ctx.lineTo(ax,ay+8);ctx.fill();
+    }
+    ctx.fillStyle='#64748b'; ctx.font='10px sans-serif';
+    ctx.fillText('p'+(i+1),x+nodeW/2,y2+nodeH+12);
+  }
+  ctx.fillStyle='#86efac'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('O(1) position access',sx,y2+nodeH+26);
+})();
+</script>
+
+<!-- ==================== SLIDE s2: THE LIST ADT ==================== -->
+<div class="slide" id="s2">
+  <h2>The List ADT</h2>
+  <p class="subtitle">An abstract, ordered collection of elements</p>
+  <div class="two-col">
+    <div>
+      <p>A <strong>List</strong> stores elements in a <em>linear sequence</em>. Each element has an index from <code>0</code> to <code>n-1</code>.</p>
+      <h3 class="mt">Core Operations</h3>
+      <table style="font-size:0.9em; width:100%;">
+        <tr><th>Operation</th><th>Description</th></tr>
+        <tr><td><code>get(i)</code></td><td>Return element at index i</td></tr>
+        <tr><td><code>set(i, e)</code></td><td>Replace at index i</td></tr>
+        <tr><td><code>add(i, e)</code></td><td>Insert at i, shift right</td></tr>
+        <tr><td><code>remove(i)</code></td><td>Remove at i, shift left</td></tr>
+        <tr><td><code>size()</code></td><td>Number of elements</td></tr>
+      </table>
+      <div class="analogy">
+        <h3>Analogy: Numbered Lineup</h3>
+        <p>People in a numbered line. Insert someone at position 3 → everyone behind scoots back one spot.</p>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The List ADT is <em>abstract</em> — it defines <strong>what</strong> operations exist, not <strong>how</strong> they work. Both ArrayList and LinkedList implement the same interface!</p>
+      </div>
+      <canvas id="s2canvas" width="380" height="160" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('s2canvas'); if(!c)return;
+  const ctx=c.getContext('2d');
+  // interface tree
+  ctx.fillStyle='#8b5cf6'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('List ADT (interface)',190,25);
+  ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(190,32);ctx.lineTo(100,60);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(190,32);ctx.lineTo(280,60);ctx.stroke();
+  // ArrayList box
+  ctx.strokeStyle='#3b82f6'; ctx.strokeRect(30,60,140,40);
+  ctx.fillStyle='#3b82f6'; ctx.font='bold 14px sans-serif';
+  ctx.fillText('ArrayList',100,85);
+  ctx.fillStyle='#64748b'; ctx.font='12px sans-serif';
+  ctx.fillText('(array-backed)',100,105);
+  // LinkedList box
+  ctx.strokeStyle='#10b981'; ctx.strokeRect(210,60,140,40);
+  ctx.fillStyle='#10b981'; ctx.font='bold 14px sans-serif';
+  ctx.fillText('LinkedList',280,85);
+  ctx.fillStyle='#64748b'; ctx.font='12px sans-serif';
+  ctx.fillText('(node-backed)',280,105);
+  ctx.fillStyle='#94a3b8'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Same interface, different implementations!',190,140);
+})();
+</script>
+
+<!-- ==================== SLIDE s3: ARRAY-BASED LIST (Interactive) ==================== -->
+<div class="slide" id="s3">
+  <h2>Array-Based List (ArrayList)</h2>
+  <p class="subtitle">A dynamic array that grows as needed</p>
+  <div class="two-col">
+    <div>
+      <p>An ArrayList stores elements in a contiguous <strong>backing array</strong>:</p>
+      <ul>
+        <li><strong>size</strong> — elements actually stored</li>
+        <li><strong>capacity</strong> — total slots in backing array</li>
+      </ul>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p><strong>size ≤ capacity</strong> always. When <code>size == capacity</code>, the array must be resized before adding more.</p>
+      </div>
+      <div class="warning">
+        <h3>Index Bounds</h3>
+        <p>Valid indices: <code>0</code> to <code>size-1</code>. Accessing beyond size throws <code>IndexOutOfBoundsException</code> even if the backing array has unused slots!</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Interactive ArrayList</h3>
+      <canvas id="s3canvas" width="400" height="180" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s3Add()">addLast</button>
+        <button class="btn btn-outline" onclick="s3RemLast()">removeLast</button>
+        <button class="btn btn-outline" onclick="s3Get()">get(i)</button>
+        <input type="number" id="s3idx" value="0" min="0" style="width:60px;" placeholder="i">
+        <button class="btn btn-outline" onclick="s3Reset()">Reset</button>
+      </div>
+      <div id="s3status" class="status" style="min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let data=new Array(8).fill(null), size=0, nextV=10, cap=8;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f43f5e','#84cc16'];
+
+  function draw(){
+    const c=document.getElementById('s3canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=45, cellH=50, sx=10, y=60;
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('capacity='+cap+'  size='+size,10,20);
+    for(let i=0;i<cap;i++){
+      const x=sx+i*cellW;
+      const used=i<size;
+      ctx.fillStyle=used?colors[i%colors.length]:'transparent';
+      ctx.globalAlpha=used?0.25:1;
+      ctx.fillRect(x,y,cellW-3,cellH);
+      ctx.globalAlpha=1;
+      ctx.strokeStyle=used?colors[i%colors.length]:'#334155';
+      ctx.lineWidth=used?2:1;
+      ctx.strokeRect(x,y,cellW-3,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+cellW/2-1,y-6);
+      if(used){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 16px monospace';
+        ctx.fillText(data[i],x+cellW/2-1,y+cellH/2+6);
+      }
+    }
+    // bracket for used vs empty
+    ctx.strokeStyle='#86efac'; ctx.lineWidth=1;
+    if(size>0){
+      ctx.beginPath();ctx.moveTo(sx,y+cellH+8);ctx.lineTo(sx+size*cellW-3,y+cellH+8);ctx.stroke();
+      ctx.fillStyle='#86efac'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('used (size='+size+')',sx+size*cellW/2,y+cellH+22);
+    }
+    if(size<cap){
+      ctx.strokeStyle='#475569';
+      ctx.beginPath();ctx.moveTo(sx+size*cellW,y+cellH+8);ctx.lineTo(sx+cap*cellW-3,y+cellH+8);ctx.stroke();
+      ctx.fillStyle='#475569'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('empty',sx+(size+cap)*cellW/2,y+cellH+22);
+    }
+  }
+
+  window.s3Add = function(){
+    if(size>=cap){
+      // resize
+      cap*=2; const nd=new Array(cap).fill(null);
+      for(let i=0;i<size;i++) nd[i]=data[i];
+      data=nd;
+      document.getElementById('s3status').textContent='Resized! New capacity='+cap;
+      document.getElementById('s3status').className='status error';
+    }
+    data[size]=nextV; size++; nextV+=10;
+    if(document.getElementById('s3status').className.indexOf('error')===-1){
+      document.getElementById('s3status').textContent='Added '+data[size-1]+' at index '+(size-1);
+      document.getElementById('s3status').className='status success';
+    }
+    draw();
+  };
+
+  window.s3RemLast = function(){
+    if(size===0){document.getElementById('s3status').textContent='Empty!';document.getElementById('s3status').className='status error';return;}
+    const v=data[size-1]; data[size-1]=null; size--;
+    document.getElementById('s3status').textContent='Removed '+v;
+    document.getElementById('s3status').className='status success';
+    draw();
+  };
+
+  window.s3Get = function(){
+    const i=parseInt(document.getElementById('s3idx').value);
+    if(isNaN(i)||i<0||i>=size){
+      document.getElementById('s3status').textContent='IndexOutOfBoundsException! Valid: 0..'+(size-1);
+      document.getElementById('s3status').className='status error';
+      return;
+    }
+    document.getElementById('s3status').textContent='get('+i+') = '+data[i]+' — O(1)';
+    document.getElementById('s3status').className='status success';
+  };
+
+  window.s3Reset = function(){
+    data=new Array(8).fill(null); size=0; nextV=10; cap=8;
+    document.getElementById('s3status').textContent=''; draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s4: GET AND SET ==================== -->
+<div class="slide" id="s4">
+  <h2>Get and Set — O(1) Random Access</h2>
+  <p class="subtitle">The superpower of array-based lists</p>
+  <div class="two-col">
+    <div>
+      <h3>Direct Index Access</h3>
+      <p>Go directly to <code>arr[i]</code> — no searching needed!</p>
+      <canvas id="s4canvas" width="380" height="180" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <label style="color:#94a3b8;font-size:14px;">Index:</label>
+        <input type="number" id="s4idx" value="2" min="0" max="4" style="width:60px;">
+        <button class="btn" onclick="s4Get()">get(i)</button>
+        <button class="btn btn-outline" onclick="s4Set()">set(i, 99)</button>
+      </div>
+      <div id="s4status" class="status" style="min-height:24px;"></div>
+    </div>
+    <div>
+      <h3>Code</h3>
+      <div class="code-block" style="font-size:0.88em;"><div class="line"><span style="color:#64748b;">// O(1) — constant time</span></div><div class="line"><span style="color:#c084fc;">public</span> E <span style="color:#86efac;">get</span>(<span style="color:#f59e0b;">int</span> i) {</div><div class="line">    <span style="color:#c084fc;">if</span> (i &lt; 0 || i &gt;= size)</div><div class="line">        <span style="color:#c084fc;">throw new</span> IndexOutOfBoundsException();</div><div class="line">    <span style="color:#c084fc;">return</span> data[i];</div><div class="line">}</div></div>
+      <div class="analogy">
+        <h3>Analogy: Hotel Rooms</h3>
+        <p>Go directly to Room 302 — no checking rooms 1, 2, 3... <strong>Address arithmetic</strong> computes the memory location instantly.</p>
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>O(1) random access is the main reason to use ArrayList. Read-heavy workloads love arrays.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let arr=[10,20,30,40,50], highlight=-1;
+  function draw(){
+    const c=document.getElementById('s4canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=65,cellH=50,sx=15,y=60;
+    const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981'];
+    for(let i=0;i<arr.length;i++){
+      const x=sx+i*cellW;
+      ctx.fillStyle=colors[i]; ctx.globalAlpha=i===highlight?0.5:0.25;
+      ctx.fillRect(x,y,cellW-4,cellH); ctx.globalAlpha=1;
+      ctx.strokeStyle=colors[i]; ctx.lineWidth=i===highlight?3:2;
+      ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+cellW/2-2,y-8);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 22px monospace';
+      ctx.fillText(arr[i],x+cellW/2-2,y+cellH/2+8);
+    }
+    if(highlight>=0){
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('↑ O(1)!',sx+highlight*cellW+cellW/2-2,y+cellH+20);
+    }
+  }
+
+  window.s4Get = function(){
+    const i=parseInt(document.getElementById('s4idx').value);
+    if(isNaN(i)||i<0||i>=arr.length){document.getElementById('s4status').textContent='Out of bounds!';document.getElementById('s4status').className='status error';highlight=-1;draw();return;}
+    highlight=i;
+    document.getElementById('s4status').textContent='get('+i+') = '+arr[i]+' — O(1)';
+    document.getElementById('s4status').className='status success';
+    draw();
+  };
+
+  window.s4Set = function(){
+    const i=parseInt(document.getElementById('s4idx').value);
+    if(isNaN(i)||i<0||i>=arr.length){document.getElementById('s4status').textContent='Out of bounds!';document.getElementById('s4status').className='status error';highlight=-1;draw();return;}
+    const old=arr[i]; arr[i]=99; highlight=i;
+    document.getElementById('s4status').textContent='set('+i+', 99) — was '+old+', now 99 — O(1)';
+    document.getElementById('s4status').className='status success';
+    draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s5: ADD AT INDEX (Animated Shift) ==================== -->
+<div class="slide" id="s5">
+  <h2>Add at Index — Shifting Right</h2>
+  <p class="subtitle">Making room costs O(n) in the worst case</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Code</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="line" id="s5L1"><span style="color:#c084fc;">public void</span> <span style="color:#86efac;">add</span>(<span style="color:#f59e0b;">int</span> i, E element) {</div><div class="line" id="s5L2">    <span style="color:#c084fc;">if</span> (size == data.length)</div><div class="line" id="s5L3">        resize(2 * data.length);</div><div class="line" id="s5L4">    <span style="color:#64748b;">// shift right from back</span></div><div class="line" id="s5L5">    <span style="color:#c084fc;">for</span> (k = size-1; k &gt;= i; k--)</div><div class="line" id="s5L6">        data[k+1] = data[k];</div><div class="line" id="s5L7">    data[i] = element;</div><div class="line" id="s5L8">    size++;</div><div class="line" id="s5L9">}</div></div>
+      <div class="warning">
+        <h3>O(n) Worst Case</h3>
+        <p><code>add(0, e)</code> shifts ALL n elements. Only <code>add(size, e)</code> avoids shifting.</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Animated Shift</h3>
+      <canvas id="s5canvas" width="400" height="200" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <label style="color:#94a3b8;font-size:14px;">add(</label>
+        <input type="number" id="s5idx" value="2" min="0" max="5" style="width:50px;">
+        <label style="color:#94a3b8;font-size:14px;">, 99)</label>
+        <button class="btn" onclick="s5Run()">Insert</button>
+        <button class="btn btn-outline" onclick="s5Reset()">Reset</button>
+      </div>
+      <div id="s5status" class="status" style="min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let arr=[10,20,30,40,50], animating=false;
+  const cap=7;
+
+  function clearHL(){for(let i=1;i<=9;i++){const e=document.getElementById('s5L'+i);if(e)e.classList.remove('active');}}
+
+  function draw(shiftFrom,shiftTo,insertIdx,insertVal){
+    const c=document.getElementById('s5canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=52,cellH=50,sx=10,y=70;
+    ctx.fillStyle='#94a3b8'; ctx.font='13px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('size='+arr.length+'  capacity='+cap,10,20);
+    for(let i=0;i<cap;i++){
+      const x=sx+i*cellW;
+      const used=i<arr.length;
+      const isShifting=shiftFrom!==undefined&&i>=shiftFrom&&i<=shiftTo;
+      const isInsert=insertIdx!==undefined&&i===insertIdx;
+      ctx.fillStyle=isInsert?'rgba(16,185,129,0.4)':used?'rgba(59,130,246,0.25)':'transparent';
+      ctx.fillRect(x,y,cellW-3,cellH);
+      ctx.strokeStyle=isShifting?'#f59e0b':isInsert?'#10b981':used?'#3b82f6':'#334155';
+      ctx.lineWidth=isShifting||isInsert?3:1;
+      ctx.strokeRect(x,y,cellW-3,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+cellW/2-1,y-8);
+      if(used){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 18px monospace';
+        ctx.fillText(arr[i],x+cellW/2-1,y+cellH/2+6);
+      }
+      if(isInsert&&insertVal!==undefined){
+        ctx.fillStyle='#86efac'; ctx.font='bold 18px monospace';
+        ctx.fillText(insertVal,x+cellW/2-1,y+cellH/2+6);
+      }
+      if(isShifting){
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 12px sans-serif';
+        ctx.fillText('→',x+cellW/2-1,y+cellH+14);
+      }
+    }
+  }
+
+  window.s5Run = function(){
+    if(animating) return;
+    const idx=parseInt(document.getElementById('s5idx').value);
+    if(isNaN(idx)||idx<0||idx>arr.length){document.getElementById('s5status').textContent='Invalid index!';document.getElementById('s5status').className='status error';return;}
+    if(arr.length>=cap){document.getElementById('s5status').textContent='Array full!';document.getElementById('s5status').className='status error';return;}
+    animating=true;
+    clearHL();
+    document.getElementById('s5L5').classList.add('active');
+    document.getElementById('s5L6').classList.add('active');
+    document.getElementById('s5status').textContent='Shifting elements right...';
+    // animate shift from back
+    let k=arr.length-1;
+    arr.push(null); // expand
+    function shiftStep(){
+      if(k>=idx){
+        arr[k+1]=arr[k];
+        draw(idx,k+1);
+        k--;
+        setTimeout(shiftStep,350);
+      } else {
+        // insert
+        clearHL();
+        document.getElementById('s5L7').classList.add('active');
+        arr[idx]=99;
+        draw(undefined,undefined,idx);
+        document.getElementById('s5status').textContent='Inserted 99 at index '+idx+' — shifted '+(arr.length-1-idx)+' elements';
+        document.getElementById('s5status').className='status success';
+        animating=false;
+      }
+    }
+    if(idx<arr.length-1) shiftStep();
+    else { arr[idx]=99; draw(undefined,undefined,idx); document.getElementById('s5status').textContent='Appended 99 at end — no shift needed!'; document.getElementById('s5status').className='status success'; animating=false; clearHL(); document.getElementById('s5L7').classList.add('active'); }
+  };
+
+  window.s5Reset = function(){
+    arr=[10,20,30,40,50]; animating=false; clearHL();
+    document.getElementById('s5status').textContent=''; draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s6: REMOVE AT INDEX (Animated Shift) ==================== -->
+<div class="slide" id="s6">
+  <h2>Remove at Index — Shifting Left</h2>
+  <p class="subtitle">Filling the gap costs O(n) in the worst case</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Code</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="line" id="s6L1"><span style="color:#c084fc;">public</span> E <span style="color:#86efac;">remove</span>(<span style="color:#f59e0b;">int</span> i) {</div><div class="line" id="s6L2">    E removed = data[i];</div><div class="line" id="s6L3">    <span style="color:#c084fc;">for</span> (k = i; k &lt; size-1; k++)</div><div class="line" id="s6L4">        data[k] = data[k+1];</div><div class="line" id="s6L5">    data[size-1] = <span style="color:#c084fc;">null</span>; <span style="color:#64748b;">// help GC</span></div><div class="line" id="s6L6">    size--;</div><div class="line" id="s6L7">    <span style="color:#c084fc;">return</span> removed;</div><div class="line" id="s6L8">}</div></div>
+      <div class="key-idea">
+        <h3>Memory Leak Prevention</h3>
+        <p>Setting the old last slot to <code>null</code> prevents the array from referencing an object the user thinks was removed.</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Animated Shift</h3>
+      <canvas id="s6canvas" width="400" height="200" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <label style="color:#94a3b8;font-size:14px;">remove(</label>
+        <input type="number" id="s6idx" value="2" min="0" max="5" style="width:50px;">
+        <label style="color:#94a3b8;font-size:14px;">)</label>
+        <button class="btn" onclick="s6Run()">Remove</button>
+        <button class="btn btn-outline" onclick="s6Reset()">Reset</button>
+      </div>
+      <div id="s6status" class="status" style="min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let arr=[10,20,30,40,50,60], animating=false;
+
+  function clearHL(){for(let i=1;i<=8;i++){const e=document.getElementById('s6L'+i);if(e)e.classList.remove('active');}}
+
+  function draw(shiftFrom,shiftTo,nullIdx){
+    const c=document.getElementById('s6canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=52,cellH=50,sx=10,y=70,cap=7;
+    ctx.fillStyle='#94a3b8'; ctx.font='13px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('size='+arr.length,10,20);
+    for(let i=0;i<cap;i++){
+      const x=sx+i*cellW;
+      const used=i<arr.length;
+      const isShifting=shiftFrom!==undefined&&i>=shiftFrom&&i<=shiftTo;
+      const isNull=nullIdx!==undefined&&i===nullIdx;
+      ctx.fillStyle=isNull?'rgba(239,68,68,0.2)':used?'rgba(59,130,246,0.25)':'transparent';
+      ctx.fillRect(x,y,cellW-3,cellH);
+      ctx.strokeStyle=isShifting?'#f59e0b':isNull?'#ef4444':used?'#3b82f6':'#334155';
+      ctx.lineWidth=isShifting||isNull?3:1;
+      ctx.strokeRect(x,y,cellW-3,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+cellW/2-1,y-8);
+      if(used&&!isNull){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 18px monospace';
+        ctx.fillText(arr[i],x+cellW/2-1,y+cellH/2+6);
+      }
+      if(isNull){
+        ctx.fillStyle='#64748b'; ctx.font='14px sans-serif';
+        ctx.fillText('null',x+cellW/2-1,y+cellH/2+5);
+      }
+      if(isShifting){
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 12px sans-serif';
+        ctx.fillText('←',x+cellW/2-1,y+cellH+14);
+      }
+    }
+  }
+
+  window.s6Run = function(){
+    if(animating) return;
+    const idx=parseInt(document.getElementById('s6idx').value);
+    if(isNaN(idx)||idx<0||idx>=arr.length){document.getElementById('s6status').textContent='Invalid index!';document.getElementById('s6status').className='status error';return;}
+    animating=true;
+    const removed=arr[idx];
+    clearHL();
+    document.getElementById('s6L2').classList.add('active');
+    document.getElementById('s6status').textContent='Removing '+removed+', shifting left...';
+    let k=idx;
+    function shiftStep(){
+      if(k<arr.length-1){
+        clearHL(); document.getElementById('s6L3').classList.add('active'); document.getElementById('s6L4').classList.add('active');
+        arr[k]=arr[k+1];
+        draw(idx,k);
+        k++;
+        setTimeout(shiftStep,350);
+      } else {
+        clearHL(); document.getElementById('s6L5').classList.add('active');
+        arr.pop();
+        draw(undefined,undefined);
+        document.getElementById('s6status').textContent='Removed '+removed+' — shifted '+(arr.length-idx)+' elements';
+        document.getElementById('s6status').className='status success';
+        animating=false;
+      }
+    }
+    setTimeout(shiftStep,400);
+  };
+
+  window.s6Reset = function(){
+    arr=[10,20,30,40,50,60]; animating=false; clearHL();
+    document.getElementById('s6status').textContent=''; draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s7: DYNAMIC RESIZING (Interactive) ==================== -->
+<div class="slide" id="s7">
+  <h2>Dynamic Resizing — The Doubling Strategy</h2>
+  <p class="subtitle">Why doubling gives amortized O(1) appends</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Push items and watch it grow!</h3>
+      <canvas id="s7canvas" width="400" height="200" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s7Push()">addLast</button>
+        <button class="btn btn-outline" onclick="s7Reset()">Reset</button>
+      </div>
+      <div id="s7status" class="status" style="min-height:24px;"></div>
+      <div id="s7log" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:8px 12px; margin-top:8px; font-family:monospace; font-size:0.8em; max-height:80px; overflow-y:auto; color:#cbd5e1;"></div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Why doubling, not +1?</h3>
+        <p>If grew by +1 each time: total copies = 1+2+3+...+n = <strong>O(n²)</strong>.<br>
+        Doubling: total copies = 1+2+4+...+n = <strong>O(n)</strong>.<br>
+        Amortized <strong>O(1)</strong> per append!</p>
+      </div>
+      <div class="diagram small">Growth history (capacity starts at 2):
+
+Op#  Size  Cap   Resize?  Copies
+---  ----  ----  -------  ------
+ 1    1     2      —        0
+ 2    2     2      —        0
+ 3    3     4     yes!      2
+ 4    4     4      —        0
+ 5    5     8     yes!      4
+6-8  ...    8      —        0
+ 9    9    16     yes!      8</div>
+      <div class="warning">
+        <h3>Tradeoff</h3>
+        <p>Doubling wastes up to 50% memory. Growth factor 1.5 wastes less but still O(1) amortized.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let arr=[], cap=2, totalCopies=0, nextV=1;
+
+  function draw(){
+    const c=document.getElementById('s7canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const maxCells=16, cellW=Math.min(380/Math.max(cap,2),45), cellH=50, sx=10, y=70;
+    ctx.fillStyle='#94a3b8'; ctx.font='13px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('size='+arr.length+'  capacity='+cap+'  total copies='+totalCopies,10,20);
+    ctx.fillText('amortized cost/op = '+(arr.length>0?(totalCopies/arr.length).toFixed(2):'0'),10,38);
+    for(let i=0;i<Math.min(cap,maxCells);i++){
+      const x=sx+i*cellW;
+      const used=i<arr.length;
+      ctx.fillStyle=used?'rgba(59,130,246,0.25)':'transparent';
+      ctx.fillRect(x,y,cellW-2,cellH);
+      ctx.strokeStyle=used?'#3b82f6':'#334155'; ctx.lineWidth=1;
+      ctx.strokeRect(x,y,cellW-2,cellH);
+      if(used&&cellW>20){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold '+Math.min(14,cellW-6)+'px monospace'; ctx.textAlign='center';
+        ctx.fillText(arr[i],x+cellW/2-1,y+cellH/2+5);
+      }
+    }
+    if(cap>maxCells){
+      ctx.fillStyle='#64748b'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('...('+(cap-maxCells)+' more slots)',sx+maxCells*cellW+5,y+cellH/2+4);
+    }
+  }
+
+  window.s7Push = function(){
+    if(arr.length>=cap){
+      const oldCap=cap;
+      cap*=2;
+      totalCopies+=arr.length;
+      document.getElementById('s7log').innerHTML+='<div style="color:#f59e0b;">Resize! '+oldCap+'→'+cap+' (copied '+arr.length+' elements)</div>';
+      document.getElementById('s7status').textContent='RESIZE: '+oldCap+'→'+cap+', copied '+arr.length+' elements';
+      document.getElementById('s7status').className='status error';
+    } else {
+      document.getElementById('s7status').textContent='Added '+nextV+' — O(1), no resize';
+      document.getElementById('s7status').className='status success';
+    }
+    arr.push(nextV); nextV++;
+    document.getElementById('s7log').innerHTML+='<div>push #'+arr.length+': size='+arr.length+' cap='+cap+'</div>';
+    const log=document.getElementById('s7log'); log.scrollTop=log.scrollHeight;
+    draw();
+  };
+
+  window.s7Reset = function(){
+    arr=[]; cap=2; totalCopies=0; nextV=1;
+    document.getElementById('s7log').innerHTML='';
+    document.getElementById('s7status').textContent=''; draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s8: SHRINKING STRATEGY ==================== -->
+<div class="slide" id="s8">
+  <h2>Shrinking Strategy</h2>
+  <p class="subtitle">When and how to reclaim unused memory</p>
+  <div class="two-col mt">
+    <div>
+      <h3 style="color:#f87171;">Bad: Shrink at 1/2 full → Thrashing!</h3>
+      <canvas id="s8thrashC" width="380" height="180" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn btn-outline" onclick="s8Thrash()">Demo Thrashing</button>
+        <button class="btn btn-outline" onclick="s8TReset()">Reset</button>
+      </div>
+      <div id="s8tstatus" class="status" style="min-height:24px;"></div>
+      <div class="warning mt">
+        <h3>Thrashing</h3>
+        <p>If grow at 2x and shrink at 1/2, alternating add/remove near the boundary triggers resize <strong>every single operation</strong>. O(n) per op!</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#86efac;">Good: Shrink at 1/4 full</h3>
+      <div class="code-block" style="font-size:0.9em;"><div class="line"><span style="color:#64748b;">// GROW: when size == capacity</span></div><div class="line">newCap = 2 * oldCap;</div><div class="line"></div><div class="line"><span style="color:#64748b;">// SHRINK: when size == capacity/4</span></div><div class="line">newCap = capacity / 2;</div></div>
+      <div class="key-idea">
+        <h3>Hysteresis</h3>
+        <p>Leaving a <strong>buffer zone</strong> between grow (full) and shrink (1/4 full) guarantees many operations between resizes, preserving amortized O(1).</p>
+      </div>
+      <div class="diagram small">After shrink: array is HALF full
+→ need many removes before next shrink
+→ or many adds before next grow
+→ either way, amortized cost stays O(1)</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let cap=8, size=4, ops=0, resizes=0, running=false;
+  function draw(){
+    const c=document.getElementById('s8thrashC'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const maxCells=16, cellW=Math.min(360/Math.max(cap,4),40), cellH=40, sx=10, y=60;
+    ctx.fillStyle='#94a3b8'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('cap='+cap+'  size='+size+'  ops='+ops+'  resizes='+resizes,10,18);
+    ctx.fillText('resize ratio: '+(ops>0?(resizes/ops*100).toFixed(0)+'%':'—'),10,34);
+    for(let i=0;i<Math.min(cap,maxCells);i++){
+      const x=sx+i*cellW;
+      ctx.fillStyle=i<size?'rgba(59,130,246,0.3)':'transparent';
+      ctx.fillRect(x,y,cellW-2,cellH);
+      ctx.strokeStyle=i<size?'#3b82f6':'#334155'; ctx.lineWidth=1;
+      ctx.strokeRect(x,y,cellW-2,cellH);
+    }
+    ctx.fillStyle='#f87171'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('shrink threshold: cap/2 = '+Math.floor(cap/2),190,y+cellH+18);
+  }
+
+  window.s8Thrash = function(){
+    if(running) return;
+    running=true; ops=0; resizes=0; cap=8; size=4;
+    const el=document.getElementById('s8tstatus');
+    function step(){
+      if(ops>=10){el.textContent=resizes+' resizes in '+ops+' ops — thrashing!'; el.className='status error'; running=false; draw(); return;}
+      if(ops%2===0){
+        // add
+        size++;
+        if(size>cap){cap*=2;resizes++;}
+        el.textContent='add → size='+size+' cap='+cap;
+      } else {
+        // remove
+        size--;
+        if(size<=cap/2&&cap>4){cap=Math.floor(cap/2);resizes++;}
+        el.textContent='remove → size='+size+' cap='+cap;
+      }
+      ops++;
+      draw();
+      setTimeout(step,500);
+    }
+    step();
+  };
+
+  window.s8TReset = function(){
+    cap=8; size=4; ops=0; resizes=0; running=false;
+    document.getElementById('s8tstatus').textContent=''; draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s9: POSITION ADT ==================== -->
+<div class="slide" id="s9">
+  <h2>The Position ADT</h2>
+  <p class="subtitle">A stable handle immune to shifting</p>
+  <div class="two-col mt">
+    <div>
+      <h3>The Problem with Indices</h3>
+      <canvas id="s9canvas" width="380" height="220" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s9Insert()">add(1, "X") — watch index 2 break!</button>
+        <button class="btn btn-outline" onclick="s9Reset()">Reset</button>
+      </div>
+      <div id="s9status" class="status" style="min-height:24px;"></div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Indices Are Fragile</h3>
+        <p>Every insert/delete can invalidate stored indices. If you saved "index 2 = C", that reference breaks after any modification before it.</p>
+      </div>
+      <div class="key-idea">
+        <h3>The Solution: Positions</h3>
+        <p>A <strong>Position</strong> holds onto an element regardless of where it sits. Insertions and deletions don't break other positions.</p>
+      </div>
+      <div class="analogy">
+        <h3>Analogy: Name Tags vs Seat Numbers</h3>
+        <p><strong>Index</strong> = "person in seat #3" — changes when people move.<br><strong>Position</strong> = "Alice's name tag" — always refers to Alice.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let arr=['A','B','C','D','E'], inserted=false;
+  function draw(){
+    const c=document.getElementById('s9canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=55,cellH=45,sx=10;
+    // before label
+    ctx.fillStyle='#94a3b8'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(inserted?'AFTER add(1, "X"):':'BEFORE:',10,16);
+    const y=30;
+    for(let i=0;i<arr.length;i++){
+      const x=sx+i*cellW;
+      const isX=inserted&&i===1;
+      ctx.fillStyle=isX?'rgba(16,185,129,0.3)':'rgba(59,130,246,0.25)';
+      ctx.fillRect(x,y,cellW-3,cellH);
+      ctx.strokeStyle=isX?'#10b981':'#3b82f6'; ctx.lineWidth=2;
+      ctx.strokeRect(x,y,cellW-3,cellH);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 20px monospace'; ctx.textAlign='center';
+      ctx.fillText(arr[i],x+cellW/2-1,y+cellH/2+7);
+      ctx.fillStyle='#64748b'; ctx.font='11px sans-serif';
+      ctx.fillText(i,x+cellW/2-1,y+cellH+14);
+    }
+    // tracking arrow for "C"
+    const cIdx=arr.indexOf('C');
+    ctx.fillStyle='#fbbf24'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('↑',sx+2*cellW+cellW/2-1,y+cellH+30);
+    ctx.fillText('You stored: index 2',sx+2*cellW+cellW/2-1,y+cellH+46);
+    if(inserted){
+      // show mismatch
+      ctx.fillStyle='#f87171'; ctx.font='bold 13px sans-serif';
+      ctx.fillText('index 2 now = "'+arr[2]+'" not "C"!',190,y+cellH+66);
+      ctx.fillText('"C" moved to index '+cIdx,190,y+cellH+84);
+      // position arrow
+      ctx.fillStyle='#86efac';
+      ctx.fillText('↑ Position for C still works!',sx+cIdx*cellW+cellW/2-1,y+cellH+100);
+    }
+  }
+
+  window.s9Insert = function(){
+    if(inserted) return;
+    arr=['A','X','B','C','D','E'];
+    inserted=true;
+    document.getElementById('s9status').textContent='Index 2 now points to B, not C! But a Position for C would still work.';
+    document.getElementById('s9status').className='status error';
+    draw();
+  };
+
+  window.s9Reset = function(){
+    arr=['A','B','C','D','E']; inserted=false;
+    document.getElementById('s9status').textContent=''; draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s10: NODE LIST (Interactive Doubly-Linked) ==================== -->
+<div class="slide" id="s10">
+  <h2>Node List (Positional Linked List)</h2>
+  <p class="subtitle">A doubly-linked list where each node IS a position</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Structure</h3>
+      <p>Doubly-linked list with <strong>sentinel</strong> header & trailer nodes that simplify edge cases.</p>
+      <h3 class="mt">Positional Operations</h3>
+      <table style="font-size:0.85em; width:100%;">
+        <tr><th>Operation</th><th>Time</th></tr>
+        <tr><td><code>addBefore(p, e)</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>addAfter(p, e)</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>remove(p)</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>before(p)</code> / <code>after(p)</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>first()</code> / <code>last()</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+      </table>
+      <div class="key-idea mt">
+        <h3>Sentinels</h3>
+        <p>Header and trailer are dummy nodes — never hold real data. Eliminates null-checking for first/last operations.</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Interactive Node List</h3>
+      <canvas id="s10canvas" width="400" height="160" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s10AddFirst()">addFirst</button>
+        <button class="btn" onclick="s10AddLast()">addLast</button>
+        <button class="btn btn-outline" onclick="s10RemFirst()">removeFirst</button>
+        <button class="btn btn-outline" onclick="s10RemLast()">removeLast</button>
+        <button class="btn btn-outline" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10status" class="status" style="min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let nodes=[], nextV=65;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4'];
+
+  function draw(){
+    const c=document.getElementById('s10canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const nodeW=48, nodeH=36, gap=12, y=60;
+    const all=['H',...nodes,'T'];
+    const totalW=all.length*(nodeW+gap)-gap;
+    const sx=(c.width-totalW)/2;
+    for(let i=0;i<all.length;i++){
+      const x=sx+i*(nodeW+gap);
+      const isSentinel=(i===0||i===all.length-1);
+      if(isSentinel){
+        ctx.fillStyle='rgba(100,116,139,0.2)'; ctx.fillRect(x,y,nodeW,nodeH);
+        ctx.strokeStyle='#64748b'; ctx.lineWidth=1; ctx.setLineDash([4,3]); ctx.strokeRect(x,y,nodeW,nodeH); ctx.setLineDash([]);
+        ctx.fillStyle='#64748b'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+        ctx.fillText(all[i],x+nodeW/2,y+nodeH/2+4);
+      } else {
+        const ci=(i-1)%colors.length;
+        ctx.fillStyle=colors[ci]; ctx.globalAlpha=0.25; ctx.fillRect(x,y,nodeW,nodeH); ctx.globalAlpha=1;
+        ctx.strokeStyle=colors[ci]; ctx.lineWidth=2; ctx.strokeRect(x,y,nodeW,nodeH);
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 16px monospace'; ctx.textAlign='center';
+        ctx.fillText(all[i],x+nodeW/2,y+nodeH/2+5);
+        ctx.fillStyle='#64748b'; ctx.font='9px sans-serif';
+        ctx.fillText('p'+(i),x+nodeW/2,y+nodeH+10);
+      }
+      // arrows
+      if(i<all.length-1){
+        const ax=x+nodeW, ay=y+nodeH/2;
+        ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(ax+1,ay-4);ctx.lineTo(ax+gap-2,ay-4);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(ax+gap-2,ay+4);ctx.lineTo(ax+1,ay+4);ctx.stroke();
+        // arrowheads
+        ctx.fillStyle='#94a3b8';
+        ctx.beginPath();ctx.moveTo(ax+gap-2,ay-7);ctx.lineTo(ax+gap+2,ay-4);ctx.lineTo(ax+gap-2,ay-1);ctx.fill();
+        ctx.beginPath();ctx.moveTo(ax+1,ay+1);ctx.lineTo(ax-3,ay+4);ctx.lineTo(ax+1,ay+7);ctx.fill();
+      }
+    }
+    ctx.fillStyle='#94a3b8'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('H = header sentinel    T = trailer sentinel',c.width/2,20);
+    ctx.fillText('size: '+nodes.length,c.width/2,y+nodeH+28);
+  }
+
+  function nv(){const v=String.fromCharCode(nextV);nextV++;if(nextV>90)nextV=65;return v;}
+
+  window.s10AddFirst = function(){
+    if(nodes.length>=6){document.getElementById('s10status').textContent='Demo limit';document.getElementById('s10status').className='status error';return;}
+    const v=nv(); nodes.unshift(v);
+    document.getElementById('s10status').textContent='addFirst("'+v+'") — O(1) pointer rewiring';
+    document.getElementById('s10status').className='status success'; draw();
+  };
+  window.s10AddLast = function(){
+    if(nodes.length>=6){document.getElementById('s10status').textContent='Demo limit';document.getElementById('s10status').className='status error';return;}
+    const v=nv(); nodes.push(v);
+    document.getElementById('s10status').textContent='addLast("'+v+'") — O(1) pointer rewiring';
+    document.getElementById('s10status').className='status success'; draw();
+  };
+  window.s10RemFirst = function(){
+    if(nodes.length===0){document.getElementById('s10status').textContent='Empty!';document.getElementById('s10status').className='status error';return;}
+    const v=nodes.shift();
+    document.getElementById('s10status').textContent='removeFirst() → "'+v+'" — O(1)';
+    document.getElementById('s10status').className='status success'; draw();
+  };
+  window.s10RemLast = function(){
+    if(nodes.length===0){document.getElementById('s10status').textContent='Empty!';document.getElementById('s10status').className='status error';return;}
+    const v=nodes.pop();
+    document.getElementById('s10status').textContent='removeLast() → "'+v+'" — O(1)';
+    document.getElementById('s10status').className='status success'; draw();
+  };
+  window.s10Reset = function(){nodes=[];nextV=65;document.getElementById('s10status').textContent='';draw();};
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s11: NODE LIST OPERATIONS (Pointer Rewiring) ==================== -->
+<div class="slide" id="s11">
+  <h2>Node List Operations — O(1) Each!</h2>
+  <p class="subtitle">Pointer rewiring instead of element shifting</p>
+  <div class="two-col mt">
+    <div>
+      <h3>addAfter(p2, "X")</h3>
+      <canvas id="s11addC" width="380" height="160" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls">
+        <button class="btn" onclick="s11DoAdd()">Animate addAfter</button>
+        <button class="btn btn-outline" onclick="s11AddReset()">Reset</button>
+      </div>
+      <h3 class="mt">Code</h3>
+      <div class="code-block" style="font-size:0.82em;"><div class="line"><span style="color:#c084fc;">void</span> <span style="color:#86efac;">addAfter</span>(Position p, E e) {</div><div class="line">    Node node = (Node) p;</div><div class="line">    Node nn = <span style="color:#c084fc;">new</span> Node(e, node, node.next);</div><div class="line">    node.next.prev = nn;</div><div class="line">    node.next = nn;</div><div class="line">    size++;</div><div class="line">}</div></div>
+    </div>
+    <div>
+      <h3>remove(p2)</h3>
+      <canvas id="s11remC" width="380" height="160" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="s11DoRem()">Animate remove</button>
+        <button class="btn btn-outline" onclick="s11RemReset()">Reset</button>
+      </div>
+      <h3 class="mt">Code</h3>
+      <div class="code-block" style="font-size:0.82em;"><div class="line">E <span style="color:#86efac;">remove</span>(Position p) {</div><div class="line">    Node n = (Node) p;</div><div class="line">    n.prev.next = n.next;</div><div class="line">    n.next.prev = n.prev;</div><div class="line">    size--;</div><div class="line">    <span style="color:#c084fc;">return</span> n.element;</div><div class="line">}</div></div>
+    </div>
+  </div>
+  <div class="key-idea mt">
+    <h3>Key Idea</h3>
+    <p>Only 4 pointer assignments per insert, 2 per remove — <strong>O(1)</strong>. No elements shifted. This is the fundamental advantage over ArrayList for positional operations.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // addAfter animation
+  function drawAdd(phase){
+    const c=document.getElementById('s11addC'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const nw=55,nh=36,gap=16,y=60;
+    const items=phase<2?['A','B','C']:['A','B','X','C'];
+    const sx=(c.width-items.length*(nw+gap)+gap)/2;
+    for(let i=0;i<items.length;i++){
+      const x=sx+i*(nw+gap);
+      const isNew=items[i]==='X';
+      ctx.fillStyle=isNew?'rgba(16,185,129,0.3)':'rgba(59,130,246,0.25)';
+      ctx.fillRect(x,y,nw,nh);
+      ctx.strokeStyle=isNew?'#10b981':'#3b82f6'; ctx.lineWidth=2; ctx.strokeRect(x,y,nw,nh);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 16px monospace'; ctx.textAlign='center';
+      ctx.fillText(items[i],x+nw/2,y+nh/2+5);
+      if(i<items.length-1){
+        ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(x+nw,y+nh/2-3);ctx.lineTo(x+nw+gap,y+nh/2-3);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x+nw+gap,y+nh/2+3);ctx.lineTo(x+nw,y+nh/2+3);ctx.stroke();
+      }
+    }
+    ctx.fillStyle='#94a3b8'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+    if(phase===0) ctx.fillText('Before: A ↔ B ↔ C',c.width/2,20);
+    else if(phase===1) ctx.fillText('Create new node X...',c.width/2,20);
+    else ctx.fillText('After: A ↔ B ↔ X ↔ C  — 4 pointers rewired!',c.width/2,20);
+  }
+
+  let addPhase=0;
+  window.s11DoAdd = function(){
+    addPhase++;
+    if(addPhase>2) addPhase=2;
+    drawAdd(addPhase);
+  };
+  window.s11AddReset = function(){addPhase=0;drawAdd(0);};
+  drawAdd(0);
+
+  // remove animation
+  function drawRem(phase){
+    const c=document.getElementById('s11remC'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const nw=55,nh=36,gap=16,y=60;
+    const items=phase<2?['A','B','C']:['A','C'];
+    const sx=(c.width-items.length*(nw+gap)+gap)/2;
+    for(let i=0;i<items.length;i++){
+      const x=sx+i*(nw+gap);
+      const isDel=phase===1&&items[i]==='B';
+      ctx.fillStyle=isDel?'rgba(239,68,68,0.3)':'rgba(59,130,246,0.25)';
+      ctx.fillRect(x,y,nw,nh);
+      ctx.strokeStyle=isDel?'#ef4444':'#3b82f6'; ctx.lineWidth=2; ctx.strokeRect(x,y,nw,nh);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 16px monospace'; ctx.textAlign='center';
+      ctx.fillText(items[i],x+nw/2,y+nh/2+5);
+      if(i<items.length-1){
+        ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(x+nw,y+nh/2-3);ctx.lineTo(x+nw+gap,y+nh/2-3);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x+nw+gap,y+nh/2+3);ctx.lineTo(x+nw,y+nh/2+3);ctx.stroke();
+      }
+    }
+    if(phase===1){
+      // show B being removed with X
+      ctx.strokeStyle='#ef4444'; ctx.lineWidth=2;
+      const bx=sx+1*(nw+gap);
+      ctx.beginPath();ctx.moveTo(bx,y);ctx.lineTo(bx+nw,y+nh);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(bx+nw,y);ctx.lineTo(bx,y+nh);ctx.stroke();
+    }
+    ctx.fillStyle='#94a3b8'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+    if(phase===0) ctx.fillText('Before: A ↔ B ↔ C',c.width/2,20);
+    else if(phase===1) ctx.fillText('Removing B: rewire A.next→C, C.prev→A',c.width/2,20);
+    else ctx.fillText('After: A ↔ C — B is garbage collected',c.width/2,20);
+  }
+
+  let remPhase=0;
+  window.s11DoRem = function(){remPhase++;if(remPhase>2)remPhase=2;drawRem(remPhase);};
+  window.s11RemReset = function(){remPhase=0;drawRem(0);};
+  drawRem(0);
+})();
+</script>
+
+<!-- ==================== SLIDE s12: ITERATORS ==================== -->
+<div class="slide" id="s12">
+  <h2>Iterators</h2>
+  <p class="subtitle">Traverse a collection without knowing its implementation</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Iterator Interface</h3>
+      <div class="code-block" style="font-size:0.88em;"><div class="line">Iterator&lt;String&gt; it = list.iterator();</div><div class="line"><span style="color:#c084fc;">while</span> (it.hasNext()) {</div><div class="line">    String s = it.next();</div><div class="line">    process(s);</div><div class="line">}</div><div class="line"></div><div class="line"><span style="color:#64748b;">// Or with for-each (sugar):</span></div><div class="line"><span style="color:#c084fc;">for</span> (String s : list) { process(s); }</div></div>
+      <h3 class="mt">Watch the Cursor</h3>
+      <canvas id="s12canvas" width="380" height="120" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s12Next()">it.next()</button>
+        <button class="btn btn-outline" onclick="s12Reset()">Reset</button>
+      </div>
+      <div id="s12status" class="status" style="min-height:24px;"></div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy: TV Remote</h3>
+        <p>Press "next channel" without knowing if signals come via cable, satellite, or streaming. The remote = iterator — uniform traversal regardless of source.</p>
+      </div>
+      <h3 class="mt">ArrayList vs Node List Iterator</h3>
+      <div class="diagram small">ArrayList iterator:
+  cursor = index (int)
+  next() → data[cursor++]
+
+Node List iterator:
+  cursor = node reference
+  next() → { val=cursor.elem;
+              cursor=cursor.next;
+              return val; }
+
+SAME interface, DIFFERENT internals!</div>
+      <div class="key-idea">
+        <h3>Abstraction</h3>
+        <p>Iterators decouple <em>traversal logic</em> from <em>data structure details</em>. Code using iterators works with ANY Iterable.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const items=['A','B','C','D','E'];
+  let cursor=0;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981'];
+
+  function draw(){
+    const c=document.getElementById('s12canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=60,cellH=45,sx=20,y=30;
+    for(let i=0;i<items.length;i++){
+      const x=sx+i*cellW;
+      const visited=i<cursor;
+      const isCursor=i===cursor;
+      ctx.fillStyle=visited?colors[i]:isCursor?'rgba(255,255,255,0.1)':'transparent';
+      ctx.globalAlpha=visited?0.4:1;
+      ctx.fillRect(x,y,cellW-4,cellH);
+      ctx.globalAlpha=1;
+      ctx.strokeStyle=isCursor?'#fbbf24':visited?colors[i]:'#475569';
+      ctx.lineWidth=isCursor?3:visited?2:1;
+      ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle=visited?'#86efac':'#e2e8f0'; ctx.font='bold 20px monospace'; ctx.textAlign='center';
+      ctx.fillText(items[i],x+cellW/2-2,y+cellH/2+7);
+    }
+    // cursor arrow
+    if(cursor<items.length){
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('↑ cursor',sx+cursor*cellW+cellW/2-2,y+cellH+18);
+    } else {
+      ctx.fillStyle='#86efac'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('hasNext() = false — done!',c.width/2,y+cellH+18);
+    }
+  }
+
+  window.s12Next = function(){
+    if(cursor>=items.length){document.getElementById('s12status').textContent='No more elements! hasNext()=false';document.getElementById('s12status').className='status error';return;}
+    const v=items[cursor]; cursor++;
+    document.getElementById('s12status').textContent='next() → "'+v+'"  (cursor advances to '+(cursor<items.length?items[cursor]:'end')+')';
+    document.getElementById('s12status').className='status success';
+    draw();
+  };
+
+  window.s12Reset = function(){cursor=0;document.getElementById('s12status').textContent='';draw();};
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s13: COMPARISON TABLE ==================== -->
+<div class="slide" id="s13">
+  <h2>ArrayList vs Node List — Comparison</h2>
+  <p class="subtitle">Choose the right implementation for your workload</p>
+  <div class="center">
+    <table style="margin:20px auto; font-size:0.95em;">
+      <tr><th>Operation</th><th>ArrayList</th><th>Node List (Doubly Linked)</th></tr>
+      <tr><td><code>get(i)</code> / index access</td><td style="color:#4ade80;"><strong>O(1)</strong></td><td style="color:#f87171;">O(n)</td></tr>
+      <tr><td><code>set(i, e)</code></td><td style="color:#4ade80;"><strong>O(1)</strong></td><td style="color:#f87171;">O(n)</td></tr>
+      <tr><td><code>add(0, e)</code> / insert front</td><td style="color:#f87171;">O(n)</td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+      <tr><td><code>add(n, e)</code> / append</td><td style="color:#4ade80;"><strong>O(1)*</strong></td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+      <tr><td>Insert/delete at position</td><td style="color:#f87171;">O(n)</td><td style="color:#4ade80;"><strong>O(1)</strong> <span style="color:#94a3b8;font-size:0.8em;">if you have position</span></td></tr>
+      <tr><td>Memory per element</td><td style="color:#4ade80;"><strong>1 ref</strong></td><td style="color:#f87171;">3 refs (elem+prev+next)</td></tr>
+      <tr><td>Cache performance</td><td style="color:#4ade80;"><strong>Excellent</strong></td><td style="color:#f87171;">Poor (scattered)</td></tr>
+    </table>
+  </div>
+  <div class="two-col mt">
+    <div>
+      <div class="key-idea">
+        <h3>Key Caveat</h3>
+        <p>Node List insert/delete is O(1) <em>only if you already have the position</em>. Finding a position by value or index still costs O(n).</p>
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p><strong>ArrayList</strong> = numbered bookshelf (instant find, slow insert).<br><strong>Node List</strong> = chain of paperclips (easy to add/remove, slow to find #47).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 14: JAVA COLLECTIONS FRAMEWORK ==================== -->
+<div class="slide" id="s14">
+  <h2>Java Collections Framework</h2>
+  <p class="subtitle">How ArrayList and LinkedList fit into the bigger picture</p>
+
+  <div class="two-col">
+    <div>
+      <canvas id="jcfTree" width="520" height="340" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('jcfTree'),cx=cv.getContext('2d');
+        const nodes=[
+          {x:260,y:30,label:'Iterable<E>',color:'#64748b'},
+          {x:260,y:90,label:'Collection<E>',color:'#64748b'},
+          {x:140,y:160,label:'List<E>',color:'#3b82f6'},
+          {x:380,y:160,label:'Set<E>',color:'#64748b'},
+          {x:70,y:240,label:'ArrayList',color:'#4ade80'},
+          {x:210,y:240,label:'LinkedList',color:'#60a5fa'},
+          {x:380,y:240,label:'HashSet',color:'#64748b'},
+        ];
+        const edges=[[0,1],[1,2],[1,3],[2,4],[2,5],[3,6]];
+        function draw(hl){
+          cx.clearRect(0,0,520,340);
+          edges.forEach(([a,b])=>{
+            cx.beginPath();cx.moveTo(nodes[a].x,nodes[a].y+16);cx.lineTo(nodes[b].x,nodes[b].y-12);
+            cx.strokeStyle='#475569';cx.lineWidth=2;cx.stroke();
+          });
+          nodes.forEach((n,i)=>{
+            const isHl=hl===i;
+            cx.fillStyle=isHl?n.color:'#1e293b';
+            cx.strokeStyle=n.color;cx.lineWidth=isHl?3:2;
+            const w=cx.measureText(n.label).width||n.label.length*8;
+            const bw=Math.max(w+24,90),bh=28;
+            cx.beginPath();cx.roundRect(n.x-bw/2,n.y-bh/2,bw,bh,8);cx.fill();cx.stroke();
+            cx.fillStyle=isHl?'#0f172a':n.color;cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(n.label,n.x,n.y);
+          });
+        }
+        let hlIdx=-1;
+        cv.addEventListener('mousemove',e=>{
+          const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;
+          let found=-1;
+          nodes.forEach((n,i)=>{if(Math.abs(mx-n.x)<60&&Math.abs(my-n.y)<18)found=i;});
+          if(found!==hlIdx){hlIdx=found;draw(hlIdx);}
+        });
+        cv.addEventListener('mouseleave',()=>{hlIdx=-1;draw(-1);});
+        draw(-1);
+      })();
+      </script>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Both ArrayList and LinkedList implement <code>List&lt;E&gt;</code> — code written against the interface works with either. Choose the implementation based on your workload.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3>java.util.ArrayList</h3>
+      <ul>
+        <li>Backed by <code>Object[]</code> array</li>
+        <li>Default capacity: <strong>10</strong>, growth: ~<strong>1.5x</strong></li>
+        <li>Implements <code>RandomAccess</code> marker</li>
+      </ul>
+
+      <h3 class="mt">java.util.LinkedList</h3>
+      <ul>
+        <li>Doubly-linked with header/trailer sentinels</li>
+        <li>Also implements <code>Deque</code></li>
+        <li>No <code>RandomAccess</code> — indexing is O(n)</li>
+      </ul>
+
+      <h3 class="mt">Common Methods (via List interface)</h3>
+      <div class="code-block" style="font-size:0.85em;">
+<div class="line">List&lt;String&gt; list = new ArrayList&lt;&gt;();</div>
+<div class="line">list.add("hello");        // append</div>
+<div class="line">list.add(0, "world");     // insert at 0</div>
+<div class="line">list.get(1);              // "hello"</div>
+<div class="line">list.set(0, "hi");        // replace</div>
+<div class="line">list.remove(0);           // by index</div>
+<div class="line">list.size();              // element count</div>
+<div class="line">for (String s : list) { } // iterate</div>
+      </div>
+
+      <div class="warning">
+        <h3>Warning</h3>
+        <p>Java's LinkedList does NOT expose Position objects. Our lecture's positional list ADT is more powerful — positions enable O(1) insert/delete at known locations.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 15: CHOOSING THE RIGHT LIST ==================== -->
+<div class="slide" id="s15">
+  <h2>Choosing the Right List</h2>
+  <p class="subtitle">Interactive decision helper — answer the questions</p>
+
+  <div class="two-col">
+    <div>
+      <div id="chooserArea" style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;min-height:320px;">
+        <p id="chooserQ" style="font-size:1.15em;color:#e2e8f0;margin-bottom:16px;">What is your primary access pattern?</p>
+        <div id="chooserBtns" class="controls" style="flex-direction:column;gap:8px;"></div>
+        <div id="chooserResult" style="display:none;margin-top:16px;"></div>
+      </div>
+      <div class="controls mt">
+        <button onclick="chooserReset()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Reset Quiz</button>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="color:#4ade80;">Use ArrayList when...</h3>
+      <ul>
+        <li>Frequent <strong>random access</strong> by index</li>
+        <li>Mostly <strong>appending</strong> to the end</li>
+        <li>Memory efficiency matters</li>
+        <li>Good <strong>cache locality</strong> needed</li>
+      </ul>
+
+      <h3 class="mt" style="color:#60a5fa;">Use LinkedList / Node List when...</h3>
+      <ul>
+        <li>Frequent insert/delete at <strong>both ends</strong></li>
+        <li>You hold <strong>position references</strong></li>
+        <li>Elements are frequently <strong>reordered</strong></li>
+      </ul>
+
+      <div class="key-idea mt">
+        <h3>Rule of Thumb</h3>
+        <p><strong>When in doubt, use ArrayList.</strong> Cache performance dominates in practice. Even middle insertions are often faster with ArrayList on modern hardware.</p>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const tree=[
+      {q:'What is your primary access pattern?',opts:[
+        {label:'Random access by index',next:1},
+        {label:'Sequential traversal only',next:2},
+        {label:'Insert/delete at known positions',next:3}
+      ]},
+      {q:'How often do you insert in the middle?',opts:[
+        {label:'Rarely or never',next:4},
+        {label:'Frequently',next:5}
+      ]},
+      {q:'Do you also need fast insert/delete?',opts:[
+        {label:'Mostly at ends',next:6},
+        {label:'In the middle, with position refs',next:3}
+      ]},
+      {result:'Node List (Positional)',color:'#60a5fa',reason:'You have position references — O(1) insert/delete at known locations is unbeatable.'},
+      {result:'ArrayList',color:'#4ade80',reason:'Random access + rare middle inserts = ArrayList dominates with O(1) indexing and great cache locality.'},
+      {result:'ArrayList (still!)',color:'#4ade80',reason:'Despite middle inserts, cache locality often makes ArrayList faster in practice. Profile to be sure!'},
+      {result:'LinkedList / Deque',color:'#60a5fa',reason:'Frequent end operations + no random access = LinkedList is a good fit. Java\'s LinkedList also implements Deque.'},
+    ];
+    function render(idx){
+      const node=tree[idx];
+      const btns=document.getElementById('chooserBtns');
+      const qEl=document.getElementById('chooserQ');
+      const res=document.getElementById('chooserResult');
+      btns.innerHTML='';res.style.display='none';
+      if(node.result){
+        qEl.textContent='Recommendation:';
+        res.style.display='block';
+        res.innerHTML='<div style="background:rgba(59,130,246,0.15);border-left:4px solid '+node.color+';border-radius:0 12px 12px 0;padding:20px 24px;"><h3 style="color:'+node.color+';font-size:1.4em;">'+node.result+'</h3><p style="margin-top:10px;color:#cbd5e1;">'+node.reason+'</p></div>';
+        return;
+      }
+      qEl.textContent=node.q;
+      node.opts.forEach(o=>{
+        const b=document.createElement('button');
+        b.textContent=o.label;
+        b.style.cssText='background:#334155;border:1px solid #475569;color:#e2e8f0;padding:12px 20px;border-radius:8px;cursor:pointer;font-size:14px;width:100%;text-align:left;transition:all 0.2s;';
+        b.onmouseenter=()=>b.style.background='#475569';
+        b.onmouseleave=()=>b.style.background='#334155';
+        b.onclick=()=>render(o.next);
+        btns.appendChild(b);
+      });
+    }
+    window.chooserReset=function(){render(0);};
+    render(0);
+  })();
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== CHALLENGE A: SHIFT COUNT ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Count the Shifts</h2>
+  <p class="subtitle">How many element moves happen in this sequence?</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block">
+<div class="line">// Start: ArrayList capacity=6, size=4</div>
+<div class="line">// data = [A, B, C, D, _, _]</div>
+<div class="line"> </div>
+<div class="line">list.add(2, "X");  // insert X at index 2</div>
+<div class="line">list.add(0, "Y");  // insert Y at index 0</div>
+<div class="line">list.remove(3);    // remove at index 3</div>
+      </div>
+
+      <p class="mt">Count the <strong>total number of individual element moves</strong> (shifts) across all three operations.</p>
+
+      <div class="controls mt">
+        <label style="color:#94a3b8;">Your answer:</label>
+        <input type="number" id="caInput" min="0" max="30" style="width:80px;">
+        <button onclick="checkCA()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Check</button>
+      </div>
+      <p id="caFeedback" style="margin-top:12px;font-weight:600;"></p>
+    </div>
+
+    <div>
+      <canvas id="caCanvas" width="480" height="340" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button onclick="caStep()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Step Through</button>
+        <button onclick="caReset()" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">Reset</button>
+        <span id="caCount" style="color:#fbbf24;font-weight:600;margin-left:8px;">Moves: 0</span>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const cv=document.getElementById('caCanvas'),cx=cv.getContext('2d');
+    const W=480,H=340,cw=60,ch=40,gap=8,y0=20;
+    // States: [array, label, highlighted indices, move count]
+    const states=[
+      {arr:['A','B','C','D','',''],label:'Initial: [A, B, C, D, _, _]',hl:[],moves:0},
+      {arr:['A','B','X','C','D',''],label:'add(2,"X") — shift C,D right → 2 moves',hl:[2],moves:2},
+      {arr:['Y','A','B','X','C','D'],label:'add(0,"Y") — shift all 5 right → 5 moves',hl:[0],moves:7},
+      {arr:['Y','A','B','C','D',''],label:'remove(3) — shift C,D left → 2 moves',hl:[],moves:9},
+    ];
+    let step=0;
+    function draw(s){
+      cx.clearRect(0,0,W,H);
+      const st=states[s];
+      // Title
+      cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+      cx.fillText('Step '+s+' / '+(states.length-1),W/2,y0+10);
+      // Array boxes
+      const startX=(W-st.arr.length*(cw+gap))/2;
+      st.arr.forEach((v,i)=>{
+        const x=startX+i*(cw+gap),y=y0+50;
+        cx.fillStyle=st.hl.includes(i)?'rgba(74,222,128,0.25)':'#1e293b';
+        cx.strokeStyle=st.hl.includes(i)?'#4ade80':'#475569';
+        cx.lineWidth=st.hl.includes(i)?3:2;
+        cx.beginPath();cx.roundRect(x,y,cw,ch,6);cx.fill();cx.stroke();
+        cx.fillStyle=v?'#e2e8f0':'#475569';cx.font='bold 18px SF Mono, monospace';
+        cx.textAlign='center';cx.textBaseline='middle';
+        cx.fillText(v||'_',x+cw/2,y+ch/2);
+        // index
+        cx.fillStyle='#64748b';cx.font='12px SF Mono, monospace';
+        cx.fillText(i,x+cw/2,y+ch+16);
+      });
+      // Label
+      cx.fillStyle='#cbd5e1';cx.font='14px system-ui, sans-serif';cx.textAlign='center';
+      const lines=st.label.split('→');
+      lines.forEach((l,i)=>cx.fillText(l.trim(),W/2,y0+140+i*22));
+      // Cumulative moves
+      cx.fillStyle='#fbbf24';cx.font='bold 16px system-ui, sans-serif';
+      cx.fillText('Total moves so far: '+st.moves,W/2,y0+210);
+      document.getElementById('caCount').textContent='Moves: '+st.moves;
+    }
+    window.caStep=function(){if(step<states.length-1){step++;draw(step);}};
+    window.caReset=function(){step=0;draw(0);};
+    window.checkCA=function(){
+      const v=parseInt(document.getElementById('caInput').value);
+      const fb=document.getElementById('caFeedback');
+      if(v===9){fb.textContent='Correct! 2 + 5 + 2 = 9 total moves.';fb.style.color='#4ade80';}
+      else{fb.textContent='Not quite — step through the animation to count each shift.';fb.style.color='#f87171';}
+    };
+    draw(0);
+  })();
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 16: COMMON PITFALLS ==================== -->
+<div class="slide" id="s16">
+  <h2>Common Pitfalls</h2>
+  <p class="subtitle">Mistakes that bite data structures students</p>
+
+  <div class="three-col">
+    <div>
+      <h3 style="color:#f87171;">1. ConcurrentModification</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<div class="line" style="color:#f87171;">// WRONG</div>
+<div class="line">for (String s : list) {</div>
+<div class="line">  if (s.equals("bad"))</div>
+<div class="line">    list.remove(s); // CRASH!</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line" style="color:#4ade80;">// RIGHT</div>
+<div class="line">Iterator&lt;String&gt; it =</div>
+<div class="line">    list.iterator();</div>
+<div class="line">while (it.hasNext()) {</div>
+<div class="line">  if (it.next().equals("bad"))</div>
+<div class="line">    it.remove(); // safe!</div>
+<div class="line">}</div>
+      </div>
+
+      <h3 class="mt" style="color:#f87171;">2. Off-by-One Index</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<div class="line">// size=5, valid: [0..4]</div>
+<div class="line">list.get(5);  // CRASH!</div>
+<div class="line">list.get(-1); // CRASH!</div>
+<div class="line"> </div>
+<div class="line">// add() valid: [0..size]</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="color:#f87171;">3. Index Shift After Remove</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<div class="line">// [A, B, C, D, E]</div>
+<div class="line">list.remove(1); // B gone</div>
+<div class="line">// Now [A, C, D, E]</div>
+<div class="line">list.remove(3); // removes E!</div>
+<div class="line">// NOT D — indices shifted</div>
+<div class="line"> </div>
+<div class="line" style="color:#4ade80;">// FIX: remove backwards</div>
+<div class="line">list.remove(3); // D gone</div>
+<div class="line">list.remove(1); // B gone</div>
+      </div>
+
+      <h3 class="mt" style="color:#f87171;">4. O(n²) LinkedList Loop</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<div class="line" style="color:#f87171;">// O(n²)! get(i) walks each time</div>
+<div class="line">for (int i=0; i&lt;list.size(); i++)</div>
+<div class="line">  process(list.get(i));</div>
+<div class="line"> </div>
+<div class="line" style="color:#4ade80;">// O(n) with for-each</div>
+<div class="line">for (String s : list)</div>
+<div class="line">  process(s);</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="color:#f87171;">5. size() vs capacity</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<div class="line">ArrayList list =</div>
+<div class="line">  new ArrayList(100);</div>
+<div class="line">// capacity=100, size=0!</div>
+<div class="line">list.get(0); // CRASH!</div>
+      </div>
+
+      <div class="warning mt">
+        <h3>#1 Bug: Remove While Iterating</h3>
+        <p>Always use the iterator's <code>remove()</code>, or build a separate "to-remove" list first.</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Pro Tip</h3>
+        <p>When removing multiple elements by index, work <strong>backwards</strong> (high→low) so shifts don't affect remaining indices.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== CHALLENGE B: FIX THE BUG ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <p class="subtitle">This addAfter method for a doubly-linked node list has a bug — find and fix it</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block" id="cbCode">
+<div class="line">// Insert element e after position p</div>
+<div class="line">public Position&lt;E&gt; addAfter(Position&lt;E&gt; p, E e) {</div>
+<div class="line">    Node&lt;E&gt; node = validate(p);</div>
+<div class="line">    Node&lt;E&gt; succ = node.getNext();</div>
+<div class="line">    Node&lt;E&gt; newest = new Node&lt;&gt;(e, node, succ);</div>
+<div class="line">    node.setNext(newest);</div>
+<div class="line" id="cbBugLine">    node.setPrev(newest);  // ← bug?</div>
+<div class="line">    size++;</div>
+<div class="line">    return newest;</div>
+<div class="line">}</div>
+      </div>
+
+      <div class="controls mt">
+        <select id="cbSelect" style="min-width:280px;">
+          <option value="">— Select the fix —</option>
+          <option value="a">Change node.setPrev to succ.setPrev</option>
+          <option value="b">Change node.setPrev to newest.setPrev</option>
+          <option value="c">Add succ.setNext(newest) after</option>
+          <option value="d">Swap lines 6 and 7</option>
+        </select>
+        <button onclick="checkCB()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Check</button>
+      </div>
+      <p id="cbFeedback" style="margin-top:12px;font-weight:600;"></p>
+    </div>
+
+    <div>
+      <canvas id="cbCanvas" width="480" height="300" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('cbCanvas'),cx=cv.getContext('2d');
+        function draw(fixed){
+          cx.clearRect(0,0,480,300);
+          const nodes=[
+            {x:60,y:80,label:'node',color:'#3b82f6'},
+            {x:240,y:80,label:'newest',color:'#4ade80'},
+            {x:420,y:80,label:'succ',color:'#8b5cf6'},
+          ];
+          // Draw nodes
+          nodes.forEach(n=>{
+            cx.fillStyle='#1e293b';cx.strokeStyle=n.color;cx.lineWidth=3;
+            cx.beginPath();cx.roundRect(n.x-35,n.y-20,70,40,8);cx.fill();cx.stroke();
+            cx.fillStyle=n.color;cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(n.label,n.x,n.y);
+          });
+          // Arrows
+          function arrow(x1,y1,x2,y2,color,label,dy){
+            cx.strokeStyle=color;cx.fillStyle=color;cx.lineWidth=2;
+            const my=y1+dy;
+            cx.beginPath();cx.moveTo(x1,y1);cx.quadraticCurveTo((x1+x2)/2,my,x2,y2);cx.stroke();
+            // arrowhead
+            const angle=Math.atan2(y2-my,x2-(x1+x2)/2);
+            cx.beginPath();cx.moveTo(x2,y2);cx.lineTo(x2-10*Math.cos(angle-0.4),y2-10*Math.sin(angle-0.4));
+            cx.lineTo(x2-10*Math.cos(angle+0.4),y2-10*Math.sin(angle+0.4));cx.closePath();cx.fill();
+            cx.font='12px SF Mono, monospace';cx.textAlign='center';
+            cx.fillText(label,(x1+x2)/2,my+(dy>0?16:-8));
+          }
+          // node.next → newest ✓
+          arrow(95,75,205,75,'#4ade80','node.next→newest',-30);
+          if(fixed){
+            // succ.prev → newest ✓
+            arrow(385,85,275,85,'#4ade80','succ.prev→newest',30);
+          } else {
+            // BUG: node.prev → newest (wrong!)
+            arrow(60,100,205,100,'#f87171','node.prev→newest (BUG!)',40);
+            cx.fillStyle='#f87171';cx.font='bold 14px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('❌ This sets node.prev instead of succ.prev!',240,180);
+            cx.fillText('The link from succ back to newest is missing.',240,200);
+          }
+          // newest internal pointers
+          cx.strokeStyle='#64748b';cx.lineWidth=1;cx.setLineDash([4,4]);
+          cx.beginPath();cx.moveTo(215,65);cx.lineTo(95,65);cx.stroke();
+          cx.beginPath();cx.moveTo(265,65);cx.lineTo(385,65);cx.stroke();
+          cx.setLineDash([]);
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('newest.prev',155,58);cx.fillText('newest.next',325,58);
+
+          if(fixed){
+            cx.fillStyle='#4ade80';cx.font='bold 16px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('✓ All four pointers correctly set!',240,180);
+            cx.fillStyle='#cbd5e1';cx.font='14px system-ui, sans-serif';
+            cx.fillText('node.next → newest, succ.prev → newest',240,205);
+            cx.fillText('newest.prev → node, newest.next → succ',240,225);
+          }
+        }
+        window.drawCBCanvas=draw;
+        draw(false);
+      })();
+      </script>
+    </div>
+  </div>
+  <script>
+  window.checkCB=function(){
+    const v=document.getElementById('cbSelect').value;
+    const fb=document.getElementById('cbFeedback');
+    if(v==='a'){
+      fb.textContent='Correct! succ.setPrev(newest) links the successor back to the new node.';
+      fb.style.color='#4ade80';
+      document.getElementById('cbBugLine').innerHTML='    succ.setPrev(newest);  // ✓ fixed!';
+      document.getElementById('cbBugLine').style.color='#4ade80';
+      drawCBCanvas(true);
+    } else if(v===''){
+      fb.textContent='Please select an answer.';fb.style.color='#fbbf24';
+    } else {
+      fb.textContent='Not quite. Think about which node needs its prev pointer updated — the node AFTER newest.';
+      fb.style.color='#f87171';
+    }
+  };
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 17: SUMMARY ==================== -->
+<div class="slide" id="s17">
+  <h2>Summary & Cheat Sheet</h2>
+  <p class="subtitle">Everything on one slide</p>
+
+  <div class="two-col">
+    <div>
+      <canvas id="summaryCanvas" width="500" height="260" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('summaryCanvas'),cx=cv.getContext('2d');
+        // Draw ArrayList
+        cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('ArrayList (contiguous array)',20,25);
+        const vals=['A','B','C','D','',''];
+        vals.forEach((v,i)=>{
+          const x=20+i*70,y=40;
+          cx.fillStyle=v?'#1e293b':'#0f172a';cx.strokeStyle=v?'#4ade80':'#334155';cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(x,y,62,36,4);cx.fill();cx.stroke();
+          cx.fillStyle=v?'#e2e8f0':'#475569';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v||'_',x+31,y+18);
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';
+          cx.fillText(i,x+31,y+50);
+        });
+        // Draw Node List
+        cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('Node List (doubly-linked with sentinels)',20,135);
+        const nvals=['H','A','B','C','T'];
+        const ncolors=['#64748b','#60a5fa','#60a5fa','#60a5fa','#64748b'];
+        nvals.forEach((v,i)=>{
+          const x=20+i*95,y=150;
+          cx.fillStyle='#1e293b';cx.strokeStyle=ncolors[i];cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(x,y,70,36,4);cx.fill();cx.stroke();
+          cx.fillStyle=ncolors[i];cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,x+35,y+18);
+          // arrows
+          if(i<nvals.length-1){
+            cx.strokeStyle='#475569';cx.lineWidth=1.5;
+            cx.beginPath();cx.moveTo(x+70,y+12);cx.lineTo(x+95,y+12);cx.stroke();
+            cx.beginPath();cx.moveTo(x+95,y+24);cx.lineTo(x+70,y+24);cx.stroke();
+            // arrowheads
+            cx.fillStyle='#475569';
+            cx.beginPath();cx.moveTo(x+95,y+12);cx.lineTo(x+89,y+8);cx.lineTo(x+89,y+16);cx.closePath();cx.fill();
+            cx.beginPath();cx.moveTo(x+70,y+24);cx.lineTo(x+76,y+20);cx.lineTo(x+76,y+28);cx.closePath();cx.fill();
+          }
+        });
+        // Labels
+        cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('sentinel',55,200);cx.fillText('sentinel',400,200);
+        cx.fillText('p1',150,200);cx.fillText('p2',245,200);cx.fillText('p3',340,200);
+
+        // Key
+        cx.fillStyle='#cbd5e1';cx.font='13px system-ui, sans-serif';cx.textAlign='left';
+        cx.fillText('get/set: O(1) array, O(n) linked',20,228);
+        cx.fillText('insert/delete at position: O(n) array, O(1) linked',20,246);
+      })();
+      </script>
+
+      <table style="font-size:0.85em;margin-top:16px;">
+        <tr><th>Operation</th><th>ArrayList</th><th>Node List</th></tr>
+        <tr><td>Index access</td><td style="color:#4ade80;">O(1)</td><td style="color:#f87171;">O(n)</td></tr>
+        <tr><td>Insert at ends</td><td style="color:#fbbf24;">O(1)*/O(n)</td><td style="color:#4ade80;">O(1)</td></tr>
+        <tr><td>Insert at position</td><td style="color:#f87171;">O(n)</td><td style="color:#4ade80;">O(1)</td></tr>
+        <tr><td>Memory/element</td><td style="color:#4ade80;">Low</td><td style="color:#f87171;">High</td></tr>
+        <tr><td>Cache locality</td><td style="color:#4ade80;">Great</td><td style="color:#f87171;">Poor</td></tr>
+      </table>
+    </div>
+
+    <div>
+      <div class="key-idea">
+        <h3>Core Takeaways</h3>
+        <ul>
+          <li><strong>ArrayList</strong>: fast random access, slow middle insert/delete, great cache locality</li>
+          <li><strong>Node List</strong>: O(1) insert/delete at known positions, O(n) to find a position</li>
+          <li><strong>Positions</strong> are stable references; indices are fragile</li>
+          <li><strong>Iterators</strong> abstract traversal from structure</li>
+          <li>Doubling + shrink-at-quarter = amortized O(1)</li>
+          <li>When in doubt, <strong>use ArrayList</strong></li>
+        </ul>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Final Analogy</h3>
+        <p><strong>ArrayList</strong> = a numbered bookshelf — finding book #47 is instant, but inserting means sliding everything over. <strong>Node List</strong> = a chain of paperclips — easy to clip/unclip anywhere, but finding the 47th clip means counting from the start.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== CHALLENGE C: AMORTIZED COST ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Amortized Analysis</h2>
+  <p class="subtitle">Starting with capacity 2, how many times does the array resize during 10 addLast operations?</p>
+
+  <div class="two-col">
+    <div>
+      <p>An ArrayList starts with <strong>capacity = 2</strong> and <strong>size = 0</strong>. We perform 10 consecutive <code>addLast()</code> calls. The array <strong>doubles</strong> when full.</p>
+
+      <div class="key-idea mt">
+        <h3>Think About It</h3>
+        <p>After each resize, what is the new capacity? When is the next resize triggered?</p>
+      </div>
+
+      <div class="controls mt">
+        <label style="color:#94a3b8;">Number of resizes:</label>
+        <input type="number" id="ccInput" min="0" max="20" style="width:80px;">
+        <button onclick="checkCC()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Check</button>
+      </div>
+      <p id="ccFeedback" style="margin-top:12px;font-weight:600;"></p>
+    </div>
+
+    <div>
+      <canvas id="ccCanvas" width="480" height="360" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button onclick="ccStep()" id="ccStepBtn" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Add Element</button>
+        <button onclick="ccReset()" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">Reset</button>
+        <span id="ccInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;">size: 0, cap: 2, resizes: 0</span>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const cv=document.getElementById('ccCanvas'),cx=cv.getContext('2d');
+    let cap=2,sz=0,resizes=0,adds=0;
+    const history=[];
+    function draw(){
+      cx.clearRect(0,0,480,360);
+      cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+      cx.fillText('Capacity: '+cap+'  |  Size: '+sz+'  |  Resizes: '+resizes,240,20);
+      // Draw current array
+      const maxBoxes=Math.min(cap,16);
+      const bw=Math.min(40,440/maxBoxes-4);
+      const startX=(480-maxBoxes*(bw+4))/2;
+      for(let i=0;i<maxBoxes;i++){
+        const x=startX+i*(bw+4),y=40;
+        cx.fillStyle=i<sz?'rgba(59,130,246,0.3)':'#0f172a';
+        cx.strokeStyle=i<sz?'#3b82f6':'#334155';cx.lineWidth=2;
+        cx.beginPath();cx.roundRect(x,y,bw,32,4);cx.fill();cx.stroke();
+        if(i<sz){cx.fillStyle='#e2e8f0';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(i+1,x+bw/2,y+16);}
+      }
+      if(cap>16){cx.fillStyle='#64748b';cx.font='12px system-ui, sans-serif';cx.textAlign='center';cx.fillText('... ('+cap+' slots total)',240,88);}
+      // History log
+      cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+      cx.fillText('Operation Log:',20,110);
+      history.slice(-10).forEach((h,i)=>{
+        cx.fillStyle=h.resize?'#fbbf24':'#64748b';
+        cx.font='12px SF Mono, monospace';
+        cx.fillText(h.text,20,130+i*20);
+      });
+      document.getElementById('ccInfo').textContent='size: '+sz+', cap: '+cap+', resizes: '+resizes;
+    }
+    window.ccStep=function(){
+      if(adds>=10){return;}
+      adds++;
+      if(sz===cap){
+        cap*=2;resizes++;
+        history.push({text:'addLast('+adds+'): RESIZE → cap='+cap+', then add',resize:true});
+      } else {
+        history.push({text:'addLast('+adds+'): add (no resize)',resize:false});
+      }
+      sz++;
+      draw();
+      if(adds>=10){document.getElementById('ccStepBtn').disabled=true;}
+    };
+    window.ccReset=function(){cap=2;sz=0;resizes=0;adds=0;history.length=0;document.getElementById('ccStepBtn').disabled=false;draw();};
+    window.checkCC=function(){
+      const v=parseInt(document.getElementById('ccInput').value);
+      const fb=document.getElementById('ccFeedback');
+      if(v===3){fb.textContent='Correct! Resizes at add #3 (2→4), #5 (4→8), #9 (8→16).';fb.style.color='#4ade80';}
+      else{fb.textContent='Not quite. Try stepping through the animation: capacity 2→4→8→16.';fb.style.color='#f87171';}
+    };
+    draw();
+  })();
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== QUIZ Q1: MULTIPLE CHOICE ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: ArrayList & Node List</h2>
+  <p class="subtitle">Test your understanding — 3 questions</p>
+
+  <div style="max-width:800px;margin:0 auto;">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+      <p style="color:#93c5fd;font-weight:600;">Q1: What is the amortized cost of addLast() on an ArrayList that doubles when full?</p>
+      <div class="controls" style="flex-direction:column;gap:6px;margin-top:10px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1a" value="a"> O(n) — shifting takes linear time</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1a" value="b"> O(1) amortized — resizes are rare enough</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1a" value="c"> O(log n) — each resize doubles</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1a" value="d"> O(n²) — copies cascade</label>
+      </div>
+    </div>
+
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+      <p style="color:#93c5fd;font-weight:600;">Q2: In a Node List with sentinels, what are the first() and last() positions?</p>
+      <div class="controls" style="flex-direction:column;gap:6px;margin-top:10px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1b" value="a"> header and trailer</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1b" value="b"> header.next and trailer.prev</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1b" value="c"> index 0 and index size-1</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1b" value="d"> null and null</label>
+      </div>
+    </div>
+
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+      <p style="color:#93c5fd;font-weight:600;">Q3: Why does ArrayList have better cache performance than LinkedList?</p>
+      <div class="controls" style="flex-direction:column;gap:6px;margin-top:10px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1c" value="a"> ArrayList uses less total memory</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1c" value="b"> ArrayList stores elements in contiguous memory locations</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1c" value="c"> LinkedList nodes are always on disk</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1c" value="d"> ArrayList has faster pointer arithmetic</label>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button onclick="checkQ1()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Check Answers</button>
+      <span id="q1Score" style="font-weight:600;margin-left:12px;"></span>
+    </div>
+  </div>
+  <script>
+  window.checkQ1=function(){
+    const answers={q1a:'b',q1b:'b',q1c:'b'};
+    let correct=0;
+    Object.entries(answers).forEach(([name,ans])=>{
+      const sel=document.querySelector('input[name="'+name+'"]:checked');
+      const labels=document.querySelectorAll('input[name="'+name+'"]');
+      labels.forEach(l=>{
+        l.parentElement.style.color=l.value===ans?'#4ade80':'#cbd5e1';
+        if(sel&&sel.value!==ans&&sel.value===l.value)l.parentElement.style.color='#f87171';
+      });
+      if(sel&&sel.value===ans)correct++;
+    });
+    const el=document.getElementById('q1Score');
+    el.textContent=correct+'/3 correct'+(correct===3?' — Perfect!':'');
+    el.style.color=correct===3?'#4ade80':correct>=2?'#fbbf24':'#f87171';
+  };
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== QUIZ Q2: PREDICT THE OUTPUT ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace the Operations</h2>
+  <p class="subtitle">What does the ArrayList contain after these operations?</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block" id="q2Code">
+<div class="line" id="q2L0">ArrayList list = new ArrayList(); // cap=4</div>
+<div class="line" id="q2L1">list.add(0, "A");</div>
+<div class="line" id="q2L2">list.add(1, "B");</div>
+<div class="line" id="q2L3">list.add(0, "C");</div>
+<div class="line" id="q2L4">list.add(2, "D");</div>
+<div class="line" id="q2L5">list.remove(1);</div>
+<div class="line" id="q2L6">list.add(1, "E");</div>
+<div class="line" id="q2L7">list.set(0, "F");</div>
+      </div>
+
+      <div class="controls mt">
+        <label style="color:#94a3b8;">Final list contents:</label>
+        <input type="text" id="q2Input" placeholder="e.g. F,E,D,B" style="width:200px;">
+        <button onclick="checkQ2()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Check</button>
+      </div>
+      <p id="q2Feedback" style="margin-top:12px;font-weight:600;"></p>
+
+      <div class="controls mt">
+        <button onclick="q2Step()" id="q2StepBtn" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">Step Through</button>
+        <button onclick="q2Reset()" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">Reset</button>
+      </div>
+    </div>
+
+    <div>
+      <canvas id="q2Canvas" width="480" height="340" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const cv=document.getElementById('q2Canvas'),cx=cv.getContext('2d');
+    const steps=[
+      {arr:['','','',''],sz:0,label:'Empty, capacity 4'},
+      {arr:['A','','',''],sz:1,label:'add(0,"A") → [A]'},
+      {arr:['A','B','',''],sz:2,label:'add(1,"B") → [A, B]'},
+      {arr:['C','A','B',''],sz:3,label:'add(0,"C") → [C, A, B]'},
+      {arr:['C','A','D','B'],sz:4,label:'add(2,"D") → [C, A, D, B]'},
+      {arr:['C','D','B',''],sz:3,label:'remove(1) → [C, D, B]'},
+      {arr:['C','E','D','B'],sz:4,label:'add(1,"E") → [C, E, D, B]'},
+      {arr:['F','E','D','B'],sz:4,label:'set(0,"F") → [F, E, D, B]'},
+    ];
+    let step=0;
+    function draw(s){
+      cx.clearRect(0,0,480,340);
+      const st=steps[s];
+      cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+      cx.fillText('Step '+s+' / '+(steps.length-1),240,25);
+      // Array
+      const bw=80;
+      const startX=(480-4*(bw+8))/2;
+      for(let i=0;i<4;i++){
+        const x=startX+i*(bw+8),y=50;
+        const filled=i<st.sz;
+        cx.fillStyle=filled?'rgba(59,130,246,0.2)':'#0f172a';
+        cx.strokeStyle=filled?'#3b82f6':'#334155';cx.lineWidth=2;
+        cx.beginPath();cx.roundRect(x,y,bw,50,6);cx.fill();cx.stroke();
+        cx.fillStyle=filled?'#e2e8f0':'#475569';cx.font='bold 22px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+        cx.fillText(st.arr[i]||'_',x+bw/2,y+25);
+        cx.fillStyle='#64748b';cx.font='12px SF Mono, monospace';
+        cx.fillText('['+i+']',x+bw/2,y+66);
+      }
+      // Label
+      cx.fillStyle='#cbd5e1';cx.font='15px system-ui, sans-serif';cx.textAlign='center';
+      cx.fillText(st.label,240,160);
+      // Highlight code line
+      for(let i=0;i<8;i++){
+        const el=document.getElementById('q2L'+i);
+        if(el)el.className=i===s?'line active':'line';
+      }
+    }
+    window.q2Step=function(){if(step<steps.length-1){step++;draw(step);}};
+    window.q2Reset=function(){step=0;draw(0);};
+    window.checkQ2=function(){
+      const v=document.getElementById('q2Input').value.replace(/[\s\[\]]/g,'').toUpperCase();
+      const fb=document.getElementById('q2Feedback');
+      if(v==='F,E,D,B'||v==='FEDB'){
+        fb.textContent='Correct! [F, E, D, B]';fb.style.color='#4ade80';
+        step=steps.length-1;draw(step);
+      } else {
+        fb.textContent='Not quite — try stepping through to trace each operation.';fb.style.color='#f87171';
+      }
+    };
+    draw(0);
+  })();
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== QUIZ Q3: ITERATOR PUZZLE ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Iterator Behavior</h2>
+  <p class="subtitle">What happens when we run this code?</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block">
+<div class="line">List&lt;String&gt; list = new ArrayList&lt;&gt;();</div>
+<div class="line">list.add("A"); list.add("B");</div>
+<div class="line">list.add("C"); list.add("D");</div>
+<div class="line"> </div>
+<div class="line">Iterator&lt;String&gt; it = list.iterator();</div>
+<div class="line">while (it.hasNext()) {</div>
+<div class="line">    String s = it.next();</div>
+<div class="line">    if (s.equals("B") || s.equals("C"))</div>
+<div class="line">        it.remove();</div>
+<div class="line">}</div>
+<div class="line">System.out.println(list);</div>
+      </div>
+
+      <div class="controls mt" style="flex-direction:column;gap:8px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q3" value="a"> <code>[A, D]</code> — B and C removed safely</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q3" value="b"> <code>[A, B, C, D]</code> — remove() does nothing</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q3" value="c"> ConcurrentModificationException</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q3" value="d"> <code>[A, C, D]</code> — only B removed</label>
+      </div>
+
+      <div class="controls mt">
+        <button onclick="checkQ3()" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Check</button>
+      </div>
+      <p id="q3Feedback" style="margin-top:12px;font-weight:600;"></p>
+    </div>
+
+    <div>
+      <canvas id="q3Canvas" width="480" height="340" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button onclick="q3Anim()" id="q3AnimBtn" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Show Answer Animation</button>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('q3Canvas'),cx=cv.getContext('2d');
+        const steps=[
+          {arr:['A','B','C','D'],cursor:0,label:'Iterator starts before first element'},
+          {arr:['A','B','C','D'],cursor:1,label:'next() → "A", no match, keep'},
+          {arr:['A','B','C','D'],cursor:2,label:'next() → "B", match! remove()'},
+          {arr:['A','C','D',''],cursor:2,label:'B removed, cursor adjusts'},
+          {arr:['A','C','D',''],cursor:3,label:'next() → "C", match! remove()'},
+          {arr:['A','D','',''],cursor:2,label:'C removed, cursor adjusts'},
+          {arr:['A','D','',''],cursor:3,label:'next() → "D", no match, keep'},
+          {arr:['A','D','',''],cursor:3,label:'hasNext() false → done. Result: [A, D]'},
+        ];
+        let step=0;
+        function draw(s){
+          cx.clearRect(0,0,480,340);
+          const st=steps[s];
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Step '+s+' / '+(steps.length-1),240,20);
+          // Array
+          const bw=80;const startX=60;
+          for(let i=0;i<4;i++){
+            const x=startX+i*(bw+16),y=50;
+            const val=st.arr[i];
+            cx.fillStyle=val?'rgba(59,130,246,0.2)':'#0f172a';
+            cx.strokeStyle=i===st.cursor-1&&val?'#fbbf24':val?'#3b82f6':'#334155';
+            cx.lineWidth=i===st.cursor-1&&val?3:2;
+            cx.beginPath();cx.roundRect(x,y,bw,50,6);cx.fill();cx.stroke();
+            cx.fillStyle=val?'#e2e8f0':'#475569';cx.font='bold 22px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(val||'_',x+bw/2,y+25);
+          }
+          // Cursor arrow
+          if(st.cursor>0&&st.cursor<=4){
+            const cx2=startX+(st.cursor-1)*(bw+16)+bw/2;
+            cx.fillStyle='#fbbf24';cx.font='24px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('↑',cx2,130);
+            cx.font='12px SF Mono, monospace';cx.fillText('cursor',cx2,148);
+          }
+          // Label
+          cx.fillStyle='#cbd5e1';cx.font='14px system-ui, sans-serif';cx.textAlign='center';
+          cx.fillText(st.label,240,185);
+          // Final result highlight
+          if(s===steps.length-1){
+            cx.fillStyle='#4ade80';cx.font='bold 18px system-ui, sans-serif';
+            cx.fillText('Result: [A, D]',240,220);
+            cx.fillStyle='#cbd5e1';cx.font='14px system-ui, sans-serif';
+            cx.fillText('Iterator.remove() is safe — no ConcurrentModificationException!',240,250);
+          }
+        }
+        window.q3Anim=function(){
+          if(step<steps.length-1){step++;draw(step);}
+        };
+        draw(0);
+      })();
+      </script>
+    </div>
+  </div>
+  <script>
+  window.checkQ3=function(){
+    const sel=document.querySelector('input[name="q3"]:checked');
+    const fb=document.getElementById('q3Feedback');
+    if(!sel){fb.textContent='Please select an answer.';fb.style.color='#fbbf24';return;}
+    document.querySelectorAll('input[name="q3"]').forEach(r=>{
+      r.parentElement.style.color=r.value==='a'?'#4ade80':'#cbd5e1';
+      if(sel.value!=='a'&&r.value===sel.value)r.parentElement.style.color='#f87171';
+    });
+    if(sel.value==='a'){
+      fb.textContent='Correct! Iterator.remove() safely removes during traversal — the result is [A, D].';fb.style.color='#4ade80';
+    } else {
+      fb.textContent='Not quite. Iterator.remove() is the SAFE way to remove during iteration — no exception thrown.';fb.style.color='#f87171';
+    }
+  };
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','sCA','s16','sCB','s17','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+
+  document.querySelectorAll('.slide-number').forEach(el => {
+    el.textContent = (idx + 1) + ' / ' + slideOrder.length;
+  });
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', function(e) {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); navigate(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); navigate(-1); }
+});
+
+showSlide(0);
+</script>
+
+</body>
+</html>

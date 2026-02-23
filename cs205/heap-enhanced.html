@@ -1,0 +1,2651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heaps & Heap Sort - CS205 Data Structures (Enhanced)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul, ol { padding-left: 24px; }
+ul li, ol li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.95em; line-height: 1.7; margin: 16px 0; overflow-x: auto; color: #e2e8f0; }
+.code-block .line { padding: 2px 8px; border-radius: 4px; transition: background 0.3s; }
+.code-block .line.active { background: rgba(59,130,246,0.25); border-left: 3px solid #3b82f6; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.controls input[type="number"], .controls input[type="text"], .controls select {
+  background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.controls input:focus, .controls select:focus { border-color: #3b82f6; }
+.btn { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(59,130,246,0.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn-secondary { background: #334155; border: 1px solid #475569; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide active fade-in" id="s1">
+  <div class="center" style="width:100%;">
+    <h1 style="font-size:3.4em;">Heaps</h1>
+    <p class="subtitle">The Efficient Priority Queue</p>
+    <canvas id="titleCanvas" width="600" height="220" style="margin:20px auto;display:block;"></canvas>
+    <script>
+    (function(){
+      const cv=document.getElementById('titleCanvas'),cx=cv.getContext('2d');
+      const heap=[1,3,5,7,9,6];
+      const pos=[{x:300,y:40},{x:170,y:110},{x:430,y:110},{x:100,y:185},{x:240,y:185},{x:360,y:185}];
+      const edges=[[0,1],[0,2],[1,3],[1,4],[2,5]];
+      let pulse=0;
+      function draw(){
+        cx.clearRect(0,0,600,220);
+        pulse=(pulse+0.02)%(Math.PI*2);
+        edges.forEach(([a,b])=>{
+          cx.strokeStyle='#475569';cx.lineWidth=2;
+          cx.beginPath();cx.moveTo(pos[a].x,pos[a].y);cx.lineTo(pos[b].x,pos[b].y);cx.stroke();
+        });
+        pos.forEach((p,i)=>{
+          const isRoot=i===0;
+          const r=isRoot?24+Math.sin(pulse)*3:20;
+          cx.fillStyle=isRoot?'rgba(74,222,128,0.3)':'rgba(59,130,246,0.15)';
+          cx.strokeStyle=isRoot?'#4ade80':'#3b82f6';cx.lineWidth=isRoot?3:2;
+          cx.beginPath();cx.arc(p.x,p.y,r,0,Math.PI*2);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='bold '+(isRoot?20:16)+'px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(heap[i],p.x,p.y);
+        });
+        cx.fillStyle='#4ade80';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('min = root',340,40);
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+    </script>
+    <p style="margin-top:10px; color:#64748b; font-size:0.95em;">Use arrow keys or buttons to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 2: WHAT IS A HEAP? ==================== -->
+<div class="slide" id="s2">
+  <h2>What is a Heap?</h2>
+  <p class="subtitle">A complete binary tree with a special ordering property</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Two Requirements</h3>
+      <ul>
+        <li><strong>Complete binary tree</strong> — every level fully filled except the last, which fills left to right</li>
+        <li><strong>Heap-order property</strong> — every node satisfies an ordering rule relative to its children</li>
+      </ul>
+
+      <h3 class="mt">Interactive: Is This a Valid Min-Heap?</h3>
+      <canvas id="validHeapCanvas" width="460" height="200" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="validHeapNext()">Next Example</button>
+        <span id="validHeapLabel" style="font-weight:600;margin-left:10px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('validHeapCanvas'),cx=cv.getContext('2d');
+        const examples=[
+          {vals:[1,3,5,7,9,6],valid:true,reason:'Complete + every parent ≤ children'},
+          {vals:[1,3,5,7,9,null,6],valid:false,reason:'NOT complete — gap before index 5'},
+          {vals:[3,1,5,7,9,6],valid:false,reason:'3 > 1 — parent > child violates heap order'},
+          {vals:[2,4,3,7,5,8,6],valid:true,reason:'Complete + every parent ≤ children'},
+          {vals:[1,2,3,4,5,6,7],valid:true,reason:'A sorted array is always a valid min-heap!'},
+        ];
+        let idx=0;
+        function drawTree(vals){
+          cx.clearRect(0,0,460,200);
+          const positions=[];
+          const levels=[[230,30],[130,90],[330,90],[80,155],[180,155],[280,155],[380,155]];
+          const edgePairs=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]];
+          // Draw edges
+          edgePairs.forEach(([a,b])=>{
+            if(b<vals.length&&vals[a]!==null&&vals[b]!==null){
+              cx.strokeStyle='#475569';cx.lineWidth=2;
+              cx.beginPath();cx.moveTo(levels[a][0],levels[a][1]);cx.lineTo(levels[b][0],levels[b][1]);cx.stroke();
+            }
+          });
+          // Draw nodes
+          for(let i=0;i<vals.length&&i<7;i++){
+            if(vals[i]===null){
+              cx.strokeStyle='#f87171';cx.lineWidth=2;cx.setLineDash([4,4]);
+              cx.beginPath();cx.arc(levels[i][0],levels[i][1],18,0,Math.PI*2);cx.stroke();
+              cx.setLineDash([]);
+              cx.fillStyle='#f87171';cx.font='bold 11px SF Mono, monospace';cx.textAlign='center';
+              cx.fillText('GAP',levels[i][0],levels[i][1]+4);
+              continue;
+            }
+            const isRoot=i===0;
+            // Check heap order violation
+            const parentIdx=Math.floor((i-1)/2);
+            const violation=i>0&&vals[parentIdx]!==null&&vals[i]!==null&&vals[parentIdx]>vals[i];
+            cx.fillStyle=violation?'rgba(248,113,113,0.3)':isRoot?'rgba(74,222,128,0.25)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=violation?'#f87171':isRoot?'#4ade80':'#3b82f6';
+            cx.lineWidth=violation||isRoot?3:2;
+            cx.beginPath();cx.arc(levels[i][0],levels[i][1],18,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 15px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(vals[i],levels[i][0],levels[i][1]);
+          }
+        }
+        function show(){
+          const ex=examples[idx];
+          drawTree(ex.vals);
+          const lbl=document.getElementById('validHeapLabel');
+          lbl.textContent=(ex.valid?'✓ Valid — ':'✗ Invalid — ')+ex.reason;
+          lbl.style.color=ex.valid?'#4ade80':'#f87171';
+        }
+        window.validHeapNext=function(){idx=(idx+1)%examples.length;show();};
+        show();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Min-Heap vs Max-Heap</h3>
+      <canvas id="minMaxCanvas" width="440" height="180" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('minMaxCanvas'),cx=cv.getContext('2d');
+        function drawMini(vals,x0,y0,label,color){
+          cx.fillStyle=color;cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(label,x0+90,y0);
+          const pos=[[90,30],[45,70],[135,70],[20,115],[70,115],[110,115],[160,115]];
+          const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]];
+          edges.forEach(([a,b])=>{
+            if(b<vals.length){
+              cx.strokeStyle='#475569';cx.lineWidth=1.5;
+              cx.beginPath();cx.moveTo(x0+pos[a][0],y0+pos[a][1]);cx.lineTo(x0+pos[b][0],y0+pos[b][1]);cx.stroke();
+            }
+          });
+          vals.forEach((v,i)=>{
+            if(i>=pos.length)return;
+            const isRoot=i===0;
+            cx.fillStyle=isRoot?color+'30':'#1e293b';cx.strokeStyle=isRoot?color:'#475569';cx.lineWidth=isRoot?2:1;
+            cx.beginPath();cx.arc(x0+pos[i][0],y0+pos[i][1],14,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x0+pos[i][0],y0+pos[i][1]);
+          });
+          cx.fillStyle=color;cx.font='11px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('root = '+(label.includes('Min')?'MIN':'MAX'),x0+90,y0+145);
+        }
+        drawMini([1,3,2,5,4],10,15,'Min-Heap (≤)','#4ade80');
+        drawMini([9,7,8,3,5],230,15,'Max-Heap (≥)','#f87171');
+      })();
+      </script>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>A heap is <strong>not</strong> a fully sorted structure. It only guarantees the root is the min (or max). Left child is not necessarily smaller than right child. This <em>partial ordering</em> is what makes heaps fast.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy: Company Hierarchy</h3>
+        <p>The CEO (root) always has the lowest employee ID. Every manager's ID is lower than their reports. Finding the CEO is instant — just look at the top!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 3: HEAP PROPERTIES ==================== -->
+<div class="slide" id="s3">
+  <h2>Heap Properties</h2>
+  <p class="subtitle">The three properties that make heaps work</p>
+
+  <div class="two-col">
+    <div>
+      <h3>1. Complete Binary Tree</h3>
+      <p>All levels full except possibly the last, filled <strong>left to right</strong>.</p>
+
+      <canvas id="completeCanvas" width="460" height="170" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('completeCanvas'),cx=cv.getContext('2d');
+        // Complete tree
+        cx.fillStyle='#4ade80';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('✓ COMPLETE',115,16);
+        const cPos=[[115,45],[65,85],[165,85],[40,125],[90,125]];
+        [[0,1],[0,2],[1,3],[1,4]].forEach(([a,b])=>{
+          cx.strokeStyle='#475569';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(cPos[a][0],cPos[a][1]);cx.lineTo(cPos[b][0],cPos[b][1]);cx.stroke();
+        });
+        [1,3,5,7,9].forEach((v,i)=>{
+          cx.fillStyle='rgba(74,222,128,0.15)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+          cx.beginPath();cx.arc(cPos[i][0],cPos[i][1],14,0,Math.PI*2);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,cPos[i][0],cPos[i][1]);
+        });
+        cx.fillStyle='#64748b';cx.font='11px system-ui';cx.textAlign='center';
+        cx.fillText('left to right, no gaps',115,155);
+        // Not complete
+        cx.fillStyle='#f87171';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('✗ NOT COMPLETE',345,16);
+        const nPos=[[345,45],[295,85],[395,85],[270,125],[370,125]];
+        [[0,1],[0,2],[1,3],[2,4]].forEach(([a,b])=>{
+          cx.strokeStyle='#475569';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(nPos[a][0],nPos[a][1]);cx.lineTo(nPos[b][0],nPos[b][1]);cx.stroke();
+        });
+        [1,3,5,7,9].forEach((v,i)=>{
+          cx.fillStyle='rgba(248,113,113,0.15)';cx.strokeStyle=i===3||i===4?'#f87171':'#475569';cx.lineWidth=2;
+          cx.beginPath();cx.arc(nPos[i][0],nPos[i][1],14,0,Math.PI*2);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,nPos[i][0],nPos[i][1]);
+        });
+        // Gap marker
+        cx.fillStyle='#f87171';cx.font='bold 14px system-ui';cx.textAlign='center';
+        cx.fillText('↑ gap!',320,145);
+      })();
+      </script>
+
+      <h3 class="mt">2. Heap-Order Property</h3>
+      <p><strong>Min-heap:</strong> parent ≤ children<br><strong>Max-heap:</strong> parent ≥ children</p>
+    </div>
+
+    <div>
+      <h3>3. Height = O(log n)</h3>
+      <p>Complete tree → always balanced → height = floor(log₂ n).</p>
+
+      <canvas id="heightCanvas" width="440" height="180" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('heightCanvas'),cx=cv.getContext('2d');
+        const data=[{n:1,h:0},{n:3,h:1},{n:7,h:2},{n:15,h:3},{n:31,h:4},{n:63,h:5},{n:127,h:6}];
+        cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Height grows LOGARITHMICALLY',220,18);
+        // Bar chart
+        data.forEach((d,i)=>{
+          const x=25+i*58,barH=d.h*22+10;
+          cx.fillStyle='rgba(59,130,246,0.3)';cx.strokeStyle='#3b82f6';cx.lineWidth=1;
+          cx.beginPath();cx.roundRect(x,150-barH,48,barH,4);cx.fill();cx.stroke();
+          cx.fillStyle='#93c5fd';cx.font='bold 11px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('h='+d.h,x+24,145-barH);
+          cx.fillStyle='#64748b';cx.font='10px SF Mono, monospace';
+          cx.fillText('n='+d.n,x+24,168);
+        });
+        cx.fillStyle='#4ade80';cx.font='11px system-ui';cx.textAlign='center';
+        cx.fillText('n = 1,000,000 → height ≈ 20 → only 20 steps!',220,145);
+      })();
+      </script>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Every operation that travels root-to-leaf (or vice versa) costs at most O(log n). With n = 1,000,000, that's only ~20 steps instead of 1,000,000.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 4: WHY HEAPS ARE BRILLIANT ==================== -->
+<div class="slide" id="s4">
+  <h2>Why Heaps Are Brilliant</h2>
+  <p class="subtitle">The best of both worlds for priority queue operations</p>
+
+  <div class="two-col">
+    <div>
+      <canvas id="whyCanvas" width="480" height="280" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('whyCanvas'),cx=cv.getContext('2d');
+        const rows=[
+          {name:'Unsorted List',insert:'O(1)',remove:'O(n)',iH:20,rH:150,iC:'#4ade80',rC:'#f87171'},
+          {name:'Sorted List',insert:'O(n)',remove:'O(1)',iH:150,rH:20,iC:'#f87171',rC:'#4ade80'},
+          {name:'Binary Heap',insert:'O(log n)',remove:'O(log n)',iH:60,rH:60,iC:'#fbbf24',rC:'#fbbf24'},
+        ];
+        cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Insert vs RemoveMin Cost',240,20);
+        // Labels
+        cx.fillStyle='#64748b';cx.font='bold 11px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('insert',100,45);cx.fillText('removeMin',230,45);
+
+        rows.forEach((r,i)=>{
+          const y=55+i*75;
+          // Name
+          cx.fillStyle='#cbd5e1';cx.font='bold 12px SF Mono, monospace';cx.textAlign='right';
+          cx.fillText(r.name,60,y+25);
+          // Insert bar
+          cx.fillStyle=r.iC+'40';cx.strokeStyle=r.iC;cx.lineWidth=1;
+          cx.beginPath();cx.roundRect(70,y,r.iH,30,4);cx.fill();cx.stroke();
+          cx.fillStyle=r.iC;cx.font='bold 11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(r.insert,75,y+20);
+          // Remove bar
+          cx.fillStyle=r.rC+'40';cx.strokeStyle=r.rC;cx.lineWidth=1;
+          cx.beginPath();cx.roundRect(170,y,r.rH,30,4);cx.fill();cx.stroke();
+          cx.fillStyle=r.rC;cx.font='bold 11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(r.remove,175,y+20);
+          // Highlight heap row
+          if(i===2){
+            cx.strokeStyle='#3b82f6';cx.lineWidth=2;
+            cx.beginPath();cx.roundRect(65,y-5,270,40,6);cx.stroke();
+            cx.fillStyle='#3b82f6';cx.font='bold 11px system-ui';cx.textAlign='left';
+            cx.fillText('← BEST!',340,y+20);
+          }
+        });
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>The PQ Problem</h3>
+      <table style="width:100%;">
+        <tr><th>Implementation</th><th>insert</th><th>removeMin</th></tr>
+        <tr><td>Unsorted List</td><td style="color:#4ade80;">O(1)</td><td style="color:#f87171;">O(n)</td></tr>
+        <tr><td>Sorted List</td><td style="color:#f87171;">O(n)</td><td style="color:#4ade80;">O(1)</td></tr>
+        <tr><td style="color:#fbbf24;"><strong>Heap</strong></td><td style="color:#fbbf24;"><strong>O(log n)</strong></td><td style="color:#fbbf24;"><strong>O(log n)</strong></td></tr>
+      </table>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>A heap gives O(log n) for <strong>both</strong> operations. With n = 1,000,000, that's ~20 steps instead of 1,000,000. This makes heaps the go-to PQ implementation.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>How?</h3>
+        <p><strong>insert</strong>: add at bottom, bubble UP → O(log n)<br>
+        <strong>removeMin</strong>: swap root with last, bubble DOWN → O(log n)<br>
+        Both travel at most the height of the tree.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 5: ARRAY REPRESENTATION ==================== -->
+<div class="slide" id="s5">
+  <h2>Array Representation</h2>
+  <p class="subtitle">No pointers needed — store a heap in a simple array!</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Interactive: Tree ↔ Array</h3>
+      <canvas id="arrayRepCanvas" width="500" height="300" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('arrayRepCanvas'),cx=cv.getContext('2d');
+        const vals=[1,3,5,7,9,6];
+        const treePos=[[250,45],[140,115],[360,115],[85,190],[195,190],[305,190]];
+        const edges=[[0,1],[0,2],[1,3],[1,4],[2,5]];
+        let hlIdx=-1;
+        function draw(){
+          cx.clearRect(0,0,500,300);
+          // Tree
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Tree View',250,18);
+          edges.forEach(([a,b])=>{
+            cx.strokeStyle='#475569';cx.lineWidth=2;
+            cx.beginPath();cx.moveTo(treePos[a][0],treePos[a][1]);cx.lineTo(treePos[b][0],treePos[b][1]);cx.stroke();
+          });
+          vals.forEach((v,i)=>{
+            const isHl=i===hlIdx;
+            cx.fillStyle=isHl?'rgba(251,191,36,0.4)':i===0?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isHl?'#fbbf24':i===0?'#4ade80':'#3b82f6';cx.lineWidth=isHl?3:2;
+            cx.beginPath();cx.arc(treePos[i][0],treePos[i][1],20,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,treePos[i][0],treePos[i][1]);
+            cx.fillStyle='#64748b';cx.font='10px SF Mono, monospace';
+            cx.fillText('['+i+']',treePos[i][0],treePos[i][1]-28);
+          });
+          // Array
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Array View (level-order)',250,235);
+          const bw=60,startX=(500-vals.length*(bw+8))/2;
+          vals.forEach((v,i)=>{
+            const x=startX+i*(bw+8),y=248;
+            const isHl=i===hlIdx;
+            cx.fillStyle=isHl?'rgba(251,191,36,0.3)':'rgba(59,130,246,0.1)';
+            cx.strokeStyle=isHl?'#fbbf24':'#3b82f6';cx.lineWidth=isHl?3:2;
+            cx.beginPath();cx.roundRect(x,y,bw,36,4);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+bw/2,y+18);
+            cx.fillStyle='#64748b';cx.font='10px SF Mono, monospace';
+            cx.fillText('['+i+']',x+bw/2,y+48);
+          });
+          // Connecting line for highlighted
+          if(hlIdx>=0){
+            cx.strokeStyle='#fbbf2480';cx.lineWidth=1;cx.setLineDash([4,4]);
+            cx.beginPath();
+            cx.moveTo(treePos[hlIdx][0],treePos[hlIdx][1]+20);
+            cx.lineTo(startX+hlIdx*(bw+8)+bw/2,248);
+            cx.stroke();cx.setLineDash([]);
+          }
+        }
+        cv.addEventListener('mousemove',e=>{
+          const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;
+          let found=-1;
+          // Check tree nodes
+          treePos.forEach((p,i)=>{if(Math.hypot(mx-p[0],my-p[1])<22)found=i;});
+          // Check array cells
+          const bw=60,startX=(500-vals.length*(bw+8))/2;
+          vals.forEach((_,i)=>{
+            const x=startX+i*(bw+8);
+            if(mx>=x&&mx<=x+bw&&my>=248&&my<=284)found=i;
+          });
+          if(found!==hlIdx){hlIdx=found;draw();}
+        });
+        cv.addEventListener('mouseleave',()=>{hlIdx=-1;draw();});
+        draw();
+      })();
+      </script>
+      <p style="font-size:0.9em;color:#64748b;">Hover over any node or array cell to highlight both</p>
+    </div>
+
+    <div>
+      <div class="key-idea">
+        <h3>Level-Order = Array Order</h3>
+        <p>Because the tree is <strong>complete</strong>, there are no gaps when we lay it out level by level. A flat array with zero wasted space — no left/right child pointers needed!</p>
+      </div>
+
+      <h3 class="mt">Level-by-Level Mapping</h3>
+      <div class="code-block" style="font-size:0.85em;">
+<div class="line">Level 0:  1          → arr[0] = 1</div>
+<div class="line">Level 1:  3, 5       → arr[1]=3, arr[2]=5</div>
+<div class="line">Level 2:  7, 9, 6    → arr[3]=7, arr[4]=9, arr[5]=6</div>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy: Stadium Seating</h3>
+        <p>Fill seats row by row, left to right, no empty seats. Seat number alone tells you the row and position — exactly how a heap fits in an array.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 6: ARRAY INDEXING FORMULAS ==================== -->
+<div class="slide" id="s6">
+  <h2>Array Indexing Formulas</h2>
+  <p class="subtitle">Navigate the tree using simple arithmetic — no pointers!</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Three Formulas (0-indexed)</h3>
+      <div class="code-block">
+<div class="line">parent(i)     = (i - 1) / 2</div>
+<div class="line">leftChild(i)  = 2 * i + 1</div>
+<div class="line">rightChild(i) = 2 * i + 2</div>
+      </div>
+
+      <h3 class="mt">Interactive Calculator</h3>
+      <div class="controls">
+        <label style="color:#94a3b8;">Index i =</label>
+        <input type="number" id="idxInput" min="0" max="6" value="1" style="width:60px;" onchange="calcIdx()">
+        <button class="btn btn-sm" onclick="calcIdx()">Calculate</button>
+      </div>
+      <canvas id="idxResultCanvas" width="460" height="100" style="background:#1e293b;border-radius:12px;border:1px solid #334155;margin-top:8px;"></canvas>
+      <script>
+      window.calcIdx=function(){
+        const cv=document.getElementById('idxResultCanvas'),cx=cv.getContext('2d');
+        const vals=[1,3,5,7,9,6];
+        const i=parseInt(document.getElementById('idxInput').value)||0;
+        cx.clearRect(0,0,460,100);
+        const p=i>0?Math.floor((i-1)/2):-1;
+        const l=2*i+1;const r=2*i+2;
+        cx.font='bold 14px SF Mono, monospace';cx.textAlign='left';
+        cx.fillStyle='#fbbf24';cx.fillText('Node at index '+i+' (value: '+(i<vals.length?vals[i]:'N/A')+')',15,22);
+        cx.fillStyle='#4ade80';cx.fillText('parent('+ i+') = '+( i>0?p+' → value '+vals[p]:'none (root)'),15,48);
+        cx.fillStyle='#60a5fa';cx.fillText('leftChild('+i+') = '+(l<vals.length?l+' → value '+vals[l]:l+' (out of bounds)'),15,70);
+        cx.fillStyle='#c084fc';cx.fillText('rightChild('+i+') = '+(r<vals.length?r+' → value '+vals[r]:r+' (out of bounds)'),15,92);
+      };
+      calcIdx();
+      </script>
+    </div>
+
+    <div>
+      <h3>Visualized on the Tree</h3>
+      <canvas id="idxTreeCanvas" width="440" height="220" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('idxTreeCanvas'),cx=cv.getContext('2d');
+        const vals=[1,3,5,7,9,6];
+        const pos=[[220,40],[120,100],[320,100],[70,165],[170,165],[270,165]];
+        const edges=[[0,1],[0,2],[1,3],[1,4],[2,5]];
+        edges.forEach(([a,b])=>{
+          cx.strokeStyle='#475569';cx.lineWidth=2;
+          cx.beginPath();cx.moveTo(pos[a][0],pos[a][1]);cx.lineTo(pos[b][0],pos[b][1]);cx.stroke();
+        });
+        vals.forEach((v,i)=>{
+          cx.fillStyle='rgba(59,130,246,0.15)';cx.strokeStyle='#3b82f6';cx.lineWidth=2;
+          cx.beginPath();cx.arc(pos[i][0],pos[i][1],20,0,Math.PI*2);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='bold 15px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,pos[i][0],pos[i][1]);
+          cx.fillStyle='#fbbf24';cx.font='bold 11px SF Mono, monospace';
+          cx.fillText('['+i+']',pos[i][0],pos[i][1]-28);
+        });
+        // Highlight index 1 example
+        cx.strokeStyle='#fbbf24';cx.lineWidth=2;cx.setLineDash([4,3]);
+        cx.beginPath();cx.arc(pos[1][0],pos[1][1],26,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
+        cx.fillStyle='#fbbf24';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('i=1: parent=[0], L=[3], R=[4]',10,210);
+      })();
+      </script>
+
+      <div class="warning mt">
+        <h3>Watch Out: Integer Division</h3>
+        <p>Parent uses <strong>integer division</strong> (floor). Both index 1 and 2 map to parent 0: <code>(1-1)/2 = 0</code> and <code>(2-1)/2 = 0</code>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 7: INSERT (UPHEAP) ==================== -->
+<div class="slide" id="s7">
+  <h2>Insert: Upheap (Bubble Up)</h2>
+  <p class="subtitle">Add at the end, then swim the element up to restore heap order</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Interactive Insert Playground</h3>
+      <canvas id="insertCanvas" width="500" height="280" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <input type="number" id="insertVal" min="0" max="99" value="2" style="width:70px;">
+        <button class="btn btn-sm" onclick="heapInsert()">Insert</button>
+        <button class="btn-secondary btn-sm" onclick="heapInsertReset()">Reset</button>
+        <span id="insertMsg" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('insertCanvas'),cx=cv.getContext('2d');
+        let heap=[1,4,5,7,9,6];
+        let animating=false;let hlIdx=-1;
+        const maxPos=[[250,40],[140,100],[360,100],[85,165],[195,165],[305,165],[415,165],
+                       [55,230],[115,230],[165,230],[225,230],[275,230],[335,230],[385,230],[445,230]];
+        function getEdges(n){
+          const e=[];for(let i=0;i<n;i++){const l=2*i+1,r=2*i+2;if(l<n)e.push([i,l]);if(r<n)e.push([i,r]);}return e;
+        }
+        function draw(){
+          cx.clearRect(0,0,500,280);
+          const edges=getEdges(heap.length);
+          edges.forEach(([a,b])=>{
+            if(a<maxPos.length&&b<maxPos.length){
+              cx.strokeStyle='#475569';cx.lineWidth=2;
+              cx.beginPath();cx.moveTo(maxPos[a][0],maxPos[a][1]);cx.lineTo(maxPos[b][0],maxPos[b][1]);cx.stroke();
+            }
+          });
+          heap.forEach((v,i)=>{
+            if(i>=maxPos.length)return;
+            const isHl=i===hlIdx;const isRoot=i===0;
+            cx.fillStyle=isHl?'rgba(251,191,36,0.4)':isRoot?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isHl?'#fbbf24':isRoot?'#4ade80':'#3b82f6';cx.lineWidth=isHl||isRoot?3:2;
+            cx.beginPath();cx.arc(maxPos[i][0],maxPos[i][1],18,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,maxPos[i][0],maxPos[i][1]);
+          });
+          // Array view
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Array: ['+heap.join(', ')+']',10,275);
+        }
+        window.heapInsert=function(){
+          if(animating||heap.length>=15)return;
+          const v=parseInt(document.getElementById('insertVal').value);
+          if(isNaN(v))return;
+          animating=true;
+          heap.push(v);
+          let i=heap.length-1;
+          hlIdx=i;draw();
+          function bubbleStep(){
+            if(i<=0){animating=false;hlIdx=-1;draw();
+              document.getElementById('insertMsg').textContent='Inserted '+v+'. Heap order restored.';
+              document.getElementById('insertMsg').style.color='#4ade80';return;}
+            const p=Math.floor((i-1)/2);
+            if(heap[i]<heap[p]){
+              [heap[i],heap[p]]=[heap[p],heap[i]];
+              i=p;hlIdx=i;draw();
+              document.getElementById('insertMsg').textContent='Swap '+heap[hlIdx]+' with child — bubbling up...';
+              document.getElementById('insertMsg').style.color='#fbbf24';
+              setTimeout(bubbleStep,600);
+            } else {
+              animating=false;hlIdx=-1;draw();
+              document.getElementById('insertMsg').textContent='Inserted '+v+'. No more swaps needed.';
+              document.getElementById('insertMsg').style.color='#4ade80';
+            }
+          }
+          setTimeout(bubbleStep,400);
+        };
+        window.heapInsertReset=function(){heap=[1,4,5,7,9,6];hlIdx=-1;animating=false;document.getElementById('insertMsg').textContent='';draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Algorithm</h3>
+      <ol>
+        <li><strong>Add</strong> new element at the end (next leaf spot)</li>
+        <li><strong>Compare</strong> with parent</li>
+        <li>If new element < parent, <strong>swap</strong></li>
+        <li><strong>Repeat</strong> until heap order restored or we reach root</li>
+      </ol>
+
+      <div class="code-block mt" style="font-size:0.82em;">
+<div class="line">insert(heap, value):</div>
+<div class="line">  heap.add(value)       // add at end</div>
+<div class="line">  i = heap.size - 1</div>
+<div class="line">  while i > 0:</div>
+<div class="line">    parent = (i - 1) / 2</div>
+<div class="line">    if heap[i] < heap[parent]:</div>
+<div class="line">      swap(heap[i], heap[parent])</div>
+<div class="line">      i = parent</div>
+<div class="line">    else: break</div>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Time: O(log n)</h3>
+        <p>Worst case: bubble all the way to root. Distance = height = O(log n). Each swap is O(1).</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy: New Employee</h3>
+        <p>Joins at the bottom. If they outrank their manager (smaller key), they swap. Keep promoting until they meet someone who outranks them.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 8: INSERT EXAMPLE STEP-THROUGH ==================== -->
+<div class="slide" id="s8">
+  <h2>Insert Example: Insert 2 into a Min-Heap</h2>
+  <p class="subtitle">Step-by-step trace with code sync</p>
+
+  <div class="two-col">
+    <div>
+      <canvas id="insExCanvas" width="500" height="300" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="insExStep()" id="insExBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="insExReset()">Reset</button>
+        <span id="insExInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('insExCanvas'),cx=cv.getContext('2d');
+        const treePos=[[250,45],[140,110],[360,110],[85,180],[195,180],[305,180],[415,180]];
+        const steps=[
+          {heap:[1,4,5,7,9,6],hl:-1,op:'Starting heap: [1, 4, 5, 7, 9, 6]',codeHl:-1},
+          {heap:[1,4,5,7,9,6,2],hl:6,op:'Step 1: Add 2 at index 6 (end)',codeHl:0},
+          {heap:[1,4,5,7,9,6,2],hl:6,op:'Compare arr[6]=2 with parent arr[2]=5',codeHl:2},
+          {heap:[1,4,2,7,9,6,5],hl:2,op:'2 < 5 → SWAP! 2 moves to index 2',codeHl:3},
+          {heap:[1,4,2,7,9,6,5],hl:2,op:'Compare arr[2]=2 with parent arr[0]=1',codeHl:2},
+          {heap:[1,4,2,7,9,6,5],hl:-1,op:'2 > 1 → STOP! Heap order restored.',codeHl:4},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,500,300);
+          const s=steps[step];
+          cx.fillStyle='#93c5fd';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.op,250,20);
+          // Edges
+          for(let i=0;i<s.heap.length;i++){
+            const l=2*i+1,r=2*i+2;
+            [l,r].forEach(c=>{
+              if(c<s.heap.length&&c<treePos.length){
+                cx.strokeStyle='#475569';cx.lineWidth=2;
+                cx.beginPath();cx.moveTo(treePos[i][0],treePos[i][1]);cx.lineTo(treePos[c][0],treePos[c][1]);cx.stroke();
+              }
+            });
+          }
+          // Nodes
+          s.heap.forEach((v,i)=>{
+            if(i>=treePos.length)return;
+            const isHl=i===s.hl;const isRoot=i===0;
+            cx.fillStyle=isHl?'rgba(251,191,36,0.4)':isRoot?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isHl?'#fbbf24':isRoot?'#4ade80':'#3b82f6';cx.lineWidth=isHl||isRoot?3:2;
+            cx.beginPath();cx.arc(treePos[i][0],treePos[i][1],20,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 15px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,treePos[i][0],treePos[i][1]);
+            cx.fillStyle='#64748b';cx.font='10px SF Mono, monospace';
+            cx.fillText('['+i+']',treePos[i][0],treePos[i][1]-28);
+          });
+          // Array
+          cx.fillStyle='#94a3b8';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Array: ['+s.heap.join(', ')+']',15,240);
+          // Swap count
+          const swaps=step>=3?1:0;
+          cx.fillStyle='#fbbf24';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Swaps: '+swaps,15,260);
+          if(step===steps.length-1){
+            cx.fillStyle='#4ade80';cx.font='bold 14px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('Final: [1, 4, 2, 7, 9, 6, 5] — 1 swap, O(log n)',250,290);
+          }
+        }
+        window.insExStep=function(){if(step<steps.length-1){step++;draw();}if(step>=steps.length-1)document.getElementById('insExBtn').disabled=true;};
+        window.insExReset=function(){step=0;document.getElementById('insExBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Code with Highlights</h3>
+      <div class="code-block" id="insExCode" style="font-size:0.85em;">
+<div class="line" id="insExL0">heap.add(2);  // add at end, idx=6</div>
+<div class="line" id="insExL1">i = 6;</div>
+<div class="line" id="insExL2">// compare heap[i] with heap[parent]</div>
+<div class="line" id="insExL3">// if heap[i] < heap[parent]: SWAP</div>
+<div class="line" id="insExL4">// else: BREAK — done!</div>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Result</h3>
+        <p>Element 2 bubbled up one level. Only <strong>1 swap</strong> because 2 > 1 (the root). Worst case: an element could bubble all the way to root — O(log n) swaps.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>Completeness Preserved</h3>
+        <p>Adding at the end always keeps the tree complete. The bubble-up only affects the <em>order</em>, never the <em>shape</em>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 9: REMOVEMIN (DOWNHEAP) ==================== -->
+<div class="slide" id="s9">
+  <h2>RemoveMin: Downheap (Bubble Down)</h2>
+  <p class="subtitle">Remove root, move last to root, then sink it down</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Interactive RemoveMin</h3>
+      <canvas id="removeCanvas" width="500" height="280" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="heapRemove()">RemoveMin</button>
+        <button class="btn-secondary btn-sm" onclick="heapRemoveReset()">Reset</button>
+        <span id="removeMsg" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('removeCanvas'),cx=cv.getContext('2d');
+        let heap=[1,3,5,7,9,6,8];
+        let animating=false,hlIdx=-1;
+        const maxPos=[[250,40],[140,100],[360,100],[85,165],[195,165],[305,165],[415,165]];
+        function getEdges(n){const e=[];for(let i=0;i<n;i++){const l=2*i+1,r=2*i+2;if(l<n)e.push([i,l]);if(r<n)e.push([i,r]);}return e;}
+        function draw(){
+          cx.clearRect(0,0,500,280);
+          const edges=getEdges(heap.length);
+          edges.forEach(([a,b])=>{
+            if(a<maxPos.length&&b<maxPos.length){
+              cx.strokeStyle='#475569';cx.lineWidth=2;
+              cx.beginPath();cx.moveTo(maxPos[a][0],maxPos[a][1]);cx.lineTo(maxPos[b][0],maxPos[b][1]);cx.stroke();
+            }
+          });
+          heap.forEach((v,i)=>{
+            if(i>=maxPos.length)return;
+            const isHl=i===hlIdx;const isRoot=i===0;
+            cx.fillStyle=isHl?'rgba(251,191,36,0.4)':isRoot?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isHl?'#fbbf24':isRoot?'#4ade80':'#3b82f6';cx.lineWidth=isHl||isRoot?3:2;
+            cx.beginPath();cx.arc(maxPos[i][0],maxPos[i][1],18,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,maxPos[i][0],maxPos[i][1]);
+          });
+          if(heap.length===0){cx.fillStyle='#475569';cx.font='14px system-ui';cx.textAlign='center';cx.fillText('Heap is empty',250,140);}
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Array: ['+heap.join(', ')+']',15,265);
+        }
+        window.heapRemove=function(){
+          if(animating||heap.length===0)return;
+          animating=true;
+          const min=heap[0];
+          if(heap.length===1){heap=[];animating=false;document.getElementById('removeMsg').textContent='Removed min='+min+'. Heap empty.';document.getElementById('removeMsg').style.color='#4ade80';draw();return;}
+          heap[0]=heap.pop();
+          hlIdx=0;draw();
+          document.getElementById('removeMsg').textContent='Removed '+min+'. Last element ('+heap[0]+') moved to root. Sinking down...';
+          document.getElementById('removeMsg').style.color='#fbbf24';
+          let i=0;
+          function sinkStep(){
+            const l=2*i+1,r=2*i+2;
+            let smallest=i;
+            if(l<heap.length&&heap[l]<heap[smallest])smallest=l;
+            if(r<heap.length&&heap[r]<heap[smallest])smallest=r;
+            if(smallest!==i){
+              [heap[i],heap[smallest]]=[heap[smallest],heap[i]];
+              i=smallest;hlIdx=i;draw();
+              setTimeout(sinkStep,600);
+            } else {
+              animating=false;hlIdx=-1;draw();
+              document.getElementById('removeMsg').textContent='Removed min='+min+'. Heap order restored.';
+              document.getElementById('removeMsg').style.color='#4ade80';
+            }
+          }
+          setTimeout(sinkStep,500);
+        };
+        window.heapRemoveReset=function(){heap=[1,3,5,7,9,6,8];hlIdx=-1;animating=false;document.getElementById('removeMsg').textContent='';draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Algorithm</h3>
+      <ol>
+        <li><strong>Save</strong> root value (the min)</li>
+        <li><strong>Move</strong> last element to root</li>
+        <li><strong>Remove</strong> last position (shrink)</li>
+        <li><strong>Bubble down</strong>: swap with <strong>smaller child</strong></li>
+        <li><strong>Repeat</strong> until heap order restored</li>
+      </ol>
+
+      <div class="code-block mt" style="font-size:0.82em;">
+<div class="line">removeMin(heap):</div>
+<div class="line">  min = heap[0]</div>
+<div class="line">  heap[0] = heap[last]</div>
+<div class="line">  heap.removeLast()</div>
+<div class="line">  i = 0</div>
+<div class="line">  while hasLeftChild(i):</div>
+<div class="line">    smallest = smallerChild(i)</div>
+<div class="line">    if heap[i] > heap[smallest]:</div>
+<div class="line">      swap(heap[i], heap[smallest])</div>
+<div class="line">      i = smallest</div>
+<div class="line">    else: break</div>
+<div class="line">  return min</div>
+      </div>
+
+      <div class="warning mt">
+        <h3>Why the Smaller Child?</h3>
+        <p>Swapping with the larger child would make it the parent of the smaller child — violating heap order! Always pick the <strong>smaller</strong> child in a min-heap.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 10: REMOVEMIN EXAMPLE ==================== -->
+<div class="slide" id="s10">
+  <h2>RemoveMin Example</h2>
+  <p class="subtitle">Step-by-step trace of removing the minimum</p>
+
+  <div class="two-col">
+    <div>
+      <canvas id="rmExCanvas" width="500" height="300" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="rmExStep()" id="rmExBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="rmExReset()">Reset</button>
+        <span id="rmExInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('rmExCanvas'),cx=cv.getContext('2d');
+        const treePos=[[250,45],[140,110],[360,110],[85,180],[195,180],[305,180]];
+        const steps=[
+          {heap:[1,3,5,7,9,6],hl:0,op:'Starting heap. Min = 1 (root)',swap:''},
+          {heap:[6,3,5,7,9],hl:0,op:'Move last (6) to root. Remove old last.',swap:''},
+          {heap:[6,3,5,7,9],hl:0,op:'Compare 6 with children: L=3, R=5. Smaller=3',swap:'6 > 3?'},
+          {heap:[3,6,5,7,9],hl:1,op:'YES → Swap 6 and 3. 6 sinks to index 1',swap:'swapped!'},
+          {heap:[3,6,5,7,9],hl:1,op:'Compare 6 with children: L=7, R=9. Smaller=7',swap:'6 > 7?'},
+          {heap:[3,6,5,7,9],hl:-1,op:'NO → STOP! 6 ≤ both children. Heap restored.',swap:'done!'},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,500,300);
+          const s=steps[step];
+          cx.fillStyle='#93c5fd';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.op,250,20);
+          // Edges
+          for(let i=0;i<s.heap.length;i++){
+            [2*i+1,2*i+2].forEach(c=>{
+              if(c<s.heap.length&&c<treePos.length){
+                cx.strokeStyle='#475569';cx.lineWidth=2;
+                cx.beginPath();cx.moveTo(treePos[i][0],treePos[i][1]);cx.lineTo(treePos[c][0],treePos[c][1]);cx.stroke();
+              }
+            });
+          }
+          // Nodes
+          s.heap.forEach((v,i)=>{
+            if(i>=treePos.length)return;
+            const isHl=i===s.hl;const isRoot=i===0;
+            cx.fillStyle=isHl?'rgba(251,191,36,0.4)':isRoot?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isHl?'#fbbf24':isRoot?'#4ade80':'#3b82f6';cx.lineWidth=isHl||isRoot?3:2;
+            cx.beginPath();cx.arc(treePos[i][0],treePos[i][1],20,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 15px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,treePos[i][0],treePos[i][1]);
+            cx.fillStyle='#64748b';cx.font='10px SF Mono, monospace';
+            cx.fillText('['+i+']',treePos[i][0],treePos[i][1]-28);
+          });
+          if(s.swap){
+            cx.fillStyle=s.swap==='done!'?'#4ade80':'#fbbf24';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+            cx.fillText(s.swap,250,230);
+          }
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Array: ['+s.heap.join(', ')+']',15,260);
+          if(step===steps.length-1){
+            cx.fillStyle='#4ade80';cx.font='bold 14px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('Returned min = 1. Final heap: [3, 6, 5, 7, 9]',250,290);
+          }
+        }
+        window.rmExStep=function(){if(step<steps.length-1){step++;draw();}if(step>=steps.length-1)document.getElementById('rmExBtn').disabled=true;};
+        window.rmExReset=function(){step=0;document.getElementById('rmExBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Why Move Last to Root?</h3>
+      <canvas id="whyLastCanvas" width="440" height="130" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('whyLastCanvas'),cx=cv.getContext('2d');
+        // Bad: hole at root
+        cx.fillStyle='#f87171';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('✗ Just remove root?',110,16);
+        cx.strokeStyle='#f87171';cx.lineWidth=2;cx.setLineDash([4,4]);
+        cx.beginPath();cx.arc(110,50,16,0,Math.PI*2);cx.stroke();cx.setLineDash([]);
+        cx.fillStyle='#f87171';cx.font='11px SF Mono, monospace';cx.fillText('HOLE!',110,55);
+        [[110,66,70,95],[110,66,150,95]].forEach(([x1,y1,x2,y2])=>{
+          cx.strokeStyle='#475569';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke();
+        });
+        [3,5].forEach((v,i)=>{
+          cx.fillStyle='#1e293b';cx.strokeStyle='#475569';cx.lineWidth=1;
+          cx.beginPath();cx.arc(70+i*80,100,14,0,Math.PI*2);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='12px SF Mono, monospace';cx.fillText(v,70+i*80,105);
+        });
+        // Good: move last
+        cx.fillStyle='#4ade80';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('✓ Move last to root',330,16);
+        [6,3,5].forEach((v,i)=>{
+          const positions=[[330,50],[290,95],[370,95]];
+          cx.fillStyle=i===0?'rgba(251,191,36,0.3)':'#1e293b';
+          cx.strokeStyle=i===0?'#fbbf24':'#475569';cx.lineWidth=i===0?2:1;
+          cx.beginPath();cx.arc(positions[i][0],positions[i][1],14,0,Math.PI*2);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='12px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,positions[i][0],positions[i][1]);
+        });
+        [[330,64,290,81],[330,64,370,81]].forEach(([x1,y1,x2,y2])=>{
+          cx.strokeStyle='#475569';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke();
+        });
+        cx.fillStyle='#4ade80';cx.font='10px system-ui';cx.textAlign='center';
+        cx.fillText('stays complete!',330,125);
+      })();
+      </script>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Moving the last element to root preserves <strong>completeness</strong>. Bubble-down restores <strong>heap order</strong>. Two properties, two steps, O(log n).</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy: CEO Leaves</h3>
+        <p>The CEO retires. The most junior employee is temporarily placed at the top. They then get demoted level by level until they find their proper rank.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 11: BUILDING A HEAP TOP-DOWN ==================== -->
+<div class="slide" id="s11">
+  <h2>Building a Heap: Top-Down</h2>
+  <p class="subtitle">Insert elements one at a time — O(n log n)</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Step-Through: Build from [5, 3, 8, 1, 4]</h3>
+      <canvas id="topDownCanvas" width="500" height="260" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="tdStep()" id="tdBtn">Insert Next</button>
+        <button class="btn-secondary btn-sm" onclick="tdReset()">Reset</button>
+        <span id="tdInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('topDownCanvas'),cx=cv.getContext('2d');
+        const input=[5,3,8,1,4];
+        const states=[
+          {heap:[],op:'Start: empty heap',totalSwaps:0},
+          {heap:[5],op:'Insert 5 — root',totalSwaps:0},
+          {heap:[3,5],op:'Insert 3 — 3<5, swap! → [3,5]',totalSwaps:1},
+          {heap:[3,5,8],op:'Insert 8 — 8>3, stop → [3,5,8]',totalSwaps:1},
+          {heap:[1,3,8,5],op:'Insert 1 — 1<5 swap, 1<3 swap → root!',totalSwaps:3},
+          {heap:[1,3,8,5,4],op:'Insert 4 — 4>3, stop → [1,3,8,5,4]',totalSwaps:3},
+        ];
+        const treePos=[[250,40],[140,100],[360,100],[85,165],[195,165]];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,500,260);
+          const s=states[step];
+          cx.fillStyle='#93c5fd';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.op,250,18);
+          // Edges
+          for(let i=0;i<s.heap.length;i++){
+            [2*i+1,2*i+2].forEach(c=>{
+              if(c<s.heap.length&&c<treePos.length){
+                cx.strokeStyle='#475569';cx.lineWidth=2;
+                cx.beginPath();cx.moveTo(treePos[i][0],treePos[i][1]);cx.lineTo(treePos[c][0],treePos[c][1]);cx.stroke();
+              }
+            });
+          }
+          // Nodes
+          s.heap.forEach((v,i)=>{
+            if(i>=treePos.length)return;
+            const isNew=i===s.heap.length-1&&step>0;
+            cx.fillStyle=isNew?'rgba(251,191,36,0.3)':i===0?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isNew?'#fbbf24':i===0?'#4ade80':'#3b82f6';cx.lineWidth=2;
+            cx.beginPath();cx.arc(treePos[i][0],treePos[i][1],18,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,treePos[i][0],treePos[i][1]);
+          });
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Array: ['+s.heap.join(', ')+']',15,210);
+          cx.fillStyle='#fbbf24';cx.font='bold 12px SF Mono, monospace';
+          cx.fillText('Total swaps: '+s.totalSwaps,15,230);
+          // Remaining
+          const remaining=input.slice(step);
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';
+          cx.fillText('Remaining: ['+remaining.join(', ')+']',250,230);
+          if(step===states.length-1){
+            cx.fillStyle='#4ade80';cx.font='bold 13px system-ui';cx.textAlign='center';
+            cx.fillText('Done! n inserts × O(log n) each = O(n log n) total',250,255);
+          }
+        }
+        window.tdStep=function(){if(step<states.length-1){step++;draw();}if(step>=states.length-1)document.getElementById('tdBtn').disabled=true;};
+        window.tdReset=function(){step=0;document.getElementById('tdBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Complexity: O(n log n)</h3>
+      <p>Each insert is O(log n) worst case. Doing n inserts → O(n log n) total.</p>
+
+      <div class="warning mt">
+        <h3>Can We Do Better?</h3>
+        <p>Yes! The <strong>bottom-up</strong> approach builds a heap in O(n). The key insight: start from the leaves and sift down, not from the root and sift up.</p>
+      </div>
+
+      <div class="code-block mt" style="font-size:0.85em;">
+<div class="line">// Top-down build</div>
+<div class="line">for (int x : input)</div>
+<div class="line">    heap.insert(x); // O(log n) each</div>
+<div class="line">// Total: O(n log n)</div>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>The Problem</h3>
+        <p>Later inserts (when the heap is big) bubble up a <strong>long</strong> distance. Most of the work happens when it's most expensive.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 12: BOTTOM-UP HEAPIFY ==================== -->
+<div class="slide" id="s12">
+  <h2>Building a Heap: Bottom-Up (Heapify)</h2>
+  <p class="subtitle">Start from the last internal node and sift down — O(n)!</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Interactive Heapify</h3>
+      <canvas id="heapifyCanvas" width="500" height="280" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="heapifyStep()" id="heapifyBtn">Sift Next</button>
+        <button class="btn-secondary btn-sm" onclick="heapifyReset()">Reset</button>
+        <span id="heapifyInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('heapifyCanvas'),cx=cv.getContext('2d');
+        const treePos=[[250,40],[140,100],[360,100],[85,170],[195,170],[305,170],[415,170]];
+        const states=[
+          {heap:[5,3,8,1,4,2,7],hl:-1,op:'Input array as tree (NOT a heap yet)',siftNode:-1},
+          {heap:[5,3,2,1,4,8,7],hl:2,op:'Sift index 2 (val 8): children 2,7 → swap 8↔2',siftNode:2},
+          {heap:[5,1,2,3,4,8,7],hl:1,op:'Sift index 1 (val 3): children 1,4 → swap 3↔1',siftNode:1},
+          {heap:[1,5,2,3,4,8,7],hl:0,op:'Sift index 0 (val 5): children 1,2 → swap 5↔1',siftNode:0},
+          {heap:[1,3,2,5,4,8,7],hl:1,op:'Continue sifting 5: children 3,4 → swap 5↔3',siftNode:1},
+          {heap:[1,3,2,5,4,8,7],hl:-1,op:'Done! Valid min-heap: [1, 3, 2, 5, 4, 8, 7]',siftNode:-1},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,500,280);
+          const s=states[step];
+          cx.fillStyle='#93c5fd';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.op,250,18);
+          // Edges
+          for(let i=0;i<s.heap.length;i++){
+            [2*i+1,2*i+2].forEach(c=>{
+              if(c<s.heap.length&&c<treePos.length){
+                cx.strokeStyle='#475569';cx.lineWidth=2;
+                cx.beginPath();cx.moveTo(treePos[i][0],treePos[i][1]);cx.lineTo(treePos[c][0],treePos[c][1]);cx.stroke();
+              }
+            });
+          }
+          // Nodes
+          s.heap.forEach((v,i)=>{
+            if(i>=treePos.length)return;
+            const isHl=i===s.hl;const isRoot=i===0;
+            const isLeaf=2*i+1>=s.heap.length;
+            cx.fillStyle=isHl?'rgba(251,191,36,0.4)':isRoot&&step===states.length-1?'rgba(74,222,128,0.2)':isLeaf?'rgba(100,116,139,0.15)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isHl?'#fbbf24':isRoot&&step===states.length-1?'#4ade80':'#3b82f6';cx.lineWidth=isHl?3:2;
+            cx.beginPath();cx.arc(treePos[i][0],treePos[i][1],18,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,treePos[i][0],treePos[i][1]);
+            cx.fillStyle='#64748b';cx.font='10px SF Mono, monospace';
+            cx.fillText('['+i+']',treePos[i][0],treePos[i][1]-26);
+          });
+          // Sift direction arrow
+          if(s.siftNode>=0){
+            cx.fillStyle='#fbbf24';cx.font='bold 20px system-ui';cx.textAlign='center';
+            cx.fillText('↓',treePos[s.siftNode][0]+25,treePos[s.siftNode][1]+5);
+          }
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Array: ['+s.heap.join(', ')+']',15,250);
+          cx.fillStyle='#94a3b8';cx.font='11px SF Mono, monospace';cx.textAlign='right';
+          cx.fillText('Last non-leaf = index '+(Math.floor(s.heap.length/2)-1),485,250);
+          if(step===states.length-1){
+            cx.fillStyle='#4ade80';cx.font='bold 13px system-ui';cx.textAlign='center';
+            cx.fillText('Built in O(n) — much faster than O(n log n)!',250,275);
+          }
+        }
+        window.heapifyStep=function(){if(step<states.length-1){step++;draw();}if(step>=states.length-1)document.getElementById('heapifyBtn').disabled=true;};
+        window.heapifyReset=function(){step=0;document.getElementById('heapifyBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Algorithm</h3>
+      <div class="code-block" style="font-size:0.85em;">
+<div class="line">heapify(arr):</div>
+<div class="line">  // skip leaves — they're trivial heaps</div>
+<div class="line">  for i = (n/2 - 1) down to 0:</div>
+<div class="line">    siftDown(arr, i)</div>
+      </div>
+
+      <p class="mt">Process from the <strong>last internal node up to root</strong>. Each node sifts down at most to the bottom.</p>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Leaves (half the nodes) do <strong>zero work</strong>. A quarter sift 1 level. Only the root sifts h levels. The work is concentrated where it's cheapest!</p>
+      </div>
+
+      <canvas id="workDistCanvas" width="420" height="100" style="margin-top:8px;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('workDistCanvas'),cx=cv.getContext('2d');
+        const levels=[{label:'Leaves (n/2)',work:0,color:'#64748b'},{label:'n/4 nodes',work:1,color:'#60a5fa'},{label:'n/8 nodes',work:2,color:'#8b5cf6'},{label:'Root (1)',work:'h',color:'#f87171'}];
+        cx.fillStyle='#94a3b8';cx.font='bold 11px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Work distribution:',210,14);
+        levels.forEach((l,i)=>{
+          const x=10+i*105,y=25;
+          const barH=l.work==='h'?55:l.work*18+8;
+          cx.fillStyle=l.color+'40';cx.strokeStyle=l.color;cx.lineWidth=1;
+          cx.beginPath();cx.roundRect(x,80-barH,90,barH,4);cx.fill();cx.stroke();
+          cx.fillStyle=l.color;cx.font='bold 10px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('sift '+l.work,x+45,75-barH);
+          cx.fillStyle='#cbd5e1';cx.font='9px SF Mono, monospace';
+          cx.fillText(l.label,x+45,92);
+        });
+      })();
+      </script>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 13: WHY O(n) ==================== -->
+<div class="slide" id="s13">
+  <h2>Why Bottom-Up Heapify is O(n)</h2>
+  <p class="subtitle">Most nodes are near the bottom and barely need to move</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Math</h3>
+      <canvas id="mathCanvas" width="480" height="300" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('mathCanvas'),cx=cv.getContext('2d');
+        cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('Total work = Σ (nodes at level k) × (h - k)',15,25);
+        cx.fillText('           k=0 to h',15,45);
+        // Table
+        const rows=[
+          {level:0,nodes:'1',sift:'h',work:'h',color:'#f87171'},
+          {level:1,nodes:'2',sift:'h-1',work:'2(h-1)',color:'#fb923c'},
+          {level:2,nodes:'4',sift:'h-2',work:'4(h-2)',color:'#fbbf24'},
+          {level:'...',nodes:'...',sift:'...',work:'...',color:'#64748b'},
+          {level:'h-1',nodes:'n/4',sift:'1',work:'n/4',color:'#60a5fa'},
+          {level:'h',nodes:'n/2',sift:'0',work:'0',color:'#4ade80'},
+        ];
+        cx.fillStyle='#64748b';cx.font='bold 11px SF Mono, monospace';
+        ['Level','Nodes','Sift dist','Work'].forEach((h,i)=>cx.fillText(h,20+i*115,75));
+        rows.forEach((r,i)=>{
+          const y=90+i*30;
+          cx.fillStyle=r.color;cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(r.level,35,y+10);cx.fillText(r.nodes,135,y+10);
+          cx.fillText(r.sift,250,y+10);cx.fillText(r.work,365,y+10);
+        });
+        // Result
+        cx.fillStyle='#4ade80';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Sum = 2^(h+1) - h - 2 = O(n)',240,285);
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>The Intuition</h3>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;">
+        <p style="font-size:1em;"><strong style="color:#4ade80;">n/2 leaves</strong> → sift <strong>0</strong> levels (skip!)</p>
+        <p style="font-size:1em;"><strong style="color:#60a5fa;">n/4 nodes</strong> → sift at most <strong>1</strong> level</p>
+        <p style="font-size:1em;"><strong style="color:#fbbf24;">n/8 nodes</strong> → sift at most <strong>2</strong> levels</p>
+        <p style="font-size:1em;">...</p>
+        <p style="font-size:1em;"><strong style="color:#f87171;">1 node (root)</strong> → sift at most <strong>h</strong> levels</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Comparison</h3>
+        <p><strong>Top-down</strong> = O(n log n) — the <em>many</em> late inserts bubble up a <em>long</em> distance.<br>
+        <strong>Bottom-up</strong> = O(n) — the <em>many</em> bottom nodes sift a <em>short</em> distance. Work is concentrated where it's cheapest.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Top-down: training each new employee from scratch. Bottom-up: reorganizing an existing company — most people barely move, only the top executives shuffle significantly.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 14: HEAP SORT ==================== -->
+<div class="slide" id="s14">
+  <h2>Heap Sort</h2>
+  <p class="subtitle">Build a max-heap, then repeatedly extract the maximum — O(n log n), in-place!</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Interactive Heap Sort</h3>
+      <canvas id="hsortCanvas" width="500" height="280" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="hsortStep()" id="hsortBtn">Extract Max</button>
+        <button class="btn-secondary btn-sm" onclick="hsortReset()">Reset</button>
+        <span id="hsortInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('hsortCanvas'),cx=cv.getContext('2d');
+        // Start with a max-heap built from [5,3,8,1,4,2]
+        let heap=[8,4,5,1,3,2];
+        let sorted=[];
+        let animating=false;
+        function siftDown(arr,i,n){
+          let largest=i;const l=2*i+1,r=2*i+2;
+          if(l<n&&arr[l]>arr[largest])largest=l;
+          if(r<n&&arr[r]>arr[largest])largest=r;
+          if(largest!==i){[arr[i],arr[largest]]=[arr[largest],arr[i]];siftDown(arr,largest,n);}
+        }
+        function draw(){
+          cx.clearRect(0,0,500,280);
+          // Heap portion
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Max-Heap (size='+heap.length+'):',10,18);
+          const treePos=[[250,50],[140,100],[360,100],[85,155],[195,155],[305,155]];
+          for(let i=0;i<heap.length;i++){
+            [2*i+1,2*i+2].forEach(c=>{
+              if(c<heap.length&&c<treePos.length){
+                cx.strokeStyle='#475569';cx.lineWidth=2;
+                cx.beginPath();cx.moveTo(treePos[i][0],treePos[i][1]);cx.lineTo(treePos[c][0],treePos[c][1]);cx.stroke();
+              }
+            });
+          }
+          heap.forEach((v,i)=>{
+            if(i>=treePos.length)return;
+            const isRoot=i===0;
+            cx.fillStyle=isRoot?'rgba(248,113,113,0.25)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isRoot?'#f87171':'#3b82f6';cx.lineWidth=isRoot?3:2;
+            cx.beginPath();cx.arc(treePos[i][0],treePos[i][1],18,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,treePos[i][0],treePos[i][1]);
+          });
+          if(heap.length>0){cx.fillStyle='#f87171';cx.font='10px SF Mono, monospace';cx.textAlign='center';cx.fillText('MAX',treePos[0][0],treePos[0][1]-26);}
+          // Sorted portion
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Sorted:',10,205);
+          sorted.forEach((v,i)=>{
+            const x=80+i*55,y=195;
+            cx.fillStyle='rgba(74,222,128,0.2)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+            cx.beginPath();cx.roundRect(x,y,48,30,4);cx.fill();cx.stroke();
+            cx.fillStyle='#4ade80';cx.font='bold 15px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+24,y+15);
+          });
+          // Array
+          const full=[...heap,...sorted];
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Array: ['+full.join(', ')+']',10,250);
+          cx.fillText('       '+' '.repeat(heap.map(v=>v.toString()).join(', ').length)+(heap.length>0?'|':'')+'sorted→',10+heap.map(v=>v.toString()).join(', ').length*3.8+55,250);
+          if(heap.length===0){
+            cx.fillStyle='#4ade80';cx.font='bold 14px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('Heap Sort complete! O(n) build + O(n log n) extract = O(n log n)',250,275);
+          }
+        }
+        window.hsortStep=function(){
+          if(heap.length===0)return;
+          const max=heap[0];
+          if(heap.length===1){sorted.unshift(heap[0]);heap=[];draw();document.getElementById('hsortBtn').disabled=true;
+            document.getElementById('hsortInfo').textContent='Done!';document.getElementById('hsortInfo').style.color='#4ade80';return;}
+          [heap[0],heap[heap.length-1]]=[heap[heap.length-1],heap[0]];
+          sorted.unshift(heap.pop());
+          siftDown(heap,0,heap.length);
+          document.getElementById('hsortInfo').textContent='Extracted max='+max+'. Sifted down to restore heap.';
+          document.getElementById('hsortInfo').style.color='#fbbf24';
+          draw();
+        };
+        window.hsortReset=function(){heap=[8,4,5,1,3,2];sorted=[];document.getElementById('hsortBtn').disabled=false;document.getElementById('hsortInfo').textContent='';draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Algorithm</h3>
+      <ol>
+        <li><strong>Build max-heap</strong> (bottom-up) — O(n)</li>
+        <li>Repeat n-1 times:
+          <ul>
+            <li>Swap root (max) with last unsorted element</li>
+            <li>Shrink heap by 1</li>
+            <li>Sift down new root</li>
+          </ul>
+        </li>
+      </ol>
+
+      <div class="code-block mt" style="font-size:0.82em;">
+<div class="line">heapSort(arr):</div>
+<div class="line">  buildMaxHeap(arr)      // O(n)</div>
+<div class="line">  for i = n-1 down to 1:</div>
+<div class="line">    swap(arr[0], arr[i]) // max → end</div>
+<div class="line">    heapSize--</div>
+<div class="line">    siftDown(arr, 0)     // O(log n)</div>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Why Max-Heap?</h3>
+        <p>We want ascending order. Extract <strong>max</strong> and place at end → sorted region grows right-to-left. Heap shrinks, sorted part grows.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Properties</h3>
+        <p><strong>Time:</strong> O(n log n) always<br>
+        <strong>Space:</strong> O(1) — in-place!<br>
+        <strong>Stable:</strong> No<br>
+        Quicksort is faster in practice but O(n²) worst case. Merge sort is stable but needs O(n) extra space.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: Heap Sort Trace -->
+<!-- ============================================================ -->
+<div class="slide" id="s15">
+  <h2>Heap Sort Trace</h2>
+  <p class="subtitle">Sort [5, 3, 8, 1, 4, 2] step by step using max-heap extraction</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS15" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;font-family:monospace;font-size:0.82rem;min-height:200px;" id="s15Log"></div>
+      <div style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s15Step()">Step</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+        <button class="btn btn-sm" onclick="s15Auto()">Auto Play</button>
+      </div>
+      <div id="s15Status" style="margin-top:0.5rem;font-size:0.85rem;color:#94a3b8;"></div>
+    </div>
+  </div>
+
+  <div class="key-idea" style="margin-top:1rem;">
+    <h3>Heap Sort = Build Max-Heap + Repeated Extract-Max</h3>
+    <p>Each extract-max places the largest remaining element at the end. The sorted region grows from right to left. Total: O(n log n), in-place, not stable.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const orig = [5,3,8,1,4,2];
+  let arr, sorted, phase, heapSize, step, timer;
+  const log = document.getElementById('s15Log');
+  const status = document.getElementById('s15Status');
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+
+  function addLog(msg){ log.innerHTML += '<div style="margin-bottom:2px;">' + msg + '</div>'; log.scrollTop=log.scrollHeight; }
+
+  function drawTree(heap, n, highlight, sortedStart){
+    ctx.clearRect(0,0,520,370);
+    if(n===0){ ctx.fillStyle='#94a3b8'; ctx.font='16px system-ui'; ctx.textAlign='center'; ctx.fillText('Heap empty — sorting complete!',260,100); drawArray(heap,sortedStart); return; }
+    const positions=[];
+    const levels=Math.ceil(Math.log2(n+1));
+    for(let i=0;i<n;i++){
+      const lv=Math.floor(Math.log2(i+1));
+      const posInLv=i-Math.pow(2,lv)+1;
+      const totalInLv=Math.min(Math.pow(2,lv),n-Math.pow(2,lv)+1);
+      const spacing=480/Math.pow(2,lv);
+      const x=20+spacing/2+posInLv*spacing;
+      const y=35+lv*65;
+      positions.push({x,y});
+    }
+    // edges
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    for(let i=1;i<n;i++){ const p=Math.floor((i-1)/2); ctx.beginPath(); ctx.moveTo(positions[p].x,positions[p].y); ctx.lineTo(positions[i].x,positions[i].y); ctx.stroke(); }
+    // nodes
+    for(let i=0;i<n;i++){
+      const {x,y}=positions[i];
+      ctx.beginPath(); ctx.arc(x,y,20,0,Math.PI*2);
+      if(highlight && highlight.includes(i)) ctx.fillStyle='#f59e0b';
+      else ctx.fillStyle='#6366f1';
+      ctx.fill(); ctx.strokeStyle='#818cf8'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(heap[i],x,y);
+    }
+    drawArray(heap, sortedStart);
+  }
+
+  function drawArray(heap, sortedStart){
+    const y0=320; const w=50; const startX=(520-orig.length*w)/2;
+    ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(let i=0;i<heap.length;i++){
+      const x=startX+i*w;
+      if(i>=sortedStart) ctx.fillStyle='#22c55e';
+      else ctx.fillStyle='rgba(99,102,241,0.3)';
+      ctx.fillRect(x,y0,w-2,30);
+      ctx.fillStyle='#fff';
+      ctx.fillText(heap[i],x+w/2-1,y0+15);
+    }
+    if(sortedStart<heap.length){
+      ctx.fillStyle='#22c55e'; ctx.font='11px system-ui';
+      ctx.fillText('sorted →',startX+sortedStart*w+((heap.length-sortedStart)*w)/2,y0+45);
+    }
+  }
+
+  function buildMaxHeap(){
+    for(let i=Math.floor(heapSize/2)-1;i>=0;i--) siftDown(i);
+  }
+  function siftDown(i){
+    while(true){
+      let largest=i, l=2*i+1, r=2*i+2;
+      if(l<heapSize && arr[l]>arr[largest]) largest=l;
+      if(r<heapSize && arr[r]>arr[largest]) largest=r;
+      if(largest===i) break;
+      [arr[i],arr[largest]]=[arr[largest],arr[i]]; i=largest;
+    }
+  }
+
+  function init(){
+    arr=[...orig]; sorted=[]; phase='build'; heapSize=arr.length; step=0;
+    if(timer) clearInterval(timer); timer=null;
+    log.innerHTML=''; status.textContent='Click Step or Auto Play to begin.';
+    drawTree(arr,heapSize,[],arr.length);
+  }
+
+  window.s15Reset=init;
+  window.s15Step=function(){
+    if(phase==='build'){
+      buildMaxHeap();
+      addLog('<span style="color:#f59e0b">Built max-heap: ['+arr.join(', ')+']</span>');
+      phase='extract'; step=0;
+      drawTree(arr,heapSize,[0],arr.length);
+      status.textContent='Max-heap built. Step to extract max.';
+      return;
+    }
+    if(phase==='extract'){
+      if(heapSize<=1){ phase='done'; addLog('<span style="color:#22c55e">✓ Sorting complete: ['+arr.join(', ')+']</span>'); status.textContent='Done!'; drawTree(arr,0,[],0); return; }
+      addLog('Extract '+arr[0]+': swap arr[0]↔arr['+(heapSize-1)+'], shrink heap');
+      [arr[0],arr[heapSize-1]]=[arr[heapSize-1],arr[0]];
+      heapSize--;
+      siftDown(0);
+      addLog('  After sift-down: heap=['+arr.slice(0,heapSize).join(',')+'] sorted=['+arr.slice(heapSize).join(',')+']');
+      drawTree(arr,heapSize,[0],heapSize);
+      status.textContent='Heap size: '+heapSize+', sorted: '+arr.slice(heapSize).join(', ');
+      if(heapSize<=1){ phase='done'; addLog('<span style="color:#22c55e">✓ Sorting complete: ['+arr.join(', ')+']</span>'); status.textContent='Done!'; drawTree(arr,0,[],0); }
+    }
+  };
+  window.s15Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(phase==='done'){clearInterval(timer);timer=null;return;} s15Step(); },900);
+  };
+
+  const obs15=new MutationObserver(()=>{ if(document.getElementById('s15').classList.contains('active')) init(); });
+  obs15.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: Min-Heap vs Max-Heap -->
+<!-- ============================================================ -->
+<div class="slide" id="s16">
+  <h2>Min-Heap vs Max-Heap</h2>
+  <p class="subtitle">Same structure, just flip the comparison operator</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Min-Heap</h3>
+      <canvas id="cS16min" width="250" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;"></canvas>
+      <ul style="font-size:0.85rem;margin-top:0.5rem;">
+        <li>Parent <strong>&le;</strong> children</li>
+        <li>Root = <strong>smallest</strong> element</li>
+        <li>Used for: <strong>priority queues</strong>, Top-K, Dijkstra</li>
+        <li><code>removeMin()</code> returns smallest</li>
+      </ul>
+      <p style="font-size:0.8rem;color:#94a3b8;margin-top:0.3rem;">Java's <code>PriorityQueue</code> = min-heap by default</p>
+    </div>
+    <div>
+      <h3 style="color:#f59e0b;margin-bottom:0.5rem;">Max-Heap</h3>
+      <canvas id="cS16max" width="250" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;"></canvas>
+      <ul style="font-size:0.85rem;margin-top:0.5rem;">
+        <li>Parent <strong>&ge;</strong> children</li>
+        <li>Root = <strong>largest</strong> element</li>
+        <li>Used for: <strong>heap sort</strong>, scheduling</li>
+        <li><code>removeMax()</code> returns largest</li>
+      </ul>
+      <p style="font-size:0.8rem;color:#94a3b8;margin-top:0.3rem;">Use <code>Collections.reverseOrder()</code> comparator</p>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;">
+    <label style="font-size:0.85rem;color:#cbd5e1;">Try it — enter values (comma-separated):</label>
+    <div style="display:flex;gap:0.5rem;margin-top:0.3rem;">
+      <input type="text" id="s16Input" value="4,1,7,3,9,2" style="flex:1;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+      <button class="btn btn-sm" onclick="s16Build()">Build Both</button>
+    </div>
+  </div>
+
+  <div class="key-idea" style="margin-top:0.8rem;">
+    <h3>Key Idea</h3>
+    <p>The only difference is the direction of the comparison. All algorithms (insert, remove, heapify) are structurally identical — just swap <code>&lt;</code> with <code>&gt;</code>. Think of them as the <strong>same data structure</strong> with a configurable comparator.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  function drawHeap(canvasId, heap, color){
+    const c=document.getElementById(canvasId); const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,250,180);
+    const n=heap.length; if(n===0) return;
+    const pos=[];
+    for(let i=0;i<n;i++){
+      const lv=Math.floor(Math.log2(i+1));
+      const posInLv=i-Math.pow(2,lv)+1;
+      const spacing=230/Math.pow(2,lv);
+      const x=10+spacing/2+posInLv*spacing;
+      const y=25+lv*48;
+      pos.push({x,y});
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    for(let i=1;i<n;i++){ const p=Math.floor((i-1)/2); ctx.beginPath(); ctx.moveTo(pos[p].x,pos[p].y); ctx.lineTo(pos[i].x,pos[i].y); ctx.stroke(); }
+    for(let i=0;i<n;i++){
+      ctx.beginPath(); ctx.arc(pos[i].x,pos[i].y,17,0,Math.PI*2);
+      ctx.fillStyle=i===0?color:'#334155'; ctx.fill();
+      ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(heap[i],pos[i].x,pos[i].y);
+    }
+  }
+
+  function buildMin(arr){
+    const h=[...arr];
+    for(let i=Math.floor(h.length/2)-1;i>=0;i--){
+      let k=i;
+      while(true){ let s=k,l=2*k+1,r=2*k+2; if(l<h.length&&h[l]<h[s])s=l; if(r<h.length&&h[r]<h[s])s=r; if(s===k)break; [h[k],h[s]]=[h[s],h[k]]; k=s; }
+    }
+    return h;
+  }
+  function buildMax(arr){
+    const h=[...arr];
+    for(let i=Math.floor(h.length/2)-1;i>=0;i--){
+      let k=i;
+      while(true){ let s=k,l=2*k+1,r=2*k+2; if(l<h.length&&h[l]>h[s])s=l; if(r<h.length&&h[r]>h[s])s=r; if(s===k)break; [h[k],h[s]]=[h[s],h[k]]; k=s; }
+    }
+    return h;
+  }
+
+  window.s16Build=function(){
+    const vals=document.getElementById('s16Input').value.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+    if(vals.length===0) return;
+    drawHeap('cS16min',buildMin(vals),'#38bdf8');
+    drawHeap('cS16max',buildMax(vals),'#f59e0b');
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s16').classList.contains('active')) s16Build(); });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE A: Trace Heap Operations -->
+<!-- ============================================================ -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Trace Heap Operations</h2>
+  <p class="subtitle">Predict the state after a sequence of operations</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:1rem;">
+        <p style="font-size:0.9rem;margin-bottom:0.8rem;">Starting with an <strong>empty min-heap</strong>, perform these operations:</p>
+        <div style="font-family:monospace;font-size:0.85rem;line-height:1.8;">
+          <div>1. insert(5)</div>
+          <div>2. insert(3)</div>
+          <div>3. insert(8)</div>
+          <div>4. insert(1)</div>
+          <div>5. removeMin()</div>
+          <div>6. insert(2)</div>
+          <div>7. removeMin()</div>
+        </div>
+        <p style="margin-top:1rem;font-size:0.9rem;"><strong>What is the array representation of the heap after all operations?</strong></p>
+      </div>
+      <div style="margin-top:1rem;">
+        <button class="btn btn-sm" onclick="document.getElementById('sCAans').style.display='block'" style="margin-right:0.5rem;">Show Answer</button>
+        <button class="btn btn-sm" onclick="sCArun()">Step Through</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCAreset()">Reset</button>
+      </div>
+      <div id="sCAans" style="display:none;margin-top:0.8rem;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:0.8rem;">
+        <strong style="color:#22c55e;">Answer: [3, 5, 8]</strong>
+        <p style="font-size:0.82rem;margin-top:0.3rem;">After insert(5,3,8,1): [1,3,8,5]. removeMin→removes 1: [3,5,8]. insert(2): [2,5,8,3]. removeMin→removes 2: [3,5,8].</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cCA" width="400" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="sCAlog" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;margin-top:0.5rem;max-height:100px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const ops=[{t:'ins',v:5},{t:'ins',v:3},{t:'ins',v:8},{t:'ins',v:1},{t:'rem'},{t:'ins',v:2},{t:'rem'}];
+  let heap, opIdx, timer;
+  const canvas=document.getElementById('cCA'), ctx=canvas.getContext('2d');
+  const log=document.getElementById('sCAlog');
+
+  function drawH(){
+    ctx.clearRect(0,0,400,280);
+    const n=heap.length; if(n===0){ ctx.fillStyle='#94a3b8'; ctx.font='14px system-ui'; ctx.textAlign='center'; ctx.fillText('Empty heap',200,80); return; }
+    const pos=[];
+    for(let i=0;i<n;i++){
+      const lv=Math.floor(Math.log2(i+1)); const pil=i-Math.pow(2,lv)+1;
+      const sp=380/Math.pow(2,lv); pos.push({x:10+sp/2+pil*sp, y:30+lv*55});
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    for(let i=1;i<n;i++){const p=Math.floor((i-1)/2); ctx.beginPath(); ctx.moveTo(pos[p].x,pos[p].y); ctx.lineTo(pos[i].x,pos[i].y); ctx.stroke();}
+    for(let i=0;i<n;i++){
+      ctx.beginPath(); ctx.arc(pos[i].x,pos[i].y,18,0,Math.PI*2); ctx.fillStyle=i===0?'#22c55e':'#6366f1'; ctx.fill(); ctx.strokeStyle='#818cf8'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(heap[i],pos[i].x,pos[i].y);
+    }
+    // array bar
+    const y0=240; const w=40; const sx=(400-n*w)/2;
+    for(let i=0;i<n;i++){
+      ctx.fillStyle='rgba(99,102,241,0.3)'; ctx.fillRect(sx+i*w,y0,w-2,26);
+      ctx.fillStyle='#fff'; ctx.font='bold 12px monospace'; ctx.textAlign='center'; ctx.fillText(heap[i],sx+i*w+w/2-1,y0+13);
+    }
+  }
+
+  function upheap(i){ while(i>0){ const p=Math.floor((i-1)/2); if(heap[p]<=heap[i]) break; [heap[p],heap[i]]=[heap[i],heap[p]]; i=p; } }
+  function downheap(i){ const n=heap.length; while(true){ let s=i,l=2*i+1,r=2*i+2; if(l<n&&heap[l]<heap[s])s=l; if(r<n&&heap[r]<heap[s])s=r; if(s===i)break; [heap[i],heap[s]]=[heap[s],heap[i]]; i=s; } }
+
+  function init(){ heap=[]; opIdx=0; if(timer)clearInterval(timer); timer=null; log.innerHTML=''; drawH(); }
+  window.sCAreset=init;
+  window.sCArun=function(){
+    if(opIdx>=ops.length){ return; }
+    const op=ops[opIdx++];
+    if(op.t==='ins'){
+      heap.push(op.v); upheap(heap.length-1);
+      log.innerHTML+='<div>insert('+op.v+') → ['+heap.join(', ')+']</div>';
+    } else {
+      const min=heap[0]; heap[0]=heap[heap.length-1]; heap.pop(); if(heap.length>0) downheap(0);
+      log.innerHTML+='<div style="color:#f59e0b">removeMin()='+min+' → ['+heap.join(', ')+']</div>';
+    }
+    log.scrollTop=log.scrollHeight;
+    drawH();
+    if(opIdx>=ops.length) log.innerHTML+='<div style="color:#22c55e;margin-top:4px">✓ All operations complete. Final: ['+heap.join(', ')+']</div>';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sCA').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17: Java's PriorityQueue -->
+<!-- ============================================================ -->
+<div class="slide" id="s17">
+  <h2>Java's PriorityQueue</h2>
+  <p class="subtitle">Built-in min-heap — ready to use</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Basic Usage (Min-Heap)</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s17L1">PriorityQueue&lt;Integer&gt; pq =</div>
+<div class="line" id="s17L2">    new PriorityQueue&lt;&gt;();</div>
+<div class="line" id="s17L3"></div>
+<div class="line" id="s17L4">pq.add(5);    // insert 5</div>
+<div class="line" id="s17L5">pq.add(3);    // insert 3</div>
+<div class="line" id="s17L6">pq.add(8);    // insert 8</div>
+<div class="line" id="s17L7">pq.add(1);    // insert 1</div>
+<div class="line" id="s17L8"></div>
+<div class="line" id="s17L9">pq.peek();    // → 1 (min, no remove)</div>
+<div class="line" id="s17L10">pq.poll();   // → 1 (remove min)</div>
+<div class="line" id="s17L11">pq.poll();   // → 3</div>
+<div class="line" id="s17L12">pq.poll();   // → 5</div>
+<div class="line" id="s17L13">pq.poll();   // → 8</div>
+      </div></div>
+
+      <table style="width:100%;margin-top:0.8rem;font-size:0.82rem;">
+        <tr><th>Method</th><th>Description</th><th>Time</th></tr>
+        <tr><td><code>add(e)</code></td><td>Insert</td><td>O(log n)</td></tr>
+        <tr><td><code>peek()</code></td><td>View min</td><td>O(1)</td></tr>
+        <tr><td><code>poll()</code></td><td>Remove min</td><td>O(log n)</td></tr>
+        <tr><td><code>size()</code></td><td>Count</td><td>O(1)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3 style="color:#f59e0b;margin-bottom:0.5rem;">Max-Heap with Reversed Comparator</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">// Option 1: Collections.reverseOrder()</div>
+<div class="line">PriorityQueue&lt;Integer&gt; maxPQ =</div>
+<div class="line">  new PriorityQueue&lt;&gt;(</div>
+<div class="line">    Collections.reverseOrder()</div>
+<div class="line">  );</div>
+<div class="line"></div>
+<div class="line">// Option 2: Lambda comparator</div>
+<div class="line">PriorityQueue&lt;Integer&gt; maxPQ2 =</div>
+<div class="line">  new PriorityQueue&lt;&gt;((a, b) -&gt; b - a);</div>
+      </div></div>
+
+      <h3 style="color:#a78bfa;margin-top:0.8rem;margin-bottom:0.5rem;">Custom Objects</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">// By task priority</div>
+<div class="line">PriorityQueue&lt;Task&gt; taskPQ =</div>
+<div class="line">  new PriorityQueue&lt;&gt;(</div>
+<div class="line">    (t1, t2) -&gt; t1.priority - t2.priority</div>
+<div class="line">  );</div>
+      </div></div>
+
+      <div class="warning" style="margin-top:0.8rem;">
+        <h3>Common Mistake</h3>
+        <p>Java's <code>PriorityQueue</code> is a <strong>min-heap</strong> by default. If you need the largest first, you <strong>must</strong> provide a reversed comparator!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE B: Fix the Bug — Heap Build -->
+<!-- ============================================================ -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <p class="subtitle">This bottom-up heapify has a subtle bug. Can you spot it?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">void buildMinHeap(int[] arr) {</div>
+<div class="line">  int n = arr.length;</div>
+<div class="line" style="background:rgba(239,68,68,0.2);">  for (int i = n / 2; i &gt;= 0; i--) {</div>
+<div class="line">    siftDown(arr, i, n);</div>
+<div class="line">  }</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line">void siftDown(int[] a, int i, int n) {</div>
+<div class="line">  while (true) {</div>
+<div class="line">    int smallest = i;</div>
+<div class="line">    int l = 2*i + 1, r = 2*i + 2;</div>
+<div class="line">    if (l &lt; n &amp;&amp; a[l] &lt; a[smallest])</div>
+<div class="line">      smallest = l;</div>
+<div class="line">    if (r &lt; n &amp;&amp; a[r] &lt; a[smallest])</div>
+<div class="line">      smallest = r;</div>
+<div class="line">    if (smallest == i) break;</div>
+<div class="line">    swap(a, i, smallest);</div>
+<div class="line">    i = smallest;</div>
+<div class="line">  }</div>
+<div class="line">}</div>
+      </div></div>
+
+      <div style="margin-top:1rem;">
+        <select id="sCBsel" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85rem;width:100%;">
+          <option value="">Select the bug...</option>
+          <option value="a">siftDown should compare with &gt; not &lt;</option>
+          <option value="b">Loop should start at n/2 - 1, not n/2</option>
+          <option value="c">Loop should go i++ not i--</option>
+          <option value="d">swap should be swap(a, smallest, i)</option>
+        </select>
+        <button class="btn btn-sm" onclick="sCBcheck()" style="margin-top:0.5rem;">Check Answer</button>
+        <div id="sCBresult" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cCB" width="400" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="sCBexpl" style="display:none;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:0.8rem;margin-top:0.5rem;font-size:0.82rem;">
+        <strong style="color:#22c55e;">Correct!</strong> With 0-indexed arrays, the last internal node (last parent) is at index <code>n/2 - 1</code>. Starting at <code>n/2</code> wastes one iteration on a leaf node — or worse, causes an <strong>ArrayIndexOutOfBoundsException</strong> when n is odd. The fix: <code>for (int i = n/2 - 1; i >= 0; i--)</code>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cCB'), ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,400,300);
+    // Show array [5,3,8,1,4] with indices
+    const arr=[5,3,8,1,4]; const n=arr.length;
+    ctx.fillStyle='#94a3b8'; ctx.font='13px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Array: [5, 3, 8, 1, 4]   n=5   n/2=2   n/2-1=1',200,25);
+
+    // Draw tree
+    const pos=[];
+    for(let i=0;i<n;i++){
+      const lv=Math.floor(Math.log2(i+1)); const pil=i-Math.pow(2,lv)+1;
+      const sp=380/Math.pow(2,lv); pos.push({x:10+sp/2+pil*sp, y:65+lv*60});
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    for(let i=1;i<n;i++){const p=Math.floor((i-1)/2); ctx.beginPath(); ctx.moveTo(pos[p].x,pos[p].y); ctx.lineTo(pos[i].x,pos[i].y); ctx.stroke();}
+    for(let i=0;i<n;i++){
+      const isInternal=2*i+1<n;
+      ctx.beginPath(); ctx.arc(pos[i].x,pos[i].y,20,0,Math.PI*2);
+      ctx.fillStyle=isInternal?'#6366f1':'#334155'; ctx.fill();
+      if(i===2) { ctx.strokeStyle='#ef4444'; ctx.lineWidth=3; } else { ctx.strokeStyle='#818cf8'; ctx.lineWidth=2; }
+      ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(arr[i],pos[i].x,pos[i].y);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+      ctx.fillText('i='+i,pos[i].x,pos[i].y+30);
+    }
+
+    // Annotations
+    ctx.fillStyle='#f59e0b'; ctx.font='12px system-ui'; ctx.textAlign='left';
+    ctx.fillText('n/2 = 2 → index 2 is a leaf parent? No!',20,250);
+    ctx.fillText('Index 2 (value 8) has no children in 5-element heap',20,268);
+    ctx.fillStyle='#22c55e';
+    ctx.fillText('Last internal node = n/2-1 = 1 (value 3)',20,290);
+  }
+
+  window.sCBcheck=function(){
+    const ans=document.getElementById('sCBsel').value;
+    const res=document.getElementById('sCBresult');
+    if(ans==='b'){ res.innerHTML='<span style="color:#22c55e">✓ Correct!</span>'; document.getElementById('sCBexpl').style.display='block'; }
+    else if(ans==='') res.innerHTML='<span style="color:#f59e0b">Please select an answer.</span>';
+    else res.innerHTML='<span style="color:#ef4444">✗ Not quite. Think about where the loop starts — what index is the last internal node?</span>';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sCB').classList.contains('active')){ draw(); document.getElementById('sCBresult').innerHTML=''; document.getElementById('sCBexpl').style.display='none'; document.getElementById('sCBsel').value=''; } });
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18: Top-K Elements -->
+<!-- ============================================================ -->
+<div class="slide" id="s18">
+  <h2>Application: Top-K Elements</h2>
+  <p class="subtitle">Find the k largest elements using a min-heap of size k</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#a78bfa;margin-bottom:0.5rem;">The Trick: Min-Heap as Gatekeeper</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">PriorityQueue&lt;Integer&gt; minHeap =</div>
+<div class="line">    new PriorityQueue&lt;&gt;();</div>
+<div class="line"></div>
+<div class="line">for (int num : stream) {</div>
+<div class="line">  if (minHeap.size() &lt; k) {</div>
+<div class="line">    minHeap.add(num);</div>
+<div class="line">  } else if (num &gt; minHeap.peek()) {</div>
+<div class="line">    minHeap.poll();  // evict smallest</div>
+<div class="line">    minHeap.add(num);</div>
+<div class="line">  }</div>
+<div class="line">}</div>
+      </div></div>
+
+      <div style="margin-top:0.8rem;">
+        <label style="font-size:0.85rem;color:#cbd5e1;">k = </label>
+        <input type="number" id="s18k" value="3" min="1" max="6" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <label style="font-size:0.85rem;color:#cbd5e1;margin-left:0.5rem;">stream: </label>
+        <input type="text" id="s18stream" value="4,1,7,3,9,2,8" style="width:140px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s18Run()" style="margin-left:0.3rem;">Run</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS18" width="400" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s18Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;margin-top:0.5rem;max-height:110px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div class="key-idea" style="margin-top:0.8rem;">
+    <h3>Time: O(n log k)</h3>
+    <p>Process n elements, each heap op is O(log k). For k=10 and n=1 billion, that's ~33 ops per element instead of sorting everything. The heap root always holds the <strong>smallest of the k largest</strong> — the gatekeeper.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS18'), ctx=canvas.getContext('2d');
+  const log=document.getElementById('s18Log');
+
+  function drawHeap(heap, processing, rejected){
+    ctx.clearRect(0,0,400,220);
+    const n=heap.length;
+    if(n===0){ ctx.fillStyle='#94a3b8'; ctx.font='14px system-ui'; ctx.textAlign='center'; ctx.fillText('Empty',200,60); return; }
+    const pos=[];
+    for(let i=0;i<n;i++){
+      const lv=Math.floor(Math.log2(i+1)); const pil=i-Math.pow(2,lv)+1;
+      const sp=380/Math.pow(2,lv); pos.push({x:10+sp/2+pil*sp, y:30+lv*50});
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    for(let i=1;i<n;i++){const p=Math.floor((i-1)/2); ctx.beginPath(); ctx.moveTo(pos[p].x,pos[p].y); ctx.lineTo(pos[i].x,pos[i].y); ctx.stroke();}
+    for(let i=0;i<n;i++){
+      ctx.beginPath(); ctx.arc(pos[i].x,pos[i].y,18,0,Math.PI*2);
+      ctx.fillStyle=i===0?'#22c55e':'#6366f1'; ctx.fill();
+      ctx.strokeStyle='#818cf8'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(heap[i],pos[i].x,pos[i].y);
+    }
+    // label
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Min-heap (gatekeeper root = '+heap[0]+')',200,200);
+    if(processing!==undefined){
+      ctx.fillStyle=rejected?'#ef4444':'#f59e0b'; ctx.font='bold 14px monospace';
+      ctx.fillText((rejected?'✗ Rejected: ':'Processing: ')+processing,200,218);
+    }
+  }
+
+  window.s18Run=function(){
+    const k=parseInt(document.getElementById('s18k').value)||3;
+    const stream=document.getElementById('s18stream').value.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+    log.innerHTML='';
+    let heap=[];
+
+    function upheap(h,i){ while(i>0){const p=Math.floor((i-1)/2); if(h[p]<=h[i])break; [h[p],h[i]]=[h[i],h[p]]; i=p;} }
+    function downheap(h,i){ while(true){let s=i,l=2*i+1,r=2*i+2; if(l<h.length&&h[l]<h[s])s=l; if(r<h.length&&h[r]<h[s])s=r; if(s===i)break; [h[i],h[s]]=[h[s],h[i]]; i=s;} }
+
+    let step=0;
+    function doStep(){
+      if(step>=stream.length){
+        log.innerHTML+='<div style="color:#22c55e;margin-top:4px">✓ Top-'+k+': {'+[...heap].sort((a,b)=>a-b).join(', ')+'}</div>';
+        drawHeap(heap); return;
+      }
+      const num=stream[step];
+      if(heap.length<k){
+        heap.push(num); upheap(heap,heap.length-1);
+        log.innerHTML+='<div>Process '+num+': add (size&lt;k) → ['+heap.join(',')+']</div>';
+        drawHeap(heap,num,false);
+      } else if(num>heap[0]){
+        const evicted=heap[0]; heap[0]=heap[heap.length-1]; heap.pop(); if(heap.length>0) downheap(heap,0);
+        heap.push(num); upheap(heap,heap.length-1);
+        log.innerHTML+='<div style="color:#f59e0b">Process '+num+': '+num+' > root('+evicted+'), evict '+evicted+' → ['+heap.join(',')+']</div>';
+        drawHeap(heap,num,false);
+      } else {
+        log.innerHTML+='<div style="color:#64748b">Process '+num+': '+num+' ≤ root('+heap[0]+'), skip</div>';
+        drawHeap(heap,num,true);
+      }
+      log.scrollTop=log.scrollHeight;
+      step++;
+      setTimeout(doStep,700);
+    }
+    doStep();
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s18').classList.contains('active')){ log.innerHTML=''; drawHeap([]); }});
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE C: Pick the Right Heap -->
+<!-- ============================================================ -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Pick the Right Heap</h2>
+  <p class="subtitle">Min-heap or max-heap? Match each scenario to the correct choice.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div id="sCCquestions">
+      <div class="sCC-q" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;margin-bottom:0.8rem;">
+        <p style="font-size:0.88rem;margin-bottom:0.5rem;"><strong>1.</strong> Find the <strong>3 smallest</strong> elements in a stream of 1 million numbers.</p>
+        <select class="sCCsel" data-answer="min" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.85rem;">
+          <option value="">Choose...</option><option value="min">Min-heap of size 3</option><option value="max">Max-heap of size 3</option>
+        </select>
+      </div>
+      <div class="sCC-q" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;margin-bottom:0.8rem;">
+        <p style="font-size:0.88rem;margin-bottom:0.5rem;"><strong>2.</strong> Find the <strong>5 largest</strong> elements in a stream.</p>
+        <select class="sCCsel" data-answer="min" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.85rem;">
+          <option value="">Choose...</option><option value="min">Min-heap of size 5</option><option value="max">Max-heap of size 5</option>
+        </select>
+      </div>
+      <div class="sCC-q" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;margin-bottom:0.8rem;">
+        <p style="font-size:0.88rem;margin-bottom:0.5rem;"><strong>3.</strong> Sort an array in <strong>ascending</strong> order using heap sort.</p>
+        <select class="sCCsel" data-answer="max" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.85rem;">
+          <option value="">Choose...</option><option value="min">Min-heap</option><option value="max">Max-heap</option>
+        </select>
+      </div>
+      <div class="sCC-q" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;">
+        <p style="font-size:0.88rem;margin-bottom:0.5rem;"><strong>4.</strong> Implement a <strong>task scheduler</strong> where lowest priority number = highest urgency.</p>
+        <select class="sCCsel" data-answer="min" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.85rem;">
+          <option value="">Choose...</option><option value="min">Min-heap</option><option value="max">Max-heap</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <button class="btn" onclick="sCCcheck()" style="margin-bottom:0.8rem;">Check All Answers</button>
+      <div id="sCCresult" style="font-size:0.85rem;"></div>
+      <div id="sCCexpl" style="display:none;margin-top:0.8rem;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:0.8rem;font-size:0.82rem;">
+        <p><strong>1. Min-heap:</strong> Keep the 3 smallest. Root = largest of the 3. If new element &lt; root, evict root and insert. (Wait — this is tricky! For smallest-K, use a <em>max-heap</em> as gatekeeper. But the question says "min-heap of size 3" which would keep the smallest 3 if you evict the min when you see a smaller one... Actually: to find K <em>smallest</em>, use a <strong>max-heap</strong> of size K. The root is the <em>largest of the K smallest</em> — the gatekeeper.)</p>
+        <p style="margin-top:0.3rem;color:#f59e0b;"><strong>Gotcha!</strong> Q1 is a trick — the correct answer is actually max-heap! The gatekeeper must be the <em>opposite</em> type. For top-K largest → min-heap. For bottom-K smallest → max-heap.</p>
+        <p style="margin-top:0.3rem;"><strong>2. Min-heap:</strong> Root = smallest of the 5 largest = gatekeeper. Correct!</p>
+        <p style="margin-top:0.3rem;"><strong>3. Max-heap:</strong> Extract-max places largest at end → ascending order.</p>
+        <p style="margin-top:0.3rem;"><strong>4. Min-heap:</strong> Lowest priority number = most urgent → min-heap gives it first.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  // Q1 is intentionally tricky - correct answer should be max-heap for finding smallest
+  const correct=['max','min','max','min'];
+  window.sCCcheck=function(){
+    const sels=document.querySelectorAll('.sCCsel');
+    let score=0;
+    sels.forEach((sel,i)=>{
+      const ans=sel.value;
+      if(ans===correct[i]){ score++; sel.style.borderColor='#22c55e'; }
+      else if(ans==='') sel.style.borderColor='#f59e0b';
+      else sel.style.borderColor='#ef4444';
+    });
+    const res=document.getElementById('sCCresult');
+    if(score===4) res.innerHTML='<span style="color:#22c55e">✓ Perfect! 4/4 — you understand the gatekeeper pattern!</span>';
+    else res.innerHTML='<span style="color:#f59e0b">'+score+'/4 correct. Q1 is tricky — think about what the gatekeeper root needs to be.</span>';
+    document.getElementById('sCCexpl').style.display='block';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sCC').classList.contains('active')){ document.querySelectorAll('.sCCsel').forEach(s=>{s.value='';s.style.borderColor='#475569';}); document.getElementById('sCCresult').innerHTML=''; document.getElementById('sCCexpl').style.display='none'; }});
+  obs.observe(document.getElementById('sCC'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 19: Merge K Sorted Lists -->
+<!-- ============================================================ -->
+<div class="slide" id="s19">
+  <h2>Application: Merge K Sorted Lists</h2>
+  <p class="subtitle">Use a min-heap of size k to efficiently merge — O(n log k)</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Algorithm</h3>
+      <ol style="font-size:0.85rem;line-height:1.7;">
+        <li>Insert <strong>first element</strong> of each list into min-heap (tagged with list index)</li>
+        <li>Extract min → add to result</li>
+        <li>Insert <strong>next element</strong> from that same list</li>
+        <li>Repeat until heap is empty</li>
+      </ol>
+
+      <div style="margin-top:1rem;">
+        <button class="btn btn-sm" onclick="s19Step()">Step</button>
+        <button class="btn btn-sm" onclick="s19Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s19Reset()">Reset</button>
+      </div>
+      <div id="s19Status" style="margin-top:0.5rem;font-size:0.85rem;color:#94a3b8;"></div>
+
+      <div class="analogy" style="margin-top:0.8rem;">
+        <h3>Analogy</h3>
+        <p>Like a tournament bracket for k runners. Pick the fastest (min), record their time, and their next teammate enters. The heap keeps the bracket organized.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS19" width="420" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const lists=[[1,4,7],[2,5,8],[3,6,9]];
+  const colors=['#38bdf8','#a78bfa','#f59e0b'];
+  let heap, ptrs, result, done, timer;
+  const canvas=document.getElementById('cS19'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s19Status');
+
+  function upheap(i){ while(i>0){ const p=Math.floor((i-1)/2); if(heap[p].v<=heap[i].v) break; [heap[p],heap[i]]=[heap[i],heap[p]]; i=p; } }
+  function downheap(i){ while(true){ let s=i,l=2*i+1,r=2*i+2; if(l<heap.length&&heap[l].v<heap[s].v)s=l; if(r<heap.length&&heap[r].v<heap[s].v)s=r; if(s===i)break; [heap[i],heap[s]]=[heap[s],heap[i]]; i=s; } }
+
+  function draw(highlight){
+    ctx.clearRect(0,0,420,340);
+    // Draw lists
+    ctx.font='bold 12px system-ui'; ctx.textAlign='left';
+    for(let li=0;li<lists.length;li++){
+      const y=20+li*28;
+      ctx.fillStyle=colors[li]; ctx.fillText('L'+(li+1)+':',10,y+10);
+      for(let j=0;j<lists[li].length;j++){
+        const x=45+j*38;
+        ctx.fillStyle=j<ptrs[li]?'rgba(100,100,100,0.3)':j===ptrs[li]?colors[li]:'rgba(100,100,100,0.6)';
+        ctx.fillRect(x,y,32,20); ctx.strokeStyle=colors[li]; ctx.lineWidth=j===ptrs[li]?2:0.5; ctx.strokeRect(x,y,32,20);
+        ctx.fillStyle=j<ptrs[li]?'#64748b':'#fff'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+        ctx.fillText(lists[li][j],x+16,y+13);
+      }
+    }
+    ctx.textAlign='left';
+
+    // Draw heap
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Min-Heap (size ≤ k)',210,110);
+    if(heap.length>0){
+      const pos=[];
+      for(let i=0;i<heap.length;i++){
+        const lv=Math.floor(Math.log2(i+1)); const pil=i-Math.pow(2,lv)+1;
+        const sp=300/Math.pow(2,lv); pos.push({x:60+sp/2+pil*sp, y:130+lv*45});
+      }
+      ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+      for(let i=1;i<heap.length;i++){const p=Math.floor((i-1)/2); ctx.beginPath(); ctx.moveTo(pos[p].x,pos[p].y); ctx.lineTo(pos[i].x,pos[i].y); ctx.stroke();}
+      for(let i=0;i<heap.length;i++){
+        ctx.beginPath(); ctx.arc(pos[i].x,pos[i].y,16,0,Math.PI*2);
+        ctx.fillStyle=colors[heap[i].li]; ctx.fill();
+        ctx.fillStyle='#fff'; ctx.font='bold 12px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(heap[i].v,pos[i].x,pos[i].y);
+      }
+    }
+
+    // Draw result
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='left';
+    ctx.fillText('Result:',10,280);
+    for(let i=0;i<result.length;i++){
+      const x=65+i*34;
+      ctx.fillStyle='#22c55e'; ctx.fillRect(x,268,30,22);
+      ctx.fillStyle='#fff'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText(result[i].v,x+15,279);
+    }
+
+    // Time label
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Time: O(n log k) — heap always has ≤ k elements',210,320);
+  }
+
+  function init(){
+    heap=[]; ptrs=[0,0,0]; result=[]; done=false;
+    if(timer) clearInterval(timer); timer=null;
+    // insert first element of each list
+    for(let li=0;li<lists.length;li++){
+      heap.push({v:lists[li][0],li:li}); ptrs[li]=1;
+      upheap(heap.length-1);
+    }
+    status.textContent='Heap seeded with first element of each list.';
+    draw();
+  }
+
+  window.s19Reset=init;
+  window.s19Step=function(){
+    if(done||heap.length===0){ done=true; status.textContent='Done! Merged: ['+result.map(r=>r.v).join(', ')+']'; return; }
+    const min=heap[0];
+    result.push(min);
+    const li=min.li;
+    if(ptrs[li]<lists[li].length){
+      heap[0]={v:lists[li][ptrs[li]],li:li}; ptrs[li]++;
+      downheap(0);
+      status.textContent='Extracted '+min.v+' (L'+(li+1)+'), inserted '+heap[0].v;
+    } else {
+      heap[0]=heap[heap.length-1]; heap.pop();
+      if(heap.length>0) downheap(0);
+      status.textContent='Extracted '+min.v+' (L'+(li+1)+'), list exhausted';
+    }
+    draw();
+    if(heap.length===0){ done=true; status.textContent='✓ Merge complete: ['+result.map(r=>r.v).join(', ')+']'; }
+  };
+  window.s19Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(done){clearInterval(timer);timer=null;return;} s19Step(); },600);
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s19').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s19'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 20: Summary & Cheat Sheet -->
+<!-- ============================================================ -->
+<div class="slide" id="s20">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <p class="subtitle">Everything you need to know about heaps in one slide</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Core Operations</h3>
+      <canvas id="cS20" width="400" height="170" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;"></canvas>
+
+      <h3 style="color:#a78bfa;margin-top:0.8rem;margin-bottom:0.3rem;">Array Formulas (0-indexed)</h3>
+      <div style="font-family:monospace;font-size:0.85rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;">
+        parent(i)     = (i - 1) / 2<br>
+        leftChild(i)  = 2 * i + 1<br>
+        rightChild(i) = 2 * i + 2
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#f59e0b;margin-bottom:0.5rem;">When to Use a Heap</h3>
+      <ul style="font-size:0.85rem;line-height:1.7;">
+        <li><strong>Priority Queue</strong> — process items by priority</li>
+        <li><strong>Top-K elements</strong> — min-heap of size k, O(n log k)</li>
+        <li><strong>Merge K sorted lists</strong> — min-heap of size k</li>
+        <li><strong>Heap Sort</strong> — O(n log n), in-place, not stable</li>
+        <li><strong>Median finding</strong> — two heaps (max + min)</li>
+        <li><strong>Dijkstra's algorithm</strong> — shortest path</li>
+      </ul>
+
+      <h3 style="color:#22c55e;margin-top:0.8rem;margin-bottom:0.3rem;">Heap Sort Properties</h3>
+      <div style="font-family:monospace;font-size:0.82rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;">
+        Time:   O(n log n)  — always<br>
+        Space:  O(1)        — in-place!<br>
+        Stable: NO<br>
+        vs Merge Sort: stable but O(n) space<br>
+        vs QuickSort:  O(n²) worst case
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <h3>The Big Picture</h3>
+        <p>A heap is a <strong>partially ordered, complete binary tree stored in an array</strong>. It trades full sorting for fast access to the extreme element.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS20'), ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,400,170);
+    const ops=[
+      {name:'peek / findMin', time:'O(1)', how:'Return root', color:'#22c55e'},
+      {name:'insert', time:'O(log n)', how:'Add end + bubble up', color:'#38bdf8'},
+      {name:'removeMin', time:'O(log n)', how:'Swap root/last + sink', color:'#f59e0b'},
+      {name:'build (top-down)', time:'O(n log n)', how:'Insert one by one', color:'#94a3b8'},
+      {name:'build (bottom-up)', time:'O(n)', how:'Heapify from last parent', color:'#a78bfa'},
+      {name:'heap sort', time:'O(n log n)', how:'Max-heap + extract', color:'#f472b6'}
+    ];
+    const rowH=25; const y0=8;
+    // header
+    ctx.fillStyle='#64748b'; ctx.font='bold 11px system-ui'; ctx.textAlign='left';
+    ctx.fillText('Operation',10,y0+10); ctx.fillText('Time',195,y0+10); ctx.fillText('How',280,y0+10);
+    ctx.strokeStyle='#334155'; ctx.beginPath(); ctx.moveTo(5,y0+16); ctx.lineTo(395,y0+16); ctx.stroke();
+
+    ops.forEach((op,i)=>{
+      const y=y0+22+i*rowH;
+      if(op.name==='build (bottom-up)'){
+        ctx.fillStyle='rgba(167,139,250,0.1)'; ctx.fillRect(5,y-4,390,rowH);
+      }
+      ctx.fillStyle=op.color; ctx.font='12px monospace'; ctx.textAlign='left';
+      ctx.fillText(op.name,10,y+10);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 12px monospace';
+      ctx.fillText(op.time,195,y+10);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui';
+      ctx.fillText(op.how,280,y+10);
+    });
+  }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s20').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s20'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 1: 3-Question Quiz -->
+<!-- ============================================================ -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Test Your Heap Knowledge</h2>
+  <p class="subtitle">3 questions — pick the best answer</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.88rem;margin-bottom:0.8rem;"><strong>Q1:</strong> What is the time complexity of building a heap using bottom-up heapify?</p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;">
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1a" value="a"> O(n log n)</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1a" value="b"> O(n)</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1a" value="c"> O(log n)</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1a" value="d"> O(n²)</label>
+      </div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.88rem;margin-bottom:0.8rem;"><strong>Q2:</strong> In a max-heap with array [9, 7, 8, 3, 5], what is the left child of index 1?</p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;">
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1b" value="a"> index 2 (value 8)</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1b" value="b"> index 3 (value 3)</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1b" value="c"> index 4 (value 5)</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1b" value="d"> index 0 (value 9)</label>
+      </div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.88rem;margin-bottom:0.8rem;"><strong>Q3:</strong> To find the top-5 largest from a billion numbers, which heap do you use?</p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;">
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1c" value="a"> Max-heap of size 5</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1c" value="b"> Min-heap of size 5</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1c" value="c"> Max-heap of size n</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1c" value="d"> Min-heap of size n</label>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;text-align:center;">
+    <button class="btn" onclick="sQ1check()">Check Answers</button>
+    <div id="sQ1result" style="margin-top:0.8rem;font-size:0.9rem;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+window.sQ1check=function(){
+  const a1=document.querySelector('input[name="sQ1a"]:checked');
+  const a2=document.querySelector('input[name="sQ1b"]:checked');
+  const a3=document.querySelector('input[name="sQ1c"]:checked');
+  let score=0, feedback=[];
+  if(!a1||!a2||!a3){ document.getElementById('sQ1result').innerHTML='<span style="color:#f59e0b">Please answer all 3 questions.</span>'; return; }
+  if(a1.value==='b'){ score++; feedback.push('Q1 ✓'); } else feedback.push('Q1 ✗ — Bottom-up heapify is O(n) because most nodes are near the leaves.');
+  if(a2.value==='b'){ score++; feedback.push('Q2 ✓'); } else feedback.push('Q2 ✗ — Left child of index 1 = 2×1+1 = index 3 (value 3).');
+  if(a3.value==='b'){ score++; feedback.push('Q3 ✓'); } else feedback.push('Q3 ✗ — Min-heap of size 5: root is the gatekeeper (smallest of top-5).');
+  const color=score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+  document.getElementById('sQ1result').innerHTML='<span style="color:'+color+'">'+score+'/3</span><br><span style="font-size:0.82rem;color:#94a3b8;">'+feedback.join(' | ')+'</span>';
+};
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 2: Predict the Heap State -->
+<!-- ============================================================ -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Predict removeMin Steps</h2>
+  <p class="subtitle">Given a min-heap, trace the downheap after removeMin</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <p style="font-size:0.9rem;">Min-heap array: <strong>[2, 5, 3, 8, 7, 6, 4]</strong></p>
+      <p style="font-size:0.9rem;margin-top:0.5rem;">After <code>removeMin()</code>:</p>
+      <ol style="font-size:0.85rem;margin-top:0.3rem;line-height:1.7;">
+        <li>Remove root (2), move last element (4) to root</li>
+        <li>Array becomes: [4, 5, 3, 8, 7, 6]</li>
+        <li>Downheap from root...</li>
+      </ol>
+
+      <p style="margin-top:1rem;font-size:0.9rem;"><strong>What is the final array after downheap?</strong></p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;">
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ2a" value="a"> [3, 5, 4, 8, 7, 6]</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ2a" value="b"> [3, 5, 6, 8, 7, 4]</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ2a" value="c"> [3, 4, 5, 8, 7, 6]</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ2a" value="d"> [4, 5, 3, 8, 7, 6]</label>
+      </div>
+      <button class="btn btn-sm" onclick="sQ2check()" style="margin-top:0.8rem;">Check</button>
+      <div id="sQ2result" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+    </div>
+    <div>
+      <canvas id="cQ2" width="400" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <button class="btn btn-sm" onclick="sQ2trace()" style="margin-top:0.5rem;">Show Step-by-Step</button>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cQ2'), ctx=canvas.getContext('2d');
+
+  function drawArr(arr, highlights, label){
+    ctx.clearRect(0,0,400,300);
+    if(label){ ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='center'; ctx.fillText(label,200,15); }
+    const n=arr.length; const pos=[];
+    for(let i=0;i<n;i++){
+      const lv=Math.floor(Math.log2(i+1)); const pil=i-Math.pow(2,lv)+1;
+      const sp=380/Math.pow(2,lv); pos.push({x:10+sp/2+pil*sp, y:40+lv*55});
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    for(let i=1;i<n;i++){const p=Math.floor((i-1)/2); ctx.beginPath(); ctx.moveTo(pos[p].x,pos[p].y); ctx.lineTo(pos[i].x,pos[i].y); ctx.stroke();}
+    for(let i=0;i<n;i++){
+      ctx.beginPath(); ctx.arc(pos[i].x,pos[i].y,20,0,Math.PI*2);
+      ctx.fillStyle=(highlights&&highlights.includes(i))?'#f59e0b':'#6366f1'; ctx.fill();
+      ctx.strokeStyle='#818cf8'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(arr[i],pos[i].x,pos[i].y);
+      ctx.fillStyle='#64748b'; ctx.font='10px monospace'; ctx.fillText('['+i+']',pos[i].x,pos[i].y+28);
+    }
+    // array bar
+    const y0=260; const w=45; const sx=(400-n*w)/2;
+    for(let i=0;i<n;i++){
+      ctx.fillStyle=(highlights&&highlights.includes(i))?'rgba(245,158,11,0.3)':'rgba(99,102,241,0.3)';
+      ctx.fillRect(sx+i*w,y0,w-2,26);
+      ctx.fillStyle='#fff'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText(arr[i],sx+i*w+w/2-1,y0+13);
+    }
+  }
+
+  function init(){ drawArr([2,5,3,8,7,6,4],[],'Initial: [2, 5, 3, 8, 7, 6, 4]'); }
+
+  window.sQ2check=function(){
+    const sel=document.querySelector('input[name="sQ2a"]:checked');
+    if(!sel){document.getElementById('sQ2result').innerHTML='<span style="color:#f59e0b">Pick an answer.</span>';return;}
+    if(sel.value==='a') document.getElementById('sQ2result').innerHTML='<span style="color:#22c55e">✓ Correct! 4 sinks to index 2: swap with 3, then 4 ≤ 6 so stop. [3, 5, 4, 8, 7, 6]</span>';
+    else document.getElementById('sQ2result').innerHTML='<span style="color:#ef4444">✗ Trace carefully: 4 at root, children are 5 and 3. Swap with smaller child (3). Now 4 at index 2, children are 6. 4 ≤ 6, stop.</span>';
+  };
+
+  let traceStep=0;
+  const states=[
+    {arr:[2,5,3,8,7,6,4],hl:[],label:'Original heap'},
+    {arr:[4,5,3,8,7,6],hl:[0],label:'Step 1: Move last (4) to root, removed 2'},
+    {arr:[3,5,4,8,7,6],hl:[0,2],label:'Step 2: 4>3, swap with right child (3)'},
+    {arr:[3,5,4,8,7,6],hl:[],label:'Step 3: 4≤6, stop. Final: [3, 5, 4, 8, 7, 6]'}
+  ];
+  window.sQ2trace=function(){
+    const s=states[traceStep%states.length];
+    drawArr(s.arr,s.hl,s.label);
+    traceStep++;
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sQ2').classList.contains('active')){ init(); traceStep=0; document.getElementById('sQ2result').innerHTML=''; }});
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 3: Predict Output -->
+<!-- ============================================================ -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Predict the Output</h2>
+  <p class="subtitle">What does this Java code print?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">PriorityQueue&lt;Integer&gt; pq =</div>
+<div class="line">    new PriorityQueue&lt;&gt;();</div>
+<div class="line"></div>
+<div class="line">int[] data = {7, 2, 9, 4, 1, 5};</div>
+<div class="line">for (int x : data) pq.add(x);</div>
+<div class="line"></div>
+<div class="line">pq.poll(); // remove first min</div>
+<div class="line">pq.poll(); // remove second min</div>
+<div class="line">pq.add(3);</div>
+<div class="line"></div>
+<div class="line">System.out.println(pq.peek());</div>
+<div class="line">System.out.println(pq.size());</div>
+      </div></div>
+
+      <p style="margin-top:1rem;font-size:0.9rem;">Enter your predictions:</p>
+      <div style="display:flex;gap:1rem;margin-top:0.5rem;align-items:center;">
+        <label style="font-size:0.85rem;">peek() = <input type="text" id="sQ3peek" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></label>
+        <label style="font-size:0.85rem;">size() = <input type="text" id="sQ3size" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></label>
+        <button class="btn btn-sm" onclick="sQ3check()">Check</button>
+      </div>
+      <div id="sQ3result" style="margin-top:0.8rem;font-size:0.85rem;"></div>
+    </div>
+    <div>
+      <canvas id="cQ3" width="400" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <button class="btn btn-sm" onclick="sQ3reveal()" style="margin-top:0.5rem;">Show Trace</button>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cQ3'), ctx=canvas.getContext('2d');
+
+  function drawState(arr,label){
+    ctx.clearRect(0,0,400,300);
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='center'; ctx.fillText(label,200,20);
+    if(arr.length===0) return;
+    const pos=[];
+    for(let i=0;i<arr.length;i++){
+      const lv=Math.floor(Math.log2(i+1)); const pil=i-Math.pow(2,lv)+1;
+      const sp=380/Math.pow(2,lv); pos.push({x:10+sp/2+pil*sp, y:50+lv*55});
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    for(let i=1;i<arr.length;i++){const p=Math.floor((i-1)/2); ctx.beginPath(); ctx.moveTo(pos[p].x,pos[p].y); ctx.lineTo(pos[i].x,pos[i].y); ctx.stroke();}
+    for(let i=0;i<arr.length;i++){
+      ctx.beginPath(); ctx.arc(pos[i].x,pos[i].y,18,0,Math.PI*2);
+      ctx.fillStyle=i===0?'#22c55e':'#6366f1'; ctx.fill(); ctx.strokeStyle='#818cf8'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(arr[i],pos[i].x,pos[i].y);
+    }
+    const y0=270; const w=40; const sx=(400-arr.length*w)/2;
+    for(let i=0;i<arr.length;i++){
+      ctx.fillStyle='rgba(99,102,241,0.3)'; ctx.fillRect(sx+i*w,y0,w-2,24);
+      ctx.fillStyle='#fff'; ctx.font='bold 11px monospace'; ctx.textAlign='center'; ctx.fillText(arr[i],sx+i*w+w/2-1,y0+12);
+    }
+  }
+
+  let step=0;
+  const traces=[
+    {arr:[1,2,5,4,7,9],label:'After add all: min-heap [1,2,5,4,7,9]'},
+    {arr:[2,4,5,9,7],label:'After poll() → removed 1: [2,4,5,9,7]'},
+    {arr:[4,7,5,9],label:'After poll() → removed 2: [4,7,5,9]'},
+    {arr:[3,7,5,9,4],label:'After add(3): [3,4,5,9,7] → peek()=3, size()=5'}
+  ];
+
+  window.sQ3check=function(){
+    const p=document.getElementById('sQ3peek').value.trim();
+    const s=document.getElementById('sQ3size').value.trim();
+    const res=document.getElementById('sQ3result');
+    if(!p||!s){res.innerHTML='<span style="color:#f59e0b">Enter both values.</span>';return;}
+    const pOk=p==='3', sOk=s==='5';
+    if(pOk&&sOk) res.innerHTML='<span style="color:#22c55e">✓ Perfect! peek()=3, size()=5. After removing 1 and 2, adding 3 makes it the new min.</span>';
+    else{
+      let fb=[];
+      if(!pOk) fb.push('peek(): 6 elements, remove 2, add 1 → 5 remain. Min after removing 1,2 and adding 3 is 3.');
+      if(!sOk) fb.push('size(): started with 6, removed 2, added 1 = 5');
+      res.innerHTML='<span style="color:#ef4444">✗ '+fb.join(' ')+'</span>';
+    }
+  };
+
+  window.sQ3reveal=function(){
+    const t=traces[step%traces.length];
+    drawState(t.arr,t.label);
+    step++;
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sQ3').classList.contains('active')){ drawState([1,2,5,4,7,9],'Add 7,2,9,4,1,5 to PriorityQueue'); step=0; document.getElementById('sQ3result').innerHTML=''; document.getElementById('sQ3peek').value=''; document.getElementById('sQ3size').value=''; }});
+  obs.observe(document.getElementById('sQ3'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','s16','sCA','s17','sCB','s18','sCC','s19','s20','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+
+  document.querySelectorAll('.slide-number').forEach(el => {
+    el.textContent = (idx + 1) + ' / ' + slideOrder.length;
+  });
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', function(e) {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault(); navigate(1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault(); navigate(-1);
+  } else if (e.key === 'Home') {
+    e.preventDefault(); currentIdx = 0; showSlide(0);
+  } else if (e.key === 'End') {
+    e.preventDefault(); currentIdx = slideOrder.length - 1; showSlide(currentIdx);
+  }
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analysis of Algorithms - CS205 Data Structures (Enhanced)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.svg-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin: 16px 0; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.controls input[type="number"], .controls input[type="text"], .controls select {
+  background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.controls input:focus, .controls select:focus { border-color: #3b82f6; }
+.controls button, .step-btn {
+  background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; color: #fff;
+  padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+  transition: all 0.2s; white-space: nowrap;
+}
+.controls button:hover, .step-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.controls button:active, .step-btn:active { transform: translateY(0); }
+.controls button.danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.controls button.success { background: linear-gradient(135deg, #10b981, #059669); }
+.controls button.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.controls button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.status-msg { color: #94a3b8; font-size: 0.95em; min-height: 1.5em; margin: 8px 0; padding: 6px 12px; border-radius: 6px; background: rgba(30,41,59,0.5); }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.85em; line-height: 1.8; white-space: pre; overflow-x: auto; margin: 12px 0; color: #e2e8f0; position: relative; }
+.code-block .line { display: block; padding: 0 8px; border-radius: 4px; transition: background 0.3s; }
+.code-block .line.active { background: rgba(59,130,246,0.25); border-left: 3px solid #3b82f6; padding-left: 5px; }
+.code-block .kw { color: #c084fc; }
+.code-block .type { color: #67e8f9; }
+.code-block .str { color: #86efac; }
+.code-block .cmt { color: #64748b; font-style: italic; }
+.code-block .fn { color: #93c5fd; }
+.code-block .num { color: #fbbf24; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 0.85em; margin-right: 6px; }
+.tag.blue { background: rgba(59,130,246,0.2); color: #93c5fd; }
+.tag.green { background: rgba(16,185,129,0.2); color: #34d399; }
+.tag.yellow { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.tag.red { background: rgba(239,68,68,0.2); color: #f87171; }
+.playground { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin: 16px 0; }
+/* Chart canvas styles */
+canvas { border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ============== SLIDE 1: Title ============== -->
+<div class="slide active" id="slide-1">
+  <div class="center">
+    <h1>Analysis of Algorithms</h1>
+    <p class="subtitle">Big-O, Big-Omega, Big-Theta</p>
+    <p class="subtitle" style="font-size:1.1em;">CS205 Data Structures</p>
+    <div class="svg-container" style="display:inline-block; margin-top:20px; padding:20px 40px;" id="title-chart"></div>
+    <p style="margin-top: 20px; color: #64748b; font-size: 0.9em;">Use arrow keys to navigate | Interactive slides ahead!</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+// Mini growth-rate preview chart on title slide
+(function() {
+  const c = document.getElementById('title-chart');
+  const canvas = document.createElement('canvas');
+  canvas.width = 500; canvas.height = 180;
+  const ctx = canvas.getContext('2d');
+
+  const colors = { '1':'#34d399', 'log n':'#60a5fa', 'n':'#a78bfa', 'n log n':'#fbbf24', 'n²':'#f87171', '2ⁿ':'#f472b6' };
+  const fns = {
+    '1': n => 1,
+    'log n': n => Math.log2(Math.max(1,n)),
+    'n': n => n,
+    'n log n': n => n * Math.log2(Math.max(1,n)),
+    'n²': n => n * n,
+    '2ⁿ': n => Math.pow(2, n)
+  };
+
+  const maxN = 20, maxY = 160;
+  const padL = 40, padB = 30, w = 450, h = 140;
+
+  // Axes
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, 5); ctx.lineTo(padL, h + 5); ctx.lineTo(padL + w, h + 5); ctx.stroke();
+  ctx.fillStyle = '#64748b'; ctx.font = '11px monospace';
+  ctx.fillText('n →', padL + w - 20, h + 20);
+  ctx.fillText('time ↑', padL - 5, 15);
+
+  const scale = h / maxY;
+  for (const [name, fn] of Object.entries(fns)) {
+    ctx.strokeStyle = colors[name]; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let n = 1; n <= maxN; n++) {
+      const x = padL + (n / maxN) * w;
+      const y = h + 5 - Math.min(fn(n), maxY) * scale;
+      n === 1 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // Label
+    const labelN = name === '2ⁿ' ? 10 : maxN;
+    const lx = padL + (labelN / maxN) * w + 4;
+    const ly = h + 5 - Math.min(fns[name](labelN), maxY) * scale;
+    ctx.fillStyle = colors[name]; ctx.font = 'bold 11px monospace';
+    ctx.fillText(name, lx, Math.max(15, Math.min(ly, h)));
+  }
+  c.appendChild(canvas);
+})();
+</script>
+
+<!-- ============== SLIDE 2: Why Analyze Algorithms? ============== -->
+<div class="slide" id="slide-2">
+  <h2>Why Analyze Algorithms?</h2>
+  <p>The same problem can be solved in vastly different amounts of time depending on the algorithm.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Same problem, different speeds</h3>
+      <p>Searching for a name in a phone book:</p>
+      <ul>
+        <li><strong>Linear scan:</strong> Check every page one by one</li>
+        <li><strong>Binary search:</strong> Open to middle, eliminate half</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Sorting 1 million exam papers: a bad algorithm takes <strong>years</strong>, a good one finishes in <strong>seconds</strong>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Impact at Scale</h3>
+      <div class="svg-container" id="s2-bars" style="padding:10px;"></div>
+      <p style="font-size:0.85em; color:#64748b;">At n = 1,000 on a 1 GHz machine. Each bar = relative operation count (log scale).</p>
+    </div>
+  </div>
+  <div class="key-idea mt">
+    <h3>Key Idea</h3>
+    <p>Algorithm analysis lets us predict performance <strong>before</strong> we run the code, and compare algorithms <strong>independently</strong> of hardware.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('s2-bars');
+  const canvas = document.createElement('canvas');
+  canvas.width = 420; canvas.height = 200;
+  const ctx = canvas.getContext('2d');
+
+  const data = [
+    { label: 'O(n)', ops: 1000, time: '1 μs', color: '#34d399' },
+    { label: 'O(n log n)', ops: 10000, time: '10 μs', color: '#60a5fa' },
+    { label: 'O(n²)', ops: 1000000, time: '1 ms', color: '#fbbf24' },
+    { label: 'O(n³)', ops: 1e9, time: '1 sec', color: '#f87171' },
+    { label: 'O(2ⁿ)', ops: 1e301, time: '∞', color: '#f472b6' }
+  ];
+
+  const maxLog = 10; // log10 scale up to 10^10
+  const barH = 28, gap = 10, padL = 95, padR = 80, w = canvas.width - padL - padR;
+
+  data.forEach((d, i) => {
+    const y = 15 + i * (barH + gap);
+    const logVal = Math.min(Math.log10(d.ops), maxLog);
+    const barW = (logVal / maxLog) * w;
+
+    ctx.fillStyle = d.color;
+    ctx.beginPath();
+    ctx.roundRect(padL, y, barW, barH, 4);
+    ctx.fill();
+
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(d.label, padL - 8, y + barH / 2 + 4);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+    ctx.fillText(d.time, padL + barW + 6, y + barH / 2 + 4);
+  });
+  c.appendChild(canvas);
+})();
+</script>
+
+<!-- ============== SLIDE 3: What is an Algorithm? ============== -->
+<div class="slide" id="slide-3">
+  <h2>What is an Algorithm?</h2>
+  <div class="two-col">
+    <div>
+      <p>An <strong>algorithm</strong> is a step-by-step procedure for solving a problem in a finite number of steps.</p>
+      <h3 class="mt">Properties of an Algorithm</h3>
+      <ul>
+        <li><strong>Input:</strong> Zero or more inputs</li>
+        <li><strong>Output:</strong> At least one output</li>
+        <li><strong>Definiteness:</strong> Each step is precisely defined</li>
+        <li><strong>Finiteness:</strong> Terminates after finite steps</li>
+        <li><strong>Effectiveness:</strong> Each step is basic enough to carry out</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Pseudocode Conventions</h3>
+      <div class="code-block"><span class="kw">Algorithm</span> <span class="fn">findMax</span>(A, n):
+  <span class="cmt">Input:  Array A of n integers</span>
+  <span class="cmt">Output: The maximum element</span>
+
+  currentMax ← A[<span class="num">0</span>]
+  <span class="kw">for</span> i ← <span class="num">1</span> <span class="kw">to</span> n-<span class="num">1</span> <span class="kw">do</span>
+      <span class="kw">if</span> A[i] > currentMax <span class="kw">then</span>
+          currentMax ← A[i]
+  <span class="kw">return</span> currentMax</div>
+      <p style="font-size:0.95em; color:#94a3b8;">Pseudocode is language-independent — the analysis works for any implementation.</p>
+    </div>
+  </div>
+  <div class="key-idea mt">
+    <h3>Key Idea</h3>
+    <p>We analyze the <em>algorithm</em>, not the <em>program</em>. The algorithm is the idea; the program is one implementation.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== SLIDE 4: Measuring Efficiency ============== -->
+<div class="slide" id="slide-4">
+  <h2>Measuring Efficiency</h2>
+  <div class="two-col">
+    <div>
+      <h3>Why NOT wall-clock time?</h3>
+      <ul>
+        <li>Depends on computer hardware</li>
+        <li>Depends on programming language</li>
+        <li>Depends on compiler/interpreter</li>
+        <li>Depends on other processes running</li>
+        <li>Depends on specific input data</li>
+      </ul>
+      <div class="warning mt">
+        <h3>Warning</h3>
+        <p>"My laptop ran it in 2 seconds" tells us almost nothing about the algorithm itself.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Machine-Independent Analysis</h3>
+      <p>Instead of timing, we <strong>count primitive operations</strong> as a function of input size <em>n</em>.</p>
+      <h3 class="mt">Primitive Operations</h3>
+      <ul>
+        <li>Assigning a value to a variable</li>
+        <li>Comparing two values</li>
+        <li>Arithmetic operation (+, -, *, /)</li>
+        <li>Accessing an array element by index</li>
+        <li>Following a pointer / reference</li>
+        <li>Returning from a function</li>
+      </ul>
+      <p class="mt">Each primitive operation takes <strong>constant time</strong> — O(1).</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== SLIDE 5: Counting Primitive Operations (INTERACTIVE) ============== -->
+<div class="slide" id="slide-5">
+  <h2>Counting Primitive Operations</h2>
+  <p>Step through <code>findMax</code> and watch the operation counter. Click ▶ to advance.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block" id="s5-code"><span class="line" id="s5-l1"><span class="kw">Algorithm</span> <span class="fn">findMax</span>(A, n):</span>
+<span class="line" id="s5-l2">  currentMax ← A[<span class="num">0</span>]        <span class="cmt"># 2 ops</span></span>
+<span class="line" id="s5-l3">  <span class="kw">for</span> i ← <span class="num">1</span> <span class="kw">to</span> n-<span class="num">1</span> <span class="kw">do</span></span>
+<span class="line" id="s5-l4">      <span class="kw">if</span> A[i] > currentMax   <span class="cmt"># 2 ops</span></span>
+<span class="line" id="s5-l5">          currentMax ← A[i] <span class="cmt"># 2 ops</span></span>
+<span class="line" id="s5-l6">  <span class="kw">return</span> currentMax        <span class="cmt"># 1 op</span></span></div>
+      <div class="controls" style="justify-content:center;">
+        <button onclick="s5Step()">▶ Next Step</button>
+        <button onclick="s5Reset()">↺ Reset</button>
+      </div>
+    </div>
+    <div>
+      <h3>Array: <span id="s5-arr" style="color:#a5f3fc;">[3, 7, 1, 9, 4]</span></h3>
+      <div class="svg-container" id="s5-svg" style="min-height:60px; padding:10px;"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+        <div class="playground" style="padding:12px; text-align:center;">
+          <div style="color:#94a3b8; font-size:0.85em;">Operations Count</div>
+          <div id="s5-ops" style="font-size:2em; color:#fbbf24; font-weight:700;">0</div>
+        </div>
+        <div class="playground" style="padding:12px; text-align:center;">
+          <div style="color:#94a3b8; font-size:0.85em;">currentMax</div>
+          <div id="s5-max" style="font-size:2em; color:#34d399; font-weight:700;">—</div>
+        </div>
+      </div>
+      <div class="status-msg" id="s5-status">Click ▶ to start stepping through findMax.</div>
+      <div class="key-idea mt" style="font-size:0.9em;">
+        <h3>Result</h3>
+        <p>Best case: <strong>3n</strong> ops. Worst case: <strong>5n − 2</strong> ops. Both are <strong>O(n)</strong> — the constants don't matter!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const s5Arr = [3, 7, 1, 9, 4];
+let s5State = -1, s5Ops = 0, s5Max = null, s5I = 1;
+const s5Steps = [];
+
+// Pre-compute steps
+(function() {
+  // Step 0: init
+  s5Steps.push({ line: 's5-l2', msg: 'currentMax ← A[0] = 3  (2 ops: index + assign)', ops: 2, max: 3, i: -1, highlight: 0 });
+  const arr = s5Arr;
+  let cm = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    s5Steps.push({ line: 's5-l3', msg: `Loop: i = ${i}  (1 op: compare i < n)`, ops: 1, max: cm, i: i, highlight: i });
+    if (arr[i] > cm) {
+      s5Steps.push({ line: 's5-l4', msg: `A[${i}] = ${arr[i]} > ${cm}? YES  (2 ops: index + compare)`, ops: 2, max: cm, i: i, highlight: i });
+      cm = arr[i];
+      s5Steps.push({ line: 's5-l5', msg: `currentMax ← ${cm}  (2 ops: index + assign)`, ops: 2, max: cm, i: i, highlight: i });
+    } else {
+      s5Steps.push({ line: 's5-l4', msg: `A[${i}] = ${arr[i]} > ${cm}? NO  (2 ops: index + compare)`, ops: 2, max: cm, i: i, highlight: i });
+    }
+  }
+  s5Steps.push({ line: 's5-l6', msg: `return ${cm}  (1 op). Total: done!`, ops: 1, max: cm, i: -1, highlight: -1 });
+})();
+
+function s5Draw() {
+  const c = document.getElementById('s5-svg');
+  c.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.width = 400; canvas.height = 50;
+  const ctx = canvas.getContext('2d');
+
+  const curStep = s5State >= 0 && s5State < s5Steps.length ? s5Steps[s5State] : null;
+  const hlIdx = curStep ? curStep.highlight : -1;
+
+  s5Arr.forEach((v, i) => {
+    const x = 20 + i * 72;
+    ctx.fillStyle = hlIdx === i ? '#3b82f6' : '#334155';
+    ctx.beginPath(); ctx.roundRect(x, 5, 60, 38, 6); ctx.fill();
+    ctx.strokeStyle = hlIdx === i ? '#60a5fa' : '#475569';
+    ctx.lineWidth = hlIdx === i ? 2 : 1;
+    ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(v, x + 30, 30);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px monospace';
+    ctx.fillText(`[${i}]`, x + 30, 48);
+  });
+  c.appendChild(canvas);
+}
+
+function s5Step() {
+  s5State++;
+  if (s5State >= s5Steps.length) { s5State = s5Steps.length - 1; return; }
+  const step = s5Steps[s5State];
+  s5Ops += step.ops;
+  s5Max = step.max;
+
+  document.getElementById('s5-ops').textContent = s5Ops;
+  document.getElementById('s5-max').textContent = s5Max;
+  document.getElementById('s5-status').textContent = step.msg;
+
+  // Code highlight
+  document.querySelectorAll('#s5-code .line').forEach(l => l.classList.remove('active'));
+  document.getElementById(step.line)?.classList.add('active');
+  s5Draw();
+}
+
+function s5Reset() {
+  s5State = -1; s5Ops = 0; s5Max = null;
+  document.getElementById('s5-ops').textContent = '0';
+  document.getElementById('s5-max').textContent = '—';
+  document.getElementById('s5-status').textContent = 'Click ▶ to start stepping through findMax.';
+  document.querySelectorAll('#s5-code .line').forEach(l => l.classList.remove('active'));
+  s5Draw();
+}
+s5Draw();
+</script>
+
+<!-- ============== SLIDE 6: Growth Rate (INTERACTIVE CHART) ============== -->
+<div class="slide" id="slide-6">
+  <h2>Growth Rate of Functions</h2>
+  <p>Drag the slider to see how functions diverge as <em>n</em> grows. This is why Big-O matters!</p>
+
+  <div class="svg-container" style="padding:12px;" id="s6-chart-container"></div>
+  <div class="controls" style="justify-content:center;">
+    <label>Max n: <strong id="s6-n-label">20</strong></label>
+    <input type="range" id="s6-slider" min="5" max="100" value="20" style="width:300px; accent-color:#3b82f6;" oninput="s6Draw()">
+    <label style="margin-left:16px;">Show:</label>
+    <label><input type="checkbox" checked onchange="s6Toggle('1',this.checked)"> <span style="color:#34d399">O(1)</span></label>
+    <label><input type="checkbox" checked onchange="s6Toggle('logn',this.checked)"> <span style="color:#60a5fa">O(log n)</span></label>
+    <label><input type="checkbox" checked onchange="s6Toggle('n',this.checked)"> <span style="color:#a78bfa">O(n)</span></label>
+    <label><input type="checkbox" checked onchange="s6Toggle('nlogn',this.checked)"> <span style="color:#fbbf24">O(n log n)</span></label>
+    <label><input type="checkbox" checked onchange="s6Toggle('n2',this.checked)"> <span style="color:#f87171">O(n²)</span></label>
+    <label><input type="checkbox" checked onchange="s6Toggle('2n',this.checked)"> <span style="color:#f472b6">O(2ⁿ)</span></label>
+  </div>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Drop constants & lower-order terms</h3>
+      <ul>
+        <li>5n + 3 → <strong>O(n)</strong></li>
+        <li>2n² + 10n + 7 → <strong>O(n²)</strong></li>
+        <li>100 → <strong>O(1)</strong></li>
+      </ul>
+    </div>
+    <div class="analogy">
+      <h3>Analogy</h3>
+      <p>Driving 1000 miles? Starting 5 feet ahead doesn't matter. The <strong>dominant term</strong> determines everything at scale.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const s6Visible = { '1': true, logn: true, n: true, nlogn: true, n2: true, '2n': true };
+function s6Toggle(key, val) { s6Visible[key] = val; s6Draw(); }
+
+const s6Fns = {
+  '1':     { fn: n => 1,                        color: '#34d399', label: 'O(1)' },
+  'logn':  { fn: n => Math.log2(Math.max(1,n)), color: '#60a5fa', label: 'O(log n)' },
+  'n':     { fn: n => n,                        color: '#a78bfa', label: 'O(n)' },
+  'nlogn': { fn: n => n*Math.log2(Math.max(1,n)), color: '#fbbf24', label: 'O(n log n)' },
+  'n2':    { fn: n => n*n,                      color: '#f87171', label: 'O(n²)' },
+  '2n':    { fn: n => Math.pow(2,n),            color: '#f472b6', label: 'O(2ⁿ)' }
+};
+
+function s6Draw() {
+  const maxN = parseInt(document.getElementById('s6-slider').value);
+  document.getElementById('s6-n-label').textContent = maxN;
+
+  const c = document.getElementById('s6-chart-container');
+  c.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.width = 700; canvas.height = 300;
+  const ctx = canvas.getContext('2d');
+
+  const padL = 55, padB = 35, padT = 15, padR = 80;
+  const w = canvas.width - padL - padR;
+  const h = canvas.height - padT - padB;
+
+  // Find max Y (cap at reasonable value)
+  let maxY = 0;
+  for (const [key, spec] of Object.entries(s6Fns)) {
+    if (!s6Visible[key]) continue;
+    const val = spec.fn(maxN);
+    if (val < 1e6) maxY = Math.max(maxY, val);
+  }
+  maxY = Math.max(maxY, 10) * 1.1;
+
+  // Grid
+  ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = padT + (i / 5) * h;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + w, y); ctx.stroke();
+    ctx.fillStyle = '#64748b'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxY * (1 - i / 5)).toLocaleString(), padL - 5, y + 4);
+  }
+
+  // Axes
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + h); ctx.lineTo(padL + w, padT + h); ctx.stroke();
+  ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('n →', padL + w / 2, canvas.height - 5);
+
+  // X axis labels
+  for (let n = 0; n <= maxN; n += Math.max(1, Math.floor(maxN / 10))) {
+    const x = padL + (n / maxN) * w;
+    ctx.fillStyle = '#64748b'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(n, x, padT + h + 15);
+  }
+
+  // Plot curves
+  for (const [key, spec] of Object.entries(s6Fns)) {
+    if (!s6Visible[key]) continue;
+    ctx.strokeStyle = spec.color; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    let lastX = 0, lastY = 0, clipped = false;
+    for (let n = 1; n <= maxN; n++) {
+      const x = padL + (n / maxN) * w;
+      const val = spec.fn(n);
+      const y = padT + h - (Math.min(val, maxY) / maxY) * h;
+      if (n === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      lastX = x; lastY = y;
+      if (val > maxY) { clipped = true; break; }
+    }
+    ctx.stroke();
+
+    // Label at end of curve
+    const labelY = Math.max(padT + 10, Math.min(lastY, padT + h - 5));
+    ctx.fillStyle = spec.color; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(spec.label + (clipped ? ' ↑' : ''), lastX + 5, labelY);
+  }
+  c.appendChild(canvas);
+}
+s6Draw();
+</script>
+
+<!-- ============== SLIDE 7: Big-O Notation ============== -->
+<div class="slide" id="slide-7">
+  <h2>Big-O Notation (Upper Bound)</h2>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>f(n) is <strong>O(g(n))</strong> if there exist positive constants <strong>c</strong> and <strong>n₀</strong> such that:</p>
+        <p style="font-size:1.3em; text-align:center; color:#93c5fd; margin: 12px 0;"><strong>f(n) ≤ c · g(n)</strong>&emsp;for all n ≥ n₀</p>
+      </div>
+      <h3 class="mt">Intuition</h3>
+      <ul>
+        <li>f(n) grows <strong>no faster than</strong> g(n)</li>
+        <li>g(n) is an <strong>upper bound</strong> on f(n)</li>
+        <li>"In the worst case, it's <em>at most</em> this"</li>
+      </ul>
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Big-O is like "this trip takes <strong>at most</strong> 3 hours." Might be less, never more.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Interactive: f(n) ≤ c·g(n)</h3>
+      <div class="svg-container" id="s7-chart" style="padding:10px;"></div>
+      <div class="controls" style="justify-content:center;">
+        <label>c = <strong id="s7-c-label">4</strong></label>
+        <input type="range" id="s7-c" min="1" max="10" value="4" step="0.5" style="width:120px; accent-color:#f87171;" oninput="s7Draw()">
+        <label>n₀ = <strong id="s7-n0-label">5</strong></label>
+        <input type="range" id="s7-n0" min="1" max="15" value="5" style="width:120px; accent-color:#fbbf24;" oninput="s7Draw()">
+      </div>
+      <div class="status-msg" id="s7-status" style="text-align:center;">f(n) = 3n+5 is O(n). Adjust c and n₀ to see valid bounds.</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+function s7Draw() {
+  const c = parseFloat(document.getElementById('s7-c').value);
+  const n0 = parseInt(document.getElementById('s7-n0').value);
+  document.getElementById('s7-c-label').textContent = c;
+  document.getElementById('s7-n0-label').textContent = n0;
+
+  const container = document.getElementById('s7-chart');
+  container.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.width = 400; canvas.height = 220;
+  const ctx = canvas.getContext('2d');
+
+  const padL = 45, padB = 25, padT = 10, padR = 10;
+  const w = canvas.width - padL - padR, h = canvas.height - padT - padB;
+  const maxN = 20;
+  const f = n => 3*n + 5;
+  const g = n => c * n;
+  const maxY = Math.max(f(maxN), g(maxN)) * 1.1;
+
+  // Axes
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+h); ctx.lineTo(padL+w, padT+h); ctx.stroke();
+
+  // n₀ vertical line
+  const n0x = padL + (n0 / maxN) * w;
+  ctx.strokeStyle = '#fbbf2440'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(n0x, padT); ctx.lineTo(n0x, padT+h); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#fbbf24'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(`n₀=${n0}`, n0x, padT + h + 15);
+
+  // Shade valid region
+  ctx.fillStyle = 'rgba(52,211,153,0.08)';
+  ctx.fillRect(n0x, padT, padL + w - n0x, h);
+
+  // Plot f(n)
+  ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let n = 1; n <= maxN; n++) {
+    const x = padL + (n/maxN)*w, y = padT + h - (f(n)/maxY)*h;
+    n===1 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('f(n)=3n+5', padL + w - 75, padT + h - (f(maxN)/maxY)*h - 5);
+
+  // Plot c*g(n)
+  ctx.strokeStyle = '#f87171'; ctx.lineWidth = 2; ctx.setLineDash([6,3]);
+  ctx.beginPath();
+  for (let n = 1; n <= maxN; n++) {
+    const x = padL + (n/maxN)*w, y = padT + h - (Math.min(g(n),maxY)/maxY)*h;
+    n===1 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#f87171'; ctx.font = 'bold 11px monospace';
+  ctx.fillText(`c·g(n)=${c}n`, padL + w - 70, padT + h - (Math.min(g(maxN),maxY)/maxY)*h + 15);
+
+  // Check validity
+  let valid = true;
+  for (let n = n0; n <= maxN; n++) {
+    if (f(n) > g(n)) { valid = false; break; }
+  }
+  const status = document.getElementById('s7-status');
+  if (valid) {
+    status.innerHTML = `<span style="color:#34d399">✓ Valid! f(n) ≤ ${c}n for all n ≥ ${n0}. So 3n+5 is O(n).</span>`;
+  } else {
+    status.innerHTML = `<span style="color:#f87171">✗ Not valid. f(n) > ${c}n for some n ≥ ${n0}. Try larger c or n₀.</span>`;
+  }
+
+  container.appendChild(canvas);
+}
+s7Draw();
+</script>
+
+<!-- ============== SLIDE 8: Big-O Examples ============== -->
+<div class="slide" id="slide-8">
+  <h2>Big-O: Worked Examples</h2>
+  <div class="two-col">
+    <div>
+      <h3>Example 1: Prove 3n + 5 is O(n)</h3>
+      <div class="diagram small"> We need: 3n + 5 ≤ c · n  for all n ≥ n₀
+
+ Choose c = 4, n₀ = 5:
+   3n + 5 ≤ 4n ?
+   5 ≤ n ?       (subtract 3n)
+   Yes! When n ≥ 5  ✓
+
+ Check: n=5:  20 ≤ 20 ✓
+        n=10: 35 ≤ 40 ✓</div>
+      <p style="color:#34d399;">∴ 3n + 5 is O(n) with c=4, n₀=5.</p>
+    </div>
+    <div>
+      <h3>Example 2: Prove n² + 3n is O(n²)</h3>
+      <div class="diagram small"> We need: n² + 3n ≤ c · n²  for all n ≥ n₀
+
+ Choose c = 2, n₀ = 3:
+   n² + 3n ≤ 2n² ?
+   3n ≤ n² ?       (subtract n²)
+   3 ≤ n ?          (divide by n)
+   Yes! When n ≥ 3  ✓
+
+ Check: n=3: 18 ≤ 18 ✓
+        n=5: 40 ≤ 50 ✓</div>
+      <p style="color:#34d399;">∴ n² + 3n is O(n²) with c=2, n₀=3.</p>
+    </div>
+  </div>
+  <div class="warning mt">
+    <h3>Warning</h3>
+    <p>c and n₀ are <strong>not unique</strong> — many valid pairs exist. Also, 3n+5 is technically O(n²) too, but that's a loose (less useful) bound.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== SLIDE 9: Big-Omega ============== -->
+<div class="slide" id="slide-9">
+  <h2>Big-Omega Ω (Lower Bound)</h2>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>f(n) is <strong>Ω(g(n))</strong> if there exist positive constants <strong>c</strong> and <strong>n₀</strong> such that:</p>
+        <p style="font-size:1.3em; text-align:center; color:#93c5fd; margin: 12px 0;"><strong>f(n) ≥ c · g(n)</strong>&emsp;for all n ≥ n₀</p>
+      </div>
+      <h3 class="mt">Intuition</h3>
+      <ul>
+        <li>f(n) grows <strong>at least as fast as</strong> g(n)</li>
+        <li>g(n) is a <strong>lower bound</strong> on f(n)</li>
+        <li>"The algorithm needs <em>at least</em> this much time"</li>
+      </ul>
+      <h3 class="mt">Example</h3>
+      <p>3n + 5 is Ω(n): choose c=3, n₀=1. 3n+5 ≥ 3n ✓</p>
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Ω is like "this trip takes <strong>at least</strong> 1 hour." Might take more, never less.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Visual: f(n) stays above c·g(n)</h3>
+      <div class="svg-container" id="s9-chart" style="padding:10px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function() {
+  const container = document.getElementById('s9-chart');
+  const canvas = document.createElement('canvas');
+  canvas.width = 380; canvas.height = 220;
+  const ctx = canvas.getContext('2d');
+
+  const padL = 40, padB = 25, padT = 10, w = 330, h = 185;
+  const maxN = 20, maxY = 70;
+  const f = n => 3*n + 5;
+  const g = n => 3 * n;
+
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+h); ctx.lineTo(padL+w, padT+h); ctx.stroke();
+
+  // n₀ line
+  const n0x = padL + (1/maxN)*w;
+  ctx.strokeStyle = '#fbbf2440'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(n0x, padT); ctx.lineTo(n0x, padT+h); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#fbbf24'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('n₀=1', n0x, padT+h+15);
+
+  // f(n) above
+  ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let n=1;n<=maxN;n++) { const x=padL+(n/maxN)*w, y=padT+h-(f(n)/maxY)*h; n===1?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.stroke();
+  ctx.fillStyle = '#60a5fa'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('f(n)=3n+5', padL+w-80, padT+h-(f(maxN)/maxY)*h-8);
+
+  // c*g(n) below
+  ctx.strokeStyle = '#34d399'; ctx.lineWidth = 2; ctx.setLineDash([6,3]);
+  ctx.beginPath();
+  for (let n=1;n<=maxN;n++) { const x=padL+(n/maxN)*w, y=padT+h-(g(n)/maxY)*h; n===1?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#34d399'; ctx.font = 'bold 11px monospace';
+  ctx.fillText('c·g(n)=3n', padL+w-80, padT+h-(g(maxN)/maxY)*h+15);
+
+  // Shade region between
+  ctx.fillStyle = 'rgba(52,211,153,0.08)';
+  ctx.beginPath();
+  for (let n=1;n<=maxN;n++) { ctx.lineTo(padL+(n/maxN)*w, padT+h-(f(n)/maxY)*h); }
+  for (let n=maxN;n>=1;n--) { ctx.lineTo(padL+(n/maxN)*w, padT+h-(g(n)/maxY)*h); }
+  ctx.fill();
+
+  ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('f(n) is always ABOVE c·g(n)', padL + w/2, padT + h - 20);
+
+  container.appendChild(canvas);
+})();
+</script>
+
+<!-- ============== SLIDE 10: Big-Theta ============== -->
+<div class="slide" id="slide-10">
+  <h2>Big-Theta Θ (Tight Bound)</h2>
+  <div class="two-col">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>f(n) is <strong>Θ(g(n))</strong> if there exist positive constants <strong>c₁</strong>, <strong>c₂</strong>, and <strong>n₀</strong> such that:</p>
+        <p style="font-size:1.2em; text-align:center; color:#93c5fd; margin: 12px 0;"><strong>c₁·g(n) ≤ f(n) ≤ c₂·g(n)</strong></p>
+        <p style="text-align:center; color:#93c5fd;">for all n ≥ n₀</p>
+      </div>
+      <h3 class="mt">Equivalently</h3>
+      <p>f(n) is Θ(g(n)) iff f(n) is <strong>both O(g(n)) and Ω(g(n))</strong>.</p>
+      <h3 class="mt">Example</h3>
+      <p>3n + 5 is Θ(n):</p>
+      <ul>
+        <li>Upper: 3n+5 ≤ 4n for n ≥ 5 (c₂=4)</li>
+        <li>Lower: 3n+5 ≥ 3n for n ≥ 1 (c₁=3)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Visual: f(n) sandwiched</h3>
+      <div class="svg-container" id="s10-chart" style="padding:10px;"></div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Θ gives the <strong>exact growth rate</strong>. When someone says "this is n log n," they really mean Θ(n log n).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function() {
+  const container = document.getElementById('s10-chart');
+  const canvas = document.createElement('canvas');
+  canvas.width = 380; canvas.height = 220;
+  const ctx = canvas.getContext('2d');
+
+  const padL = 40, padT = 10, w = 330, h = 185;
+  const maxN = 20, maxY = 90;
+  const f = n => 3*n + 5;
+  const upper = n => 4*n;
+  const lower = n => 3*n;
+
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+h); ctx.lineTo(padL+w, padT+h); ctx.stroke();
+
+  // Shade sandwich region
+  ctx.fillStyle = 'rgba(99,102,241,0.1)';
+  ctx.beginPath();
+  for (let n=5;n<=maxN;n++) ctx.lineTo(padL+(n/maxN)*w, padT+h-(upper(n)/maxY)*h);
+  for (let n=maxN;n>=5;n--) ctx.lineTo(padL+(n/maxN)*w, padT+h-(lower(n)/maxY)*h);
+  ctx.fill();
+
+  // Upper bound
+  ctx.strokeStyle = '#f87171'; ctx.lineWidth = 2; ctx.setLineDash([6,3]);
+  ctx.beginPath();
+  for (let n=1;n<=maxN;n++) { const x=padL+(n/maxN)*w, y=padT+h-(upper(n)/maxY)*h; n===1?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#f87171'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('c₂·n = 4n', padL+w-70, padT+h-(upper(maxN)/maxY)*h-5);
+
+  // f(n)
+  ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let n=1;n<=maxN;n++) { const x=padL+(n/maxN)*w, y=padT+h-(f(n)/maxY)*h; n===1?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.stroke();
+  ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 11px monospace';
+  ctx.fillText('f(n)=3n+5', padL+w-80, padT+h-(f(maxN)/maxY)*h);
+
+  // Lower bound
+  ctx.strokeStyle = '#34d399'; ctx.lineWidth = 2; ctx.setLineDash([6,3]);
+  ctx.beginPath();
+  for (let n=1;n<=maxN;n++) { const x=padL+(n/maxN)*w, y=padT+h-(lower(n)/maxY)*h; n===1?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#34d399'; ctx.font = 'bold 11px monospace';
+  ctx.fillText('c₁·n = 3n', padL+w-70, padT+h-(lower(maxN)/maxY)*h+15);
+
+  container.appendChild(canvas);
+})();
+</script>
+
+<!-- ============== SLIDE 11: Common Growth Rates ============== -->
+<div class="slide" id="slide-11">
+  <h2>Common Growth Rates</h2>
+  <p>From fastest to slowest (best to worst for runtime):</p>
+  <table class="mt" style="margin: 16px auto;">
+    <tr><th>Name</th><th>Big-O</th><th>n = 10</th><th>n = 100</th><th>n = 1,000</th><th>Example</th></tr>
+    <tr><td>Constant</td><td>O(1)</td><td>1</td><td>1</td><td>1</td><td>Array index</td></tr>
+    <tr><td>Logarithmic</td><td>O(log n)</td><td>3</td><td>7</td><td>10</td><td>Binary search</td></tr>
+    <tr><td>Linear</td><td>O(n)</td><td>10</td><td>100</td><td>1,000</td><td>Linear search</td></tr>
+    <tr class="highlight"><td>Linearithmic</td><td>O(n log n)</td><td>30</td><td>700</td><td>10,000</td><td>Merge sort</td></tr>
+    <tr><td>Quadratic</td><td>O(n²)</td><td>100</td><td>10,000</td><td>1,000,000</td><td>Bubble sort</td></tr>
+    <tr><td>Cubic</td><td>O(n³)</td><td>1,000</td><td>10⁶</td><td>10⁹</td><td>Matrix multiply</td></tr>
+    <tr><td>Exponential</td><td>O(2ⁿ)</td><td>1,024</td><td>~10³⁰</td><td>~10³⁰¹</td><td>Subsets</td></tr>
+    <tr><td>Factorial</td><td>O(n!)</td><td>3,628,800</td><td>~10¹⁵⁸</td><td>LOL</td><td>Permutations</td></tr>
+  </table>
+  <div class="warning" style="max-width: 700px; margin: 16px auto;">
+    <h3>Warning</h3>
+    <p>Anything beyond O(n²) becomes impractical quickly. O(2ⁿ) and O(n!) are unsolvable for n > 30–50.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== SLIDE 12: Analyzing Loops (INTERACTIVE) ============== -->
+<div class="slide" id="slide-12">
+  <h2>Analyzing Loops</h2>
+  <div class="two-col">
+    <div>
+      <h3>Single Loop → O(n)</h3>
+      <div class="code-block"><span class="kw">for</span> i ← <span class="num">0</span> <span class="kw">to</span> n-<span class="num">1</span> <span class="kw">do</span>    <span class="cmt"># runs n times</span>
+    doSomething()        <span class="cmt"># O(1) each</span>
+
+Total: n × O(<span class="num">1</span>) = <span class="fn">O(n)</span></div>
+
+      <h3 class="mt">Nested Loops → O(n²)</h3>
+      <div class="code-block"><span class="kw">for</span> i ← <span class="num">0</span> <span class="kw">to</span> n-<span class="num">1</span> <span class="kw">do</span>      <span class="cmt"># n times</span>
+    <span class="kw">for</span> j ← <span class="num">0</span> <span class="kw">to</span> n-<span class="num">1</span> <span class="kw">do</span>  <span class="cmt"># × n each</span>
+        doSomething()      <span class="cmt"># O(1)</span>
+
+Total: n × n × O(<span class="num">1</span>) = <span class="fn">O(n²)</span></div>
+    </div>
+    <div>
+      <h3>Interactive: Watch the Loop Run</h3>
+      <div class="controls">
+        <label>Loop type:</label>
+        <select id="s12-type" onchange="s12Setup()" style="width:150px;">
+          <option value="linear">Single loop (O(n))</option>
+          <option value="nested">Nested loops (O(n²))</option>
+          <option value="halving">Halving (O(log n))</option>
+        </select>
+        <label>n =</label>
+        <input type="number" id="s12-n" value="8" min="2" max="16" style="width:50px;">
+        <button class="success" onclick="s12Run()">▶ Run</button>
+      </div>
+      <div class="svg-container" id="s12-grid" style="min-height:160px; padding:10px;"></div>
+      <div style="display:flex; gap:20px; justify-content:center;">
+        <div class="playground" style="padding:10px; text-align:center; flex:1;">
+          <div style="color:#94a3b8; font-size:0.8em;">Iterations</div>
+          <div id="s12-count" style="font-size:1.6em; color:#fbbf24; font-weight:700;">0</div>
+        </div>
+        <div class="playground" style="padding:10px; text-align:center; flex:1;">
+          <div style="color:#94a3b8; font-size:0.8em;">Complexity</div>
+          <div id="s12-complexity" style="font-size:1.4em; color:#34d399; font-weight:700;">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="key-idea mt">
+    <h3>Key Idea</h3>
+    <p><strong>Multiply</strong> for nested loops. <strong>Halving/doubling</strong> = logarithmic. O(n) body inside O(n) loop = O(n²).</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+let s12Timer = null;
+function s12Setup() { if(s12Timer) clearInterval(s12Timer); document.getElementById('s12-count').textContent='0'; }
+
+function s12Run() {
+  if(s12Timer) clearInterval(s12Timer);
+  const type = document.getElementById('s12-type').value;
+  const n = parseInt(document.getElementById('s12-n').value) || 8;
+  const container = document.getElementById('s12-grid');
+
+  // Pre-compute which cells get highlighted
+  const cells = [];
+  if (type === 'linear') {
+    for (let i = 0; i < n; i++) cells.push([i, 0]);
+    document.getElementById('s12-complexity').textContent = `O(n) = O(${n})`;
+  } else if (type === 'nested') {
+    for (let i = 0; i < Math.min(n,12); i++) for (let j = 0; j < Math.min(n,12); j++) cells.push([i, j]);
+    document.getElementById('s12-complexity').textContent = `O(n²) = O(${n*n})`;
+  } else {
+    let i = n;
+    let col = 0;
+    while (i >= 1) { cells.push([col, 0]); i = Math.floor(i / 2); col++; }
+    document.getElementById('s12-complexity').textContent = `O(log n) = O(${cells.length})`;
+  }
+
+  let step = 0;
+  function draw() {
+    container.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    const gridN = type === 'nested' ? Math.min(n,12) : (type === 'halving' ? cells.length : n);
+    const cellSize = type === 'nested' ? Math.min(20, 160/gridN) : 30;
+    const cols = type === 'nested' ? gridN : gridN;
+    const rows = type === 'nested' ? gridN : 1;
+    canvas.width = cols * cellSize + 20;
+    canvas.height = rows * cellSize + 20;
+    const ctx = canvas.getContext('2d');
+
+    for (let r = 0; r < rows; r++) {
+      for (let cc = 0; cc < cols; cc++) {
+        const x = 10 + cc * cellSize, y = 10 + r * cellSize;
+        const highlighted = cells.findIndex(([cr,ccc]) => {
+          if (type === 'nested') return cr === r && ccc === cc;
+          return cr === cc;
+        });
+        const isActive = highlighted !== -1 && highlighted < step;
+        const isCurrent = highlighted === step - 1;
+
+        ctx.fillStyle = isCurrent ? '#3b82f6' : isActive ? '#1e3a5f' : '#1e293b';
+        ctx.strokeStyle = isCurrent ? '#60a5fa' : isActive ? '#3b82f6' : '#334155';
+        ctx.lineWidth = isCurrent ? 2 : 1;
+        ctx.beginPath(); ctx.roundRect(x, y, cellSize - 2, cellSize - 2, 3); ctx.fill(); ctx.stroke();
+
+        if (type === 'halving' && highlighted !== -1) {
+          let val = n;
+          for (let k = 0; k < cc; k++) val = Math.floor(val / 2);
+          ctx.fillStyle = isActive ? '#e2e8f0' : '#64748b';
+          ctx.font = `bold ${Math.min(12, cellSize-6)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText(val, x + cellSize/2 - 1, y + cellSize/2 + 2);
+        }
+      }
+    }
+    container.appendChild(canvas);
+    document.getElementById('s12-count').textContent = Math.min(step, cells.length);
+  }
+
+  step = 0; draw();
+  const speed = type === 'nested' ? 30 : 200;
+  s12Timer = setInterval(() => {
+    step++;
+    draw();
+    if (step > cells.length) clearInterval(s12Timer);
+  }, speed);
+}
+</script>
+
+<!-- ============== SLIDE 13: Analyzing Recursive Algorithms ============== -->
+<div class="slide" id="slide-13">
+  <h2>Analyzing Recursive Algorithms</h2>
+  <p>Recursive algorithms use <strong>recurrence relations</strong>.</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Pattern 1: Linear Recursion</h3>
+      <div class="code-block">T(n) = T(n-<span class="num">1</span>) + O(<span class="num">1</span>)
+→ Total = n × c = <span class="fn">O(n)</span>
+<span class="cmt">Example: factorial(n)</span></div>
+
+      <h3 class="mt">Pattern 2: Divide & Conquer</h3>
+      <div class="code-block">T(n) = <span class="num">2</span>T(n/<span class="num">2</span>) + O(n)
+→ <span class="fn">O(n log n)</span>
+<span class="cmt">Example: Merge Sort</span></div>
+
+      <h3 class="mt">Pattern 3: Binary Search</h3>
+      <div class="code-block">T(n) = T(n/<span class="num">2</span>) + O(<span class="num">1</span>)
+→ <span class="fn">O(log n)</span>
+<span class="cmt">Example: Binary Search</span></div>
+    </div>
+    <div>
+      <h3>Recursion Tree: T(n) = 2T(n/2) + n</h3>
+      <div class="svg-container" id="s13-tree" style="padding:10px;"></div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Write the recurrence → expand → find the pattern → determine total. log(n) levels × n cost per level = O(n log n).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function() {
+  const c = document.getElementById('s13-tree');
+  const canvas = document.createElement('canvas');
+  canvas.width = 420; canvas.height = 220;
+  const ctx = canvas.getContext('2d');
+
+  const levels = [
+    [{ label: 'n', x: 210 }],
+    [{ label: 'n/2', x: 120 }, { label: 'n/2', x: 300 }],
+    [{ label: 'n/4', x: 70 }, { label: 'n/4', x: 170 }, { label: 'n/4', x: 250 }, { label: 'n/4', x: 350 }],
+    [{ label: '1', x: 50 }, { label: '1', x: 90 }, { label: '1', x: 150 }, { label: '1', x: 190 }, { label: '...', x: 230 }, { label: '1', x: 310 }, { label: '1', x: 350 }, { label: '1', x: 390 }]
+  ];
+  const costLabels = ['cost: n', 'cost: n', 'cost: n', 'cost: n'];
+  const yStep = 50;
+
+  levels.forEach((level, li) => {
+    const y = 20 + li * yStep;
+    level.forEach(node => {
+      // Draw node circle
+      ctx.fillStyle = '#334155'; ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(node.x, y, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(node.label, node.x, y + 4);
+    });
+
+    // Draw edges to next level
+    if (li < levels.length - 1) {
+      const nextLevel = levels[li + 1];
+      const childrenPerNode = nextLevel.length / level.length;
+      level.forEach((node, ni) => {
+        for (let ci = 0; ci < childrenPerNode; ci++) {
+          const child = nextLevel[ni * childrenPerNode + ci];
+          if (child) {
+            ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(node.x, y + 16); ctx.lineTo(child.x, y + yStep - 16); ctx.stroke();
+          }
+        }
+      });
+    }
+
+    // Cost label on right
+    ctx.fillStyle = li < 3 ? '#fbbf24' : '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('← ' + costLabels[li], 415 - 2, y + 4);
+  });
+
+  // Summary at bottom
+  ctx.fillStyle = '#34d399'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('log(n) levels × cost n each = O(n log n)', 210, 215);
+
+  c.appendChild(canvas);
+})();
+</script>
+
+<!-- ============== SLIDE 14: Best / Worst / Average Case ============== -->
+<div class="slide" id="slide-14">
+  <h2>Best Case, Worst Case, Average Case</h2>
+  <div class="two-col">
+    <div>
+      <h3>Linear Search Example</h3>
+      <div class="code-block"><span class="kw">Algorithm</span> <span class="fn">linearSearch</span>(A, n, target):
+    <span class="kw">for</span> i ← <span class="num">0</span> <span class="kw">to</span> n-<span class="num">1</span> <span class="kw">do</span>
+        <span class="kw">if</span> A[i] == target <span class="kw">then</span>
+            <span class="kw">return</span> i
+    <span class="kw">return</span> -<span class="num">1</span></div>
+      <table class="mt">
+        <tr><th>Case</th><th>When?</th><th>Comparisons</th></tr>
+        <tr><td><strong>Best</strong></td><td>Target is first</td><td>1 = O(1)</td></tr>
+        <tr><td><strong>Worst</strong></td><td>Target last / absent</td><td>n = O(n)</td></tr>
+        <tr><td><strong>Average</strong></td><td>Equally likely anywhere</td><td>n/2 = O(n)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Interactive: Try Different Inputs</h3>
+      <div class="svg-container" id="s14-svg" style="min-height:60px; padding:10px;"></div>
+      <div class="controls">
+        <label>Search for:</label>
+        <input type="number" id="s14-target" value="7" style="width:50px;">
+        <button class="success" onclick="s14Search()">▶ Search</button>
+        <button onclick="s14Reset()">↺ Reset</button>
+      </div>
+      <div class="status-msg" id="s14-status">Enter a value to search [2, 5, 7, 1, 9, 3, 8, 4]</div>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>We usually analyze <strong>worst case</strong> — it gives a <strong>guarantee</strong> on performance.</p>
+      </div>
+      <div class="warning mt">
+        <h3>Warning</h3>
+        <p>Don't confuse <strong>Big-O</strong> (bound type) with <strong>worst case</strong> (input type). You can say "the best case is O(1)."</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const s14Arr = [2, 5, 7, 1, 9, 3, 8, 4];
+let s14Timer = null, s14Idx = -1;
+
+function s14Draw(hlIdx, found) {
+  const c = document.getElementById('s14-svg');
+  c.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.width = 440; canvas.height = 50;
+  const ctx = canvas.getContext('2d');
+
+  s14Arr.forEach((v, i) => {
+    const x = 10 + i * 53;
+    const isHl = i === hlIdx;
+    const isPast = i < hlIdx;
+    ctx.fillStyle = isHl ? (found ? '#059669' : '#3b82f6') : isPast ? '#1e3a5f' : '#334155';
+    ctx.strokeStyle = isHl ? (found ? '#34d399' : '#60a5fa') : '#475569';
+    ctx.lineWidth = isHl ? 2 : 1;
+    ctx.beginPath(); ctx.roundRect(x, 5, 48, 35, 5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(v, x + 24, 28);
+  });
+  c.appendChild(canvas);
+}
+
+function s14Search() {
+  if (s14Timer) clearInterval(s14Timer);
+  const target = parseInt(document.getElementById('s14-target').value);
+  s14Idx = 0;
+  const status = document.getElementById('s14-status');
+  let comparisons = 0;
+
+  s14Timer = setInterval(() => {
+    if (s14Idx >= s14Arr.length) {
+      clearInterval(s14Timer);
+      s14Draw(s14Arr.length, false);
+      status.innerHTML = `<span style="color:#f87171">Not found! ${comparisons} comparisons → Worst case O(n)</span>`;
+      return;
+    }
+    comparisons++;
+    if (s14Arr[s14Idx] === target) {
+      s14Draw(s14Idx, true);
+      const caseType = s14Idx === 0 ? 'Best case O(1)!' : s14Idx === s14Arr.length - 1 ? 'Worst case O(n)' : 'Average case';
+      status.innerHTML = `<span style="color:#34d399">Found at index ${s14Idx}! ${comparisons} comparisons → ${caseType}</span>`;
+      clearInterval(s14Timer);
+      return;
+    }
+    s14Draw(s14Idx, false);
+    status.textContent = `Checking index ${s14Idx}: ${s14Arr[s14Idx]} == ${target}? No. (${comparisons} comparisons)`;
+    s14Idx++;
+  }, 400);
+}
+function s14Reset() { if(s14Timer)clearInterval(s14Timer); s14Idx=-1; s14Draw(-1,false); document.getElementById('s14-status').textContent='Enter a value to search [2, 5, 7, 1, 9, 3, 8, 4]'; }
+s14Draw(-1, false);
+</script>
+
+<!-- ============== SLIDE 15: Amortized Analysis ============== -->
+<div class="slide" id="slide-15">
+  <h2>Amortized Analysis (Brief Intro)</h2>
+  <p>Sometimes a single operation is expensive, but averaged over many operations it's cheap.</p>
+  <div class="two-col mt">
+    <div>
+      <h3>ArrayList / Dynamic Array</h3>
+      <p>When full, <strong>double</strong> capacity and copy everything.</p>
+      <div class="svg-container" id="s15-viz" style="min-height:120px; padding:10px;"></div>
+      <div class="controls" style="justify-content:center;">
+        <button class="success" onclick="s15Insert()">Insert Next Element</button>
+        <button onclick="s15Reset()">↺ Reset</button>
+      </div>
+      <div class="status-msg" id="s15-status">Click to insert elements and watch the array grow.</div>
+    </div>
+    <div>
+      <h3>Cost Analysis</h3>
+      <div class="diagram small">Copies happen at insert 3, 5, 9, 17, ...
+Copy costs: 2 + 4 + 8 + 16 + ... ≤ 2n
+
+Total for n inserts = n + 2n = 3n
+Amortized cost/insert = 3n/n = 3 = O(1) !</div>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Individual insert can be O(n). But <strong>amortized cost per insert is O(1)</strong>. Expensive operations are rare enough to average out.</p>
+      </div>
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Like saving a little each day, paying rent monthly. Average daily cost is still constant.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+let s15Arr = [], s15Cap = 2, s15TotalCost = 0;
+
+function s15Draw() {
+  const c = document.getElementById('s15-viz');
+  c.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  const cellW = 35, cellH = 30;
+  canvas.width = Math.max(s15Cap * cellW + 40, 200);
+  canvas.height = 80;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+  ctx.fillText(`capacity: ${s15Cap}  |  size: ${s15Arr.length}  |  total cost: ${s15TotalCost}`, 10, 12);
+
+  for (let i = 0; i < s15Cap; i++) {
+    const x = 10 + i * cellW;
+    const filled = i < s15Arr.length;
+    ctx.fillStyle = filled ? '#334155' : '#1e293b';
+    ctx.strokeStyle = filled ? '#3b82f6' : '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(x, 22, cellW - 3, cellH, 4); ctx.fill(); ctx.stroke();
+    if (filled) {
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(s15Arr[i], x + cellW/2 - 1, 42);
+    }
+  }
+
+  // Cost bar
+  const costPerInsert = s15Arr.length > 0 ? (s15TotalCost / s15Arr.length).toFixed(1) : 0;
+  ctx.fillStyle = '#64748b'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+  ctx.fillText(`amortized cost/insert: ${costPerInsert}`, 10, 68);
+
+  c.appendChild(canvas);
+}
+
+function s15Insert() {
+  const val = s15Arr.length + 1;
+  let cost = 1;
+  if (s15Arr.length >= s15Cap) {
+    cost += s15Cap; // copy cost
+    s15Cap *= 2;
+    document.getElementById('s15-status').innerHTML = `<span style="color:#fbbf24">Resize! Doubled to ${s15Cap}. Copy cost: ${cost - 1} + 1 insert = ${cost}</span>`;
+  } else {
+    document.getElementById('s15-status').innerHTML = `<span style="color:#34d399">Inserted ${val}. Cost: 1 (no resize needed)</span>`;
+  }
+  s15TotalCost += cost;
+  s15Arr.push(val);
+  s15Draw();
+}
+
+function s15Reset() { s15Arr = []; s15Cap = 2; s15TotalCost = 0; s15Draw(); document.getElementById('s15-status').textContent = 'Click to insert elements and watch the array grow.'; }
+s15Draw();
+</script>
+
+<!-- ============== SLIDE 16: Space Complexity ============== -->
+<div class="slide" id="slide-16">
+  <h2>Space Complexity</h2>
+  <p>Not just time — <strong>memory usage</strong> matters too.</p>
+  <div class="two-col mt">
+    <div>
+      <h3>What counts as space?</h3>
+      <ul>
+        <li><strong>Input space:</strong> Memory for the input (usually excluded)</li>
+        <li><strong>Auxiliary space:</strong> Extra memory beyond the input</li>
+      </ul>
+      <h3 class="mt">In-Place Algorithms</h3>
+      <p>Use only <strong>O(1) extra space</strong>.</p>
+      <div class="code-block">temp ← A[i]    <span class="cmt"># 1 extra variable</span>
+A[i] ← A[j]
+A[j] ← temp    <span class="cmt"># O(1) space</span></div>
+    </div>
+    <div>
+      <h3>Space Complexity Examples</h3>
+      <table>
+        <tr><th>Algorithm</th><th>Time</th><th>Space (aux)</th></tr>
+        <tr><td>Linear search</td><td>O(n)</td><td>O(1)</td></tr>
+        <tr><td>Binary search (iterative)</td><td>O(log n)</td><td>O(1)</td></tr>
+        <tr><td>Binary search (recursive)</td><td>O(log n)</td><td>O(log n)*</td></tr>
+        <tr class="highlight"><td>Merge sort</td><td>O(n log n)</td><td>O(n)</td></tr>
+        <tr><td>Insertion sort</td><td>O(n²)</td><td>O(1)</td></tr>
+      </table>
+      <p style="font-size:0.9em; color:#94a3b8;">* Recursive calls use stack space</p>
+      <div class="warning mt">
+        <h3>Warning</h3>
+        <p>Recursion uses stack space! Depth n = O(n) space even with no arrays.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== SLIDE 17: Common Algorithm Complexities ============== -->
+<div class="slide" id="slide-17">
+  <h2>Common Algorithm Complexities</h2>
+  <div class="two-col">
+    <div>
+      <h3>Sorting</h3>
+      <table style="font-size:0.95em;">
+        <tr><th>Algorithm</th><th>Best</th><th>Average</th><th>Worst</th></tr>
+        <tr><td>Bubble Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td></tr>
+        <tr><td>Insertion Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td></tr>
+        <tr><td>Selection Sort</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td></tr>
+        <tr class="highlight"><td>Merge Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n log n)</td></tr>
+        <tr class="highlight"><td>Quick Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n²)</td></tr>
+      </table>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Comparison-based sorting has a proven <strong>lower bound of Ω(n log n)</strong>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Searching</h3>
+      <table style="font-size:0.95em;">
+        <tr><th>Algorithm</th><th>Time</th><th>Requires</th></tr>
+        <tr><td>Linear Search</td><td>O(n)</td><td>Nothing</td></tr>
+        <tr class="highlight"><td>Binary Search</td><td>O(log n)</td><td>Sorted array</td></tr>
+        <tr><td>Hash Lookup</td><td>O(1) avg</td><td>Hash table</td></tr>
+      </table>
+
+      <h3 class="mt">Graph Algorithms (Preview)</h3>
+      <table style="font-size:0.95em;">
+        <tr><th>Algorithm</th><th>Time</th></tr>
+        <tr><td>BFS / DFS</td><td>O(V + E)</td></tr>
+        <tr><td>Dijkstra's</td><td>O((V+E) log V)</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== SLIDE 18: Pitfalls ============== -->
+<div class="slide" id="slide-18">
+  <h2>Common Pitfalls</h2>
+  <div class="two-col">
+    <div>
+      <div class="warning">
+        <h3>Pitfall 1: Confusing O and Θ</h3>
+        <p>"Linear search is O(n²)" is technically <em>true</em> but <strong>misleading</strong>. The tight bound is Θ(n). Always give the tightest bound.</p>
+      </div>
+      <div class="warning mt">
+        <h3>Pitfall 2: Ignoring constants in practice</h3>
+        <p>1,000,000·n vs n² — for n < 1,000,000 the "slower" n² is actually faster!</p>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Pitfall 3: Log base doesn't matter</h3>
+        <p>log₂(n) = log₁₀(n) × 3.32... The 3.32 is a constant → dropped in Big-O.</p>
+        <p>So O(log₂ n) = O(log₁₀ n) = O(ln n)</p>
+      </div>
+      <div class="warning mt">
+        <h3>Pitfall 4: Confusing case & bound</h3>
+        <p><strong>Best/worst/average case</strong> = which input.<br>
+        <strong>O / Ω / Θ</strong> = type of bound on the function.<br>
+        These are separate concepts!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== SLIDE 19: Quick Rules ============== -->
+<div class="slide" id="slide-19">
+  <h2>How to Determine Big-O Quickly</h2>
+  <div class="two-col mt">
+    <div>
+      <h3>Rule 1: Drop Constants</h3>
+      <div class="diagram small">5n + 100  →  O(n)
+3n²       →  O(n²)
+42        →  O(1)</div>
+
+      <h3 class="mt">Rule 2: Drop Lower-Order Terms</h3>
+      <div class="diagram small">n² + n + 1     →  O(n²)
+n³ + 100n²     →  O(n³)
+n log n + n    →  O(n log n)</div>
+
+      <h3 class="mt">Rule 3: Sequential = Add</h3>
+      <div class="diagram small">O(n) + O(n) = O(n)
+O(n) + O(n²) = O(n²)</div>
+    </div>
+    <div>
+      <h3>Rule 4: Nested = Multiply</h3>
+      <div class="diagram small">O(n) × O(n) = O(n²)
+O(n) × O(log n) = O(n log n)
+
+for i to n:        # O(n)
+  for j to i:      # avg n/2
+    ...            # = O(n²)
+
+Sum: 0+1+...+n = n(n+1)/2 = O(n²)</div>
+
+      <h3 class="mt">Rule 5: Halving = log</h3>
+      <div class="diagram small">Loop variable halved/doubled → O(log n)
+O(n) loop with O(log n) body → O(n log n)</div>
+
+      <div class="key-idea mt">
+        <h3>Quick Flowchart</h3>
+        <p>Single loop? → O(n) | Nested? → O(n²)<br>
+           Halving? → O(log n) | Divide & conquer? → O(n log n)</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== SLIDE 20: Summary ============== -->
+<div class="slide" id="slide-20">
+  <h2>Summary & Cheat Sheet</h2>
+  <div class="two-col">
+    <div>
+      <h3>The Three Notations</h3>
+      <table style="font-size:0.95em;">
+        <tr><th>Notation</th><th>Meaning</th><th>Bound</th></tr>
+        <tr><td><strong>O(g(n))</strong></td><td>f(n) ≤ c·g(n)</td><td>Upper</td></tr>
+        <tr><td><strong>Ω(g(n))</strong></td><td>f(n) ≥ c·g(n)</td><td>Lower</td></tr>
+        <tr class="highlight"><td><strong>Θ(g(n))</strong></td><td>c₁·g(n) ≤ f(n) ≤ c₂·g(n)</td><td>Tight</td></tr>
+      </table>
+
+      <h3 class="mt">Growth Rate Hierarchy</h3>
+      <div class="diagram small"> fastest                      slowest
+ ←————————————————————————→
+
+ O(1) < O(log n) < O(n)
+      < O(n log n) < O(n²)
+      < O(n³) < O(2ⁿ) < O(n!)</div>
+    </div>
+    <div>
+      <h3>Analysis Checklist</h3>
+      <ul>
+        <li>Identify primitive operations</li>
+        <li>Count ops as function of n</li>
+        <li>Drop constants & lower-order terms</li>
+        <li>Loops: add sequential, multiply nested</li>
+        <li>Recursion: write recurrence, solve</li>
+        <li>State which case (best/worst/avg)</li>
+        <li>Don't forget space complexity!</li>
+      </ul>
+      <div class="key-idea mt">
+        <h3>Key Takeaway</h3>
+        <p>A good algorithm on slow hardware will always beat a bad algorithm on fast hardware — you just need large enough input.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ============== CHALLENGE A: What's the Big-O? (inline after loops) ============== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: What's the Big-O?</h2>
+  <p>Determine the time complexity of each code snippet.</p>
+
+  <div id="ca-questions"></div>
+  <div class="controls" style="justify-content:center; margin-top:12px;">
+    <button class="success" onclick="caSubmit()">Check Answers</button>
+    <span id="ca-score" style="color:#94a3b8; margin-left:16px;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const caData = [
+  { code: 'for i ← 0 to n-1 do\n    for j ← 0 to n-1 do\n        sum += A[i][j]', answer: 'n2', opts: ['O(n)','O(n²)','O(n log n)','O(n³)'] },
+  { code: 'i ← n\nwhile i > 1 do\n    print(i)\n    i ← i / 2', answer: 'logn', opts: ['O(1)','O(log n)','O(n)','O(n log n)'] },
+  { code: 'for i ← 0 to n-1 do\n    j ← 1\n    while j < n do\n        j ← j * 2', answer: 'nlogn', opts: ['O(n)','O(n log n)','O(n²)','O(log n)'] },
+  { code: 'for i ← 0 to 99 do\n    print(A[i])', answer: 'const', opts: ['O(1)','O(n)','O(100)','O(log n)'] }
+];
+const caAnswerMap = { n2: 'O(n²)', logn: 'O(log n)', nlogn: 'O(n log n)', const: 'O(1)' };
+const caSelections = {};
+
+(function() {
+  const area = document.getElementById('ca-questions');
+  caData.forEach((q, qi) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'background:#1e293b; border:1px solid #334155; border-radius:12px; padding:14px 18px; margin:8px 0; display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:center;';
+    div.innerHTML = `
+      <div class="code-block" style="margin:0; font-size:0.8em; padding:10px 14px;">${q.code}</div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        ${q.opts.map(o => `<button class="ca-opt" data-qi="${qi}" data-val="${o}" onclick="caSelect(${qi},'${o}')" style="background:#334155; border:1px solid #475569; color:#e2e8f0; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:0.9em;">${o}</button>`).join('')}
+      </div>`;
+    area.appendChild(div);
+  });
+})();
+
+function caSelect(qi, val) {
+  caSelections[qi] = val;
+  document.querySelectorAll(`.ca-opt[data-qi="${qi}"]`).forEach(b => { b.style.border = '1px solid #475569'; b.style.background = '#334155'; });
+  const btn = document.querySelector(`.ca-opt[data-qi="${qi}"][data-val="${val}"]`);
+  if (btn) { btn.style.border = '2px solid #3b82f6'; btn.style.background = 'rgba(59,130,246,0.2)'; }
+}
+
+function caSubmit() {
+  let score = 0;
+  caData.forEach((q, qi) => {
+    const correct = caAnswerMap[q.answer];
+    document.querySelectorAll(`.ca-opt[data-qi="${qi}"]`).forEach(b => {
+      if (b.dataset.val === correct) { b.style.border = '2px solid #34d399'; b.style.background = 'rgba(52,211,153,0.2)'; }
+      else if (b.dataset.val === caSelections[qi] && caSelections[qi] !== correct) { b.style.border = '2px solid #f87171'; b.style.background = 'rgba(248,113,113,0.2)'; }
+      b.disabled = true;
+    });
+    if (caSelections[qi] === correct) score++;
+  });
+  document.getElementById('ca-score').innerHTML = `<strong style="color:${score===4?'#34d399':'#fbbf24'}; font-size:1.2em;">${score}/${caData.length}</strong>`;
+}
+</script>
+
+<!-- ============== CHALLENGE B: Rank the Complexities ============== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Rank from Fastest to Slowest</h2>
+  <p>Click the complexities in order from <strong>fastest growing</strong> (best) to <strong>slowest growing</strong> (worst).</p>
+
+  <div class="controls" style="justify-content:center; flex-wrap:wrap; gap:8px; margin-top:20px;" id="cb-buttons"></div>
+  <div style="margin-top:16px; text-align:center;">
+    <h3>Your ranking (fastest → slowest):</h3>
+    <div id="cb-ranking" style="min-height:40px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px;"></div>
+  </div>
+  <div class="controls" style="justify-content:center; margin-top:12px;">
+    <button class="success" onclick="cbCheck()">Check Order</button>
+    <button onclick="cbReset()">↺ Reset</button>
+  </div>
+  <div class="status-msg" id="cb-status" style="text-align:center;">Click complexities in order: fastest first.</div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const cbCorrect = ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)', 'O(n²)', 'O(2ⁿ)', 'O(n!)'];
+const cbShuffled = [...cbCorrect].sort(() => Math.random() - 0.5);
+let cbSelected = [];
+
+function cbRender() {
+  const btns = document.getElementById('cb-buttons');
+  btns.innerHTML = '';
+  cbShuffled.forEach(item => {
+    if (cbSelected.includes(item)) return;
+    const btn = document.createElement('button');
+    btn.textContent = item;
+    btn.style.cssText = 'background:#334155; border:1px solid #475569; color:#e2e8f0; padding:10px 20px; border-radius:8px; cursor:pointer; font-size:1.1em; font-family:monospace; font-weight:600;';
+    btn.onclick = () => { cbSelected.push(item); cbRender(); };
+    btns.appendChild(btn);
+  });
+
+  const ranking = document.getElementById('cb-ranking');
+  ranking.innerHTML = '';
+  cbSelected.forEach((item, i) => {
+    const span = document.createElement('span');
+    span.textContent = `${i + 1}. ${item}`;
+    span.className = 'tag blue';
+    span.style.fontSize = '1em'; span.style.padding = '6px 14px'; span.style.cursor = 'pointer';
+    span.onclick = () => { cbSelected = cbSelected.filter(x => x !== item); cbRender(); };
+    ranking.appendChild(span);
+  });
+}
+
+function cbCheck() {
+  if (cbSelected.length !== cbCorrect.length) {
+    document.getElementById('cb-status').innerHTML = '<span style="color:#fbbf24">Select all 7 complexities first!</span>';
+    return;
+  }
+  const correct = cbSelected.every((item, i) => item === cbCorrect[i]);
+  // Show which are right/wrong
+  const ranking = document.getElementById('cb-ranking');
+  ranking.querySelectorAll('.tag').forEach((span, i) => {
+    if (cbSelected[i] === cbCorrect[i]) { span.className = 'tag green'; }
+    else { span.className = 'tag red'; }
+  });
+  document.getElementById('cb-status').innerHTML = correct
+    ? '<span style="color:#34d399">✓ Perfect! You nailed the order!</span>'
+    : `<span style="color:#f87171">Not quite. Correct: ${cbCorrect.join(' < ')}</span>`;
+}
+
+function cbReset() {
+  cbSelected = [];
+  document.getElementById('cb-status').textContent = 'Click complexities in order: fastest first.';
+  cbRender();
+}
+cbRender();
+</script>
+
+<!-- ============== CHALLENGE C: Quiz Round ============== -->
+<div class="slide" id="sCC">
+  <h2>Final Challenge: Quick-Fire Quiz</h2>
+  <p>5 tricky questions about algorithm analysis. How many can you get?</p>
+
+  <div id="quiz-area"></div>
+  <div class="controls" style="justify-content:center; margin-top:12px;">
+    <button id="quiz-submit" class="success" onclick="quizSubmit()">Submit All Answers</button>
+    <span id="quiz-score" style="color:#94a3b8; margin-left:16px;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+const quizData = [
+  { q: 'If f(n) = 5n³ + 2n² + 7, what is the tightest Big-O?',
+    opts: ['O(n²)', 'O(n³)', 'O(n⁴)', 'O(5n³)'], ans: 1 },
+  { q: 'T(n) = T(n/2) + O(1) describes which algorithm pattern?',
+    opts: ['Merge sort', 'Binary search', 'Bubble sort', 'Linear search'], ans: 1 },
+  { q: 'What is the amortized cost of inserting into a dynamic array that doubles when full?',
+    opts: ['O(n)', 'O(log n)', 'O(1)', 'O(n²)'], ans: 2 },
+  { q: 'A loop runs from i=1 to n, and inside it another loop runs from j=1 to i. Total iterations?',
+    opts: ['n²', 'n(n+1)/2', 'n log n', '2n'], ans: 1 },
+  { q: 'Is 2n+10 ∈ O(n)? And is n² ∈ O(n)?',
+    opts: ['Both yes', 'Both no', 'Yes, No', 'No, Yes'], ans: 2 }
+];
+
+(function() {
+  const area = document.getElementById('quiz-area');
+  quizData.forEach((q, qi) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'background:#1e293b; border:1px solid #334155; border-radius:12px; padding:14px 18px; margin:8px 0;';
+    div.innerHTML = `<p style="margin-bottom:8px;"><strong style="color:#93c5fd;">Q${qi + 1}.</strong> ${q.q}</p>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        ${q.opts.map((o, oi) => `<button class="qz-opt" data-qi="${qi}" data-oi="${oi}" onclick="qzSelect(${qi},${oi})" style="background:#334155; border:1px solid #475569; color:#e2e8f0; padding:6px 16px; border-radius:6px; cursor:pointer; font-size:0.9em;">${o}</button>`).join('')}
+      </div>`;
+    area.appendChild(div);
+  });
+})();
+
+const qzSelections = {};
+function qzSelect(qi, oi) {
+  qzSelections[qi] = oi;
+  document.querySelectorAll(`.qz-opt[data-qi="${qi}"]`).forEach(b => { b.style.border='1px solid #475569'; b.style.background='#334155'; });
+  document.querySelector(`.qz-opt[data-qi="${qi}"][data-oi="${oi}"]`).style.cssText += 'border:2px solid #3b82f6; background:rgba(59,130,246,0.2);';
+}
+
+function quizSubmit() {
+  let score = 0;
+  quizData.forEach((q, qi) => {
+    document.querySelectorAll(`.qz-opt[data-qi="${qi}"]`).forEach(b => {
+      const oi = parseInt(b.dataset.oi);
+      if (oi === q.ans) { b.style.border='2px solid #34d399'; b.style.background='rgba(52,211,153,0.2)'; }
+      else if (oi === qzSelections[qi] && qzSelections[qi] !== q.ans) { b.style.border='2px solid #f87171'; b.style.background='rgba(248,113,113,0.2)'; }
+      b.disabled = true;
+    });
+    if (qzSelections[qi] === q.ans) score++;
+  });
+  const pct = Math.round(score / quizData.length * 100);
+  document.getElementById('quiz-score').innerHTML = `<strong style="color:${pct>=80?'#34d399':pct>=60?'#fbbf24':'#f87171'}; font-size:1.2em;">${score}/${quizData.length} (${pct}%)</strong>`;
+  document.getElementById('quiz-submit').disabled = true;
+}
+</script>
+
+<!-- ============== CHALLENGE D: Complexity Playground ============== -->
+<div class="slide" id="sCD">
+  <h2>Playground: Compare Growth Rates</h2>
+  <p>Enter custom values of n and see how many operations each complexity class requires.</p>
+
+  <div class="controls" style="justify-content:center;">
+    <label>n = </label>
+    <input type="number" id="pg-n" value="100" min="1" max="100000" style="width:100px;">
+    <button class="success" onclick="pgCalc()">Calculate</button>
+  </div>
+
+  <div id="pg-results" style="max-width:700px; margin:16px auto;"></div>
+
+  <div class="key-idea mt" style="max-width:700px; margin:12px auto;">
+    <h3>Try These</h3>
+    <p>n = 10 → everything is fast. n = 1,000 → n² starts to hurt. n = 1,000,000 → only O(n log n) and below are practical!</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+function pgCalc() {
+  const n = parseInt(document.getElementById('pg-n').value) || 100;
+  const results = [
+    { name: 'O(1)', val: 1, color: '#34d399' },
+    { name: 'O(log n)', val: Math.log2(n), color: '#60a5fa' },
+    { name: 'O(n)', val: n, color: '#a78bfa' },
+    { name: 'O(n log n)', val: n * Math.log2(n), color: '#fbbf24' },
+    { name: 'O(n²)', val: n * n, color: '#f87171' },
+    { name: 'O(n³)', val: n * n * n, color: '#ef4444' },
+    { name: 'O(2ⁿ)', val: n <= 40 ? Math.pow(2, n) : Infinity, color: '#f472b6' }
+  ];
+
+  const maxVal = Math.max(...results.filter(r => r.val < Infinity && r.val < 1e15).map(r => r.val));
+  const container = document.getElementById('pg-results');
+  container.innerHTML = '';
+
+  results.forEach(r => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:grid; grid-template-columns:120px 1fr 120px; gap:12px; align-items:center; margin:6px 0;';
+
+    const barWidth = r.val === Infinity ? 100 : Math.max(2, (Math.log10(r.val + 1) / Math.log10(maxVal + 1)) * 100);
+    const valStr = r.val === Infinity ? '∞ (too large!)' : r.val >= 1e12 ? r.val.toExponential(1) : Math.round(r.val).toLocaleString();
+    const practical = r.val < 1e9;
+
+    div.innerHTML = `
+      <span style="font-family:monospace; font-weight:600; color:${r.color}; text-align:right;">${r.name}</span>
+      <div style="background:#1e293b; border-radius:4px; height:24px; position:relative;">
+        <div style="background:${r.color}; height:100%; border-radius:4px; width:${Math.min(barWidth, 100)}%; transition:width 0.5s;"></div>
+      </div>
+      <span style="font-family:monospace; font-size:0.85em; color:${practical ? '#e2e8f0' : '#f87171'};">${valStr}</span>`;
+    container.appendChild(div);
+  });
+}
+pgCalc();
+</script>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const slideOrder = [
+  'slide-1','slide-2','slide-3','slide-4','slide-5','slide-6','slide-7','slide-8',
+  'slide-9','slide-10','slide-11','slide-12',
+  'sCA',   // Challenge: What's the Big-O?
+  'slide-13','slide-14','slide-15','slide-16','slide-17','slide-18','slide-19','slide-20',
+  'sCB',   // Challenge: Rank Complexities
+  'sCC',   // Challenge: Quiz Round
+  'sCD'    // Playground: Compare Growth Rates
+];
+const totalSlides = slideOrder.length;
+let currentSlide = 0;
+
+function showSlide(idx) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const slideId = slideOrder[idx];
+  const slide = document.getElementById(slideId);
+  if (slide) { slide.classList.add('active'); slide.classList.add('fade-in'); }
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === totalSlides - 1);
+  document.getElementById('progress').style.width = (((idx + 1) / totalSlides) * 100) + '%';
+  document.querySelectorAll('.slide-number').forEach(el => {
+    if (el.closest('.slide') === slide) el.textContent = `${idx + 1} / ${totalSlides}`;
+  });
+}
+function changeSlide(delta) {
+  const next = currentSlide + delta;
+  if (next >= 0 && next < totalSlides) { currentSlide = next; showSlide(currentSlide); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); changeSlide(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changeSlide(-1); }
+});
+showSlide(0);
+</script>
+
+</body>
+</html>

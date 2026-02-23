@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shortest Path Algorithms - CS205 Enhanced</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden}
+.slide{display:none;min-height:100vh;padding:40px 60px;position:relative;flex-direction:column;justify-content:center}
+.slide.active{display:flex}
+.fade-in{animation:fadeIn .5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+#progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:rgba(255,255,255,0.08);z-index:200}
+#progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#8b5cf6,#a78bfa);transition:width .3s}
+h1{font-size:2.8em;margin-bottom:20px;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+h2{font-size:2em;margin-bottom:16px;color:#38bdf8}
+h3{font-size:1.3em;margin-bottom:10px;color:#a78bfa}
+p,li{font-size:1.1em;line-height:1.7;color:#cbd5e1;margin-bottom:8px}
+ul{padding-left:24px}
+code{background:#1e293b;padding:2px 8px;border-radius:4px;font-family:monospace;color:#a5f3fc;font-size:.95em}
+.subtitle{font-size:1.3em;color:#94a3b8;margin-bottom:24px}
+.btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:.9em;font-weight:600;transition:all .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(99,102,241,.4)}
+.btn-sm{padding:6px 14px;font-size:.82em}
+.btn-secondary{background:#334155;border:1px solid #475569}
+.btn-secondary:hover{background:#475569;transform:translateY(-1px)}
+.key-idea{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(16,185,129,.1));border-left:4px solid #22c55e;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0}
+.warning{background:rgba(245,158,11,.1);border-left:4px solid #f59e0b;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0}
+.analogy{background:rgba(139,92,246,.1);border-left:4px solid #a78bfa;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0}
+.code-block{background:#0d1117;border:1px solid #334155;border-radius:12px;padding:16px;margin:12px 0;overflow-x:auto}
+.code-content{font-family:monospace;font-size:.85em;line-height:1.7}
+.line{display:block;padding:1px 8px;border-left:3px solid transparent;transition:all .2s}
+.line.active{background:rgba(99,102,241,.15);border-left-color:#6366f1}
+.slide-number{position:absolute;bottom:20px;right:40px;color:#64748b;font-size:14px}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide active" id="s1">
+  <div style="text-align:center;">
+    <h1>Shortest Path Algorithms</h1>
+    <p class="subtitle">Dijkstra's & Bellman-Ford</p>
+    <canvas id="cS1" width="700" height="380" style="width:100%;max-width:700px;background:rgba(0,0,0,0.2);border-radius:12px;margin:16px auto;display:block;"></canvas>
+    <p style="color:#64748b;font-size:.95em;">Watch the shortest-path cloud expand from source A</p>
+    <p style="color:#64748b;font-size:.85em;margin-top:8px;">Use arrow keys or buttons to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS1'),ctx=canvas.getContext('2d');
+  const nodes=[
+    {id:'A',x:100,y:190},{id:'B',x:250,y:80},{id:'C',x:250,y:300},
+    {id:'D',x:420,y:190},{id:'E',x:570,y:80},{id:'F',x:570,y:300}
+  ];
+  const edges=[
+    {u:0,v:1,w:4},{u:0,v:2,w:2},{u:1,v:3,w:1},{u:2,v:3,w:5},
+    {u:1,v:4,w:2},{u:3,v:4,w:3},{u:3,v:5,w:1},{u:4,v:5,w:6}
+  ];
+  // Dijkstra order from A: A(0), B(4)->actually let me use correct: A(0), C(2), B(4), D(3)->
+  // With edges: A-B:4, A-C:2, B-D:1, C-D:5, B-E:2, D-E:3, D-F:1, E-F:6
+  // Process A(0): B=4, C=2. Process C(2): D=7. Process B(4): D=min(7,5)=5, E=6. Process D(5): E=min(6,8)=6, F=6. Process E(6): F=min(6,12)=6. Process F(6).
+  const order=[0,2,1,3,4,5];
+  const dist=[0,4,2,5,6,6];
+  let step=0,timer=null,cloudSet=new Set();
+  const cloudColor='rgba(99,102,241,0.12)';
+
+  function draw(){
+    ctx.clearRect(0,0,700,380);
+    // Draw cloud
+    if(cloudSet.size>0){
+      ctx.fillStyle=cloudColor;
+      ctx.beginPath();
+      cloudSet.forEach(i=>{
+        ctx.moveTo(nodes[i].x+45,nodes[i].y);
+        ctx.arc(nodes[i].x,nodes[i].y,45,0,Math.PI*2);
+      });
+      ctx.fill();
+    }
+    // Edges
+    edges.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      const bothIn=cloudSet.has(e.u)&&cloudSet.has(e.v);
+      ctx.strokeStyle=bothIn?'#6366f1':'#475569';
+      ctx.lineWidth=bothIn?2.5:1.5;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      ctx.fillStyle=bothIn?'#a78bfa':'#94a3b8';
+      ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      const ox=-dy/len*14,oy=dx/len*14;
+      ctx.fillText(e.w,mx+ox,my+oy);
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const inCloud=cloudSet.has(i);
+      const isCurrent=step>0&&step<=order.length&&order[step-1]===i;
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isCurrent?'#f59e0b':inCloud?'#6366f1':'#334155';
+      ctx.fill();
+      ctx.strokeStyle=inCloud?'#818cf8':'#475569';
+      ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(inCloud){
+        ctx.fillStyle='#22c55e';ctx.font='11px monospace';
+        ctx.fillText('d='+dist[i],n.x,n.y+34);
+      }
+    });
+    // Title
+    ctx.fillStyle='#94a3b8';ctx.font='13px sans-serif';ctx.textAlign='center';
+    if(step===0) ctx.fillText('Click graph or wait for auto-play...',350,370);
+    else if(step>=order.length) ctx.fillText('All vertices finalized! Shortest path tree complete.',350,370);
+    else ctx.fillText('Processing: '+nodes[order[step-1]].id+' (dist='+dist[order[step-1]]+')',350,370);
+  }
+
+  function doStep(){
+    if(step>=order.length){if(timer){clearInterval(timer);timer=null;}return;}
+    cloudSet.add(order[step]);
+    step++;
+    draw();
+  }
+
+  function init(){
+    step=0;cloudSet.clear();
+    if(timer){clearInterval(timer);timer=null;}
+    draw();
+    // Auto-play after 1s
+    setTimeout(()=>{
+      if(step===0){
+        timer=setInterval(()=>{
+          if(step>=order.length){clearInterval(timer);timer=null;return;}
+          doStep();
+        },900);
+      }
+    },1000);
+  }
+
+  canvas.addEventListener('click',()=>{
+    if(step>=order.length){step=0;cloudSet.clear();draw();return;}
+    doStep();
+  });
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s1').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: The Shortest Path Problem ==================== -->
+<div class="slide" id="s2">
+  <h2>The Shortest Path Problem</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p>Given a <span style="color:#38bdf8;font-weight:600;">weighted graph</span>, find the path with the <span style="color:#22c55e;font-weight:600;">minimum total weight</span>.</p>
+      <ul style="margin-top:12px;">
+        <li>Edges have numeric <strong>weights</strong> (costs, distances, times)</li>
+        <li>"Shortest" = lowest <em>sum of edge weights</em></li>
+        <li>Not necessarily the fewest edges!</li>
+      </ul>
+      <div class="analogy" style="margin-top:16px;">
+        <h3>Analogy: GPS Navigation</h3>
+        <p>Your GPS finds the route with the <strong>least total travel time</strong>, not fewest turns. Each road segment has a "weight" (time).</p>
+      </div>
+      <p style="margin-top:12px;color:#94a3b8;font-size:.9em;">Click any two nodes to see all paths and the shortest one highlighted.</p>
+    </div>
+    <div>
+      <canvas id="cS2" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm btn-secondary" onclick="s2Reset()">Reset</button>
+        <span id="s2Status" style="color:#94a3b8;font-size:.85em;line-height:2;"></span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS2'),ctx=canvas.getContext('2d');
+  const nodes=[
+    {id:'A',x:80,y:100},{id:'B',x:260,y:50},{id:'C',x:260,y:200},
+    {id:'D',x:440,y:120},{id:'E',x:440,y:260}
+  ];
+  const edges=[
+    {u:0,v:1,w:4},{u:0,v:2,w:2},{u:0,v:3,w:1},
+    {u:1,v:3,w:3},{u:2,v:3,w:5},{u:3,v:4,w:2}
+  ];
+  // Adjacency for path finding
+  const adj=[[{v:1,w:4},{v:2,w:2},{v:3,w:1}],[{v:0,w:4},{v:3,w:3}],[{v:0,w:2},{v:3,w:5}],[{v:0,w:1},{v:1,w:3},{v:2,w:5},{v:4,w:2}],[{v:3,w:2}]];
+
+  let selected=[],allPaths=[],bestPath=null;
+
+  function findAllPaths(src,dst){
+    const result=[];
+    const dfs=(node,path,cost,visited)=>{
+      if(node===dst){result.push({path:[...path],cost});return;}
+      adj[node].forEach(e=>{
+        if(!visited.has(e.v)){
+          visited.add(e.v);path.push(e.v);
+          dfs(e.v,path,cost+e.w,visited);
+          path.pop();visited.delete(e.v);
+        }
+      });
+    };
+    const vis=new Set([src]);
+    dfs(src,[src],0,vis);
+    return result;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    // Draw edges
+    edges.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      let onBest=false;
+      if(bestPath){
+        for(let i=0;i<bestPath.path.length-1;i++){
+          if((bestPath.path[i]===e.u&&bestPath.path[i+1]===e.v)||(bestPath.path[i]===e.v&&bestPath.path[i+1]===e.u)){onBest=true;break;}
+        }
+      }
+      ctx.strokeStyle=onBest?'#22c55e':'#475569';
+      ctx.lineWidth=onBest?3:1.5;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle=onBest?'#4ade80':'#94a3b8';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*14,my+(dx/len)*14);
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const isSel=selected.includes(i);
+      const isSrc=selected[0]===i;
+      const isDst=selected[1]===i;
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isSrc?'#6366f1':isDst?'#22c55e':isSel?'#f59e0b':'#334155';
+      ctx.fill();
+      ctx.strokeStyle=isSel?'#818cf8':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    // Path list
+    if(allPaths.length>0){
+      ctx.font='12px monospace';ctx.textAlign='left';
+      let y=290;
+      ctx.fillStyle='#94a3b8';ctx.fillText('All paths from '+nodes[selected[0]].id+' to '+nodes[selected[1]].id+':',20,y);
+      y+=20;
+      allPaths.forEach(p=>{
+        const isBest=p===bestPath;
+        const pathStr=p.path.map(i=>nodes[i].id).join(' → ')+' = '+p.cost;
+        ctx.fillStyle=isBest?'#22c55e':'#cbd5e1';
+        ctx.font=isBest?'bold 12px monospace':'12px monospace';
+        ctx.fillText((isBest?'★ ':' ')+pathStr,30,y);
+        y+=18;
+      });
+    }
+  }
+
+  function handleClick(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(370/rect.height);
+    let clicked=-1;
+    nodes.forEach((n,i)=>{if(Math.hypot(mx-n.x,my-n.y)<25)clicked=i;});
+    if(clicked<0)return;
+    if(selected.length===0){
+      selected=[clicked];allPaths=[];bestPath=null;
+      document.getElementById('s2Status').textContent='Source: '+nodes[clicked].id+'. Now click destination.';
+    }else if(selected.length===1){
+      if(clicked===selected[0])return;
+      selected.push(clicked);
+      allPaths=findAllPaths(selected[0],selected[1]);
+      allPaths.sort((a,b)=>a.cost-b.cost);
+      bestPath=allPaths.length>0?allPaths[0]:null;
+      document.getElementById('s2Status').textContent=bestPath?'Shortest: '+bestPath.path.map(i=>nodes[i].id).join('→')+' (cost '+bestPath.cost+')':'No path found';
+    }else{
+      selected=[clicked];allPaths=[];bestPath=null;
+      document.getElementById('s2Status').textContent='Source: '+nodes[clicked].id+'. Now click destination.';
+    }
+    draw();
+  }
+  canvas.addEventListener('click',handleClick);
+
+  window.s2Reset=function(){selected=[];allPaths=[];bestPath=null;document.getElementById('s2Status').textContent='';draw();};
+
+  function init(){selected=[];allPaths=[];bestPath=null;document.getElementById('s2Status').textContent='';draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s2').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: SSSP vs APSP ==================== -->
+<div class="slide" id="s3">
+  <h2>Single-Source vs All-Pairs</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <h3>Single-Source Shortest Path (SSSP)</h3>
+      <p>From <span style="color:#38bdf8;font-weight:600;">one source</span> to <strong>all other vertices</strong>.</p>
+      <canvas id="cS3a" width="250" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin:8px 0;"></canvas>
+      <ul>
+        <li><span style="color:#22c55e;font-weight:600;">Dijkstra's</span> — greedy, fast, no negative weights</li>
+        <li><span style="color:#f59e0b;font-weight:600;">Bellman-Ford</span> — slower, handles negative weights</li>
+      </ul>
+    </div>
+    <div>
+      <h3>All-Pairs Shortest Path (APSP)</h3>
+      <p>Between <span style="color:#a78bfa;font-weight:600;">every pair</span> of vertices.</p>
+      <canvas id="cS3b" width="250" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin:8px 0;"></canvas>
+      <ul>
+        <li><span style="color:#a78bfa;font-weight:600;">Floyd-Warshall</span> — O(V³), dynamic programming</li>
+        <li>Or: run Dijkstra from every vertex</li>
+      </ul>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:16px;">
+    <h3>Our Focus</h3>
+    <p>This deck covers <strong>single-source</strong> algorithms: Dijkstra's and Bellman-Ford — the most common shortest-path scenario.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // SSSP canvas — rays from source
+  const c1=document.getElementById('cS3a'),x1=c1.getContext('2d');
+  const c2=document.getElementById('cS3b'),x2=c2.getContext('2d');
+  const ns=[{id:'A',x:40,y:100},{id:'B',x:125,y:30},{id:'C',x:125,y:170},{id:'D',x:210,y:70},{id:'E',x:210,y:130}];
+
+  function drawSSP(){
+    x1.clearRect(0,0,250,200);
+    // Rays from A
+    [1,2,3,4].forEach(i=>{
+      x1.strokeStyle='#6366f1';x1.lineWidth=2;x1.setLineDash([4,4]);
+      x1.beginPath();x1.moveTo(ns[0].x,ns[0].y);x1.lineTo(ns[i].x,ns[i].y);x1.stroke();
+      x1.setLineDash([]);
+    });
+    ns.forEach((n,i)=>{
+      x1.beginPath();x1.arc(n.x,n.y,16,0,Math.PI*2);
+      x1.fillStyle=i===0?'#6366f1':'#334155';x1.fill();
+      x1.strokeStyle=i===0?'#818cf8':'#475569';x1.lineWidth=2;x1.stroke();
+      x1.fillStyle='#fff';x1.font='bold 12px monospace';x1.textAlign='center';x1.textBaseline='middle';
+      x1.fillText(n.id,n.x,n.y);
+    });
+    x1.fillStyle='#38bdf8';x1.font='11px sans-serif';x1.textAlign='center';
+    x1.fillText('One source → all destinations',125,195);
+  }
+
+  function drawAPSP(){
+    x2.clearRect(0,0,250,200);
+    // All pairs
+    for(let i=0;i<ns.length;i++)for(let j=i+1;j<ns.length;j++){
+      x2.strokeStyle='rgba(167,139,250,0.3)';x2.lineWidth=1;
+      x2.beginPath();x2.moveTo(ns[i].x,ns[i].y);x2.lineTo(ns[j].x,ns[j].y);x2.stroke();
+    }
+    ns.forEach((n,i)=>{
+      x2.beginPath();x2.arc(n.x,n.y,16,0,Math.PI*2);
+      x2.fillStyle='#a78bfa';x2.fill();
+      x2.strokeStyle='#818cf8';x2.lineWidth=2;x2.stroke();
+      x2.fillStyle='#fff';x2.font='bold 12px monospace';x2.textAlign='center';x2.textBaseline='middle';
+      x2.fillText(n.id,n.x,n.y);
+    });
+    x2.fillStyle='#a78bfa';x2.font='11px sans-serif';x2.textAlign='center';
+    x2.fillText('Every pair of vertices',125,195);
+  }
+
+  function init(){drawSSP();drawAPSP();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s3').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: Greedy Approach — Dijkstra's ==================== -->
+<div class="slide" id="s4">
+  <h2>Greedy Approach: Dijkstra's Algorithm</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p>Invented by Edsger Dijkstra in 1956. The core idea is a <span style="color:#22c55e;font-weight:600;">greedy</span> strategy:</p>
+      <ul style="margin-top:10px;">
+        <li>Maintain a set of vertices whose shortest distance is <strong>finalized</strong></li>
+        <li>Always pick the <span style="color:#38bdf8;font-weight:600;">unvisited vertex with the smallest known distance</span></li>
+        <li>Use it to <strong>relax</strong> (improve) distances to its neighbors</li>
+        <li>Mark as finalized and repeat</li>
+      </ul>
+      <div class="analogy" style="margin-top:14px;">
+        <h3>Analogy: Expanding Cloud</h3>
+        <p>A "cloud" of certainty expands from the source. The closest unvisited vertex joins the cloud. Once inside, its shortest distance is <strong>guaranteed correct</strong>.</p>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:12px;">
+        <button class="btn btn-sm" onclick="s4Step()">Step</button>
+        <button class="btn btn-sm" onclick="s4Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+      </div>
+      <div id="s4Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:.78em;max-height:80px;overflow-y:auto;margin-top:8px;color:#cbd5e1;"></div>
+    </div>
+    <div>
+      <canvas id="cS4" width="460" height="400" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS4'),ctx=canvas.getContext('2d');
+  const log=document.getElementById('s4Log');
+  const nodes=[
+    {id:'S',x:80,y:200},{id:'A',x:200,y:80},{id:'B',x:200,y:320},
+    {id:'C',x:340,y:80},{id:'D',x:340,y:320},{id:'E',x:380,y:200}
+  ];
+  const edges=[
+    {u:0,v:1,w:2},{u:0,v:2,w:6},{u:1,v:2,w:3},{u:1,v:3,w:1},
+    {u:2,v:4,w:2},{u:3,v:4,w:4},{u:3,v:5,w:5},{u:4,v:5,w:1}
+  ];
+  // Dijkstra from S: S(0)→A(2)→C(3)→B(5)→D(7→but via B=7, via C=7)→D(7)→E(8→but via D=8)
+  // Let me compute: S(0). Relax: A=2, B=6. Process A(2): B=min(6,5)=5, C=3. Process C(3): D=7, E=8. Process B(5): D=min(7,7)=7. Process D(7): E=min(8,8)=8. Process E(8).
+  const steps=[
+    {node:0,cloud:[0],dists:{0:0,1:2,2:6},msg:'Process S(d=0): relax → A=2, B=6'},
+    {node:1,cloud:[0,1],dists:{0:0,1:2,2:5,3:3},msg:'Process A(d=2): relax → B=5, C=3'},
+    {node:3,cloud:[0,1,3],dists:{0:0,1:2,2:5,3:3,4:7,5:8},msg:'Process C(d=3): relax → D=7, E=8'},
+    {node:2,cloud:[0,1,3,2],dists:{0:0,1:2,2:5,3:3,4:7,5:8},msg:'Process B(d=5): D still 7, no improvement'},
+    {node:4,cloud:[0,1,3,2,4],dists:{0:0,1:2,2:5,3:3,4:7,5:8},msg:'Process D(d=7): E still 8, no improvement'},
+    {node:5,cloud:[0,1,3,2,4,5],dists:{0:0,1:2,2:5,3:3,4:7,5:8},msg:'Process E(d=8): done! All finalized.'}
+  ];
+  let stepIdx=0,timer=null,currentDists={},cloudSet=new Set();
+
+  function draw(){
+    ctx.clearRect(0,0,460,400);
+    // Cloud background
+    if(cloudSet.size>0){
+      ctx.fillStyle='rgba(99,102,241,0.08)';
+      ctx.beginPath();
+      cloudSet.forEach(i=>{ctx.moveTo(nodes[i].x+40,nodes[i].y);ctx.arc(nodes[i].x,nodes[i].y,40,0,Math.PI*2);});
+      ctx.fill();
+    }
+    // Edges
+    edges.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      const bothIn=cloudSet.has(e.u)&&cloudSet.has(e.v);
+      ctx.strokeStyle=bothIn?'#6366f1':'#475569';ctx.lineWidth=bothIn?2.5:1.5;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle=bothIn?'#a78bfa':'#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*14,my+(dx/len)*14);
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const inCloud=cloudSet.has(i);
+      const isCurrent=stepIdx>0&&steps[stepIdx-1].node===i;
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isCurrent?'#f59e0b':inCloud?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle=inCloud?'#818cf8':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      // Distance label
+      if(currentDists[i]!==undefined){
+        ctx.fillStyle='#22c55e';ctx.font='11px monospace';
+        ctx.fillText('d='+currentDists[i],n.x,n.y+34);
+      }else if(i!==0){
+        ctx.fillStyle='#64748b';ctx.font='11px monospace';
+        ctx.fillText('d=∞',n.x,n.y+34);
+      }
+    });
+    // Cloud label
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText(stepIdx===0?'Click Step to start':'Cloud: {'+Array.from(cloudSet).map(i=>nodes[i].id).join(', ')+'}',230,390);
+  }
+
+  window.s4Step=function(){
+    if(stepIdx>=steps.length)return;
+    const s=steps[stepIdx];
+    s.cloud.forEach(i=>cloudSet.add(i));
+    Object.assign(currentDists,s.dists);
+    log.innerHTML+='<div'+(stepIdx===steps.length-1?' style="color:#22c55e"':'')+'>'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;draw();
+  };
+  window.s4Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s4Step();},1000);
+  };
+  window.s4Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;currentDists={0:0};cloudSet.clear();log.innerHTML='';draw();
+  };
+
+  function init(){stepIdx=0;currentDists={0:0};cloudSet.clear();log.innerHTML='';draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s4').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: Dijkstra's Pseudocode ==================== -->
+<div class="slide" id="s5">
+  <h2>Dijkstra's Algorithm — Pseudocode</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <div class="code-block"><div class="code-content" id="s5Code">
+<span class="line" id="s5L1">DIJKSTRA(G, source):</span>
+<span class="line" id="s5L2">  for each vertex v in G:</span>
+<span class="line" id="s5L3">      dist[v]   = INFINITY</span>
+<span class="line" id="s5L4">      parent[v] = NULL</span>
+<span class="line" id="s5L5">      visited[v] = false</span>
+<span class="line" id="s5L6">  dist[source] = 0</span>
+<span class="line" id="s5L7">  PQ.insert(source, 0)</span>
+<span class="line" id="s5L8"> </span>
+<span class="line" id="s5L9">  while PQ is not empty:</span>
+<span class="line" id="s5L10">      u = PQ.extractMin()</span>
+<span class="line" id="s5L11">      if visited[u]: continue</span>
+<span class="line" id="s5L12">      visited[u] = true</span>
+<span class="line" id="s5L13"> </span>
+<span class="line" id="s5L14">      for each neighbor v of u:</span>
+<span class="line" id="s5L15">          w = weight(u, v)</span>
+<span class="line" id="s5L16">          if dist[u]+w &lt; dist[v]:</span>
+<span class="line" id="s5L17">              dist[v] = dist[u]+w</span>
+<span class="line" id="s5L18">              parent[v] = u</span>
+<span class="line" id="s5L19">              PQ.insert(v, dist[v])</span>
+<span class="line" id="s5L20">  return dist[], parent[]</span>
+      </div></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s5Step()">Step</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS5" width="460" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s5Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:.78em;max-height:100px;overflow-y:auto;margin-top:8px;color:#cbd5e1;"></div>
+      <div class="key-idea" style="margin-top:8px;padding:10px 14px;">
+        <h3 style="font-size:1em;">Three Key Data Structures</h3>
+        <p style="font-size:.85em;"><code>dist[]</code> — best-known distance &nbsp;|&nbsp; <code>parent[]</code> — predecessor &nbsp;|&nbsp; <code>PQ</code> — min-priority queue</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS5'),ctx=canvas.getContext('2d');
+  const logEl=document.getElementById('s5Log');
+  // Small 4-node graph for pseudocode walkthrough
+  const nodes=[{id:'A',x:80,y:80},{id:'B',x:230,y:40},{id:'C',x:230,y:160},{id:'D',x:380,y:100}];
+  const edges=[{u:0,v:1,w:3},{u:0,v:2,w:1},{u:1,v:3,w:2},{u:2,v:3,w:6},{u:2,v:1,w:1}];
+  // Dijkstra from A: A(0)→C(1)→B(2)→D(4)
+  const stepsData=[
+    {lines:[2,3,4,5],highlight:[],dist:['∞','∞','∞','∞'],par:['-','-','-','-'],vis:['F','F','F','F'],pq:'{}',msg:'Initialize: all dist=∞, visited=false'},
+    {lines:[6,7],highlight:[0],dist:['0','∞','∞','∞'],par:['-','-','-','-'],vis:['F','F','F','F'],pq:'{(A,0)}',msg:'dist[A]=0, insert A into PQ'},
+    {lines:[9,10,11,12],highlight:[0],dist:['0','∞','∞','∞'],par:['-','-','-','-'],vis:['T','F','F','F'],pq:'{(A,0)}→extract A',msg:'Extract A (d=0), mark visited'},
+    {lines:[14,15,16,17,18,19],highlight:[0,1],dist:['0','3','∞','∞'],par:['-','A','-','-'],vis:['T','F','F','F'],pq:'{(B,3)}',msg:'Relax A→B: 0+3=3 < ∞ → dist[B]=3'},
+    {lines:[14,15,16,17,18,19],highlight:[0,2],dist:['0','3','1','∞'],par:['-','A','A','-'],vis:['T','F','F','F'],pq:'{(C,1),(B,3)}',msg:'Relax A→C: 0+1=1 < ∞ → dist[C]=1'},
+    {lines:[9,10,11,12],highlight:[2],dist:['0','3','1','∞'],par:['-','A','A','-'],vis:['T','F','T','F'],pq:'extract C→{(B,3)}',msg:'Extract C (d=1), mark visited'},
+    {lines:[14,15,16,17,18,19],highlight:[2,1],dist:['0','2','1','∞'],par:['-','C','A','-'],vis:['T','F','T','F'],pq:'{(B,2),(B,3)}',msg:'Relax C→B: 1+1=2 < 3 → dist[B]=2'},
+    {lines:[14,15,16,17,18,19],highlight:[2,3],dist:['0','2','1','7'],par:['-','C','A','C'],vis:['T','F','T','F'],pq:'{(B,2),(B,3),(D,7)}',msg:'Relax C→D: 1+6=7 < ∞ → dist[D]=7'},
+    {lines:[9,10,11,12],highlight:[1],dist:['0','2','1','7'],par:['-','C','A','C'],vis:['T','T','T','F'],pq:'extract B→{(B,3),(D,7)}',msg:'Extract B (d=2), mark visited'},
+    {lines:[14,15,16,17,18,19],highlight:[1,3],dist:['0','2','1','4'],par:['-','C','A','B'],vis:['T','T','T','F'],pq:'{(B,3),(D,4),(D,7)}',msg:'Relax B→D: 2+2=4 < 7 → dist[D]=4'},
+    {lines:[9,10,11],highlight:[1],dist:['0','2','1','4'],par:['-','C','A','B'],vis:['T','T','T','F'],pq:'extract B(3)→skip(visited)',msg:'Extract stale B(3), already visited → skip'},
+    {lines:[9,10,11,12],highlight:[3],dist:['0','2','1','4'],par:['-','C','A','B'],vis:['T','T','T','T'],pq:'extract D(4)',msg:'Extract D (d=4), mark visited. No unvisited neighbors.'},
+    {lines:[20],highlight:[],dist:['0','2','1','4'],par:['-','C','A','B'],vis:['T','T','T','T'],pq:'{}',msg:'PQ empty → done! Return dist[], parent[]'}
+  ];
+
+  let stepIdx=0,timer=null;
+
+  function clearHighlights(){
+    for(let i=1;i<=20;i++){const el=document.getElementById('s5L'+i);if(el)el.classList.remove('active');}
+  }
+
+  function drawGraph(){
+    ctx.clearRect(0,0,460,260);
+    if(stepIdx===0){
+      ctx.fillStyle='#94a3b8';ctx.font='13px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Graph: A-B:3, A-C:1, B-D:2, C-D:6, C-B:1',230,20);
+    }
+    // Edges
+    edges.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle='#94a3b8';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*12,my+(dx/len)*12);
+    });
+    // Nodes
+    const sd=stepIdx>0?stepsData[stepIdx-1]:null;
+    nodes.forEach((n,i)=>{
+      const hl=sd&&sd.highlight.includes(i);
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=hl?'#f59e0b':(sd&&sd.vis[i]==='T'?'#6366f1':'#334155');ctx.fill();
+      ctx.strokeStyle=hl?'#fbbf24':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    // Dist table
+    if(sd){
+      const ty=220;
+      ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='center';
+      ['A','B','C','D'].forEach((v,i)=>{
+        const tx=100+i*90;
+        ctx.fillStyle='#94a3b8';ctx.fillText(v,tx,ty);
+        ctx.fillStyle=sd.dist[i]==='∞'?'#64748b':'#22c55e';ctx.fillText('d='+sd.dist[i],tx,ty+15);
+        ctx.fillStyle='#cbd5e1';ctx.font='10px monospace';ctx.fillText('p='+sd.par[i],tx,ty+28);
+        ctx.font='11px monospace';
+      });
+      ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='left';
+      ctx.fillText('PQ: '+sd.pq,20,ty+45);
+    }
+  }
+
+  window.s5Step=function(){
+    if(stepIdx>=stepsData.length)return;
+    const s=stepsData[stepIdx];
+    clearHighlights();
+    s.lines.forEach(l=>{const el=document.getElementById('s5L'+l);if(el)el.classList.add('active');});
+    logEl.innerHTML+='<div>'+s.msg+'</div>';
+    logEl.scrollTop=logEl.scrollHeight;
+    stepIdx++;drawGraph();
+  };
+  window.s5Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=stepsData.length){clearInterval(timer);timer=null;return;}s5Step();},1200);
+  };
+  window.s5Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;clearHighlights();logEl.innerHTML='';drawGraph();
+  };
+
+  function init(){stepIdx=0;clearHighlights();logEl.innerHTML='';drawGraph();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s5').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: Edge Relaxation ==================== -->
+<div class="slide" id="s6">
+  <h2>Edge Relaxation</h2>
+  <p class="subtitle">The fundamental operation in shortest-path algorithms</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p><strong>Relaxing edge (u, v)</strong> means checking:</p>
+      <div style="text-align:center;background:#1e293b;border-radius:10px;padding:14px;margin:10px 0;font-family:monospace;font-size:1.15em;color:#a5f3fc;">
+        Is dist[u] + w(u,v) &lt; dist[v] ?
+      </div>
+      <p>If <span style="color:#22c55e;font-weight:600;">yes</span>: shorter path found via u → update!</p>
+      <p>If <span style="color:#ef4444;font-weight:600;">no</span>: current path to v is already better.</p>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Why "Relaxation"?</h3>
+        <p>Think of <code>dist[v]</code> as an overestimate that we gradually "relax" (tighten) downward until it reaches the true shortest distance.</p>
+      </div>
+      <h3 style="margin-top:14px;">Try It!</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px;">
+        <div>
+          <label style="color:#94a3b8;font-size:.8em;">dist[u]</label>
+          <input type="number" id="s6du" value="3" style="width:100%;padding:6px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        </div>
+        <div>
+          <label style="color:#94a3b8;font-size:.8em;">w(u,v)</label>
+          <input type="number" id="s6w" value="4" style="width:100%;padding:6px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        </div>
+        <div>
+          <label style="color:#94a3b8;font-size:.8em;">dist[v]</label>
+          <input type="number" id="s6dv" value="10" style="width:100%;padding:6px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        </div>
+      </div>
+      <button class="btn btn-sm" style="margin-top:8px;" onclick="s6Relax()">Relax!</button>
+    </div>
+    <div>
+      <canvas id="cS6" width="460" height="350" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS6'),ctx=canvas.getContext('2d');
+  let result=null; // null, 'success', 'fail'
+  let du=3,w=4,dv=10,newDv=null;
+
+  function draw(){
+    ctx.clearRect(0,0,460,350);
+    const ux=120,uy=120,vx=340,vy=120;
+    // Edge
+    ctx.strokeStyle='#475569';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(ux+22,uy);ctx.lineTo(vx-22,uy);ctx.stroke();
+    // Arrow head
+    ctx.fillStyle='#475569';ctx.beginPath();
+    ctx.moveTo(vx-22,uy);ctx.lineTo(vx-32,uy-6);ctx.lineTo(vx-32,uy+6);ctx.fill();
+    // Weight label
+    ctx.fillStyle='#a78bfa';ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('w='+w,230,uy-20);
+    // Node u
+    ctx.beginPath();ctx.arc(ux,uy,22,0,Math.PI*2);
+    ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('u',ux,uy);
+    ctx.fillStyle='#22c55e';ctx.font='13px monospace';
+    ctx.fillText('d='+du,ux,uy+36);
+    // Node v
+    ctx.beginPath();ctx.arc(vx,vy,22,0,Math.PI*2);
+    ctx.fillStyle=result==='success'?'#22c55e':'#334155';ctx.fill();
+    ctx.strokeStyle=result==='success'?'#4ade80':'#475569';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 15px monospace';
+    ctx.fillText('v',vx,vy);
+    ctx.font='13px monospace';
+    if(result==='success'){
+      ctx.fillStyle='#ef4444';ctx.fillText('d='+dv,vx,vy+36);
+      // Strikethrough
+      ctx.strokeStyle='#ef4444';ctx.lineWidth=1;
+      const tw=ctx.measureText('d='+dv).width;
+      ctx.beginPath();ctx.moveTo(vx-tw/2,vy+36);ctx.lineTo(vx+tw/2,vy+36);ctx.stroke();
+      ctx.fillStyle='#22c55e';ctx.font='bold 14px monospace';
+      ctx.fillText('d='+newDv,vx,vy+52);
+    }else{
+      ctx.fillStyle='#22c55e';ctx.fillText('d='+dv,vx,vy+36);
+    }
+    // Calculation
+    const calc=du+' + '+w+' = '+(du+w);
+    ctx.fillStyle='#e2e8f0';ctx.font='16px monospace';ctx.textAlign='center';
+    ctx.fillText(calc,230,220);
+    if(result==='success'){
+      ctx.fillStyle='#22c55e';ctx.font='bold 16px monospace';
+      ctx.fillText((du+w)+' < '+dv+' → YES! Update!',230,250);
+      ctx.fillText('dist[v] = '+(du+w)+', parent[v] = u',230,275);
+    }else if(result==='fail'){
+      ctx.fillStyle='#ef4444';ctx.font='bold 16px monospace';
+      ctx.fillText((du+w)+' ≥ '+dv+' → NO. Keep current.',230,250);
+    }else{
+      ctx.fillStyle='#94a3b8';ctx.font='14px sans-serif';
+      ctx.fillText('Set values and click Relax!',230,250);
+    }
+  }
+
+  window.s6Relax=function(){
+    du=parseInt(document.getElementById('s6du').value)||0;
+    w=parseInt(document.getElementById('s6w').value)||0;
+    dv=parseInt(document.getElementById('s6dv').value)||0;
+    if(du+w<dv){result='success';newDv=du+w;}
+    else{result='fail';newDv=null;}
+    draw();
+  };
+
+  function init(){du=3;w=4;dv=10;result=null;newDv=null;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s6').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: Dijkstra's Full Step-Through ==================== -->
+<div class="slide" id="s7">
+  <h2>Dijkstra's Step-by-Step</h2>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1rem;margin-top:.5rem;">
+    <div>
+      <canvas id="cS7" width="520" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s7Step()">Step</button>
+        <button class="btn btn-sm" onclick="s7Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.85em;margin-bottom:6px;color:#94a3b8;">Source = A &nbsp;|&nbsp; Edges: A-B:4, A-C:2, A-D:1, B-D:3, C-D:5, D-E:2</div>
+      <canvas id="cS7tbl" width="400" height="160" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s7Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:.78em;max-height:130px;overflow-y:auto;margin-top:8px;color:#cbd5e1;"></div>
+      <div class="key-idea" style="padding:10px 14px;margin-top:6px;">
+        <h3 style="font-size:.95em;">Processing Order</h3>
+        <p style="font-size:.82em;">Vertices are processed in increasing order of their shortest distance from the source.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS7'),ctx=canvas.getContext('2d');
+  const tblCanvas=document.getElementById('cS7tbl'),tctx=tblCanvas.getContext('2d');
+  const logEl=document.getElementById('s7Log');
+  const nodes=[
+    {id:'A',x:80,y:190},{id:'B',x:260,y:60},{id:'C',x:170,y:330},
+    {id:'D',x:350,y:220},{id:'E',x:460,y:100}
+  ];
+  const edges=[
+    {u:0,v:1,w:4},{u:0,v:2,w:2},{u:0,v:3,w:1},{u:1,v:3,w:3},{u:2,v:3,w:5},{u:3,v:4,w:2}
+  ];
+  // Dijkstra from A:
+  // Init: dist=[0,∞,∞,∞,∞], PQ={(A,0)}
+  // Step 1: Process A(0). Relax A-B:4, A-C:2, A-D:1. dist=[0,4,2,1,∞]. PQ={(D,1),(C,2),(B,4)}
+  // Step 2: Process D(1). Relax D-B:1+3=4 (no), D-C:1+5=6 (no), D-E:1+2=3. dist=[0,4,2,1,3]. PQ={(C,2),(E,3),(B,4)}
+  // Step 3: Process C(2). Relax C-D:2+5=7 (no). dist unchanged. PQ={(E,3),(B,4)}
+  // Step 4: Process E(3). Relax E-D: already visited. PQ={(B,4)}
+  // Step 5: Process B(4). Relax B-D: already visited. PQ={}. Done!
+
+  const stepsData=[
+    {proc:-1,cloud:[],dist:[0,'∞','∞','∞','∞'],par:['-','-','-','-','-'],vis:['F','F','F','F','F'],pq:'{(A,0)}',msg:'Init: dist[A]=0, all others ∞. PQ={(A,0)}'},
+    {proc:0,cloud:[0],dist:[0,4,2,1,'∞'],par:['-','A','A','A','-'],vis:['T','F','F','F','F'],pq:'{(D,1),(C,2),(B,4)}',msg:'Process A(d=0): relax A→B=4, A→C=2, A→D=1',relaxed:[[0,1],[0,2],[0,3]]},
+    {proc:3,cloud:[0,3],dist:[0,4,2,1,3],par:['-','A','A','A','D'],vis:['T','F','F','T','F'],pq:'{(C,2),(E,3),(B,4)}',msg:'Process D(d=1): D→B 4≥4 no, D→C 6≥2 no, D→E=3 ✓',relaxed:[[3,4]]},
+    {proc:2,cloud:[0,3,2],dist:[0,4,2,1,3],par:['-','A','A','A','D'],vis:['T','F','T','T','F'],pq:'{(E,3),(B,4)}',msg:'Process C(d=2): C→D 7≥1 no improvement',relaxed:[]},
+    {proc:4,cloud:[0,3,2,4],dist:[0,4,2,1,3],par:['-','A','A','A','D'],vis:['T','F','T','T','T'],pq:'{(B,4)}',msg:'Process E(d=3): no unvisited improvements',relaxed:[]},
+    {proc:1,cloud:[0,3,2,4,1],dist:[0,4,2,1,3],par:['-','A','A','A','D'],vis:['T','T','T','T','T'],pq:'{}',msg:'Process B(d=4): done! All vertices finalized.',relaxed:[]}
+  ];
+  let stepIdx=0,timer=null;
+
+  function drawGraph(){
+    ctx.clearRect(0,0,520,380);
+    const sd=stepsData[stepIdx];
+    const cloudSet=new Set(sd.cloud);
+    // Cloud
+    if(cloudSet.size>0){
+      ctx.fillStyle='rgba(99,102,241,0.08)';ctx.beginPath();
+      cloudSet.forEach(i=>{ctx.moveTo(nodes[i].x+38,nodes[i].y);ctx.arc(nodes[i].x,nodes[i].y,38,0,Math.PI*2);});
+      ctx.fill();
+    }
+    // Edges
+    edges.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      let rl=sd.relaxed&&sd.relaxed.some(r=>r[0]===e.u&&r[1]===e.v||r[0]===e.v&&r[1]===e.u);
+      ctx.strokeStyle=rl?'#22c55e':'#475569';ctx.lineWidth=rl?3:1.5;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle=rl?'#4ade80':'#94a3b8';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*16,my+(dx/len)*16);
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const inCloud=cloudSet.has(i);
+      const isCurrent=sd.proc===i;
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isCurrent?'#f59e0b':inCloud?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle=isCurrent?'#fbbf24':inCloud?'#818cf8':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      // Distance
+      ctx.fillStyle=sd.dist[i]==='∞'?'#64748b':'#22c55e';ctx.font='12px monospace';
+      ctx.fillText('d='+(sd.dist[i]),n.x,n.y+34);
+    });
+  }
+
+  function drawTable(){
+    tctx.clearRect(0,0,400,160);
+    const sd=stepsData[stepIdx];
+    const labels=['A','B','C','D','E'];
+    const cw=70,rh=28,sx=40,sy=15;
+    // Header
+    tctx.fillStyle='#334155';tctx.fillRect(sx,sy,cw*5,rh);
+    tctx.fillStyle='#38bdf8';tctx.font='bold 12px monospace';tctx.textAlign='center';tctx.textBaseline='middle';
+    labels.forEach((l,i)=>tctx.fillText(l,sx+cw*i+cw/2,sy+rh/2));
+    // Dist row
+    tctx.fillStyle='#1e293b';tctx.fillRect(sx,sy+rh,cw*5,rh);
+    tctx.strokeStyle='#475569';tctx.lineWidth=1;
+    for(let i=0;i<=5;i++){tctx.beginPath();tctx.moveTo(sx+cw*i,sy);tctx.lineTo(sx+cw*i,sy+rh*4);tctx.stroke();}
+    for(let r=0;r<=4;r++){tctx.beginPath();tctx.moveTo(sx,sy+rh*r);tctx.lineTo(sx+cw*5,sy+rh*r);tctx.stroke();}
+    // Row labels
+    tctx.fillStyle='#94a3b8';tctx.font='11px monospace';tctx.textAlign='right';
+    ['dist','par','vis','PQ'].forEach((l,r)=>tctx.fillText(l,sx-6,sy+rh*(r+1)+rh/2));
+    // Data
+    tctx.textAlign='center';
+    labels.forEach((l,i)=>{
+      tctx.fillStyle=sd.dist[i]==='∞'?'#64748b':'#22c55e';tctx.font='12px monospace';
+      tctx.fillText(sd.dist[i]+'',sx+cw*i+cw/2,sy+rh+rh/2);
+      tctx.fillStyle='#cbd5e1';
+      tctx.fillText(sd.par[i],sx+cw*i+cw/2,sy+rh*2+rh/2);
+      tctx.fillStyle=sd.vis[i]==='T'?'#22c55e':'#64748b';
+      tctx.fillText(sd.vis[i],sx+cw*i+cw/2,sy+rh*3+rh/2);
+    });
+    // PQ
+    tctx.fillStyle='#a78bfa';tctx.font='11px monospace';tctx.textAlign='center';
+    tctx.fillText('PQ: '+sd.pq,200,sy+rh*4+14);
+  }
+
+  function redraw(){drawGraph();drawTable();}
+
+  window.s7Step=function(){
+    if(stepIdx>=stepsData.length-1)return;
+    stepIdx++;
+    logEl.innerHTML+='<div>'+stepsData[stepIdx].msg+'</div>';
+    logEl.scrollTop=logEl.scrollHeight;
+    redraw();
+  };
+  window.s7Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=stepsData.length-1){clearInterval(timer);timer=null;return;}s7Step();},1200);
+  };
+  window.s7Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;logEl.innerHTML='';redraw();
+  };
+
+  function init(){stepIdx=0;logEl.innerHTML='';redraw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s7').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: Reconstructing the Path ==================== -->
+<div class="slide" id="s8">
+  <h2>Reconstructing the Path</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p>Dijkstra gives us the <span style="color:#38bdf8;font-weight:600;">distance</span> to every vertex. To find the <span style="color:#22c55e;font-weight:600;">actual path</span>, trace the <code>parent[]</code> array backwards.</p>
+      <div class="code-block"><div class="code-content">
+<span class="line">PATH(parent, dest):</span>
+<span class="line">  path = empty stack</span>
+<span class="line">  v = dest</span>
+<span class="line">  while v != NULL:</span>
+<span class="line">      path.push(v)</span>
+<span class="line">      v = parent[v]</span>
+<span class="line">  return path  // pop for order</span>
+      </div></div>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Idea</h3>
+        <p>The parent pointers form a <strong>tree</strong> rooted at the source. Every path in this tree is a shortest path.</p>
+      </div>
+      <p style="margin-top:12px;color:#94a3b8;font-size:.9em;">Click any destination node to trace the path back to A.</p>
+    </div>
+    <div>
+      <canvas id="cS8" width="460" height="400" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <button class="btn btn-sm btn-secondary" style="margin-top:8px;" onclick="s8Reset()">Reset</button>
+      <span id="s8Status" style="color:#94a3b8;font-size:.85em;margin-left:8px;"></span>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS8'),ctx=canvas.getContext('2d');
+  const nodes=[
+    {id:'A',x:80,y:200},{id:'B',x:230,y:60},{id:'C',x:170,y:340},
+    {id:'D',x:340,y:220},{id:'E',x:430,y:100}
+  ];
+  const edges=[
+    {u:0,v:1,w:4},{u:0,v:2,w:2},{u:0,v:3,w:1},{u:1,v:3,w:3},{u:2,v:3,w:5},{u:3,v:4,w:2}
+  ];
+  const dist=[0,4,2,1,3];
+  const par=[-1,0,0,0,3]; // parent indices: A=root, B←A, C←A, D←A, E←D
+  let tracePath=[], traceTarget=-1, animStep=0, timer=null;
+
+  function getPath(dest){
+    const p=[];let v=dest;
+    while(v!==-1){p.push(v);v=par[v];}
+    return p.reverse();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,460,400);
+    // Draw parent tree edges (dashed)
+    nodes.forEach((n,i)=>{
+      if(par[i]!==-1){
+        const p=nodes[par[i]];
+        ctx.strokeStyle='rgba(99,102,241,0.3)';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);
+        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(n.x,n.y);ctx.stroke();ctx.setLineDash([]);
+      }
+    });
+    // All edges
+    edges.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      let onPath=false;
+      for(let i=0;i<tracePath.length-1&&i<animStep;i++){
+        if((tracePath[i]===e.u&&tracePath[i+1]===e.v)||(tracePath[i]===e.v&&tracePath[i+1]===e.u))onPath=true;
+      }
+      ctx.strokeStyle=onPath?'#22c55e':'#475569';ctx.lineWidth=onPath?3:1.5;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle=onPath?'#4ade80':'#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*14,my+(dx/len)*14);
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const onPath=tracePath.includes(i)&&tracePath.indexOf(i)<animStep;
+      const isDest=i===traceTarget;
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isDest?'#22c55e':onPath?'#6366f1':i===0?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle=isDest?'#4ade80':onPath?'#818cf8':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      ctx.fillStyle='#22c55e';ctx.font='11px monospace';
+      ctx.fillText('d='+dist[i],n.x,n.y+34);
+      if(par[i]!==-1){
+        ctx.fillStyle='#a78bfa';ctx.font='10px monospace';
+        ctx.fillText('p='+nodes[par[i]].id,n.x,n.y-32);
+      }
+    });
+    // Trace info
+    if(tracePath.length>0&&animStep>=tracePath.length){
+      ctx.fillStyle='#22c55e';ctx.font='bold 14px monospace';ctx.textAlign='center';
+      const pathStr=tracePath.map(i=>nodes[i].id).join(' → ')+' (cost '+dist[traceTarget]+')';
+      ctx.fillText('Path: '+pathStr,230,390);
+    }
+  }
+
+  function handleClick(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(460/rect.width),my=(e.clientY-rect.top)*(400/rect.height);
+    let clicked=-1;
+    nodes.forEach((n,i)=>{if(Math.hypot(mx-n.x,my-n.y)<25)clicked=i;});
+    if(clicked<0||clicked===0)return;
+    if(timer){clearInterval(timer);timer=null;}
+    traceTarget=clicked;tracePath=getPath(clicked);animStep=0;
+    const status=document.getElementById('s8Status');
+    status.textContent='Tracing path to '+nodes[clicked].id+'...';
+    timer=setInterval(()=>{
+      animStep++;draw();
+      if(animStep>=tracePath.length){
+        clearInterval(timer);timer=null;
+        status.textContent='Path: '+tracePath.map(i=>nodes[i].id).join('→')+' = '+dist[clicked];
+      }
+    },500);
+  }
+  canvas.addEventListener('click',handleClick);
+
+  window.s8Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    tracePath=[];traceTarget=-1;animStep=0;
+    document.getElementById('s8Status').textContent='';draw();
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}tracePath=[];traceTarget=-1;animStep=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: Dijkstra's Correctness ==================== -->
+<div class="slide" id="s9">
+  <h2>Dijkstra's Correctness</h2>
+  <p class="subtitle">Why the greedy choice is safe</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <h3>The Claim</h3>
+      <p>When Dijkstra's extracts vertex <code>u</code> from the PQ, <code>dist[u]</code> equals the true shortest-path distance.</p>
+      <h3 style="margin-top:14px;">Proof Sketch (by contradiction)</h3>
+      <ul style="font-size:1em;">
+        <li>Suppose vertex <code>u</code> is the <strong>first</strong> vertex extracted with wrong distance</li>
+        <li>True shortest path: S → ... → x → y → ... → u where y is first unvisited</li>
+        <li>Since x is visited: <code>dist[y] ≤ true dist to y</code></li>
+        <li>Since all weights ≥ 0: <code>dist[y] ≤ true dist to u</code></li>
+        <li>But u extracted before y: <code>dist[u] ≤ dist[y]</code></li>
+        <li>So <code>dist[u] ≤ true dist to u</code> → contradiction!</li>
+      </ul>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:12px;">
+        <button class="btn btn-sm" onclick="s9Step()">Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS9" width="460" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="warning" style="margin-top:8px;padding:10px 14px;">
+        <h3 style="font-size:.95em;">Critical Assumption</h3>
+        <p style="font-size:.85em;">This proof <strong>requires all edge weights ≥ 0</strong>. Negative edges break the "cloud" property.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS9'),ctx=canvas.getContext('2d');
+  const steps=[
+    {msg:'The "cloud" of visited vertices with correct distances',cloudSize:2,showY:false,showU:false,showArrow:false,showContra:false},
+    {msg:'Suppose u is first vertex extracted with WRONG distance',cloudSize:2,showY:false,showU:true,showArrow:false,showContra:false},
+    {msg:'True shortest path must cross cloud boundary at some edge x→y',cloudSize:2,showY:true,showU:true,showArrow:true,showContra:false},
+    {msg:'x is in cloud (correct), so dist[y] ≤ true dist(y)',cloudSize:2,showY:true,showU:true,showArrow:true,showContra:false},
+    {msg:'All weights ≥ 0, so dist[y] ≤ true dist(u)',cloudSize:2,showY:true,showU:true,showArrow:true,showContra:false},
+    {msg:'But u extracted before y → dist[u] ≤ dist[y] ≤ true dist(u) → CONTRADICTION!',cloudSize:2,showY:true,showU:true,showArrow:true,showContra:true}
+  ];
+  let stepIdx=0,timer=null;
+
+  function draw(){
+    ctx.clearRect(0,0,460,370);
+    const s=steps[stepIdx];
+    // Cloud region
+    ctx.fillStyle='rgba(99,102,241,0.12)';
+    ctx.beginPath();ctx.ellipse(140,180,120,130,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+    ctx.beginPath();ctx.ellipse(140,180,120,130,0,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Visited Cloud',140,320);
+    ctx.fillText('(correct distances)',140,335);
+    // S node
+    ctx.beginPath();ctx.arc(100,150,18,0,Math.PI*2);ctx.fillStyle='#6366f1';ctx.fill();
+    ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('S',100,150);
+    // x node (edge of cloud)
+    ctx.beginPath();ctx.arc(200,180,18,0,Math.PI*2);ctx.fillStyle='#6366f1';ctx.fill();
+    ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.fillText('x',200,180);
+    // Dotted path S to x
+    ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(118,150);ctx.lineTo(182,180);ctx.stroke();ctx.setLineDash([]);
+    // y node
+    if(s.showY){
+      ctx.beginPath();ctx.arc(300,160,18,0,Math.PI*2);ctx.fillStyle='#f59e0b';ctx.fill();
+      ctx.strokeStyle='#fbbf24';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.fillText('y',300,160);
+      // Edge x→y
+      if(s.showArrow){
+        ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(218,178);ctx.lineTo(282,162);ctx.stroke();
+        ctx.fillStyle='#f59e0b';ctx.beginPath();
+        ctx.moveTo(282,162);ctx.lineTo(272,155);ctx.lineTo(272,169);ctx.fill();
+        ctx.fillStyle='#f59e0b';ctx.font='11px monospace';ctx.fillText('w≥0',250,148);
+      }
+    }
+    // u node
+    if(s.showU){
+      ctx.beginPath();ctx.arc(400,200,18,0,Math.PI*2);
+      ctx.fillStyle=s.showContra?'#ef4444':'#334155';ctx.fill();
+      ctx.strokeStyle=s.showContra?'#f87171':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.fillText('u',400,200);
+      ctx.fillStyle=s.showContra?'#ef4444':'#94a3b8';ctx.font='11px monospace';
+      ctx.fillText(s.showContra?'"first wrong"?':'first wrong?',400,225);
+      // Dotted path y to u
+      if(s.showY){
+        ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);
+        ctx.beginPath();ctx.moveTo(318,165);ctx.lineTo(382,195);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.fillText('w≥0',350,175);
+      }
+    }
+    // Contradiction
+    if(s.showContra){
+      ctx.fillStyle='#ef4444';ctx.font='bold 14px monospace';ctx.textAlign='center';
+      ctx.fillText('dist[u] ≤ dist[y] ≤ true dist(u)',300,270);
+      ctx.fillText('But dist[u] ≥ true dist(u) always',300,290);
+      ctx.fillText('⇒ dist[u] = true dist(u) ✗ CONTRADICTION',300,310);
+    }
+    // Step message
+    ctx.fillStyle='#e2e8f0';ctx.font='13px sans-serif';ctx.textAlign='center';
+    ctx.fillText(s.msg,230,360);
+  }
+
+  window.s9Step=function(){if(stepIdx>=steps.length-1)return;stepIdx++;draw();};
+  window.s9Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s9Step();},1500);
+  };
+  window.s9Reset=function(){if(timer){clearInterval(timer);timer=null;}stepIdx=0;draw();};
+
+  function init(){stepIdx=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: Dijkstra's Time Complexity ==================== -->
+<div class="slide" id="s10">
+  <h2>Dijkstra's Time Complexity</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <h3>With Binary Heap (Min-Priority Queue)</h3>
+      <table style="width:100%;font-size:.95em;">
+        <tr><th>Operation</th><th>Count</th><th>Cost</th><th>Total</th></tr>
+        <tr><td>extractMin</td><td>V</td><td>O(log V)</td><td>O(V log V)</td></tr>
+        <tr><td>insert/decreaseKey</td><td>E</td><td>O(log V)</td><td>O(E log V)</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Total: O((V + E) log V)</h3>
+        <p>For connected graphs (E ≥ V), simplifies to <span style="color:#22c55e;font-weight:600;">O(E log V)</span>.</p>
+      </div>
+      <h3 style="margin-top:14px;">With Simple Array (No Heap)</h3>
+      <table style="width:100%;font-size:.95em;">
+        <tr><th>Operation</th><th>Count</th><th>Cost</th><th>Total</th></tr>
+        <tr><td>findMin (scan)</td><td>V</td><td>O(V)</td><td>O(V²)</td></tr>
+        <tr><td>update dist</td><td>E</td><td>O(1)</td><td>O(E)</td></tr>
+      </table>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Total: O(V²)</h3>
+        <p>Simpler but slower. Better only for <strong>dense graphs</strong> (E ≈ V²).</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS10" width="460" height="400" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s10Toggle()">Toggle Sparse / Dense</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS10'),ctx=canvas.getContext('2d');
+  let showDense=false;
+
+  function draw(){
+    ctx.clearRect(0,0,460,400);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(showDense?'Dense Graph (E ≈ V²)':'Sparse Graph (E ≈ V)',230,25);
+
+    const vValues=[10,50,100,500,1000];
+    const barW=55,gap=20,startX=50,chartH=280,baseY=360;
+
+    // Compute values
+    const heapVals=vValues.map(v=>{
+      const e=showDense?v*v:v;
+      return (v+e)*Math.log2(v);
+    });
+    const arrayVals=vValues.map(v=>v*v);
+    const maxVal=Math.max(...heapVals,...arrayVals);
+
+    // Draw bars
+    vValues.forEach((v,i)=>{
+      const x=startX+i*(barW*2+gap);
+      const hH=Math.min((heapVals[i]/maxVal)*chartH,chartH);
+      const aH=Math.min((arrayVals[i]/maxVal)*chartH,chartH);
+
+      // Heap bar
+      ctx.fillStyle='#6366f1';
+      ctx.fillRect(x,baseY-hH,barW-2,hH);
+      // Array bar
+      ctx.fillStyle='#f59e0b';
+      ctx.fillRect(x+barW,baseY-aH,barW-2,aH);
+
+      // Labels
+      ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';
+      ctx.fillText('V='+v,x+barW,baseY+15);
+
+      // Value labels on bars
+      ctx.font='9px monospace';
+      if(hH>15){ctx.fillStyle='#fff';ctx.fillText(heapVals[i]>=1e6?(heapVals[i]/1e6).toFixed(1)+'M':heapVals[i]>=1000?(heapVals[i]/1000).toFixed(0)+'K':Math.round(heapVals[i]),x+barW/2,baseY-hH+12);}
+      if(aH>15){ctx.fillStyle='#fff';ctx.fillText(arrayVals[i]>=1e6?(arrayVals[i]/1e6).toFixed(1)+'M':arrayVals[i]>=1000?(arrayVals[i]/1000).toFixed(0)+'K':arrayVals[i],x+barW+barW/2,baseY-aH+12);}
+    });
+
+    // Legend
+    ctx.fillStyle='#6366f1';ctx.fillRect(120,45,14,14);
+    ctx.fillStyle='#e2e8f0';ctx.font='12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('Heap: O((V+E)log V)',140,56);
+    ctx.fillStyle='#f59e0b';ctx.fillRect(300,45,14,14);
+    ctx.fillStyle='#e2e8f0';ctx.fillText('Array: O(V²)',320,56);
+
+    // Winner
+    ctx.fillStyle=showDense?'#f59e0b':'#6366f1';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText(showDense?'Dense: Array wins! O(V²) < O(V² log V)':'Sparse: Heap wins! O(V log V) << O(V²)',230,390);
+  }
+
+  window.s10Toggle=function(){showDense=!showDense;draw();};
+
+  function init(){showDense=false;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: Dijkstra's Limitation: Negative Weights ==================== -->
+<div class="slide" id="s11">
+  <h2>Dijkstra's Limitation: Negative Weights</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <div class="warning">
+        <h3>Dijkstra FAILS with Negative Edges!</h3>
+        <p>Once a vertex is finalized, Dijkstra never reconsiders it. A negative edge can create a shorter path <em>after</em> finalization.</p>
+      </div>
+      <canvas id="cS11" width="420" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:10px;"></canvas>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s11Step()">Step (Dijkstra)</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s11Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:10px;font-family:monospace;font-size:.8em;max-height:200px;overflow-y:auto;color:#cbd5e1;"></div>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>The Problem</h3>
+        <p>Dijkstra finalizes B with dist=1, but the path A→C→B costs -1. Once finalized, B is never reconsidered.</p>
+        <p style="margin-top:6px;font-size:.9em;">Dijkstra: dist[B]=1, dist[D]=6<br>
+        <span style="color:#22c55e;">Correct: dist[B]=-1, dist[D]=4</span></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS11'),ctx=canvas.getContext('2d');
+  const logEl=document.getElementById('s11Log');
+  // Graph: A→B:1, A→C:3, B→D:5, C→D:1, C→B:-4
+  const nodes=[{id:'A',x:60,y:125},{id:'B',x:210,y:50},{id:'C',x:210,y:200},{id:'D',x:360,y:125}];
+  const edgesData=[
+    {u:0,v:1,w:1,directed:true},{u:0,v:2,w:3,directed:true},
+    {u:1,v:3,w:5,directed:true},{u:2,v:3,w:1,directed:true},{u:2,v:1,w:-4,directed:true}
+  ];
+  // Dijkstra (wrong): Process A(0)→B=1,C=3. Process B(1)→D=6. FINALIZE B. Process C(3)→D=min(6,4)=4,B=3+(-4)=-1<1 BUT B ALREADY FINALIZED!
+  // Actually with lazy PQ: Process A(0), relax B=1,C=3. Process B(1), finalize, relax D=6. Process C(3), relax D=4,B=-1 (insert into PQ). Process B(-1) but it's visited→skip! Process D(4).
+  // Dijkstra says: B=1, D=4. But correct B=-1, D=4. Wait let me recompute...
+  // With visited check: A(0)→B=1,C=3. Extract B(1), visited. D=6. Extract C(3), visited. C→D:3+1=4<6→D=4. C→B:3-4=-1<1→insert B(-1). Extract B(-1) but visited→skip. Extract D(4).
+  // Dijkstra: B=1, C=3, D=4. Correct: B=-1(via A→C→B), D=4. So B is wrong!
+  const stepsData=[
+    {proc:-1,dist:['0','∞','∞','∞'],vis:['F','F','F','F'],highlight:[],msg:'Init: dist[A]=0, PQ={(A,0)}'},
+    {proc:0,dist:['0','1','3','∞'],vis:['T','F','F','F'],highlight:[0],msg:'Process A(d=0): relax B=1, C=3'},
+    {proc:1,dist:['0','1','3','6'],vis:['T','T','F','F'],highlight:[1],msg:'Process B(d=1): FINALIZED! relax D=6'},
+    {proc:2,dist:['0','1','3','4'],vis:['T','T','T','F'],highlight:[2],msg:'Process C(d=3): relax D=4✓, B=-1 but...'},
+    {proc:-1,dist:['0','1','3','4'],vis:['T','T','T','F'],highlight:[1],msg:'⚠️ B(-1) extracted but ALREADY VISITED → skip!'},
+    {proc:3,dist:['0','1','3','4'],vis:['T','T','T','T'],highlight:[3],msg:'Process D(d=4). Done! dist[B]=1 is WRONG (should be -1)'}
+  ];
+  let stepIdx=0,timer=null;
+
+  function drawArrow(x1,y1,x2,y2,color,lw){
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len;
+    const ex=x2-ux*22,ey=y2-uy*22;
+    const sx=x1+ux*22,sy=y1+uy*22;
+    ctx.strokeStyle=color;ctx.lineWidth=lw;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.fillStyle=color;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-ux*8+uy*4,ey-uy*8-ux*4);ctx.lineTo(ex-ux*8-uy*4,ey-uy*8+ux*4);ctx.fill();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,420,250);
+    const sd=stepsData[stepIdx];
+    // Edges
+    edgesData.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      const isNeg=e.w<0;
+      drawArrow(a.x,a.y,b.x,b.y,isNeg?'#ef4444':'#475569',isNeg?2:1.5);
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      const ox=-dy/len*14,oy=dx/len*14;
+      ctx.fillStyle=isNeg?'#f87171':'#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+ox,my+oy);
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const isHL=sd.highlight.includes(i);
+      const isWrong=stepIdx>=5&&i===1;
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=isWrong?'#ef4444':isHL?'#f59e0b':sd.vis[i]==='T'?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle=isHL?'#fbbf24':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      ctx.fillStyle=isWrong?'#ef4444':sd.dist[i]==='∞'?'#64748b':'#22c55e';ctx.font='11px monospace';
+      ctx.fillText('d='+sd.dist[i],n.x,n.y+30);
+    });
+    // Wrong label
+    if(stepIdx>=5){
+      ctx.fillStyle='#ef4444';ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText('WRONG!',210,90);
+      ctx.fillStyle='#22c55e';ctx.fillText('should be -1',210,103);
+    }
+  }
+
+  window.s11Step=function(){
+    if(stepIdx>=stepsData.length-1)return;
+    stepIdx++;
+    const s=stepsData[stepIdx];
+    logEl.innerHTML+='<div'+(stepIdx>=4?' style="color:#ef4444"':'')+'>'+s.msg+'</div>';
+    logEl.scrollTop=logEl.scrollHeight;
+    draw();
+  };
+  window.s11Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=stepsData.length-1){clearInterval(timer);timer=null;return;}s11Step();},1200);
+  };
+  window.s11Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;logEl.innerHTML='';draw();
+  };
+
+  function init(){stepIdx=0;logEl.innerHTML='';draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 12: Bellman-Ford Algorithm ==================== -->
+<div class="slide" id="s12">
+  <h2>Bellman-Ford Algorithm</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p><span style="color:#22c55e;font-weight:600;">Handles negative edge weights!</span></p>
+      <h3 style="margin-top:8px;">Core Idea</h3>
+      <ul>
+        <li>Relax <strong>ALL edges</strong> in each iteration</li>
+        <li>Repeat for <span style="color:#38bdf8;font-weight:600;">V - 1</span> iterations</li>
+        <li>Each iteration extends correctness by one hop</li>
+      </ul>
+      <div class="analogy" style="margin-top:10px;">
+        <h3>Analogy: Ripple Effect</h3>
+        <p>Like dropping a stone in a pond — each ripple extends correct distances by one hop. After V-1 ripples, every vertex is reached.</p>
+      </div>
+      <div class="code-block" style="margin-top:10px;"><div class="code-content" id="s12Code">
+<span class="line" id="s12L1">BELLMAN-FORD(G, source):</span>
+<span class="line" id="s12L2">  for each v: dist[v]=∞, par[v]=NULL</span>
+<span class="line" id="s12L3">  dist[source] = 0</span>
+<span class="line" id="s12L4"> </span>
+<span class="line" id="s12L5">  for i = 1 to |V|-1:        // V-1 iters</span>
+<span class="line" id="s12L6">    for each edge (u,v,w):</span>
+<span class="line" id="s12L7">      if dist[u]+w &lt; dist[v]:</span>
+<span class="line" id="s12L8">        dist[v] = dist[u]+w</span>
+<span class="line" id="s12L9">        par[v] = u</span>
+<span class="line" id="s12L10"> </span>
+<span class="line" id="s12L11">  // Negative cycle check</span>
+<span class="line" id="s12L12">  for each edge (u,v,w):</span>
+<span class="line" id="s12L13">    if dist[u]+w &lt; dist[v]:</span>
+<span class="line" id="s12L14">      return "NEGATIVE CYCLE!"</span>
+      </div></div>
+    </div>
+    <div>
+      <canvas id="cS12" width="460" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s12Step()">Next Iteration</button>
+        <button class="btn btn-sm" onclick="s12Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+      <div id="s12Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:.78em;max-height:80px;overflow-y:auto;margin-top:8px;color:#cbd5e1;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS12'),ctx=canvas.getContext('2d');
+  const logEl=document.getElementById('s12Log');
+  // Same graph as slide 11: A→B:1, A→C:3, B→D:5, C→D:1, C→B:-4
+  const nodes=[{id:'A',x:60,y:150},{id:'B',x:210,y:50},{id:'C',x:210,y:250},{id:'D',x:370,y:150}];
+  const edgesData=[
+    {u:0,v:1,w:1},{u:0,v:2,w:3},{u:1,v:3,w:5},{u:2,v:3,w:1},{u:2,v:1,w:-4}
+  ];
+  // BF from A, edge order as above. V=4, so 3 iterations.
+  // Init: [0,∞,∞,∞]
+  // Iter 1: (A,B,1):0+1=1<∞→B=1. (A,C,3):0+3=3<∞→C=3. (B,D,5):1+5=6<∞→D=6. (C,D,1):3+1=4<6→D=4. (C,B,-4):3-4=-1<1→B=-1.
+  // Iter 2: (A,B,1):1<-1?no. (A,C,3):3<3?no. (B,D,5):-1+5=4<4?no. (C,D,1):4<4?no. (C,B,-4):-1< -1?no. No changes → converged!
+  // Iter 3: same, no changes.
+  const iterations=[
+    {dist:['0','∞','∞','∞'],par:['-','-','-','-'],relaxed:[],msg:'Init: dist[A]=0, all others ∞',lines:[2,3]},
+    {dist:['0','-1','3','4'],par:['-','C','A','C'],relaxed:[[0,1],[0,2],[1,3],[2,3],[2,1]],msg:'Iter 1: relax all 5 edges. B=1→-1, C=3, D=6→4',lines:[5,6,7,8,9]},
+    {dist:['0','-1','3','4'],par:['-','C','A','C'],relaxed:[],msg:'Iter 2: no changes — converged early!',lines:[5,6,7]},
+    {dist:['0','-1','3','4'],par:['-','C','A','C'],relaxed:[],msg:'Iter 3: no changes. Check negative cycles...',lines:[12,13,14]},
+    {dist:['0','-1','3','4'],par:['-','C','A','C'],relaxed:[],msg:'No negative cycle. Final: B=-1, C=3, D=4 ✓',lines:[]}
+  ];
+  let stepIdx=0,timer=null;
+
+  function clearHL(){for(let i=1;i<=14;i++){const el=document.getElementById('s12L'+i);if(el)el.classList.remove('active');}}
+
+  function drawArrow(x1,y1,x2,y2,color,lw){
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len;
+    const sx=x1+ux*20,sy=y1+uy*20,ex=x2-ux*20,ey=y2-uy*20;
+    ctx.strokeStyle=color;ctx.lineWidth=lw;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.fillStyle=color;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-ux*8+uy*4,ey-uy*8-ux*4);ctx.lineTo(ex-ux*8-uy*4,ey-uy*8+ux*4);ctx.fill();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,460,300);
+    const it=iterations[stepIdx];
+    // Title
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText(stepIdx===0?'Initialization':'Iteration '+Math.min(stepIdx,3)+' of 3'+(stepIdx>=4?' — Complete!':''),230,20);
+    // Edges
+    edgesData.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      const rl=it.relaxed.some(r=>r[0]===e.u&&r[1]===e.v);
+      drawArrow(a.x,a.y,b.x,b.y,rl?'#22c55e':e.w<0?'#ef4444':'#475569',rl?2.5:1.5);
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle=rl?'#4ade80':e.w<0?'#f87171':'#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*14,my+(dx/len)*14);
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=stepIdx>=4?'#22c55e':i===0?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      ctx.fillStyle=it.dist[i]==='∞'?'#64748b':'#22c55e';ctx.font='12px monospace';
+      ctx.fillText('d='+it.dist[i],n.x,n.y+30);
+    });
+  }
+
+  window.s12Step=function(){
+    if(stepIdx>=iterations.length-1)return;
+    stepIdx++;clearHL();
+    const it=iterations[stepIdx];
+    it.lines.forEach(l=>{const el=document.getElementById('s12L'+l);if(el)el.classList.add('active');});
+    logEl.innerHTML+='<div>'+it.msg+'</div>';
+    logEl.scrollTop=logEl.scrollHeight;
+    draw();
+  };
+  window.s12Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=iterations.length-1){clearInterval(timer);timer=null;return;}s12Step();},1500);
+  };
+  window.s12Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;clearHL();logEl.innerHTML='';draw();
+  };
+
+  function init(){stepIdx=0;clearHL();logEl.innerHTML='';draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: Bellman-Ford Step-by-Step ==================== -->
+<div class="slide" id="s13">
+  <h2>Bellman-Ford Step-by-Step</h2>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1rem;margin-top:.5rem;">
+    <div>
+      <canvas id="cS13" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s13Step()">Next Edge</button>
+        <button class="btn btn-sm" onclick="s13Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.85em;color:#94a3b8;margin-bottom:6px;">Edges: (A,B,1) (A,C,3) (B,D,5) (C,B,-4) (C,D,1)</div>
+      <canvas id="cS13tbl" width="380" height="120" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s13Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:.75em;max-height:140px;overflow-y:auto;margin-top:8px;color:#cbd5e1;"></div>
+      <div class="key-idea" style="margin-top:6px;padding:10px 14px;">
+        <h3 style="font-size:.9em;">Bellman-Ford finds B=-1</h3>
+        <p style="font-size:.82em;">Path A→C→B = 3+(-4) = -1. This is the correct answer that Dijkstra missed!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS13'),ctx=canvas.getContext('2d');
+  const tblC=document.getElementById('cS13tbl'),tctx=tblC.getContext('2d');
+  const logEl=document.getElementById('s13Log');
+  const nodes=[{id:'A',x:80,y:160},{id:'B',x:260,y:50},{id:'C',x:260,y:270},{id:'D',x:440,y:160}];
+  const edgesList=[
+    {u:0,v:1,w:1},{u:0,v:2,w:3},{u:1,v:3,w:5},{u:2,v:1,w:-4},{u:2,v:3,w:1}
+  ];
+  // Per-edge steps for all 3 iterations (V-1=3)
+  // Init: dist=[0,∞,∞,∞]
+  // Iter 1: edge(A,B,1):0+1=1<∞→1. edge(A,C,3):0+3=3<∞→3. edge(B,D,5):1+5=6<∞→6. edge(C,B,-4):3-4=-1<1→-1. edge(C,D,1):3+1=4<6→4.
+  // Iter 2: edge(A,B,1):0+1=1<-1?no. edge(A,C,3):no. edge(B,D,5):-1+5=4<4?no. edge(C,B,-4):3-4=-1<-1?no. edge(C,D,1):3+1=4<4?no. No changes!
+  // Iter 3: same. Then V-th check: no decreases → no negative cycle.
+  const allSteps=[
+    // Init
+    {dist:[0,Infinity,Infinity,Infinity],hl:[-1,-1],iter:0,edge:-1,msg:'Init: dist=[0, ∞, ∞, ∞]',changed:false},
+    // Iter 1
+    {dist:[0,1,Infinity,Infinity],hl:[0,1],iter:1,edge:0,msg:'Iter1 (A,B,1): 0+1=1 < ∞ → B=1',changed:true},
+    {dist:[0,1,3,Infinity],hl:[0,2],iter:1,edge:1,msg:'Iter1 (A,C,3): 0+3=3 < ∞ → C=3',changed:true},
+    {dist:[0,1,3,6],hl:[1,3],iter:1,edge:2,msg:'Iter1 (B,D,5): 1+5=6 < ∞ → D=6',changed:true},
+    {dist:[0,-1,3,6],hl:[2,1],iter:1,edge:3,msg:'Iter1 (C,B,-4): 3+(-4)=-1 < 1 → B=-1 ✓',changed:true},
+    {dist:[0,-1,3,4],hl:[2,3],iter:1,edge:4,msg:'Iter1 (C,D,1): 3+1=4 < 6 → D=4 ✓',changed:true},
+    // Iter 2 (no changes)
+    {dist:[0,-1,3,4],hl:[0,1],iter:2,edge:0,msg:'Iter2 (A,B,1): 1 < -1? NO',changed:false},
+    {dist:[0,-1,3,4],hl:[0,2],iter:2,edge:1,msg:'Iter2 (A,C,3): 3 < 3? NO',changed:false},
+    {dist:[0,-1,3,4],hl:[1,3],iter:2,edge:2,msg:'Iter2 (B,D,5): -1+5=4 < 4? NO',changed:false},
+    {dist:[0,-1,3,4],hl:[2,1],iter:2,edge:3,msg:'Iter2 (C,B,-4): -1 < -1? NO',changed:false},
+    {dist:[0,-1,3,4],hl:[2,3],iter:2,edge:4,msg:'Iter2 (C,D,1): 4 < 4? NO — Converged!',changed:false},
+    // Done
+    {dist:[0,-1,3,4],hl:[-1,-1],iter:3,edge:-1,msg:'No negative cycle. Final: A=0, B=-1, C=3, D=4 ✓',changed:false}
+  ];
+  let stepIdx=0,timer=null;
+
+  function drawArrow(x1,y1,x2,y2,color,lw){
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len;
+    const sx=x1+ux*20,sy=y1+uy*20,ex=x2-ux*20,ey=y2-uy*20;
+    ctx.strokeStyle=color;ctx.lineWidth=lw;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.fillStyle=color;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-ux*8+uy*4,ey-uy*8-ux*4);ctx.lineTo(ex-ux*8-uy*4,ey-uy*8+ux*4);ctx.fill();
+  }
+
+  function drawGraph(){
+    ctx.clearRect(0,0,520,320);
+    const s=allSteps[stepIdx];
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText(s.iter===0?'Initialization':s.iter>=3?'Complete!':'Iteration '+s.iter+' of 3',260,20);
+    // Edges
+    edgesList.forEach((e,idx)=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      const isActive=s.edge===idx;
+      drawArrow(a.x,a.y,b.x,b.y,isActive?(s.changed?'#22c55e':'#ef4444'):e.w<0?'rgba(239,68,68,0.5)':'#475569',isActive?3:1.5);
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle=isActive?(s.changed?'#4ade80':'#f87171'):e.w<0?'#f87171':'#94a3b8';
+      ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*16,my+(dx/len)*16);
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const isHL=s.hl.includes(i);
+      const done=s.iter>=3;
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=done?'#22c55e':isHL?'#f59e0b':i===0?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle=isHL?'#fbbf24':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      const d=s.dist[i];
+      ctx.fillStyle=d===Infinity?'#64748b':'#22c55e';ctx.font='12px monospace';
+      ctx.fillText('d='+(d===Infinity?'∞':d),n.x,n.y+32);
+    });
+  }
+
+  function drawTable(){
+    tctx.clearRect(0,0,380,120);
+    const s=allSteps[stepIdx];
+    const labels=['A','B','C','D'];
+    const cw=75,rh=26,sx=40,sy=10;
+    tctx.fillStyle='#334155';tctx.fillRect(sx,sy,cw*4,rh);
+    tctx.strokeStyle='#475569';tctx.lineWidth=1;
+    for(let c=0;c<=4;c++){tctx.beginPath();tctx.moveTo(sx+cw*c,sy);tctx.lineTo(sx+cw*c,sy+rh*3);tctx.stroke();}
+    for(let r=0;r<=3;r++){tctx.beginPath();tctx.moveTo(sx,sy+rh*r);tctx.lineTo(sx+cw*4,sy+rh*r);tctx.stroke();}
+    tctx.fillStyle='#38bdf8';tctx.font='bold 12px monospace';tctx.textAlign='center';tctx.textBaseline='middle';
+    labels.forEach((l,i)=>tctx.fillText(l,sx+cw*i+cw/2,sy+rh/2));
+    tctx.fillStyle='#94a3b8';tctx.font='11px monospace';tctx.textAlign='right';
+    tctx.fillText('dist',sx-6,sy+rh+rh/2);
+    tctx.fillText('iter',sx-6,sy+rh*2+rh/2);
+    tctx.textAlign='center';
+    labels.forEach((l,i)=>{
+      const d=s.dist[i];
+      tctx.fillStyle=d===Infinity?'#64748b':'#22c55e';tctx.font='12px monospace';
+      tctx.fillText(d===Infinity?'∞':''+d,sx+cw*i+cw/2,sy+rh+rh/2);
+    });
+    tctx.fillStyle='#a78bfa';tctx.font='11px monospace';
+    tctx.fillText(s.iter>=3?'Done':s.iter===0?'-':''+s.iter,sx+cw*2,sy+rh*2+rh/2);
+  }
+
+  function redraw(){drawGraph();drawTable();}
+
+  window.s13Step=function(){
+    if(stepIdx>=allSteps.length-1)return;
+    stepIdx++;
+    logEl.innerHTML+='<div'+(allSteps[stepIdx].changed?' style="color:#22c55e"':'')+'>'+allSteps[stepIdx].msg+'</div>';
+    logEl.scrollTop=logEl.scrollHeight;
+    redraw();
+  };
+  window.s13Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=allSteps.length-1){clearInterval(timer);timer=null;return;}s13Step();},800);
+  };
+  window.s13Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;logEl.innerHTML='';redraw();
+  };
+
+  function init(){stepIdx=0;logEl.innerHTML='';redraw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 14: Detecting Negative Cycles ==================== -->
+<div class="slide" id="s14">
+  <h2>Detecting Negative Cycles</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <h3>The Extra Pass</h3>
+      <p>After V-1 iterations, do <span style="color:#f59e0b;font-weight:600;">one more relaxation pass</span>:</p>
+      <ul>
+        <li><strong>No distance decreases</strong> → all shortest paths correct</li>
+        <li><strong>Any distance decreases</strong> → <span style="color:#ef4444;font-weight:600;">negative cycle</span> exists!</li>
+      </ul>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Why V-1 Suffices</h3>
+        <p>A shortest path (without cycles) has at most V-1 edges. Each iteration correctly extends paths by one edge. If distances <em>still</em> decrease after V-1, a negative cycle must exist.</p>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:12px;">
+        <button class="btn btn-sm" onclick="s14Toggle()">Toggle: Has Cycle / No Cycle</button>
+        <button class="btn btn-sm" onclick="s14Run()">Run Detection</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS14" width="460" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s14Status" style="font-family:monospace;font-size:.85em;color:#94a3b8;margin-top:8px;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS14'),ctx=canvas.getContext('2d');
+  const statusEl=document.getElementById('s14Status');
+  let hasCycle=false, phase=0, timer=null; // phase: 0=init, 1=running iters, 2=V-th check, 3=result
+
+  // No cycle graph: A→B:2, B→C:3, C→D:1
+  const noCycleNodes=[{id:'A',x:80,y:190},{id:'B',x:200,y:100},{id:'C',x:320,y:190},{id:'D',x:200,y:280}];
+  const noCycleEdges=[{u:0,v:1,w:2},{u:1,v:2,w:3},{u:2,v:3,w:1},{u:0,v:3,w:8}];
+
+  // Cycle graph: A→B:1, B→C:-2, C→D:3, D→B:-4  (cycle B→C→D→B = -2+3-4 = -3)
+  const cycleNodes=[{id:'A',x:80,y:190},{id:'B',x:210,y:80},{id:'C',x:350,y:80},{id:'D',x:350,y:280}];
+  const cycleEdges=[{u:0,v:1,w:1},{u:1,v:2,w:-2},{u:2,v:3,w:3},{u:3,v:1,w:-4}];
+
+  function drawArrow(x1,y1,x2,y2,color,lw){
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len;
+    const sx=x1+ux*20,sy=y1+uy*20,ex=x2-ux*20,ey=y2-uy*20;
+    ctx.strokeStyle=color;ctx.lineWidth=lw;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.fillStyle=color;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-ux*8+uy*4,ey-uy*8-ux*4);ctx.lineTo(ex-ux*8-uy*4,ey-uy*8+ux*4);ctx.fill();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,460,380);
+    const ns=hasCycle?cycleNodes:noCycleNodes;
+    const es=hasCycle?cycleEdges:noCycleEdges;
+    // Title
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(hasCycle?'Graph WITH Negative Cycle':'Graph WITHOUT Negative Cycle',230,25);
+    if(hasCycle){
+      ctx.fillStyle='#ef4444';ctx.font='12px monospace';
+      ctx.fillText('Cycle: B→C→D→B = -2+3+(-4) = -3',230,45);
+    }
+    // Edges
+    es.forEach(e=>{
+      const a=ns[e.u],b=ns[e.v];
+      const isNeg=e.w<0;
+      const isCycleEdge=hasCycle&&(e.u!==0);
+      drawArrow(a.x,a.y,b.x,b.y,phase===3&&hasCycle&&isCycleEdge?'#ef4444':isNeg?'rgba(239,68,68,0.6)':'#475569',phase===3&&hasCycle&&isCycleEdge?3:1.5);
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle=isNeg?'#f87171':'#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*14,my+(dx/len)*14);
+    });
+    // Nodes
+    ns.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      const cycleNode=hasCycle&&phase===3&&i>0;
+      ctx.fillStyle=cycleNode?'#ef4444':phase===3&&!hasCycle?'#22c55e':i===0?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    // Result
+    if(phase===2){
+      ctx.fillStyle='#f59e0b';ctx.font='bold 16px monospace';ctx.textAlign='center';
+      ctx.fillText('Running V-th pass check...',230,350);
+    }else if(phase===3){
+      if(hasCycle){
+        ctx.fillStyle='#ef4444';ctx.font='bold 18px monospace';ctx.textAlign='center';
+        ctx.fillText('⚠ NEGATIVE CYCLE DETECTED!',230,340);
+        ctx.font='13px monospace';ctx.fillText('Distances keep decreasing → -∞',230,360);
+      }else{
+        ctx.fillStyle='#22c55e';ctx.font='bold 18px monospace';ctx.textAlign='center';
+        ctx.fillText('✓ No Negative Cycle',230,340);
+        ctx.font='13px monospace';ctx.fillText('All distances stable after V-1 iterations',230,360);
+      }
+    }
+  }
+
+  window.s14Toggle=function(){hasCycle=!hasCycle;phase=0;statusEl.textContent='';draw();};
+  window.s14Run=function(){
+    if(timer)return;
+    phase=1;statusEl.textContent='Running V-1 iterations...';draw();
+    setTimeout(()=>{
+      phase=2;statusEl.textContent='V-th pass: checking for decreases...';draw();
+      setTimeout(()=>{
+        phase=3;statusEl.textContent=hasCycle?'NEGATIVE CYCLE! Distances undefined.':'No cycle. All shortest paths are correct.';draw();
+      },1500);
+    },1500);
+  };
+  window.s14Reset=function(){if(timer){clearInterval(timer);timer=null;}phase=0;statusEl.textContent='';draw();};
+
+  function init(){phase=0;statusEl.textContent='';draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 15: Negative Cycles Explained ==================== -->
+<div class="slide" id="s15">
+  <h2>Negative Cycles Explained</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <h3>What Is a Negative Cycle?</h3>
+      <p>A cycle where the <span style="color:#ef4444;font-weight:600;">total weight is negative</span>. Each trip around makes the cost lower — approaching -∞.</p>
+      <canvas id="cS15" width="420" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:10px;"></canvas>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s15Loop()">Go Around Again</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+      <div id="s15Counter" style="font-family:monospace;font-size:1em;color:#ef4444;margin-top:8px;text-align:center;"></div>
+    </div>
+    <div>
+      <h3>Why This Breaks Shortest Path</h3>
+      <p>If you can reach a negative cycle from the source, and your destination is reachable from the cycle:</p>
+      <div style="background:#1e293b;border-radius:10px;padding:12px;margin:10px 0;font-family:monospace;font-size:.9em;color:#a5f3fc;">
+        Path cost = prefix + n×(-3) + suffix<br>
+        n=1: prefix + (-3) + suffix<br>
+        n=10: prefix + (-30) + suffix<br>
+        n=∞: <span style="color:#ef4444;">-INFINITY</span>
+      </div>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy: Infinite Money Glitch</h3>
+        <p>Currency exchange where USD→EUR→GBP→USD gives you <em>more</em> money. You'd loop forever for infinite profit. That's a negative cycle!</p>
+      </div>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Important Distinction</h3>
+        <p>Negative <em>edges</em> are fine (Bellman-Ford handles them). Negative <em>cycles</em> make the problem undefined.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS15'),ctx=canvas.getContext('2d');
+  const counterEl=document.getElementById('s15Counter');
+  // Cycle: B→C→D→B with weights -2, 3, -4 (total = -3)
+  const cx=210,cy=130,r=80;
+  const pts=[{id:'B',a:-Math.PI/2},{id:'C',a:Math.PI/6},{id:'D',a:5*Math.PI/6}];
+  const weights=[-2,3,-4];
+  let loops=0,animAngle=0,animating=false,animTimer=null;
+
+  function nodePos(i){return{x:cx+r*Math.cos(pts[i].a),y:cy+r*Math.sin(pts[i].a)};}
+
+  function draw(){
+    ctx.clearRect(0,0,420,250);
+    // Edges
+    for(let i=0;i<3;i++){
+      const a=nodePos(i),b=nodePos((i+1)%3);
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      const ux=dx/len,uy=dy/len;
+      const sx=a.x+ux*22,sy=a.y+uy*22,ex=b.x-ux*22,ey=b.y-uy*22;
+      ctx.strokeStyle=weights[i]<0?'#ef4444':'#475569';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+      ctx.fillStyle=weights[i]<0?'#ef4444':'#475569';ctx.beginPath();
+      ctx.moveTo(ex,ey);ctx.lineTo(ex-ux*8+uy*5,ey-uy*8-ux*5);ctx.lineTo(ex-ux*8-uy*5,ey-uy*8+ux*5);ctx.fill();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      ctx.fillStyle=weights[i]<0?'#f87171':'#94a3b8';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(weights[i],mx+(-dy/len)*18,my+(dx/len)*18);
+    }
+    // Nodes
+    for(let i=0;i<3;i++){
+      const p=nodePos(i);
+      ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);
+      ctx.fillStyle='#334155';ctx.fill();ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(pts[i].id,p.x,p.y);
+    }
+    // Animated dot on cycle
+    if(animating||loops>0){
+      const dotAngle=-Math.PI/2+animAngle;
+      const dx=cx+r*Math.cos(dotAngle),dy=cy+r*Math.sin(dotAngle);
+      ctx.beginPath();ctx.arc(dx,dy,6,0,Math.PI*2);
+      ctx.fillStyle='#f59e0b';ctx.fill();
+    }
+    // Cycle cost label
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+    ctx.fillText('Cycle cost: -2 + 3 + (-4) = -3 per loop',210,240);
+  }
+
+  window.s15Loop=function(){
+    if(animating)return;
+    animating=true;animAngle=0;
+    const step=Math.PI*2/40;
+    animTimer=setInterval(()=>{
+      animAngle+=step;
+      if(animAngle>=Math.PI*2){
+        animAngle=0;loops++;animating=false;clearInterval(animTimer);animTimer=null;
+        counterEl.innerHTML='Loops: '+loops+' | Total cost: <strong>'+(-3*loops)+'</strong>'+(loops>=3?' → heading to -∞!':'');
+      }
+      draw();
+    },40);
+  };
+  window.s15Reset=function(){
+    if(animTimer){clearInterval(animTimer);animTimer=null;}
+    loops=0;animAngle=0;animating=false;counterEl.innerHTML='';draw();
+  };
+
+  function init(){if(animTimer){clearInterval(animTimer);animTimer=null;}loops=0;animAngle=0;animating=false;counterEl.innerHTML='';draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: Dijkstra vs Bellman-Ford ==================== -->
+<div class="slide" id="s16">
+  <h2>Dijkstra vs Bellman-Ford</h2>
+  <p class="subtitle">Choosing the right algorithm</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <canvas id="cS16" width="440" height="360" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn btn-sm" onclick="s16RunBoth()">Run Both on Same Graph</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+      </div>
+      <canvas id="cS16r" width="440" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="key-idea" style="margin-top:10px;padding:10px 14px;">
+        <h3 style="font-size:.95em;">When to Use Which?</h3>
+        <ul style="font-size:.82em;margin-top:4px;">
+          <li><span style="color:#6366f1;">Dijkstra</span> — all weights ≥ 0, need speed → O(E log V)</li>
+          <li><span style="color:#f59e0b;">Bellman-Ford</span> — negative weights or cycle detection → O(V·E)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c1=document.getElementById('cS16'),x1=c1.getContext('2d');
+  const c2=document.getElementById('cS16r'),x2=c2.getContext('2d');
+
+  function drawTable(){
+    x1.clearRect(0,0,440,360);
+    const rows=[
+      ['Property','Dijkstra\'s','Bellman-Ford'],
+      ['Strategy','Greedy','DP (relaxation)'],
+      ['Time (heap)','O((V+E)log V)','O(V·E)'],
+      ['Time (array)','O(V²)','O(V·E)'],
+      ['Neg. weights','NOT supported','Supported'],
+      ['Neg. cycles','No','Yes (detects)'],
+      ['Space','O(V) + PQ','O(V)'],
+      ['Best for','Speed, non-neg','Neg weights']
+    ];
+    const cw=[110,155,155],rh=40,sx=10,sy=10;
+    rows.forEach((row,r)=>{
+      let cx=sx;
+      row.forEach((cell,c)=>{
+        x1.fillStyle=r===0?'#334155':'#1e293b';
+        x1.fillRect(cx,sy+r*rh,cw[c],rh);
+        x1.strokeStyle='#475569';x1.lineWidth=1;
+        x1.strokeRect(cx,sy+r*rh,cw[c],rh);
+        // Color code
+        let color='#e2e8f0';
+        if(r===0)color='#38bdf8';
+        else if(c===0)color='#94a3b8';
+        else if(cell==='NOT supported'||cell==='No')color='#ef4444';
+        else if(cell==='Supported'||cell==='Yes (detects)')color='#22c55e';
+        else if(c===1)color='#818cf8';
+        else color='#fbbf24';
+        x1.fillStyle=color;x1.font=r===0?'bold 12px monospace':'11px monospace';
+        x1.textAlign='center';x1.textBaseline='middle';
+        x1.fillText(cell,cx+cw[c]/2,sy+r*rh+rh/2);
+        cx+=cw[c];
+      });
+    });
+  }
+
+  let runPhase=0,runTimer=null;
+  function drawResult(){
+    x2.clearRect(0,0,440,180);
+    if(runPhase===0){
+      x2.fillStyle='#94a3b8';x2.font='13px sans-serif';x2.textAlign='center';x2.textBaseline='middle';
+      x2.fillText('Click "Run Both" to compare on a graph with negative edge',220,90);
+      return;
+    }
+    // Show comparison result
+    const labels=['A','B','C','D'];
+    x2.fillStyle='#e2e8f0';x2.font='bold 13px sans-serif';x2.textAlign='center';
+    x2.fillText('Graph: A→B:1, A→C:3, C→B:-4, B→D:5, C→D:1',220,20);
+    // Dijkstra results
+    const dijDist=[0,1,3,6]; // wrong
+    const bfDist=[0,-1,3,4]; // correct
+    const cw=80,sx=50,sy=50,rh=28;
+    // Header
+    x2.fillStyle='#334155';x2.fillRect(sx,sy,cw*4,rh);
+    x2.strokeStyle='#475569';x2.lineWidth=1;
+    for(let c=0;c<=4;c++){x2.beginPath();x2.moveTo(sx+cw*c,sy);x2.lineTo(sx+cw*c,sy+rh*3);x2.stroke();}
+    for(let r=0;r<=3;r++){x2.beginPath();x2.moveTo(sx,sy+rh*r);x2.lineTo(sx+cw*4,sy+rh*r);x2.stroke();}
+    x2.fillStyle='#38bdf8';x2.font='bold 12px monospace';x2.textAlign='center';x2.textBaseline='middle';
+    labels.forEach((l,i)=>x2.fillText(l,sx+cw*i+cw/2,sy+rh/2));
+    // Row labels
+    x2.textAlign='right';x2.fillStyle='#818cf8';x2.fillText('Dijkstra',sx-8,sy+rh+rh/2);
+    x2.fillStyle='#fbbf24';x2.fillText('B-Ford',sx-8,sy+rh*2+rh/2);
+    x2.textAlign='center';
+    // Dijkstra row
+    if(runPhase>=1){
+      labels.forEach((l,i)=>{
+        const wrong=i===1||i===3;
+        x2.fillStyle=wrong?'#ef4444':'#22c55e';x2.font='12px monospace';
+        x2.fillText(dijDist[i]+(wrong?' ✗':''),sx+cw*i+cw/2,sy+rh+rh/2);
+      });
+    }
+    // BF row
+    if(runPhase>=2){
+      labels.forEach((l,i)=>{
+        x2.fillStyle='#22c55e';x2.font='12px monospace';
+        x2.fillText(bfDist[i]+' ✓',sx+cw*i+cw/2,sy+rh*2+rh/2);
+      });
+    }
+    if(runPhase>=2){
+      x2.fillStyle='#f59e0b';x2.font='bold 12px sans-serif';x2.textAlign='center';
+      x2.fillText('Bellman-Ford finds correct B=-1, D=4 (Dijkstra gets B=1, D=6 wrong!)',220,165);
+    }
+  }
+
+  window.s16RunBoth=function(){
+    if(runTimer)return;
+    runPhase=1;drawResult();
+    runTimer=setTimeout(()=>{runPhase=2;drawResult();runTimer=null;},1500);
+  };
+  window.s16Reset=function(){if(runTimer){clearTimeout(runTimer);runTimer=null;}runPhase=0;drawResult();};
+
+  function init(){runPhase=0;drawTable();drawResult();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s16').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE CA: Predict Dijkstra's Order ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict Dijkstra's Processing Order</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p>Given this graph with source <span style="color:#6366f1;font-weight:600;">S</span>, predict the order Dijkstra processes vertices.</p>
+      <canvas id="cCA" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:8px;"></canvas>
+      <p style="font-size:.9em;color:#94a3b8;margin-top:8px;">Edges: S-A:3, S-B:7, S-C:5, A-B:1, A-D:6, C-D:2</p>
+    </div>
+    <div>
+      <h3>Your Prediction</h3>
+      <p style="font-size:.9em;color:#94a3b8;">Enter the processing order (e.g., S,A,B,C,D):</p>
+      <input type="text" id="sCAinput" placeholder="S,A,B,..." style="width:100%;padding:8px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:1em;margin-top:6px;">
+      <div style="display:flex;gap:.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="sCACheck()">Check Answer</button>
+        <button class="btn btn-sm" onclick="sCAReveal()">Step Through</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCAReset()">Reset</button>
+      </div>
+      <div id="sCAResult" style="margin-top:12px;font-family:monospace;font-size:.9em;"></div>
+      <div id="sCALog" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:.78em;max-height:120px;overflow-y:auto;margin-top:8px;color:#cbd5e1;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCA'),ctx=canvas.getContext('2d');
+  // Graph: S-A:3, S-B:7, S-C:5, A-B:1, A-D:6, C-D:2
+  const nodes=[{id:'S',x:60,y:130},{id:'A',x:180,y:50},{id:'B',x:340,y:50},{id:'C',x:180,y:210},{id:'D',x:340,y:210}];
+  const edges=[{u:0,v:1,w:3},{u:0,v:2,w:7},{u:0,v:3,w:5},{u:1,v:2,w:1},{u:1,v:4,w:6},{u:3,v:4,w:2}];
+  // Dijkstra: S(0)→A=3,B=7,C=5. Process A(3)→B=min(7,4)=4,D=9. Process B(4)→nothing new. Process C(5)→D=min(9,7)=7. Process D(7).
+  // Order: S, A, B, C, D
+  const correctOrder=['S','A','B','C','D'];
+  let revealIdx=0,revealTimer=null;
+  const cloudSet=new Set();
+
+  function draw(){
+    ctx.clearRect(0,0,420,260);
+    edges.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle='#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*14,my+(dx/len)*14);
+    });
+    nodes.forEach((n,i)=>{
+      const inCloud=cloudSet.has(i);
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=inCloud?'#6366f1':i===0?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle=inCloud?'#818cf8':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+
+  window.sCACheck=function(){
+    const input=document.getElementById('sCAinput').value.trim().toUpperCase().split(/[,\s]+/);
+    const correct=JSON.stringify(input)===JSON.stringify(correctOrder);
+    const res=document.getElementById('sCAResult');
+    if(correct){
+      res.innerHTML='<span style="color:#22c55e;font-weight:bold;">✓ Correct! S(0)→A(3)→B(4)→C(5)→D(7)</span>';
+    }else{
+      res.innerHTML='<span style="color:#ef4444;">✗ Not quite. Try stepping through to see why.</span>';
+    }
+  };
+
+  window.sCAReveal=function(){
+    if(revealIdx>=correctOrder.length)return;
+    const logEl=document.getElementById('sCALog');
+    const msgs=['S(d=0): relax A=3, B=7, C=5','A(d=3): relax B=4, D=9','B(d=4): no improvements','C(d=5): relax D=7','D(d=7): done!'];
+    cloudSet.add(revealIdx);
+    logEl.innerHTML+='<div>Process '+correctOrder[revealIdx]+': '+msgs[revealIdx]+'</div>';
+    logEl.scrollTop=logEl.scrollHeight;
+    revealIdx++;draw();
+  };
+
+  window.sCAReset=function(){
+    if(revealTimer){clearInterval(revealTimer);revealTimer=null;}
+    revealIdx=0;cloudSet.clear();
+    document.getElementById('sCAResult').innerHTML='';
+    document.getElementById('sCALog').innerHTML='';
+    document.getElementById('sCAinput').value='';
+    draw();
+  };
+
+  function init(){revealIdx=0;cloudSet.clear();draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCA').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE CB: Fix the Bug ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p>This Dijkstra implementation has a bug. What happens if we remove the visited check?</p>
+      <div class="code-block"><div class="code-content">
+<span class="line">DIJKSTRA(G, source):</span>
+<span class="line">  dist[source] = 0; PQ.insert(source,0)</span>
+<span class="line"> </span>
+<span class="line">  while PQ not empty:</span>
+<span class="line">    u = PQ.extractMin()</span>
+<span class="line" style="background:rgba(239,68,68,0.15);border-left-color:#ef4444;">    // BUG: missing visited check!</span>
+<span class="line" style="background:rgba(239,68,68,0.15);border-left-color:#ef4444;">    // if visited[u]: continue</span>
+<span class="line" style="background:rgba(239,68,68,0.15);border-left-color:#ef4444;">    // visited[u] = true</span>
+<span class="line"> </span>
+<span class="line">    for each neighbor v of u:</span>
+<span class="line">      if dist[u]+w &lt; dist[v]:</span>
+<span class="line">        dist[v] = dist[u]+w</span>
+<span class="line">        PQ.insert(v, dist[v])</span>
+      </div></div>
+      <h3 style="margin-top:12px;">What's the consequence?</h3>
+      <select id="sCBanswer" style="width:100%;padding:8px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.95em;margin-top:6px;">
+        <option value="">-- Select --</option>
+        <option value="a">Incorrect distances (wrong answers)</option>
+        <option value="b">Correct but slower (redundant processing)</option>
+        <option value="c">Infinite loop</option>
+        <option value="d">Crashes with null pointer</option>
+      </select>
+      <button class="btn btn-sm" style="margin-top:8px;" onclick="sCBCheck()">Check</button>
+    </div>
+    <div>
+      <div id="sCBResult" style="margin-top:0;"></div>
+      <canvas id="cCB" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:10px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCB'),ctx=canvas.getContext('2d');
+  let revealed=false;
+
+  function draw(){
+    ctx.clearRect(0,0,440,300);
+    if(!revealed){
+      ctx.fillStyle='#94a3b8';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('Select your answer and click Check',220,150);
+      return;
+    }
+    // Show what happens without visited check
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Without visited check:',220,25);
+    // Timeline showing redundant processing
+    const items=['A(0)','B(3)','C(1)','B(2)★','C(4)','D(7)','B(3)★','D(5)'];
+    const colors=['#6366f1','#6366f1','#6366f1','#ef4444','#6366f1','#6366f1','#ef4444','#6366f1'];
+    ctx.font='12px monospace';
+    items.forEach((item,i)=>{
+      const x=30+i*50,y=70;
+      ctx.fillStyle=colors[i];
+      ctx.fillRect(x,y,44,28);
+      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(item.replace('★',''),x+22,y+14);
+      if(item.includes('★')){
+        ctx.fillStyle='#ef4444';ctx.font='10px monospace';
+        ctx.fillText('dup!',x+22,y+42);
+        ctx.font='12px monospace';
+      }
+    });
+    ctx.fillStyle='#f59e0b';ctx.font='13px sans-serif';ctx.textAlign='left';
+    const lines=[
+      'Without the visited check:',
+      '• Stale PQ entries re-process vertices',
+      '• Each re-process relaxes edges again (redundant)',
+      '• Distances are still CORRECT (relaxation only improves)',
+      '• But we do O(E) extra work per duplicate entry',
+      '',
+      'With non-negative weights: correct but slower',
+      'Worst case: O(E log E) instead of O(E log V)',
+      '',
+      'The visited check is an OPTIMIZATION, not a',
+      'correctness requirement (for non-negative weights).'
+    ];
+    lines.forEach((l,i)=>{
+      ctx.fillStyle=i===3||i===6?'#22c55e':i===7?'#f59e0b':'#cbd5e1';
+      ctx.fillText(l,20,130+i*15);
+    });
+  }
+
+  window.sCBCheck=function(){
+    const ans=document.getElementById('sCBanswer').value;
+    const res=document.getElementById('sCBResult');
+    if(ans==='b'){
+      res.innerHTML='<div class="key-idea" style="padding:10px 14px;"><h3 style="font-size:.95em;">✓ Correct!</h3><p style="font-size:.85em;">Without the visited check, stale PQ entries cause redundant processing. The distances are still correct (relaxation only decreases), but we waste time re-processing vertices.</p></div>';
+    }else if(ans===''){
+      res.innerHTML='';return;
+    }else{
+      res.innerHTML='<div class="warning" style="padding:10px 14px;"><h3 style="font-size:.95em;">✗ Not quite</h3><p style="font-size:.85em;">Think about what happens when a vertex appears in the PQ multiple times. Does re-relaxing change the final answer?</p></div>';
+    }
+    revealed=true;draw();
+  };
+
+  function init(){revealed=false;document.getElementById('sCBResult').innerHTML='';draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCB').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE CC: Which Algorithm? ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Which Algorithm?</h2>
+  <p style="color:#94a3b8;font-size:.95em;">For each scenario, pick the best shortest-path algorithm.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:#1e293b;border-radius:12px;padding:16px;border:2px solid #334155;" id="sCCq1box">
+      <h3 style="font-size:.95em;">1. GPS Navigation</h3>
+      <p style="font-size:.85em;color:#94a3b8;">Road distances are always positive. Need fastest route.</p>
+      <select id="sCCq1" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;margin-top:6px;">
+        <option value="">-- Pick --</option><option value="d">Dijkstra's</option><option value="b">Bellman-Ford</option><option value="f">Floyd-Warshall</option>
+      </select>
+    </div>
+    <div style="background:#1e293b;border-radius:12px;padding:16px;border:2px solid #334155;" id="sCCq2box">
+      <h3 style="font-size:.95em;">2. Currency Arbitrage Detection</h3>
+      <p style="font-size:.85em;color:#94a3b8;">Exchange rates → negative log weights. Need to find profitable loops.</p>
+      <select id="sCCq2" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;margin-top:6px;">
+        <option value="">-- Pick --</option><option value="d">Dijkstra's</option><option value="b">Bellman-Ford</option><option value="f">Floyd-Warshall</option>
+      </select>
+    </div>
+    <div style="background:#1e293b;border-radius:12px;padding:16px;border:2px solid #334155;" id="sCCq3box">
+      <h3 style="font-size:.95em;">3. All-Pairs in Small Dense Graph</h3>
+      <p style="font-size:.85em;color:#94a3b8;">10 vertices, ~90 edges, need distances between every pair.</p>
+      <select id="sCCq3" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;margin-top:6px;">
+        <option value="">-- Pick --</option><option value="d">Dijkstra's</option><option value="b">Bellman-Ford</option><option value="f">Floyd-Warshall</option>
+      </select>
+    </div>
+    <div style="background:#1e293b;border-radius:12px;padding:16px;border:2px solid #334155;" id="sCCq4box">
+      <h3 style="font-size:.95em;">4. Network with Link Credits</h3>
+      <p style="font-size:.85em;color:#94a3b8;">Some links give credits (negative cost). No negative cycles guaranteed.</p>
+      <select id="sCCq4" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;margin-top:6px;">
+        <option value="">-- Pick --</option><option value="d">Dijkstra's</option><option value="b">Bellman-Ford</option><option value="f">Floyd-Warshall</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:.5rem;margin-top:12px;">
+    <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+    <button class="btn btn-sm btn-secondary" onclick="sCCReset()">Reset</button>
+  </div>
+  <div id="sCCResult" style="margin-top:10px;font-family:monospace;font-size:.9em;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const correct={sCCq1:'d',sCCq2:'b',sCCq3:'f',sCCq4:'b'};
+  const explanations={
+    sCCq1:'Dijkstra — all positive weights, fastest SSSP algorithm.',
+    sCCq2:'Bellman-Ford — need negative cycle DETECTION (arbitrage loop).',
+    sCCq3:'Floyd-Warshall — all-pairs on small dense graph, O(V³) is fine.',
+    sCCq4:'Bellman-Ford — negative edges exist (even without cycles, Dijkstra fails).'
+  };
+  window.sCCCheck=function(){
+    let score=0;
+    Object.keys(correct).forEach(q=>{
+      const ans=document.getElementById(q).value;
+      const box=document.getElementById(q+'box');
+      if(ans===correct[q]){box.style.borderColor='#22c55e';score++;}
+      else if(ans)box.style.borderColor='#ef4444';
+      else box.style.borderColor='#f59e0b';
+    });
+    let html='<div style="color:'+(score===4?'#22c55e':'#f59e0b')+'">Score: '+score+'/4</div>';
+    if(score<4){
+      html+='<div style="margin-top:6px;color:#cbd5e1;font-size:.82em;">';
+      Object.keys(explanations).forEach(q=>{
+        const ans=document.getElementById(q).value;
+        if(ans!==correct[q])html+=explanations[q]+'<br>';
+      });
+      html+='</div>';
+    }
+    document.getElementById('sCCResult').innerHTML=html;
+  };
+  window.sCCReset=function(){
+    Object.keys(correct).forEach(q=>{
+      document.getElementById(q).value='';
+      document.getElementById(q+'box').style.borderColor='#334155';
+    });
+    document.getElementById('sCCResult').innerHTML='';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 17: Applications ==================== -->
+<div class="slide" id="s17">
+  <h2>Real-World Applications</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <h3>GPS Navigation</h3>
+      <canvas id="cS17a" width="420" height="160" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="font-size:.85em;color:#94a3b8;margin-top:4px;">Google Maps, Waze use Dijkstra variants (A*, contraction hierarchies).</p>
+      <h3 style="margin-top:14px;">Network Routing (OSPF)</h3>
+      <canvas id="cS17b" width="420" height="140" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:4px;"></canvas>
+      <p style="font-size:.85em;color:#94a3b8;margin-top:4px;">OSPF protocol uses Dijkstra to compute shortest paths between routers.</p>
+    </div>
+    <div>
+      <h3>Game AI Pathfinding</h3>
+      <canvas id="cS17c" width="420" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="font-size:.85em;color:#94a3b8;margin-top:4px;">A* (Dijkstra + heuristic) finds cheapest path avoiding walls, preferring grass.</p>
+      <h3 style="margin-top:14px;">Currency Arbitrage</h3>
+      <div class="analogy" style="padding:12px 16px;">
+        <p style="font-size:.85em;">Convert weights to -log(rate). Negative cycle = profit loop!<br>
+        <span style="color:#22c55e;">Bellman-Ford detects: USD→EUR→GBP→USD > 1.0 → arbitrage!</span></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // GPS canvas
+  const c1=document.getElementById('cS17a'),x1=c1.getContext('2d');
+  // Network canvas
+  const c2=document.getElementById('cS17b'),x2=c2.getContext('2d');
+  // Game canvas
+  const c3=document.getElementById('cS17c'),x3=c3.getContext('2d');
+
+  function drawGPS(){
+    x1.clearRect(0,0,420,160);
+    const pts=[{id:'Home',x:50,y:80},{id:'School',x:200,y:30},{id:'Mall',x:200,y:130},{id:'Work',x:360,y:80}];
+    const roads=[{u:0,v:1,w:'2m'},{u:0,v:2,w:'5m'},{u:1,v:3,w:'3m'},{u:2,v:3,w:'4m'},{u:1,v:2,w:'1m'}];
+    const bestPath=[[0,1],[1,3]];
+    roads.forEach(r=>{
+      const a=pts[r.u],b=pts[r.v];
+      const isBest=bestPath.some(bp=>bp[0]===r.u&&bp[1]===r.v);
+      x1.strokeStyle=isBest?'#22c55e':'#475569';x1.lineWidth=isBest?3:1.5;
+      x1.beginPath();x1.moveTo(a.x,a.y);x1.lineTo(b.x,b.y);x1.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      x1.fillStyle=isBest?'#4ade80':'#94a3b8';x1.font='bold 11px monospace';x1.textAlign='center';x1.textBaseline='middle';
+      x1.fillText(r.w,mx+((b.y-a.y)/Math.hypot(b.x-a.x,b.y-a.y))*-12,my+((b.x-a.x)/Math.hypot(b.x-a.x,b.y-a.y))*12);
+    });
+    pts.forEach((p,i)=>{
+      x1.beginPath();x1.arc(p.x,p.y,16,0,Math.PI*2);
+      x1.fillStyle=i===0?'#6366f1':i===3?'#22c55e':'#334155';x1.fill();
+      x1.strokeStyle='#475569';x1.lineWidth=1.5;x1.stroke();
+      x1.fillStyle='#fff';x1.font='bold 10px sans-serif';x1.textAlign='center';x1.textBaseline='middle';
+      x1.fillText(p.id,p.x,p.y);
+    });
+  }
+
+  function drawNetwork(){
+    x2.clearRect(0,0,420,140);
+    const routers=[{id:'R-A',x:60,y:70},{id:'R-B',x:180,y:30},{id:'R-C',x:180,y:110},{id:'R-D',x:320,y:70},{id:'R-E',x:380,y:110}];
+    const links=[{u:0,v:1,w:'10ms'},{u:0,v:2,w:'5ms'},{u:1,v:3,w:'15ms'},{u:2,v:3,w:'8ms'},{u:3,v:4,w:'3ms'}];
+    links.forEach(l=>{
+      const a=routers[l.u],b=routers[l.v];
+      x2.strokeStyle='#475569';x2.lineWidth=1.5;
+      x2.beginPath();x2.moveTo(a.x,a.y);x2.lineTo(b.x,b.y);x2.stroke();
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      x2.fillStyle='#94a3b8';x2.font='10px monospace';x2.textAlign='center';x2.textBaseline='middle';
+      x2.fillText(l.w,mx,my-10);
+    });
+    routers.forEach(r=>{
+      x2.fillStyle='#334155';x2.fillRect(r.x-20,r.y-12,40,24);
+      x2.strokeStyle='#6366f1';x2.lineWidth=1.5;x2.strokeRect(r.x-20,r.y-12,40,24);
+      x2.fillStyle='#38bdf8';x2.font='bold 9px monospace';x2.textAlign='center';x2.textBaseline='middle';
+      x2.fillText(r.id,r.x,r.y);
+    });
+  }
+
+  function drawGame(){
+    x3.clearRect(0,0,420,180);
+    const cs=22,ox=30,oy=10;
+    const grid=[
+      [0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0],
+      [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [3,3,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+      [3,3,3,0,1,0,0,0,0,0,0,0,0,0,0,0],
+      [3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,4],
+    ];
+    // 0=grass, 1=wall, 2=start, 3=water, 4=goal
+    // Path: start(2,0)→(2,1)→(2,2)→(2,3)→(1,4)→(1,5)→(1,6)→... rough path
+    const path=new Set(['2,0','2,1','2,2','2,3','1,3','1,4','1,5','1,6','1,7','1,8','1,9','1,10','1,11','1,12','1,13','1,14','1,15','2,15','3,15','4,15','5,15']);
+    const colors={0:'#1a3a2a',1:'#475569',2:'#6366f1',3:'#1e3a5f',4:'#22c55e'};
+    for(let r=0;r<grid.length;r++){
+      for(let c=0;c<grid[r].length;c++){
+        const onPath=path.has(r+','+c)&&grid[r][c]!==2&&grid[r][c]!==4;
+        x3.fillStyle=onPath?'rgba(245,158,11,0.4)':colors[grid[r][c]];
+        x3.fillRect(ox+c*cs,oy+r*cs,cs-1,cs-1);
+        if(grid[r][c]===2){x3.fillStyle='#fff';x3.font='bold 10px monospace';x3.textAlign='center';x3.textBaseline='middle';x3.fillText('S',ox+c*cs+cs/2,oy+r*cs+cs/2);}
+        if(grid[r][c]===4){x3.fillStyle='#fff';x3.font='bold 10px monospace';x3.textAlign='center';x3.textBaseline='middle';x3.fillText('G',ox+c*cs+cs/2,oy+r*cs+cs/2);}
+      }
+    }
+    // Legend
+    x3.font='10px sans-serif';x3.textAlign='left';
+    [{c:'#1a3a2a',l:'Grass(1)'},{c:'#475569',l:'Wall(∞)'},{c:'#1e3a5f',l:'Water(3)'},{c:'rgba(245,158,11,0.4)',l:'Path'}].forEach((item,i)=>{
+      x3.fillStyle=item.c;x3.fillRect(ox+16*cs+10,oy+i*22,14,14);
+      x3.fillStyle='#94a3b8';x3.fillText(item.l,ox+16*cs+28,oy+i*22+11);
+    });
+  }
+
+  function init(){drawGPS();drawNetwork();drawGame();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s17').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s17'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 18: Summary & Cheat Sheet ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary & Cheat Sheet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <canvas id="cS18" width="440" height="420" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <h3>Decision Flowchart</h3>
+      <canvas id="cS18f" width="440" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="warning" style="margin-top:10px;padding:10px 14px;">
+        <h3 style="font-size:.95em;">Common Exam Pitfalls</h3>
+        <ul style="font-size:.82em;">
+          <li>Using Dijkstra with negative weights</li>
+          <li>Forgetting V-1 iterations in Bellman-Ford</li>
+          <li>Confusing negative edges with negative cycles</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c1=document.getElementById('cS18'),x1=c1.getContext('2d');
+  const c2=document.getElementById('cS18f'),x2=c2.getContext('2d');
+
+  function drawSummary(){
+    x1.clearRect(0,0,440,420);
+    // Dijkstra summary
+    x1.fillStyle='#6366f1';x1.font='bold 16px sans-serif';x1.textAlign='center';
+    x1.fillText("Dijkstra's Algorithm",220,25);
+    x1.fillStyle='#cbd5e1';x1.font='12px monospace';x1.textAlign='left';
+    const dLines=[
+      '1. dist[src]=0, others=∞',
+      '2. PQ.insert(src, 0)',
+      '3. While PQ not empty:',
+      '   u = PQ.extractMin()',
+      '   Skip if visited',
+      '   For each neighbor v:',
+      '     if dist[u]+w < dist[v]:',
+      '       update dist[v], parent[v]',
+      '       PQ.insert(v, dist[v])',
+      '',
+      'Time: O((V+E) log V) with heap',
+      'Requires: non-negative weights'
+    ];
+    dLines.forEach((l,i)=>{
+      x1.fillStyle=i>=10?'#22c55e':'#cbd5e1';
+      x1.fillText(l,30,50+i*16);
+    });
+
+    // Bellman-Ford summary
+    x1.fillStyle='#f59e0b';x1.font='bold 16px sans-serif';x1.textAlign='center';
+    x1.fillText('Bellman-Ford Algorithm',220,260);
+    x1.fillStyle='#cbd5e1';x1.font='12px monospace';x1.textAlign='left';
+    const bLines=[
+      '1. dist[src]=0, others=∞',
+      '2. Repeat V-1 times:',
+      '   For each edge (u,v,w):',
+      '     if dist[u]+w < dist[v]:',
+      '       update dist[v], parent[v]',
+      '3. Extra pass: if any decreases',
+      '   → NEGATIVE CYCLE!',
+      '',
+      'Time: O(V * E)',
+      'Handles: negative weights + detection'
+    ];
+    bLines.forEach((l,i)=>{
+      x1.fillStyle=i>=8?'#22c55e':i===6?'#ef4444':'#cbd5e1';
+      x1.fillText(l,30,285+i*16);
+    });
+
+    // Edge relaxation box
+    x1.strokeStyle='#22c55e';x1.lineWidth=2;
+    x1.strokeRect(100,200,240,35);
+    x1.fillStyle='#22c55e';x1.font='bold 13px monospace';x1.textAlign='center';
+    x1.fillText('if dist[u]+w < dist[v]: update',220,222);
+  }
+
+  function drawFlowchart(){
+    x2.clearRect(0,0,440,250);
+    // Decision nodes
+    function drawDiamond(x,y,text,w,h){
+      x2.fillStyle='#334155';
+      x2.beginPath();x2.moveTo(x,y-h/2);x2.lineTo(x+w/2,y);x2.lineTo(x,y+h/2);x2.lineTo(x-w/2,y);x2.closePath();x2.fill();
+      x2.strokeStyle='#6366f1';x2.lineWidth=1.5;x2.stroke();
+      x2.fillStyle='#e2e8f0';x2.font='11px sans-serif';x2.textAlign='center';x2.textBaseline='middle';
+      x2.fillText(text,x,y);
+    }
+    function drawBox(x,y,text,color){
+      x2.fillStyle=color;
+      x2.fillRect(x-60,y-14,120,28);
+      x2.strokeStyle='#475569';x2.lineWidth=1;x2.strokeRect(x-60,y-14,120,28);
+      x2.fillStyle='#fff';x2.font='bold 11px monospace';x2.textAlign='center';x2.textBaseline='middle';
+      x2.fillText(text,x,y);
+    }
+    function arrow(x1,y1,x2a,y2a,label){
+      x2.strokeStyle='#475569';x2.lineWidth=1.5;
+      x2.beginPath();x2.moveTo(x1,y1);x2.lineTo(x2a,y2a);x2.stroke();
+      if(label){x2.fillStyle='#94a3b8';x2.font='10px sans-serif';x2.textAlign='center';x2.fillText(label,(x1+x2a)/2-10,(y1+y2a)/2);}
+    }
+
+    // Start
+    x2.fillStyle='#38bdf8';x2.font='bold 12px sans-serif';x2.textAlign='center';
+    x2.fillText('Need shortest path?',220,20);
+    arrow(220,28,220,50);
+    drawDiamond(220,70,'All weights ≥ 0?',160,40);
+    arrow(300,70,380,70,'YES');arrow(220,90,220,140,'NO');
+    drawBox(380,70,"Dijkstra's",'#6366f1');
+    drawDiamond(220,160,'Need cycle detect?',170,40);
+    arrow(305,160,380,160,'YES');arrow(220,180,220,220,'NO');
+    drawBox(380,160,'Bellman-Ford','#f59e0b');
+    drawDiamond(220,220,'All-pairs?',130,30);
+    arrow(285,220,380,220,'YES');
+    drawBox(380,220,'Floyd-Warshall','#a78bfa');
+    // NO from all-pairs → Bellman-Ford
+    x2.fillStyle='#94a3b8';x2.font='10px sans-serif';x2.textAlign='center';
+    x2.fillText('NO → Bellman-Ford',180,245);
+  }
+
+  function init(){drawSummary();drawFlowchart();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s18').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE Q1: Multi-Question Quiz ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Shortest Path Fundamentals</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:#1e293b;border-radius:12px;padding:16px;">
+      <h3 style="font-size:.95em;">Q1: Dijkstra's Complexity</h3>
+      <p style="font-size:.82em;color:#94a3b8;">With a binary heap on a sparse connected graph (E ≈ V)?</p>
+      <div style="margin-top:8px;" id="sQ1q1">
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1a" value="a" style="margin-right:6px;">O(V²)</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1a" value="b" style="margin-right:6px;">O(V log V)</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1a" value="c" style="margin-right:6px;">O(V·E)</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1a" value="d" style="margin-right:6px;">O(E log V)</label>
+      </div>
+      <div id="sQ1f1" style="font-size:.78em;margin-top:6px;"></div>
+    </div>
+    <div style="background:#1e293b;border-radius:12px;padding:16px;">
+      <h3 style="font-size:.95em;">Q2: Bellman-Ford Iterations</h3>
+      <p style="font-size:.82em;color:#94a3b8;">How many iterations does Bellman-Ford's main loop run?</p>
+      <div style="margin-top:8px;" id="sQ1q2">
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1b" value="a" style="margin-right:6px;">V</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1b" value="b" style="margin-right:6px;">V - 1</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1b" value="c" style="margin-right:6px;">E</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1b" value="d" style="margin-right:6px;">E - 1</label>
+      </div>
+      <div id="sQ1f2" style="font-size:.78em;margin-top:6px;"></div>
+    </div>
+    <div style="background:#1e293b;border-radius:12px;padding:16px;">
+      <h3 style="font-size:.95em;">Q3: Negative Edge vs Cycle</h3>
+      <p style="font-size:.82em;color:#94a3b8;">Which makes shortest path undefined?</p>
+      <div style="margin-top:8px;" id="sQ1q3">
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1c" value="a" style="margin-right:6px;">Any negative edge</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1c" value="b" style="margin-right:6px;">Reachable negative cycle</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1c" value="c" style="margin-right:6px;">Both</label>
+        <label style="display:block;padding:4px 0;font-size:.85em;cursor:pointer;color:#cbd5e1;"><input type="radio" name="q1c" value="d" style="margin-right:6px;">Neither</label>
+      </div>
+      <div id="sQ1f3" style="font-size:.78em;margin-top:6px;"></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:.5rem;margin-top:14px;align-items:center;">
+    <button class="btn btn-sm" onclick="sQ1Check()">Check Answers</button>
+    <button class="btn btn-sm btn-secondary" onclick="sQ1Reset()">Reset</button>
+    <span id="sQ1Score" style="font-family:monospace;font-size:1em;margin-left:12px;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={q1a:'b',q1b:'b',q1c:'b'};
+  const feedback={
+    sQ1f1:'O(V log V) — for sparse graph E≈V, O((V+E)log V) ≈ O(V log V).',
+    sQ1f2:'V-1 — shortest path has at most V-1 edges, one edge per iteration.',
+    sQ1f3:'Reachable negative cycle — negative edges alone are fine (Bellman-Ford handles them).'
+  };
+  window.sQ1Check=function(){
+    let score=0;
+    Object.keys(answers).forEach((q,i)=>{
+      const sel=document.querySelector('input[name="'+q+'"]:checked');
+      const fb=document.getElementById('sQ1f'+(i+1));
+      if(sel&&sel.value===answers[q]){score++;fb.innerHTML='<span style="color:#22c55e;">✓ '+feedback['sQ1f'+(i+1)]+'</span>';}
+      else fb.innerHTML='<span style="color:#ef4444;">✗ '+feedback['sQ1f'+(i+1)]+'</span>';
+    });
+    document.getElementById('sQ1Score').innerHTML='<span style="color:'+(score===3?'#22c55e':'#f59e0b')+'">Score: '+score+'/3</span>';
+  };
+  window.sQ1Reset=function(){
+    document.querySelectorAll('input[name^="q1"]').forEach(r=>r.checked=false);
+    for(let i=1;i<=3;i++)document.getElementById('sQ1f'+i).innerHTML='';
+    document.getElementById('sQ1Score').innerHTML='';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE Q2: Trace Bellman-Ford ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace Bellman-Ford</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p>Run Bellman-Ford on this graph (source = <span style="color:#6366f1;font-weight:600;">A</span>).</p>
+      <canvas id="cQ2" width="420" height="230" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:8px;"></canvas>
+      <p style="font-size:.85em;color:#94a3b8;margin-top:6px;">Edge order: (A,B,6) (A,C,4) (B,C,-3) (B,D,2) (C,D,5)</p>
+      <h3 style="margin-top:10px;">After iteration 1, what is dist[]?</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:6px;">
+        <div><label style="color:#94a3b8;font-size:.8em;">dist[A]</label><input type="text" id="sQ2a" value="0" disabled style="width:100%;padding:5px;background:#334155;border:1px solid #475569;border-radius:6px;color:#22c55e;font-family:monospace;text-align:center;"></div>
+        <div><label style="color:#94a3b8;font-size:.8em;">dist[B]</label><input type="text" id="sQ2b" placeholder="?" style="width:100%;padding:5px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></div>
+        <div><label style="color:#94a3b8;font-size:.8em;">dist[C]</label><input type="text" id="sQ2c" placeholder="?" style="width:100%;padding:5px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></div>
+        <div><label style="color:#94a3b8;font-size:.8em;">dist[D]</label><input type="text" id="sQ2d" placeholder="?" style="width:100%;padding:5px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="sQ2Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ2Trace()">Show Trace</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ2Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="sQ2Result" style="margin-bottom:8px;"></div>
+      <div id="sQ2Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:10px;font-family:monospace;font-size:.8em;max-height:300px;overflow-y:auto;color:#cbd5e1;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cQ2'),ctx=canvas.getContext('2d');
+  const nodes=[{id:'A',x:60,y:115},{id:'B',x:210,y:40},{id:'C',x:210,y:190},{id:'D',x:370,y:115}];
+  const edgesData=[{u:0,v:1,w:6},{u:0,v:2,w:4},{u:1,v:2,w:-3},{u:1,v:3,w:2},{u:2,v:3,w:5}];
+  // BF iter 1: (A,B,6):0+6=6→B=6. (A,C,4):0+4=4→C=4. (B,C,-3):6-3=3<4→C=3. (B,D,2):6+2=8→D=8. (C,D,5):3+5=8→D=8(no change since equal).
+  // After iter 1: [0, 6, 3, 8]
+  const correctDist=[0,6,3,8];
+
+  function drawArrow(x1,y1,x2,y2,color,lw){
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len;
+    const sx=x1+ux*20,sy=y1+uy*20,ex=x2-ux*20,ey=y2-uy*20;
+    ctx.strokeStyle=color;ctx.lineWidth=lw;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.fillStyle=color;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-ux*8+uy*4,ey-uy*8-ux*4);ctx.lineTo(ex-ux*8-uy*4,ey-uy*8+ux*4);ctx.fill();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,420,230);
+    edgesData.forEach(e=>{
+      const a=nodes[e.u],b=nodes[e.v];
+      drawArrow(a.x,a.y,b.x,b.y,e.w<0?'#ef4444':'#475569',1.5);
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      ctx.fillStyle=e.w<0?'#f87171':'#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.w,mx+(-dy/len)*14,my+(dx/len)*14);
+    });
+    nodes.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=i===0?'#6366f1':'#334155';ctx.fill();
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+
+  window.sQ2Check=function(){
+    const b=parseInt(document.getElementById('sQ2b').value);
+    const c=parseInt(document.getElementById('sQ2c').value);
+    const d=parseInt(document.getElementById('sQ2d').value);
+    const res=document.getElementById('sQ2Result');
+    if(b===6&&c===3&&d===8){
+      res.innerHTML='<div class="key-idea" style="padding:10px 14px;"><h3 style="font-size:.95em;">✓ Correct! [0, 6, 3, 8]</h3><p style="font-size:.82em;">B=6 via A, C=3 via A→B→C (relaxed twice: first to 4 via A, then to 3 via B), D=8 via B.</p></div>';
+    }else{
+      res.innerHTML='<div class="warning" style="padding:10px 14px;"><h3 style="font-size:.95em;">✗ Not quite</h3><p style="font-size:.82em;">Remember: process edges in order. B→C has weight -3, so C may improve via B. Expected: [0, 6, 3, 8]</p></div>';
+    }
+  };
+
+  window.sQ2Trace=function(){
+    const logEl=document.getElementById('sQ2Log');
+    logEl.innerHTML='';
+    const trace=[
+      'Init: dist = [A:0, B:∞, C:∞, D:∞]',
+      '',
+      '--- Iteration 1 ---',
+      'Edge (A,B,6):  0+6=6 < ∞  → dist[B]=6',
+      'Edge (A,C,4):  0+4=4 < ∞  → dist[C]=4',
+      'Edge (B,C,-3): 6+(-3)=3 < 4  → dist[C]=3 ✓',
+      'Edge (B,D,2):  6+2=8 < ∞  → dist[D]=8',
+      'Edge (C,D,5):  3+5=8 = 8  → no change',
+      '',
+      'After iter 1: [0, 6, 3, 8]',
+      '',
+      '--- Iteration 2 ---',
+      'No changes (converged)',
+      '',
+      '--- Iteration 3 ---',
+      'No changes. V-th check: no negative cycle.',
+      '',
+      'Final: A=0, B=6, C=3, D=8'
+    ];
+    let i=0;
+    const t=setInterval(()=>{
+      if(i>=trace.length){clearInterval(t);return;}
+      logEl.innerHTML+='<div'+(trace[i].includes('✓')?' style="color:#22c55e"':'')+'>'+trace[i]+'</div>';
+      logEl.scrollTop=logEl.scrollHeight;
+      i++;
+    },300);
+  };
+
+  window.sQ2Reset=function(){
+    document.getElementById('sQ2b').value='';document.getElementById('sQ2c').value='';document.getElementById('sQ2d').value='';
+    document.getElementById('sQ2Result').innerHTML='';document.getElementById('sQ2Log').innerHTML='';
+  };
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sQ2').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE Q3: Predict Output ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Predict the Output</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem;">
+    <div>
+      <p style="font-size:.9em;color:#94a3b8;">What does this Java code print?</p>
+      <div class="code-block"><div class="code-content" style="font-size:.8em;">
+<span class="line">int[] dist = {0, INF, INF, INF, INF};</span>
+<span class="line">int[][] edges = {</span>
+<span class="line">  {0,1,10}, {0,2,5},</span>
+<span class="line">  {1,3,1},  {2,1,3},</span>
+<span class="line">  {2,3,9},  {3,4,4}</span>
+<span class="line">};</span>
+<span class="line">// Dijkstra with PQ</span>
+<span class="line">PQ pq = new MinPQ();</span>
+<span class="line">pq.insert(0, 0);</span>
+<span class="line">boolean[] visited = new boolean[5];</span>
+<span class="line">while (!pq.isEmpty()) {</span>
+<span class="line">  int u = pq.extractMin();</span>
+<span class="line">  if (visited[u]) continue;</span>
+<span class="line">  visited[u] = true;</span>
+<span class="line">  for (edge : adj[u])</span>
+<span class="line">    if (dist[u]+edge.w &lt; dist[edge.v]){</span>
+<span class="line">      dist[edge.v] = dist[u]+edge.w;</span>
+<span class="line">      pq.insert(edge.v, dist[edge.v]);</span>
+<span class="line">    }</span>
+<span class="line">}</span>
+<span class="line">print(Arrays.toString(dist));</span>
+      </div></div>
+    </div>
+    <div>
+      <h3>Your Prediction</h3>
+      <p style="font-size:.85em;color:#94a3b8;">Enter the final dist[] array (5 values):</p>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px;">
+        <div><label style="color:#94a3b8;font-size:.75em;">dist[0]</label><input type="text" id="sQ3v0" value="0" disabled style="width:100%;padding:5px;background:#334155;border:1px solid #475569;border-radius:6px;color:#22c55e;font-family:monospace;text-align:center;"></div>
+        <div><label style="color:#94a3b8;font-size:.75em;">dist[1]</label><input type="text" id="sQ3v1" placeholder="?" style="width:100%;padding:5px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></div>
+        <div><label style="color:#94a3b8;font-size:.75em;">dist[2]</label><input type="text" id="sQ3v2" placeholder="?" style="width:100%;padding:5px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></div>
+        <div><label style="color:#94a3b8;font-size:.75em;">dist[3]</label><input type="text" id="sQ3v3" placeholder="?" style="width:100%;padding:5px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></div>
+        <div><label style="color:#94a3b8;font-size:.75em;">dist[4]</label><input type="text" id="sQ3v4" placeholder="?" style="width:100%;padding:5px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="sQ3Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ3Trace()">Show Trace</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ3Reset()">Reset</button>
+      </div>
+      <div id="sQ3Result" style="margin-top:10px;"></div>
+      <div id="sQ3Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:.75em;max-height:150px;overflow-y:auto;margin-top:8px;color:#cbd5e1;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Graph: 0→1:10, 0→2:5, 1→3:1, 2→1:3, 2→3:9, 3→4:4
+  // Dijkstra from 0:
+  // Process 0(0): 1=10, 2=5. PQ={(2,5),(1,10)}
+  // Process 2(5): 1=min(10,8)=8, 3=14. PQ={(1,8),(1,10),(3,14)}
+  // Process 1(8): 3=min(14,9)=9. PQ={(1,10),(3,9),(3,14)}
+  // Process 3(9): 4=13. PQ={(1,10),(3,14),(4,13)}
+  // Process 1(10): visited→skip. Process 4(13): done. Process 3(14): visited→skip.
+  // Final: [0, 8, 5, 9, 13]
+  const correct=[0,8,5,9,13];
+
+  window.sQ3Check=function(){
+    const vals=[0];
+    for(let i=1;i<=4;i++)vals.push(parseInt(document.getElementById('sQ3v'+i).value));
+    const res=document.getElementById('sQ3Result');
+    if(JSON.stringify(vals)===JSON.stringify(correct)){
+      res.innerHTML='<div class="key-idea" style="padding:10px 14px;"><h3 style="font-size:.95em;">✓ Correct! [0, 8, 5, 9, 13]</h3><p style="font-size:.82em;">Key insight: vertex 1 is reached cheaper via 0→2→1 (cost 8) than directly 0→1 (cost 10).</p></div>';
+    }else{
+      res.innerHTML='<div class="warning" style="padding:10px 14px;"><h3 style="font-size:.95em;">✗ Not quite</h3><p style="font-size:.82em;">Expected [0, 8, 5, 9, 13]. Click Show Trace to see the step-by-step execution.</p></div>';
+    }
+  };
+
+  window.sQ3Trace=function(){
+    const logEl=document.getElementById('sQ3Log');
+    logEl.innerHTML='';
+    const trace=[
+      'Init: dist=[0, ∞, ∞, ∞, ∞], PQ={(0,0)}',
+      '',
+      'Extract 0 (d=0), mark visited:',
+      '  0→1: 0+10=10 < ∞ → dist[1]=10',
+      '  0→2: 0+5=5 < ∞   → dist[2]=5',
+      '  PQ: {(2,5), (1,10)}',
+      '',
+      'Extract 2 (d=5), mark visited:',
+      '  2→1: 5+3=8 < 10   → dist[1]=8 ✓',
+      '  2→3: 5+9=14 < ∞   → dist[3]=14',
+      '  PQ: {(1,8), (1,10), (3,14)}',
+      '',
+      'Extract 1 (d=8), mark visited:',
+      '  1→3: 8+1=9 < 14   → dist[3]=9 ✓',
+      '  PQ: {(3,9), (1,10), (3,14)}',
+      '',
+      'Extract 3 (d=9), mark visited:',
+      '  3→4: 9+4=13 < ∞   → dist[4]=13',
+      '',
+      'Extract 1(10): visited → skip',
+      'Extract 4(13): visited, no outgoing. Done!',
+      'Extract 3(14): visited → skip',
+      '',
+      'Output: [0, 8, 5, 9, 13]'
+    ];
+    let i=0;
+    const t=setInterval(()=>{
+      if(i>=trace.length){clearInterval(t);return;}
+      logEl.innerHTML+='<div'+(trace[i].includes('✓')?' style="color:#22c55e"':'')+'>'+trace[i]+'</div>';
+      logEl.scrollTop=logEl.scrollHeight;
+      i++;
+    },250);
+  };
+
+  window.sQ3Reset=function(){
+    for(let i=1;i<=4;i++)document.getElementById('sQ3v'+i).value='';
+    document.getElementById('sQ3Result').innerHTML='';document.getElementById('sQ3Log').innerHTML='';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&#9664; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &#9654;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','s16','sCA','sCB','sCC','s17','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

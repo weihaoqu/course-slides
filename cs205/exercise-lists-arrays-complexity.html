@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS205 Practice — Lists, Arrays & Complexity</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.header{position:fixed;top:0;left:0;right:0;background:#1e293b;border-bottom:1px solid #334155;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;z-index:100}
+.header h1{font-size:1.1em;color:#38bdf8}
+.progress-info{display:flex;align-items:center;gap:16px;font-size:.85em}
+.progress-bar{width:200px;height:6px;background:#334155;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa);transition:width .3s;width:0}
+.timer{color:#f59e0b;font-family:monospace;font-size:1em}
+.score{color:#22c55e;font-weight:600}
+.main{padding:70px 24px 40px;max-width:900px;margin:0 auto}
+.section-header{background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.15));border:1px solid #334155;border-radius:12px;padding:20px 24px;margin:24px 0 16px;text-align:center}
+.section-header h2{color:#a78bfa;font-size:1.4em;margin-bottom:4px}
+.section-header p{color:#94a3b8;font-size:.9em}
+.question{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin:12px 0;transition:border-color .3s}
+.question.correct{border-color:#22c55e}
+.question.incorrect{border-color:#ef4444}
+.question.answered{opacity:.85}
+.q-num{display:inline-block;background:#6366f1;color:#fff;font-size:.7em;font-weight:700;padding:3px 10px;border-radius:8px;margin-bottom:8px}
+.q-num.sec-b{background:#f59e0b}
+.q-num.sec-c{background:#22c55e}
+.q-num.sec-d{background:#ef4444}
+.q-title{font-size:1.05em;font-weight:600;color:#e2e8f0;margin-bottom:10px}
+.q-desc{font-size:.9em;color:#94a3b8;margin-bottom:12px}
+code{background:#0d1117;padding:2px 6px;border-radius:4px;font-family:'SF Mono','Fira Code',monospace;color:#a5f3fc;font-size:.9em}
+pre{background:#0d1117;border:1px solid #334155;border-radius:8px;padding:14px;margin:10px 0;font-family:monospace;font-size:.85em;line-height:1.6;color:#cbd5e1;overflow-x:auto;white-space:pre}
+.options{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;cursor:pointer;transition:all .2s;font-size:.92em}
+.opt:hover{border-color:#6366f1;background:rgba(99,102,241,.08)}
+.opt.selected{border-color:#6366f1;background:rgba(99,102,241,.12)}
+.opt.correct-answer{border-color:#22c55e;background:rgba(34,197,94,.12)}
+.opt.wrong-answer{border-color:#ef4444;background:rgba(239,68,68,.12)}
+.opt input{accent-color:#6366f1}
+.check-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:.9em;font-weight:600;transition:all .2s;margin-top:8px}
+.check-btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(99,102,241,.4)}
+.check-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.feedback{margin-top:10px;padding:12px 16px;border-radius:8px;font-size:.88em;display:none}
+.feedback.show{display:block}
+.feedback.correct{background:rgba(34,197,94,.1);border-left:4px solid #22c55e;color:#4ade80}
+.feedback.incorrect{background:rgba(239,68,68,.1);border-left:4px solid #ef4444;color:#f87171}
+.diagram{background:#0d1117;border:1px solid #334155;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:.85em;line-height:1.5;color:#a5f3fc;margin:8px 0;white-space:pre;overflow-x:auto}
+.input-answer{padding:8px 12px;background:#0d1117;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:.95em;width:120px}
+.input-answer:focus{outline:none;border-color:#6366f1}
+.multi-input{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.multi-input label{color:#94a3b8;font-size:.82em}
+.multi-input .group{display:flex;flex-direction:column;align-items:center;gap:2px}
+.order-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.order-item{padding:6px 14px;background:#0f172a;border:1px solid #475569;border-radius:6px;cursor:pointer;font-family:monospace;font-size:.9em;transition:all .2s;user-select:none}
+.order-item:hover{border-color:#6366f1}
+.order-item.placed{opacity:.3;cursor:not-allowed}
+.order-slots{display:flex;gap:6px;margin:8px 0}
+.order-slot{width:80px;height:36px;border:2px dashed #475569;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:.85em;color:#94a3b8;transition:all .2s}
+.order-slot.filled{border-style:solid;border-color:#6366f1;color:#e2e8f0;background:rgba(99,102,241,.1)}
+.canvas-area{margin:10px 0}
+canvas{background:rgba(0,0,0,0.2);border-radius:8px;display:block}
+.summary{background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.15));border:1px solid #6366f1;border-radius:16px;padding:30px;margin:24px 0;text-align:center;display:none}
+.summary h2{color:#a78bfa;font-size:1.8em;margin-bottom:8px}
+.summary .big-score{font-size:3em;font-weight:700;margin:12px 0}
+.summary .breakdown{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+.summary .breakdown div{background:#1e293b;border-radius:8px;padding:12px}
+.summary .breakdown h4{color:#94a3b8;font-size:.8em;margin-bottom:4px}
+.hint-btn{background:none;border:1px solid #475569;color:#94a3b8;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:.78em;margin-left:8px;transition:all .2s}
+.hint-btn:hover{border-color:#f59e0b;color:#f59e0b}
+.hint{display:none;margin-top:8px;padding:10px 14px;background:rgba(245,158,11,.08);border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;font-size:.82em;color:#fbbf24}
+.hint.show{display:block}
+@media(max-width:600px){
+  .main{padding:65px 12px 30px}
+  .header{padding:8px 12px}
+  .progress-bar{width:100px}
+  .question{padding:14px 16px}
+  pre{font-size:.75em;padding:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>CS205 Practice Exercise</h1>
+  <div class="progress-info">
+    <div class="score" id="scoreDisplay">0 / 18</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="timer" id="timer">50:00</div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ==================== INTRO ==================== -->
+<div style="text-align:center;padding:20px 0;">
+  <h1 style="font-size:1.8em;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Lists, Arrays & Complexity</h1>
+  <p style="color:#94a3b8;margin-top:8px;">18 questions &bull; ~50 minutes &bull; Work at your own pace</p>
+  <div style="margin:16px auto;max-width:360px;">
+    <label style="color:#94a3b8;font-size:.85em;">Enter your name (required for submission):</label>
+    <input type="text" id="studentName" placeholder="Your full name" style="width:100%;padding:10px 14px;background:#1e293b;border:2px solid #6366f1;border-radius:8px;color:#e2e8f0;font-size:1em;margin-top:6px;text-align:center;" oninput="document.getElementById('nameDisplay').textContent=this.value">
+  </div>
+  <p style="color:#64748b;font-size:.85em;margin-top:4px;">Each question has instant feedback. Use hints if stuck. Your score updates live.</p>
+  <p style="color:#f59e0b;font-size:.85em;margin-top:4px;">When you finish, <strong>screenshot your summary</strong> and submit it on eCampus.</p>
+</div>
+
+<!-- ==================== SECTION A: LINKED LISTS ==================== -->
+<div class="section-header">
+  <h2>Section A: Linked Lists</h2>
+  <p>6 questions &bull; ~15 minutes</p>
+</div>
+
+<!-- Q1 -->
+<div class="question" id="q1">
+  <span class="q-num">Q1</span>
+  <div class="q-title">Trace: Insert at Head</div>
+  <div class="q-desc">Starting with an empty singly linked list, we perform these operations in order:</div>
+  <pre>insertAtHead(3)
+insertAtHead(7)
+insertAtHead(1)
+insertAtHead(9)</pre>
+  <div class="q-desc">What does the list look like after all four insertions? (head → tail)</div>
+  <div class="options" data-q="q1" data-answer="c">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q1"> <span>3 → 7 → 1 → 9</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q1"> <span>9 → 1 → 3 → 7</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q1"> <span>9 → 1 → 7 → 3</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q1"> <span>1 → 7 → 3 → 9</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q1')">Check Answer</button>
+  <button class="hint-btn" onclick="toggleHint('q1')">Hint</button>
+  <div class="hint" id="q1-hint">Each insertAtHead places the new node BEFORE the current head. So the last inserted element is at the front.</div>
+  <div class="feedback" id="q1-fb"></div>
+</div>
+
+<!-- Q2 -->
+<div class="question" id="q2">
+  <span class="q-num">Q2</span>
+  <div class="q-title">Code Trace: What does this print?</div>
+  <pre>Node curr = head;  // list: 5 → 8 → 2 → 6
+int sum = 0;
+while (curr != null) {
+    if (curr.data % 2 == 0) {
+        sum += curr.data;
+    }
+    curr = curr.next;
+}
+System.out.println(sum);</pre>
+  <div class="q-desc">What value is printed?</div>
+  <div class="multi-input">
+    <span style="color:#94a3b8;">Answer: </span>
+    <input type="text" id="q2-input" class="input-answer" placeholder="?">
+    <button class="check-btn" onclick="checkInput('q2','16','The even numbers are 8, 2, 6. Sum = 8 + 2 + 6 = 16. The loop visits every node, checks if data is even (% 2 == 0), and adds it to sum.')">Check</button>
+    <button class="hint-btn" onclick="toggleHint('q2')">Hint</button>
+  </div>
+  <div class="hint" id="q2-hint">Which values in the list are even? Add those up. Remember: 5 is odd, 8 is even, 2 is even, 6 is even.</div>
+  <div class="feedback" id="q2-fb"></div>
+</div>
+
+<!-- Q3 -->
+<div class="question" id="q3">
+  <span class="q-num">Q3</span>
+  <div class="q-title">Fix the Bug: Delete a Node</div>
+  <div class="q-desc">This code tries to delete the node with value <code>target</code> from a singly linked list. It has a bug. What's wrong?</div>
+  <pre>void delete(int target) {
+    Node curr = head;
+    while (curr != null) {
+        if (curr.data == target) {
+            curr = curr.next;   // Line A
+            return;
+        }
+        curr = curr.next;
+    }
+}</pre>
+  <div class="options" data-q="q3" data-answer="b">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q3"> <span>It doesn't handle an empty list</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q3"> <span>Line A only advances the local pointer — it doesn't actually remove the node from the list</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q3"> <span>It should use <code>curr.next</code> instead of <code>curr</code> in the if condition</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q3"> <span>The while loop condition should be <code>curr.next != null</code></span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q3')">Check Answer</button>
+  <button class="hint-btn" onclick="toggleHint('q3')">Hint</button>
+  <div class="hint" id="q3-hint">To remove a node, you need the PREVIOUS node to skip over it: <code>prev.next = curr.next</code>. Does this code do that?</div>
+  <div class="feedback" id="q3-fb"></div>
+</div>
+
+<!-- Q4 -->
+<div class="question" id="q4">
+  <span class="q-num">Q4</span>
+  <div class="q-title">Linked List Operations: Time Complexity</div>
+  <div class="q-desc">Match each operation to its time complexity for a singly linked list WITH both head and tail pointers.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;">
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">Insert at head:</p>
+      <select id="q4a" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="1">O(1)</option><option value="n">O(n)</option><option value="logn">O(log n)</option>
+      </select>
+    </div>
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">Insert at tail:</p>
+      <select id="q4b" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="1">O(1)</option><option value="n">O(n)</option><option value="logn">O(log n)</option>
+      </select>
+    </div>
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">Delete at head:</p>
+      <select id="q4c" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="1">O(1)</option><option value="n">O(n)</option><option value="logn">O(log n)</option>
+      </select>
+    </div>
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">Delete at tail:</p>
+      <select id="q4d" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="1">O(1)</option><option value="n">O(n)</option><option value="logn">O(log n)</option>
+      </select>
+    </div>
+  </div>
+  <button class="check-btn" onclick="checkQ4()">Check All</button>
+  <button class="hint-btn" onclick="toggleHint('q4')">Hint</button>
+  <div class="hint" id="q4-hint">With a tail pointer, you can INSERT at the tail in O(1). But to DELETE the tail, you need the node BEFORE it — and in a singly linked list, you must traverse to find it.</div>
+  <div class="feedback" id="q4-fb"></div>
+</div>
+
+<!-- Q5 -->
+<div class="question" id="q5">
+  <span class="q-num">Q5</span>
+  <div class="q-title">Predict the State</div>
+  <div class="q-desc">Starting with list: <code>A → B → C → D</code>, what's the list after these operations?</div>
+  <pre>insertAfter(B, X)    // insert X after node B
+deleteNode(A)        // delete the head node
+insertAtHead(Z)</pre>
+  <div class="options" data-q="q5" data-answer="b">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q5"> <span>Z → A → B → X → C → D</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q5"> <span>Z → B → X → C → D</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q5"> <span>Z → X → B → C → D</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q5"> <span>Z → B → C → X → D</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q5')">Check Answer</button>
+  <button class="hint-btn" onclick="toggleHint('q5')">Hint</button>
+  <div class="hint" id="q5-hint">Trace step by step: after insertAfter(B,X) → A→B→X→C→D. After deleteNode(A) → B→X→C→D. After insertAtHead(Z) → Z→B→X→C→D.</div>
+  <div class="feedback" id="q5-fb"></div>
+</div>
+
+<!-- Q6 -->
+<div class="question" id="q6">
+  <span class="q-num">Q6</span>
+  <div class="q-title">When to Use a Linked List?</div>
+  <div class="q-desc">Which scenario benefits MOST from using a linked list instead of an array?</div>
+  <div class="options" data-q="q6" data-answer="c">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q6"> <span>Accessing elements by index frequently (e.g., <code>arr[i]</code>)</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q6"> <span>Binary search on sorted data</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q6"> <span>Frequent insertions and deletions at the front of the collection</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q6"> <span>Storing a fixed number of elements that are accessed sequentially once</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q6')">Check Answer</button>
+  <button class="hint-btn" onclick="toggleHint('q6')">Hint</button>
+  <div class="hint" id="q6-hint">Linked lists shine when you need O(1) insert/delete at the head. Arrays require O(n) shifting for front insertions.</div>
+  <div class="feedback" id="q6-fb"></div>
+</div>
+
+<!-- ==================== SECTION B: ARRAYS & ARRAYLISTS ==================== -->
+<div class="section-header">
+  <h2>Section B: Arrays & ArrayLists</h2>
+  <p>6 questions &bull; ~15 minutes</p>
+</div>
+
+<!-- Q7 -->
+<div class="question" id="q7">
+  <span class="q-num sec-b">Q7</span>
+  <div class="q-title">Array Insert: How Many Shifts?</div>
+  <div class="q-desc">Given array <code>[10, 20, 30, 40, 50, _, _]</code> (size=5, capacity=7), how many elements must shift to insert <code>25</code> at index 2?</div>
+  <div class="diagram">[10, 20, 30, 40, 50, _, _]
+         ↑ insert 25 here (index 2)
+
+After: [10, 20, 25, 30, 40, 50, _]</div>
+  <div class="multi-input">
+    <span style="color:#94a3b8;">Elements shifted: </span>
+    <input type="text" id="q7-input" class="input-answer" placeholder="?">
+    <button class="check-btn" onclick="checkInput('q7','3','Elements at indices 2, 3, 4 (values 30, 40, 50) must shift one position to the right. That\'s 3 elements. In general, inserting at index i in an array of size n requires n - i shifts.')">Check</button>
+    <button class="hint-btn" onclick="toggleHint('q7')">Hint</button>
+  </div>
+  <div class="hint" id="q7-hint">All elements from the insertion point to the end must shift right by one. Count: index 2, 3, and 4.</div>
+  <div class="feedback" id="q7-fb"></div>
+</div>
+
+<!-- Q8 -->
+<div class="question" id="q8">
+  <span class="q-num sec-b">Q8</span>
+  <div class="q-title">Dynamic Array Resizing</div>
+  <div class="q-desc">An ArrayList starts with capacity 2 and doubles when full. After inserting 9 elements, how many times has the array been resized?</div>
+  <pre>Capacity changes:
+Start: capacity = 2
+Insert 1, 2 → full! Resize to 4
+Insert 3, 4 → full! Resize to 8
+Insert 5, 6, 7, 8 → full! Resize to 16
+Insert 9 → fits in capacity 16</pre>
+  <div class="multi-input">
+    <span style="color:#94a3b8;">Number of resizes: </span>
+    <input type="text" id="q8-input" class="input-answer" placeholder="?">
+    <button class="check-btn" onclick="checkInput('q8','3','Capacity: 2→4→8→16. Three doublings. The total elements copied: 2 + 4 + 8 = 14 copies for 9 inserts. Amortized cost per insert ≈ 14/9 ≈ 1.6 — still O(1)!')">Check</button>
+    <button class="hint-btn" onclick="toggleHint('q8')">Hint</button>
+  </div>
+  <div class="hint" id="q8-hint">Track the capacity: starts at 2. When full after 2 elements → 4. When full after 4 → 8. When full after 8 → 16. The 9th element fits in capacity 16.</div>
+  <div class="feedback" id="q8-fb"></div>
+</div>
+
+<!-- Q9 -->
+<div class="question" id="q9">
+  <span class="q-num sec-b">Q9</span>
+  <div class="q-title">Total Copy Cost</div>
+  <div class="q-desc">Using the doubling strategy, if we insert <strong>n = 16</strong> elements into an initially empty ArrayList (starting capacity 1), what is the total number of elements copied across ALL resizes?</div>
+  <div class="options" data-q="q9" data-answer="c">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q9"> <span>16</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q9"> <span>15</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q9"> <span>1 + 2 + 4 + 8 = 15</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q9"> <span>1 + 2 + 4 + 8 + 16 = 31</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q9')">Check Answer</button>
+  <button class="hint-btn" onclick="toggleHint('q9')">Hint</button>
+  <div class="hint" id="q9-hint">Capacity: 1→2→4→8→16. Resizes at capacity 1 (copy 1), at 2 (copy 2), at 4 (copy 4), at 8 (copy 8). No resize at 16 since we exactly fill it. Total copies = 1+2+4+8 = 15.</div>
+  <div class="feedback" id="q9-fb"></div>
+</div>
+
+<!-- Q10 -->
+<div class="question" id="q10">
+  <span class="q-num sec-b">Q10</span>
+  <div class="q-title">Array vs Linked List</div>
+  <div class="q-desc">For each operation, which is faster?</div>
+  <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin:10px 0;font-size:.9em;">
+    <div style="color:#94a3b8;">Access element at index i:</div>
+    <select id="q10a" style="padding:5px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+      <option value="">--</option><option value="a">Array</option><option value="l">Linked List</option><option value="s">Same</option>
+    </select>
+    <div style="color:#94a3b8;">Insert at front (index 0):</div>
+    <select id="q10b" style="padding:5px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+      <option value="">--</option><option value="a">Array</option><option value="l">Linked List</option><option value="s">Same</option>
+    </select>
+    <div style="color:#94a3b8;">Insert at end (with tail ptr / dynamic array):</div>
+    <select id="q10c" style="padding:5px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+      <option value="">--</option><option value="a">Array</option><option value="l">Linked List</option><option value="s">Same</option>
+    </select>
+    <div style="color:#94a3b8;">Memory usage per element:</div>
+    <select id="q10d" style="padding:5px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+      <option value="">--</option><option value="a">Array (less)</option><option value="l">Linked List (less)</option><option value="s">Same</option>
+    </select>
+  </div>
+  <button class="check-btn" onclick="checkQ10()">Check All</button>
+  <button class="hint-btn" onclick="toggleHint('q10')">Hint</button>
+  <div class="hint" id="q10-hint">Array: O(1) random access, O(n) front insert, O(1)* end insert. Linked list: O(n) access, O(1) front insert, O(1) end insert. Arrays store just the data; linked lists need an extra pointer per node.</div>
+  <div class="feedback" id="q10-fb"></div>
+</div>
+
+<!-- Q11 -->
+<div class="question" id="q11">
+  <span class="q-num sec-b">Q11</span>
+  <div class="q-title">Array Delete: Trace the State</div>
+  <div class="q-desc">Given <code>[4, 7, 2, 9, 1]</code>, what is the array after deleting the element at index 1?</div>
+  <div class="options" data-q="q11" data-answer="a">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q11"> <span>[4, 2, 9, 1] — elements shift left</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q11"> <span>[4, 2, 9, 1, 1] — no size change</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q11"> <span>[7, 2, 9, 1] — delete from front</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q11"> <span>[4, 9, 2, 1] — swap with next</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q11')">Check Answer</button>
+  <div class="feedback" id="q11-fb"></div>
+</div>
+
+<!-- Q12 -->
+<div class="question" id="q12">
+  <span class="q-num sec-b">Q12</span>
+  <div class="q-title">Amortized Analysis: True or False</div>
+  <div class="q-desc">An ArrayList with doubling strategy performs <code>addLast()</code> n times. Which statement is TRUE?</div>
+  <div class="options" data-q="q12" data-answer="d">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q12"> <span>Every single addLast() is O(1)</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q12"> <span>The total cost of n addLast() calls is O(n²)</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q12"> <span>Resizing happens every n/2 insertions</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q12"> <span>The total cost of n addLast() calls is O(n), making each one O(1) amortized</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q12')">Check Answer</button>
+  <button class="hint-btn" onclick="toggleHint('q12')">Hint</button>
+  <div class="hint" id="q12-hint">Most addLast() calls are O(1) (just place the element). Occasionally one is O(n) due to resize. But the total copies across ALL resizes form a geometric series: 1 + 2 + 4 + ... + n ≈ 2n = O(n).</div>
+  <div class="feedback" id="q12-fb"></div>
+</div>
+
+<!-- ==================== SECTION C: COMPLEXITY ANALYSIS ==================== -->
+<div class="section-header">
+  <h2>Section C: Complexity Analysis</h2>
+  <p>4 questions &bull; ~12 minutes</p>
+</div>
+
+<!-- Q13 -->
+<div class="question" id="q13">
+  <span class="q-num sec-c">Q13</span>
+  <div class="q-title">Rank the Growth Rates</div>
+  <div class="q-desc">Order these from SLOWEST growth (best) to FASTEST growth (worst):</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;" id="q13-items">
+    <span class="order-item" onclick="placeItem(this,'q13')">O(n²)</span>
+    <span class="order-item" onclick="placeItem(this,'q13')">O(1)</span>
+    <span class="order-item" onclick="placeItem(this,'q13')">O(n log n)</span>
+    <span class="order-item" onclick="placeItem(this,'q13')">O(log n)</span>
+    <span class="order-item" onclick="placeItem(this,'q13')">O(n)</span>
+    <span class="order-item" onclick="placeItem(this,'q13')">O(2ⁿ)</span>
+  </div>
+  <div class="q-desc" style="font-size:.82em;">Your order (slowest → fastest growth):</div>
+  <div class="order-slots" id="q13-slots">
+    <div class="order-slot" data-idx="0">1st</div>
+    <div class="order-slot" data-idx="1">2nd</div>
+    <div class="order-slot" data-idx="2">3rd</div>
+    <div class="order-slot" data-idx="3">4th</div>
+    <div class="order-slot" data-idx="4">5th</div>
+    <div class="order-slot" data-idx="5">6th</div>
+  </div>
+  <button class="check-btn" onclick="checkQ13()">Check Order</button>
+  <button class="hint-btn" onclick="toggleHint('q13')">Hint</button>
+  <button class="hint-btn" onclick="resetOrder('q13')">Reset</button>
+  <div class="hint" id="q13-hint">Think about what happens as n grows large. Constants don't grow. Logarithms grow very slowly. Linear grows steadily. n log n is slightly worse than linear. Quadratic grows fast. Exponential explodes.</div>
+  <div class="feedback" id="q13-fb"></div>
+</div>
+
+<!-- Q14 -->
+<div class="question" id="q14">
+  <span class="q-num sec-c">Q14</span>
+  <div class="q-title">Analyze This Loop</div>
+  <pre>int count = 0;
+for (int i = 0; i &lt; n; i++) {
+    for (int j = i; j &lt; n; j++) {
+        count++;
+    }
+}</pre>
+  <div class="q-desc">What is the Big-O time complexity?</div>
+  <div class="options" data-q="q14" data-answer="b">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q14"> <span>O(n) — the inner loop starts at i, so it's linear</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q14"> <span>O(n²) — it's n + (n-1) + (n-2) + ... + 1 = n(n+1)/2</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q14"> <span>O(n log n) — the inner loop halves each time</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q14"> <span>O(n³) — nested loops are always cubic</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q14')">Check Answer</button>
+  <button class="hint-btn" onclick="toggleHint('q14')">Hint</button>
+  <div class="hint" id="q14-hint">When i=0, inner loop runs n times. When i=1, it runs n-1 times. ... When i=n-1, it runs 1 time. Total = n + (n-1) + ... + 1 = ?</div>
+  <div class="feedback" id="q14-fb"></div>
+</div>
+
+<!-- Q15 -->
+<div class="question" id="q15">
+  <span class="q-num sec-c">Q15</span>
+  <div class="q-title">What's the Complexity?</div>
+  <pre>int i = n;
+while (i > 1) {
+    i = i / 2;
+}</pre>
+  <div class="q-desc">How many times does the loop execute?</div>
+  <div class="options" data-q="q15" data-answer="b">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q15"> <span>O(n) — it goes through all values from n to 1</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q15"> <span>O(log n) — i is halved each iteration</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q15"> <span>O(n/2) — it does half the work</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q15"> <span>O(√n) — it's a square root pattern</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q15')">Check Answer</button>
+  <div class="feedback" id="q15-fb"></div>
+</div>
+
+<!-- Q16 -->
+<div class="question" id="q16">
+  <span class="q-num sec-c">Q16</span>
+  <div class="q-title">Best, Worst, and Average Case</div>
+  <div class="q-desc">For LINEAR SEARCH (scanning an unsorted array for a target value), match each case:</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;">
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">Best case:</p>
+      <select id="q16a" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="1">O(1)</option><option value="n">O(n)</option><option value="n2">O(n/2)</option><option value="logn">O(log n)</option>
+      </select>
+    </div>
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">Worst case:</p>
+      <select id="q16b" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="1">O(1)</option><option value="n">O(n)</option><option value="n2">O(n/2)</option><option value="logn">O(log n)</option>
+      </select>
+    </div>
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">Average case:</p>
+      <select id="q16c" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="1">O(1)</option><option value="n">O(n)</option><option value="n2">O(n/2)</option><option value="logn">O(log n)</option>
+      </select>
+    </div>
+  </div>
+  <button class="check-btn" onclick="checkQ16()">Check All</button>
+  <button class="hint-btn" onclick="toggleHint('q16')">Hint</button>
+  <div class="hint" id="q16-hint">Best: target is the first element. Worst: target is last or not present. Average: on average, scan half the array — but O(n/2) = O(n) since we drop constants!</div>
+  <div class="feedback" id="q16-fb"></div>
+</div>
+
+<!-- ==================== SECTION D: MIXED CHALLENGES ==================== -->
+<div class="section-header">
+  <h2>Section D: Mixed Challenges</h2>
+  <p>2 questions &bull; ~8 minutes</p>
+</div>
+
+<!-- Q17 -->
+<div class="question" id="q17">
+  <span class="q-num sec-d">Q17</span>
+  <div class="q-title">Design Decision</div>
+  <div class="q-desc">You're building a text editor's <strong>undo</strong> feature. Users type characters one at a time, and pressing Ctrl+Z undoes the last action. Which data structure is best?</div>
+  <div class="options" data-q="q17" data-answer="b">
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q17"> <span>ArrayList — fast random access to any undo step</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q17"> <span>Stack (linked list based) — LIFO matches undo order, O(1) push/pop</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q17"> <span>Queue — FIFO processes actions in the order they happened</span></label>
+    <label class="opt" onclick="selectOpt(this)"><input type="radio" name="q17"> <span>Sorted array — binary search to find the action to undo</span></label>
+  </div>
+  <button class="check-btn" onclick="checkMC('q17')">Check Answer</button>
+  <div class="feedback" id="q17-fb"></div>
+</div>
+
+<!-- Q18 -->
+<div class="question" id="q18">
+  <span class="q-num sec-d">Q18</span>
+  <div class="q-title">Comprehensive: Code Analysis</div>
+  <div class="q-desc">Consider this code operating on a linked list of n elements:</div>
+  <pre>Node slow = head, fast = head;
+while (fast != null && fast.next != null) {
+    slow = slow.next;
+    fast = fast.next.next;
+}
+// slow is now at position ___</pre>
+  <div class="q-desc">When the loop ends, where is <code>slow</code> pointing? And what is the time complexity?</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;">
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">slow points to:</p>
+      <select id="q18a" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="mid">The middle node</option><option value="last">The last node</option><option value="head">Back to the head</option><option value="null">null</option>
+      </select>
+    </div>
+    <div>
+      <p style="font-size:.85em;color:#94a3b8;">Time complexity:</p>
+      <select id="q18b" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em;">
+        <option value="">-- Pick --</option><option value="1">O(1)</option><option value="logn">O(log n)</option><option value="n">O(n)</option><option value="n2">O(n²)</option>
+      </select>
+    </div>
+  </div>
+  <button class="check-btn" onclick="checkQ18()">Check</button>
+  <button class="hint-btn" onclick="toggleHint('q18')">Hint</button>
+  <div class="hint" id="q18-hint">Fast moves 2 nodes per step, slow moves 1. When fast reaches the end (n steps for fast = n/2 steps total), slow has moved n/2 nodes. Where is that?</div>
+  <div class="feedback" id="q18-fb"></div>
+</div>
+
+<!-- ==================== SUMMARY ==================== -->
+<div class="summary" id="summary">
+  <div style="background:#0f172a;border:2px solid #6366f1;border-radius:12px;padding:24px;margin-bottom:16px;">
+    <p style="color:#94a3b8;font-size:.8em;margin-bottom:4px;">CS205 Data Structures — Exercise Results</p>
+    <div id="nameDisplay" style="font-size:1.4em;font-weight:700;color:#38bdf8;margin-bottom:8px;"></div>
+    <div class="big-score" id="finalScore">0 / 18</div>
+    <div class="breakdown">
+      <div>
+        <h4>Section A: Linked Lists</h4>
+        <div id="scoreA" style="font-size:1.3em;font-weight:700;color:#6366f1;">0/6</div>
+      </div>
+      <div>
+        <h4>Section B: Arrays</h4>
+        <div id="scoreB" style="font-size:1.3em;font-weight:700;color:#f59e0b;">0/6</div>
+      </div>
+      <div>
+        <h4>Section C+D: Complexity & Mixed</h4>
+        <div id="scoreCD" style="font-size:1.3em;font-weight:700;color:#22c55e;">0/6</div>
+      </div>
+    </div>
+    <div id="timeFinished" style="color:#94a3b8;font-size:.85em;margin-top:10px;"></div>
+  </div>
+  <div style="background:rgba(245,158,11,.1);border:2px solid #f59e0b;border-radius:10px;padding:16px;margin-top:12px;">
+    <p style="color:#fbbf24;font-size:1.05em;font-weight:700;margin-bottom:4px;">Screenshot this box and submit it on eCampus!</p>
+    <p style="color:#94a3b8;font-size:.82em;">On Mac: Cmd+Shift+4 &nbsp;|&nbsp; On Windows: Win+Shift+S &nbsp;|&nbsp; On phone: screenshot button</p>
+    <p style="color:#94a3b8;font-size:.82em;margin-top:4px;">Go to eCampus &rarr; find the assignment &rarr; attach your screenshot &rarr; submit</p>
+  </div>
+  <p style="color:#94a3b8;margin-top:14px;font-size:.9em;">Review any questions marked red above for additional practice.</p>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ==================== SCORING & PROGRESS ====================
+const totalQs = 18;
+let answered = new Set();
+let correct = new Set();
+let orderData = {};
+
+function updateProgress() {
+  const pct = (answered.size / totalQs) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('scoreDisplay').textContent = correct.size + ' / ' + totalQs;
+  if (answered.size === totalQs) showSummary();
+}
+
+function markQuestion(qid, isCorrect) {
+  answered.add(qid);
+  const el = document.getElementById(qid);
+  el.classList.add('answered', isCorrect ? 'correct' : 'incorrect');
+  if (isCorrect) correct.add(qid);
+  // Disable check button
+  const btn = el.querySelector('.check-btn');
+  if (btn) btn.disabled = true;
+  updateProgress();
+}
+
+// ==================== MULTIPLE CHOICE ====================
+function selectOpt(label) {
+  const parent = label.closest('.options');
+  parent.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+  label.classList.add('selected');
+  label.querySelector('input').checked = true;
+}
+
+const mcFeedback = {
+  q1: { correct: 'Each insertAtHead pushes the new element to the front. After inserting 3, 7, 1, 9 in order: 9 is last inserted → first in list. Result: 9 → 1 → 7 → 3.', wrong: 'Remember: insertAtHead places each new element BEFORE the current head. Trace it: insert(3)→[3], insert(7)→[7,3], insert(1)→[1,7,3], insert(9)→[9,1,7,3].' },
+  q3: { correct: 'The code only moves the local variable `curr` forward — it doesn\'t modify any `next` pointer. To actually remove a node, you need `prev.next = curr.next`. This code leaves the list completely unchanged!', wrong: 'Look at Line A carefully: `curr = curr.next` changes the LOCAL variable. Does it change any node\'s `.next` pointer?' },
+  q5: { correct: 'Step 1: A→B→X→C→D (X inserted after B). Step 2: B→X→C→D (A deleted from head). Step 3: Z→B→X→C→D (Z added at head).', wrong: 'Trace each operation on the list state: start with A→B→C→D, then apply each operation in order.' },
+  q6: { correct: 'Linked lists excel at O(1) insertions/deletions at the head. Arrays need O(n) shifting for front operations. Random access and binary search require arrays (O(1) indexing).', wrong: 'Think about which operation is O(1) for linked lists but O(n) for arrays.' },
+  q9: { correct: 'Capacity: 1→2 (copy 1), 2→4 (copy 2), 4→8 (copy 4), 8→16 (copy 8). Total = 1+2+4+8 = 15. This geometric series sums to 2n-1, confirming O(n) total → O(1) amortized.', wrong: 'List each resize: at what size does the array double? How many elements are copied each time?' },
+  q11: { correct: 'Deleting at index 1 removes value 7. Elements at indices 2, 3, 4 (values 2, 9, 1) shift left by one. Size decreases from 5 to 4.', wrong: 'In array deletion, elements AFTER the deleted position shift LEFT to fill the gap.' },
+  q12: { correct: 'Most addLast() calls are O(1). Resizes happen at sizes 1, 2, 4, 8, ..., copying 1+2+4+...+n = 2n-1 elements total. So n insertions cost O(n) total → O(1) amortized per operation.', wrong: 'Think about the TOTAL cost, not individual operations. The expensive resizes are rare enough that they average out.' },
+  q14: { correct: 'The inner loop runs n, n-1, n-2, ..., 1 times. Sum = n(n+1)/2 = O(n²). This is the classic "triangular" nested loop — it\'s half of n², but constants don\'t matter for Big-O.', wrong: 'Count the total iterations: when i=0, j goes from 0 to n-1. When i=1, j goes from 1 to n-1. Add up all iterations.' },
+  q15: { correct: 'Starting from n, we halve each time: n → n/2 → n/4 → ... → 1. The number of halvings to reach 1 is log₂(n). This is the classic halving pattern = O(log n).', wrong: 'How many times can you divide n by 2 before reaching 1? That\'s the definition of log₂(n).' },
+  q17: { correct: 'Undo is LIFO — the last action should be undone first. A stack provides O(1) push (record action) and O(1) pop (undo). A linked-list-based stack avoids resizing overhead.', wrong: 'Think about the ORDER actions are undone. The most recent action is undone first. Which data structure matches that?' }
+};
+
+function checkMC(qid) {
+  if (answered.has(qid)) return;
+  const container = document.querySelector('#' + qid + ' .options');
+  const correctAns = container.dataset.answer;
+  const opts = container.querySelectorAll('.opt');
+  const selected = container.querySelector('.opt.selected');
+  if (!selected) return;
+
+  const selectedIdx = Array.from(opts).indexOf(selected);
+  const correctIdx = correctAns.charCodeAt(0) - 97; // a=0, b=1, c=2, d=3
+  const isCorrect = selectedIdx === correctIdx;
+
+  // Highlight
+  opts.forEach((o, i) => {
+    if (i === correctIdx) o.classList.add('correct-answer');
+    if (i === selectedIdx && !isCorrect) o.classList.add('wrong-answer');
+  });
+
+  const fb = document.getElementById(qid + '-fb');
+  const info = mcFeedback[qid];
+  if (isCorrect) {
+    fb.className = 'feedback show correct';
+    fb.textContent = '✓ Correct! ' + (info ? info.correct : '');
+  } else {
+    fb.className = 'feedback show incorrect';
+    fb.textContent = '✗ ' + (info ? info.wrong : 'Try reviewing this concept.');
+  }
+  markQuestion(qid, isCorrect);
+}
+
+// ==================== INPUT ANSWERS ====================
+function checkInput(qid, answer, explanation) {
+  if (answered.has(qid)) return;
+  const input = document.getElementById(qid + '-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const isCorrect = val === answer;
+  const fb = document.getElementById(qid + '-fb');
+  if (isCorrect) {
+    fb.className = 'feedback show correct';
+    fb.textContent = '✓ Correct! ' + explanation;
+  } else {
+    fb.className = 'feedback show incorrect';
+    fb.textContent = '✗ The answer is ' + answer + '. ' + explanation;
+  }
+  input.disabled = true;
+  markQuestion(qid, isCorrect);
+}
+
+// ==================== Q4: MATCHING ====================
+function checkQ4() {
+  if (answered.has('q4')) return;
+  const a = document.getElementById('q4a').value;
+  const b = document.getElementById('q4b').value;
+  const c = document.getElementById('q4c').value;
+  const d = document.getElementById('q4d').value;
+  if (!a || !b || !c || !d) return;
+  const isCorrect = a === '1' && b === '1' && c === '1' && d === 'n';
+  const fb = document.getElementById('q4-fb');
+  if (isCorrect) {
+    fb.className = 'feedback show correct';
+    fb.textContent = '✓ Correct! Insert at head: O(1), insert at tail: O(1) with tail pointer, delete at head: O(1), delete at tail: O(n) because you need to find the node before the tail in a singly linked list.';
+  } else {
+    fb.className = 'feedback show incorrect';
+    fb.textContent = '✗ Remember: with a tail pointer, insert-at-tail is O(1). But DELETE-at-tail requires finding the previous node — O(n) traversal in a singly linked list! This is the key asymmetry.';
+  }
+  ['q4a','q4b','q4c','q4d'].forEach(id => document.getElementById(id).disabled = true);
+  markQuestion('q4', isCorrect);
+}
+
+// ==================== Q10: MATCHING ====================
+function checkQ10() {
+  if (answered.has('q10')) return;
+  const a = document.getElementById('q10a').value;
+  const b = document.getElementById('q10b').value;
+  const c = document.getElementById('q10c').value;
+  const d = document.getElementById('q10d').value;
+  if (!a || !b || !c || !d) return;
+  const isCorrect = a === 'a' && b === 'l' && c === 's' && d === 'a';
+  const fb = document.getElementById('q10-fb');
+  if (isCorrect) {
+    fb.className = 'feedback show correct';
+    fb.textContent = '✓ Correct! Array wins on random access O(1) vs O(n) and memory (no pointer overhead). Linked list wins on front insertion O(1) vs O(n). End insertion is O(1) for both (amortized for array, direct for linked list with tail pointer).';
+  } else {
+    fb.className = 'feedback show incorrect';
+    let explanation = 'Access: Array O(1) vs LL O(n). Front insert: LL O(1) vs Array O(n). End insert: both O(1) amortized. Memory: Array stores just data, LL needs extra next pointer per node.';
+    fb.textContent = '✗ ' + explanation;
+  }
+  ['q10a','q10b','q10c','q10d'].forEach(id => document.getElementById(id).disabled = true);
+  markQuestion('q10', isCorrect);
+}
+
+// ==================== Q13: ORDERING ====================
+function placeItem(el, qid) {
+  if (el.classList.contains('placed') || answered.has(qid)) return;
+  const slots = document.querySelectorAll('#' + qid + '-slots .order-slot');
+  for (let slot of slots) {
+    if (!slot.classList.contains('filled')) {
+      slot.textContent = el.textContent;
+      slot.classList.add('filled');
+      slot.dataset.value = el.textContent;
+      el.classList.add('placed');
+      break;
+    }
+  }
+}
+
+function resetOrder(qid) {
+  if (answered.has(qid)) return;
+  document.querySelectorAll('#' + qid + '-slots .order-slot').forEach(s => {
+    s.textContent = ['1st','2nd','3rd','4th','5th','6th'][s.dataset.idx];
+    s.classList.remove('filled');
+    delete s.dataset.value;
+  });
+  document.querySelectorAll('#' + qid + '-items .order-item').forEach(i => i.classList.remove('placed'));
+}
+
+function checkQ13() {
+  if (answered.has('q13')) return;
+  const slots = document.querySelectorAll('#q13-slots .order-slot');
+  const order = Array.from(slots).map(s => s.dataset.value || '');
+  if (order.some(v => !v)) return; // not all filled
+  const correct = ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)', 'O(n²)', 'O(2ⁿ)'];
+  const isCorrect = JSON.stringify(order) === JSON.stringify(correct);
+  const fb = document.getElementById('q13-fb');
+  if (isCorrect) {
+    fb.className = 'feedback show correct';
+    fb.textContent = '✓ Correct! O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ). This ranking is fundamental — memorize it!';
+  } else {
+    fb.className = 'feedback show incorrect';
+    fb.textContent = '✗ The correct order is: O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ). Constant < logarithmic < linear < linearithmic < quadratic < exponential.';
+    // Show correct in slots
+    slots.forEach((s, i) => {
+      s.textContent = correct[i];
+      s.classList.add('filled');
+      s.style.borderColor = s.dataset.value === correct[i] ? '#22c55e' : '#ef4444';
+    });
+  }
+  markQuestion('q13', isCorrect);
+}
+
+// ==================== Q16: LINEAR SEARCH CASES ====================
+function checkQ16() {
+  if (answered.has('q16')) return;
+  const a = document.getElementById('q16a').value;
+  const b = document.getElementById('q16b').value;
+  const c = document.getElementById('q16c').value;
+  if (!a || !b || !c) return;
+  const isCorrect = a === '1' && b === 'n' && c === 'n';
+  const fb = document.getElementById('q16-fb');
+  if (isCorrect) {
+    fb.className = 'feedback show correct';
+    fb.textContent = '✓ Correct! Best: O(1) (target is first). Worst: O(n) (target is last or absent). Average: O(n) — on average we scan n/2 elements, but O(n/2) = O(n) since we drop constants.';
+  } else {
+    fb.className = 'feedback show incorrect';
+    fb.textContent = '✗ Best case: target is the first element → O(1). Worst case: target is last or not found → O(n). Average: scan ~n/2 elements → O(n/2) = O(n). Remember: O(n/2) simplifies to O(n)!';
+  }
+  ['q16a','q16b','q16c'].forEach(id => document.getElementById(id).disabled = true);
+  markQuestion('q16', isCorrect);
+}
+
+// ==================== Q18: SLOW/FAST POINTER ====================
+function checkQ18() {
+  if (answered.has('q18')) return;
+  const a = document.getElementById('q18a').value;
+  const b = document.getElementById('q18b').value;
+  if (!a || !b) return;
+  const isCorrect = a === 'mid' && b === 'n';
+  const fb = document.getElementById('q18-fb');
+  if (isCorrect) {
+    fb.className = 'feedback show correct';
+    fb.textContent = '✓ Correct! This is the classic "tortoise and hare" technique to find the middle of a linked list in one pass. Fast moves 2x speed, so when fast reaches the end, slow is at the middle. Time: O(n) — we traverse the list once (fast makes n/2 iterations, each moving 2 nodes).';
+  } else {
+    fb.className = 'feedback show incorrect';
+    fb.textContent = '✗ Fast moves 2 nodes per step, slow moves 1. When fast reaches the end after ~n/2 steps, slow has moved n/2 nodes → middle of the list. The loop runs n/2 times → O(n). This is the "tortoise and hare" technique!';
+  }
+  ['q18a','q18b'].forEach(id => document.getElementById(id).disabled = true);
+  markQuestion('q18', isCorrect);
+}
+
+// ==================== HINTS ====================
+function toggleHint(qid) {
+  const hint = document.getElementById(qid + '-hint');
+  hint.classList.toggle('show');
+}
+
+// ==================== TIMER ====================
+let timeLeft = 50 * 60; // 50 minutes
+const timerEl = document.getElementById('timer');
+const timerInterval = setInterval(() => {
+  if (timeLeft <= 0) { clearInterval(timerInterval); timerEl.textContent = '0:00'; return; }
+  timeLeft--;
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  if (timeLeft <= 300) timerEl.style.color = '#ef4444'; // red at 5 min
+}, 1000);
+
+// ==================== SUMMARY ====================
+function showSummary() {
+  const secA = ['q1','q2','q3','q4','q5','q6'].filter(q => correct.has(q)).length;
+  const secB = ['q7','q8','q9','q10','q11','q12'].filter(q => correct.has(q)).length;
+  const secCD = ['q13','q14','q15','q16','q17','q18'].filter(q => correct.has(q)).length;
+  document.getElementById('scoreA').textContent = secA + '/6';
+  document.getElementById('scoreB').textContent = secB + '/6';
+  document.getElementById('scoreCD').textContent = secCD + '/6';
+  const pct = Math.round((correct.size / totalQs) * 100);
+  document.getElementById('finalScore').textContent = correct.size + ' / ' + totalQs + ' (' + pct + '%)';
+  document.getElementById('finalScore').style.color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+  document.getElementById('summary').style.display = 'block';
+  document.getElementById('summary').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

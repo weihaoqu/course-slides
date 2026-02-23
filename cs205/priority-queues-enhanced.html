@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Priority Queues - CS205 Data Structures (Enhanced)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.95em; line-height: 1.7; margin: 16px 0; overflow-x: auto; color: #e2e8f0; }
+.code-block .line { padding: 2px 8px; border-radius: 4px; transition: background 0.3s; }
+.code-block .line.active { background: rgba(59,130,246,0.25); border-left: 3px solid #3b82f6; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.controls input[type="number"], .controls input[type="text"], .controls select {
+  background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.controls input:focus, .controls select:focus { border-color: #3b82f6; }
+.btn { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(59,130,246,0.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn-secondary { background: #334155; border: 1px solid #475569; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide active fade-in" id="s1">
+  <div class="center" style="width:100%;">
+    <h1 style="font-size:3.4em;">Priority Queues</h1>
+    <p class="subtitle">CS205 Data Structures</p>
+    <canvas id="titleCanvas" width="700" height="200" style="margin:20px auto;display:block;"></canvas>
+    <script>
+    (function(){
+      const cv=document.getElementById('titleCanvas'),cx=cv.getContext('2d');
+      const entries=[
+        {key:7,val:'backup',color:'#64748b'},
+        {key:2,val:'video',color:'#f87171'},
+        {key:9,val:'saver',color:'#64748b'},
+        {key:1,val:'IRQ',color:'#4ade80'},
+        {key:5,val:'editor',color:'#fbbf24'},
+        {key:4,val:'compile',color:'#60a5fa'},
+      ];
+      let phase=0,frame=0,sorted=[];
+      function draw(){
+        cx.clearRect(0,0,700,200);
+        // Input side
+        cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('insert(key, value)',120,20);
+        // PQ box
+        cx.fillStyle='#1e293b';cx.strokeStyle='#3b82f6';cx.lineWidth=2;
+        cx.beginPath();cx.roundRect(260,30,180,100,12);cx.fill();cx.stroke();
+        cx.fillStyle='#93c5fd';cx.font='bold 16px system-ui, sans-serif';cx.textAlign='center';
+        cx.fillText('Priority Queue',350,70);
+        cx.fillStyle='#64748b';cx.font='13px SF Mono, monospace';
+        cx.fillText('min key out first',350,95);
+        // Output side
+        cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';
+        cx.fillText('removeMin()',580,20);
+        // Animate entries flowing in
+        const t=(frame%180)/180;
+        entries.forEach((e,i)=>{
+          const delay=i*0.15;
+          const prog=Math.max(0,Math.min(1,(t-delay)*3));
+          if(prog<=0)return;
+          const startX=40,startY=50+i*25;
+          const endX=240,endY=60+Math.sin(i*1.2)*20;
+          const x=startX+(endX-startX)*prog;
+          const y=startY+(endY-startY)*prog;
+          if(prog<1){
+            cx.fillStyle=e.color;cx.globalAlpha=0.8;
+            cx.beginPath();cx.roundRect(x-25,y-10,50,20,4);cx.fill();
+            cx.globalAlpha=1;cx.fillStyle='#0f172a';cx.font='bold 11px SF Mono, monospace';cx.textAlign='center';
+            cx.fillText(e.key,x,y+4);
+          }
+        });
+        // Output entries (sorted)
+        const outOrder=[3,0,5,4,1,2]; // indices sorted by key: 1,2,4,5,7,9
+        const t2=((frame+90)%180)/180;
+        outOrder.forEach((idx,i)=>{
+          const e=entries[idx];
+          const delay=i*0.15;
+          const prog=Math.max(0,Math.min(1,(t2-delay)*3));
+          if(prog<=0)return;
+          const startX=460,startY=70;
+          const endX=620,endY=50+i*25;
+          const x=startX+(endX-startX)*prog;
+          const y=startY+(endY-startY)*prog;
+          cx.fillStyle=e.color;cx.globalAlpha=0.7+prog*0.3;
+          cx.beginPath();cx.roundRect(x-25,y-10,50,20,4);cx.fill();
+          cx.globalAlpha=1;cx.fillStyle='#0f172a';cx.font='bold 11px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(e.key,x,y+4);
+        });
+        // Arrows
+        cx.strokeStyle='#475569';cx.lineWidth=2;cx.globalAlpha=1;
+        cx.beginPath();cx.moveTo(200,80);cx.lineTo(255,80);cx.stroke();
+        cx.beginPath();cx.moveTo(250,75);cx.lineTo(260,80);cx.lineTo(250,85);cx.closePath();cx.fillStyle='#475569';cx.fill();
+        cx.beginPath();cx.moveTo(445,80);cx.lineTo(500,80);cx.stroke();
+        cx.beginPath();cx.moveTo(495,75);cx.lineTo(505,80);cx.lineTo(495,85);cx.closePath();cx.fill();
+        // Label
+        cx.fillStyle='#4ade80';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('sorted by key!',580,185);
+        frame++;
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+    </script>
+    <p style="margin-top:10px; color:#64748b; font-size:0.95em;">Use arrow keys or buttons to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 2: WHAT IS A PRIORITY QUEUE? ==================== -->
+<div class="slide" id="s2">
+  <h2>What is a Priority Queue?</h2>
+  <p>A collection where each element has a <strong style="color:#a5f3fc;">priority</strong>. The element with the highest priority (lowest key) is served first.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Interactive: Queue vs Priority Queue</h3>
+      <canvas id="pqCompare" width="500" height="320" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <input type="number" id="pqAddKey" min="1" max="99" value="5" style="width:70px;" placeholder="key">
+        <button class="btn btn-sm" onclick="pqCompareAdd()">Add</button>
+        <button class="btn btn-sm" onclick="pqCompareRemove()">Remove</button>
+        <button class="btn-secondary btn-sm" onclick="pqCompareReset()">Reset</button>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('pqCompare'),cx=cv.getContext('2d');
+        let fifo=[],pq=[];
+        function draw(){
+          cx.clearRect(0,0,500,320);
+          // FIFO Queue
+          cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Regular Queue (FIFO)',250,20);
+          const fStart=(500-fifo.length*55)/2;
+          fifo.forEach((v,i)=>{
+            const x=fStart+i*55;
+            cx.fillStyle='rgba(96,165,250,0.2)';cx.strokeStyle='#60a5fa';cx.lineWidth=2;
+            cx.beginPath();cx.roundRect(x,35,48,40,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+24,55);
+          });
+          if(fifo.length===0){cx.fillStyle='#475569';cx.font='14px system-ui, sans-serif';cx.fillText('empty',250,55);}
+          cx.fillStyle='#60a5fa';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('remove → first in',10,95);cx.textAlign='right';cx.fillText('add → end',490,95);
+
+          // Priority Queue
+          cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Priority Queue (min key first)',250,135);
+          const sorted=[...pq].sort((a,b)=>a-b);
+          const pStart=(500-sorted.length*55)/2;
+          sorted.forEach((v,i)=>{
+            const x=pStart+i*55;
+            const isMin=i===0&&sorted.length>0;
+            cx.fillStyle=isMin?'rgba(74,222,128,0.25)':'rgba(139,92,246,0.2)';
+            cx.strokeStyle=isMin?'#4ade80':'#8b5cf6';cx.lineWidth=isMin?3:2;
+            cx.beginPath();cx.roundRect(x,150,48,40,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+24,170);
+            if(isMin){
+              cx.fillStyle='#4ade80';cx.font='bold 11px SF Mono, monospace';
+              cx.fillText('MIN',x+24,205);
+            }
+          });
+          if(sorted.length===0){cx.fillStyle='#475569';cx.font='14px system-ui, sans-serif';cx.textAlign='center';cx.fillText('empty',250,170);}
+          cx.fillStyle='#8b5cf6';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('removeMin → smallest key',10,225);cx.textAlign='right';cx.fillText('insert → any',490,225);
+
+          // Log
+          cx.fillStyle='#64748b';cx.font='12px system-ui, sans-serif';cx.textAlign='center';
+          cx.fillText('FIFO removes in arrival order | PQ removes by priority (lowest key)',250,260);
+        }
+        window.pqCompareAdd=function(){
+          const k=parseInt(document.getElementById('pqAddKey').value)||5;
+          fifo.push(k);pq.push(k);draw();
+        };
+        window.pqCompareRemove=function(){
+          if(fifo.length>0)fifo.shift();
+          if(pq.length>0){pq.sort((a,b)=>a-b);pq.shift();}
+          draw();
+        };
+        window.pqCompareReset=function(){fifo=[];pq=[];draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Hospital ER Triage</h3>
+        <p>Patients are NOT seen in arrival order. The most critical case (lowest priority number) is treated first.</p>
+        <canvas id="erCanvas" width="440" height="140" style="margin-top:10px;"></canvas>
+        <script>
+        (function(){
+          const cv=document.getElementById('erCanvas'),cx=cv.getContext('2d');
+          const patients=[
+            {name:'Patient A',issue:'sprained ankle',pri:3,color:'#fbbf24'},
+            {name:'Patient B',issue:'chest pain',pri:1,color:'#f87171'},
+            {name:'Patient C',issue:'mild fever',pri:4,color:'#64748b'},
+            {name:'Patient D',issue:'broken arm',pri:2,color:'#fb923c'},
+          ];
+          patients.forEach((p,i)=>{
+            const y=5+i*33;
+            cx.fillStyle=p.pri===1?'rgba(248,113,113,0.2)':'#1e293b';
+            cx.strokeStyle=p.color;cx.lineWidth=p.pri===1?2:1;
+            cx.beginPath();cx.roundRect(10,y,420,28,4);cx.fill();cx.stroke();
+            cx.fillStyle=p.color;cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+            cx.fillText(p.name+' ('+p.issue+')  priority: '+p.pri,20,y+18);
+            if(p.pri===1){cx.fillStyle='#f87171';cx.textAlign='right';cx.fillText('← SEEN FIRST',420,y+18);}
+          });
+        })();
+        </script>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>A priority queue is an ADT that supports inserting elements with keys and removing the element whose key is minimal (or maximal). <strong>Not FIFO!</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 3: THE PQ ADT ==================== -->
+<div class="slide" id="s3">
+  <h2>The Priority Queue ADT</h2>
+  <p>A PQ stores <strong style="color:#a5f3fc;">entries</strong> — each is a (key, value) pair.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Core Operations</h3>
+      <table>
+        <tr><th>Method</th><th>Description</th></tr>
+        <tr><td style="text-align:left;"><code>insert(k, v)</code></td><td style="text-align:left;">Insert entry with key <em>k</em>, value <em>v</em></td></tr>
+        <tr><td style="text-align:left;"><code>removeMin()</code></td><td style="text-align:left;">Remove & return min-key entry</td></tr>
+        <tr><td style="text-align:left;"><code>min()</code></td><td style="text-align:left;">Return (don't remove) min-key entry</td></tr>
+        <tr><td style="text-align:left;"><code>size()</code></td><td style="text-align:left;">Number of entries</td></tr>
+        <tr><td style="text-align:left;"><code>isEmpty()</code></td><td style="text-align:left;">Is PQ empty?</td></tr>
+      </table>
+
+      <div class="warning mt">
+        <h3>Warning</h3>
+        <p><code>removeMin()</code> and <code>min()</code> throw an error if called on an empty PQ. Always check <code>isEmpty()</code> first.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3>Interactive Trace</h3>
+      <canvas id="traceCanvas" width="460" height="240" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="traceStep()" id="traceBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="traceReset()">Reset</button>
+        <span id="traceInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('traceCanvas'),cx=cv.getContext('2d');
+        const ops=[
+          {op:'insert(5,"A")',pq:[{k:5,v:'A'}],ret:'entry'},
+          {op:'insert(9,"C")',pq:[{k:5,v:'A'},{k:9,v:'C'}],ret:'entry'},
+          {op:'insert(3,"B")',pq:[{k:3,v:'B'},{k:5,v:'A'},{k:9,v:'C'}],ret:'entry'},
+          {op:'min()',pq:[{k:3,v:'B'},{k:5,v:'A'},{k:9,v:'C'}],ret:'(3,B)'},
+          {op:'removeMin()',pq:[{k:5,v:'A'},{k:9,v:'C'}],ret:'(3,B)'},
+          {op:'removeMin()',pq:[{k:9,v:'C'}],ret:'(5,A)'},
+          {op:'size()',pq:[{k:9,v:'C'}],ret:'1'},
+          {op:'removeMin()',pq:[],ret:'(9,C)'},
+          {op:'isEmpty()',pq:[],ret:'true'},
+        ];
+        let step=-1;
+        function draw(){
+          cx.clearRect(0,0,460,240);
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Step '+(step+1)+' / '+ops.length,230,18);
+          if(step<0){
+            cx.fillStyle='#475569';cx.font='16px system-ui, sans-serif';
+            cx.fillText('Click "Step" to begin the trace',230,120);
+            document.getElementById('traceInfo').textContent='';
+            return;
+          }
+          const s=ops[step];
+          // Operation
+          cx.fillStyle='#93c5fd';cx.font='bold 15px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.op,230,45);
+          // PQ contents
+          cx.fillStyle='#94a3b8';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('PQ contents:',20,75);
+          if(s.pq.length===0){
+            cx.fillStyle='#475569';cx.font='14px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('{ empty }',230,110);
+          } else {
+            const bw=70,gap=10;
+            const startX=(460-s.pq.length*(bw+gap))/2;
+            s.pq.forEach((e,i)=>{
+              const x=startX+i*(bw+gap);
+              const isMin=i===0;
+              cx.fillStyle=isMin?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+              cx.strokeStyle=isMin?'#4ade80':'#3b82f6';cx.lineWidth=isMin?3:2;
+              cx.beginPath();cx.roundRect(x,88,bw,40,6);cx.fill();cx.stroke();
+              cx.fillStyle='#e2e8f0';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+              cx.fillText('('+e.k+',"'+e.v+'")',x+bw/2,108);
+              if(isMin){cx.fillStyle='#4ade80';cx.font='10px SF Mono, monospace';cx.fillText('MIN',x+bw/2,140);}
+            });
+          }
+          // Return value
+          cx.fillStyle='#fbbf24';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Returns: '+s.ret,230,175);
+          document.getElementById('traceInfo').textContent=s.op+' → '+s.ret;
+        }
+        window.traceStep=function(){
+          if(step<ops.length-1){step++;draw();}
+          if(step>=ops.length-1)document.getElementById('traceBtn').disabled=true;
+        };
+        window.traceReset=function(){step=-1;document.getElementById('traceBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 4: KEYS AND COMPARATORS ==================== -->
+<div class="slide" id="s4">
+  <h2>Keys and Comparators</h2>
+  <p>Keys define priority. But how do we compare them?</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Total Order Relations</h3>
+      <p>A valid comparison rule must satisfy:</p>
+      <ul>
+        <li><strong>Reflexive:</strong> k ≤ k</li>
+        <li><strong>Antisymmetric:</strong> if k₁ ≤ k₂ and k₂ ≤ k₁, then k₁ = k₂</li>
+        <li><strong>Transitive:</strong> if k₁ ≤ k₂ and k₂ ≤ k₃, then k₁ ≤ k₃</li>
+      </ul>
+
+      <h3 class="mt">The Comparator Pattern</h3>
+      <div class="code-block" style="font-size:0.85em;">
+<div class="line">interface Comparator&lt;K&gt; {</div>
+<div class="line">    int compare(K a, K b);</div>
+<div class="line">    // negative → a &lt; b</div>
+<div class="line">    // zero    → a == b</div>
+<div class="line">    // positive → a &gt; b</div>
+<div class="line">}</div>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>A comparator is like a judge at a competition — swap in a different judge to rank contestants by a different criterion.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3>Interactive: Try Different Comparators</h3>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;">
+        <div class="controls">
+          <label style="color:#94a3b8;">Compare by:</label>
+          <select id="compSelect" onchange="compDemo()">
+            <option value="natural">Natural order (integer)</option>
+            <option value="reverse">Reverse order</option>
+            <option value="strlen">String length</option>
+            <option value="alpha">Alphabetical</option>
+          </select>
+        </div>
+        <div id="compItems" style="margin-top:12px;">
+          <canvas id="compCanvas" width="420" height="200" style="background:#0f172a;border-radius:8px;"></canvas>
+        </div>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('compCanvas'),cx=cv.getContext('2d');
+        const items=[
+          {num:42,str:'banana'},{num:7,str:'kiwi'},{num:31,str:'fig'},
+          {num:15,str:'strawberry'},{num:3,str:'apple'}
+        ];
+        window.compDemo=function(){
+          const mode=document.getElementById('compSelect').value;
+          let sorted=[...items];
+          let labelFn;
+          if(mode==='natural'){sorted.sort((a,b)=>a.num-b.num);labelFn=x=>x.num;}
+          else if(mode==='reverse'){sorted.sort((a,b)=>b.num-a.num);labelFn=x=>x.num;}
+          else if(mode==='strlen'){sorted.sort((a,b)=>a.str.length-b.str.length);labelFn=x=>x.str+' ('+x.str.length+')';}
+          else{sorted.sort((a,b)=>a.str.localeCompare(b.str));labelFn=x=>x.str;}
+
+          cx.clearRect(0,0,420,200);
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Sorted result (min at left):',210,18);
+
+          sorted.forEach((item,i)=>{
+            const x=20,y=32+i*32;
+            const barW=50+(i*50);
+            const colors=['#4ade80','#34d399','#fbbf24','#fb923c','#f87171'];
+            cx.fillStyle=colors[i]+'30';cx.strokeStyle=colors[i];cx.lineWidth=2;
+            cx.beginPath();cx.roundRect(x,y,barW,26,4);cx.fill();cx.stroke();
+            cx.fillStyle=colors[i];cx.font='bold 13px SF Mono, monospace';cx.textAlign='left';
+            cx.fillText(labelFn(item),x+8,y+17);
+            // rank
+            cx.fillStyle='#64748b';cx.textAlign='right';
+            cx.fillText('#'+(i+1),410,y+17);
+          });
+        };
+        compDemo();
+      })();
+      </script>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Any two keys must be comparable — this makes it a <em>total</em> order. The comparator pattern lets you swap ordering strategies without changing the PQ.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 5: UNSORTED LIST IMPLEMENTATION ==================== -->
+<div class="slide" id="s5">
+  <h2>Implementation 1: Unsorted List</h2>
+  <p>Insert fast, but finding the minimum requires scanning everything.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Interactive Unsorted List PQ</h3>
+      <canvas id="unsortedCanvas" width="500" height="220" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <input type="number" id="unsortedKey" min="1" max="99" value="5" style="width:70px;" placeholder="key">
+        <button class="btn btn-sm" onclick="unsortedInsert()">insert — O(1)</button>
+        <button class="btn btn-sm" onclick="unsortedRemoveMin()">removeMin — O(n)</button>
+        <button class="btn-secondary btn-sm" onclick="unsortedReset()">Reset</button>
+      </div>
+      <p id="unsortedMsg" style="font-size:13px;color:#94a3b8;margin-top:4px;"></p>
+      <script>
+      (function(){
+        const cv=document.getElementById('unsortedCanvas'),cx=cv.getContext('2d');
+        let list=[];let scanIdx=-1;let minIdx=-1;
+        function draw(){
+          cx.clearRect(0,0,500,220);
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Unsorted List (size: '+list.length+')',10,20);
+          if(list.length===0){
+            cx.fillStyle='#475569';cx.font='14px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('empty — insert some entries',250,110);
+            return;
+          }
+          const bw=55,gap=6;
+          const startX=Math.max(10,(500-list.length*(bw+gap))/2);
+          list.forEach((k,i)=>{
+            const x=startX+i*(bw+gap),y=45;
+            let bgColor='rgba(59,130,246,0.15)',borderColor='#3b82f6',lw=2;
+            if(i===minIdx){bgColor='rgba(74,222,128,0.3)';borderColor='#4ade80';lw=3;}
+            else if(i<=scanIdx&&scanIdx>=0){bgColor='rgba(251,191,36,0.15)';borderColor='#fbbf24';}
+            cx.fillStyle=bgColor;cx.strokeStyle=borderColor;cx.lineWidth=lw;
+            cx.beginPath();cx.roundRect(x,y,bw,42,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(k,x+bw/2,y+21);
+            if(i===minIdx){cx.fillStyle='#4ade80';cx.font='bold 11px SF Mono, monospace';cx.fillText('MIN',x+bw/2,y+55);}
+            if(i===scanIdx&&scanIdx>=0){
+              cx.fillStyle='#fbbf24';cx.font='16px system-ui';cx.fillText('↑',x+bw/2,y-8);
+            }
+          });
+          // Complexity note
+          cx.fillStyle='#64748b';cx.font='12px system-ui, sans-serif';cx.textAlign='center';
+          cx.fillText('insert: O(1) — just append  |  removeMin: O(n) — must scan all',250,160);
+        }
+        window.unsortedInsert=function(){
+          const k=parseInt(document.getElementById('unsortedKey').value)||5;
+          list.push(k);scanIdx=-1;minIdx=-1;
+          document.getElementById('unsortedMsg').textContent='Inserted '+k+' at end — O(1)';
+          document.getElementById('unsortedMsg').style.color='#4ade80';
+          draw();
+        };
+        window.unsortedRemoveMin=function(){
+          if(list.length===0){document.getElementById('unsortedMsg').textContent='PQ is empty!';document.getElementById('unsortedMsg').style.color='#f87171';return;}
+          // Animate scan
+          scanIdx=0;minIdx=0;
+          let i=0;
+          const interval=setInterval(()=>{
+            i++;
+            if(i>=list.length){
+              clearInterval(interval);
+              const minVal=list[minIdx];
+              list.splice(minIdx,1);
+              document.getElementById('unsortedMsg').textContent='Removed min='+minVal+' after scanning '+list.length+' entries — O(n)';
+              document.getElementById('unsortedMsg').style.color='#fbbf24';
+              scanIdx=-1;minIdx=-1;
+              draw();
+              return;
+            }
+            scanIdx=i;
+            if(list[i]<list[minIdx])minIdx=i;
+            draw();
+          },300);
+        };
+        window.unsortedReset=function(){list=[];scanIdx=-1;minIdx=-1;document.getElementById('unsortedMsg').textContent='';draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Complexity</h3>
+      <table>
+        <tr><th>Operation</th><th>Time</th></tr>
+        <tr><td><code>insert</code></td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+        <tr><td><code>removeMin</code></td><td style="color:#f87171;"><strong>O(n)</strong></td></tr>
+        <tr><td><code>min</code></td><td style="color:#f87171;"><strong>O(n)</strong></td></tr>
+        <tr><td><code>size</code>, <code>isEmpty</code></td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+      </table>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Insert is O(1) — just append to the end. But removeMin is O(n) because we must scan <em>every</em> entry to find the smallest key.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>When to Use</h3>
+        <p>Good for <strong>insert-heavy</strong> workloads with rare removes. Terrible if you remove frequently.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 6: SORTED LIST IMPLEMENTATION ==================== -->
+<div class="slide" id="s6">
+  <h2>Implementation 2: Sorted List</h2>
+  <p>Keep entries sorted by key. Min is always at the front, but insertion requires walking.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Interactive Sorted List PQ</h3>
+      <canvas id="sortedCanvas" width="500" height="220" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <input type="number" id="sortedKey" min="1" max="99" value="5" style="width:70px;" placeholder="key">
+        <button class="btn btn-sm" onclick="sortedInsert()">insert — O(n)</button>
+        <button class="btn btn-sm" onclick="sortedRemoveMin()">removeMin — O(1)</button>
+        <button class="btn-secondary btn-sm" onclick="sortedReset()">Reset</button>
+      </div>
+      <p id="sortedMsg" style="font-size:13px;color:#94a3b8;margin-top:4px;"></p>
+      <script>
+      (function(){
+        const cv=document.getElementById('sortedCanvas'),cx=cv.getContext('2d');
+        let list=[];let insertPos=-1;
+        function draw(hlPos){
+          cx.clearRect(0,0,500,220);
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Sorted List (size: '+list.length+')',10,20);
+          if(list.length===0){
+            cx.fillStyle='#475569';cx.font='14px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('empty — insert some entries',250,110);
+            return;
+          }
+          const bw=55,gap=6;
+          const startX=Math.max(10,(500-list.length*(bw+gap))/2);
+          list.forEach((k,i)=>{
+            const x=startX+i*(bw+gap),y=45;
+            const isMin=i===0;
+            const isHl=i===hlPos;
+            let bgColor=isMin?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            let borderColor=isMin?'#4ade80':'#3b82f6';
+            if(isHl){bgColor='rgba(251,191,36,0.3)';borderColor='#fbbf24';}
+            cx.fillStyle=bgColor;cx.strokeStyle=borderColor;cx.lineWidth=isMin||isHl?3:2;
+            cx.beginPath();cx.roundRect(x,y,bw,42,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(k,x+bw/2,y+21);
+            if(isMin){cx.fillStyle='#4ade80';cx.font='bold 11px SF Mono, monospace';cx.fillText('MIN',x+bw/2,y+55);}
+          });
+          // Arrow between sorted elements
+          for(let i=0;i<list.length-1;i++){
+            const x=startX+(i+1)*(bw+gap)-4;
+            cx.fillStyle='#475569';cx.font='12px system-ui';cx.textAlign='center';
+            cx.fillText('≤',x,y+66+21);
+          }
+          cx.fillStyle='#64748b';cx.font='12px system-ui, sans-serif';cx.textAlign='center';
+          cx.fillText('insert: O(n) — walk to find position  |  removeMin: O(1) — front',250,160);
+        }
+        const y=45;
+        window.sortedInsert=function(){
+          const k=parseInt(document.getElementById('sortedKey').value)||5;
+          let pos=0;
+          while(pos<list.length&&list[pos]<=k)pos++;
+          list.splice(pos,0,k);
+          document.getElementById('sortedMsg').textContent='Inserted '+k+' at position '+pos+' (walked '+pos+' entries) — O(n)';
+          document.getElementById('sortedMsg').style.color='#fbbf24';
+          draw(pos);
+          setTimeout(()=>draw(-1),1500);
+        };
+        window.sortedRemoveMin=function(){
+          if(list.length===0){document.getElementById('sortedMsg').textContent='PQ is empty!';document.getElementById('sortedMsg').style.color='#f87171';return;}
+          const min=list.shift();
+          document.getElementById('sortedMsg').textContent='Removed min='+min+' from front — O(1)';
+          document.getElementById('sortedMsg').style.color='#4ade80';
+          draw(-1);
+        };
+        window.sortedReset=function(){list=[];document.getElementById('sortedMsg').textContent='';draw(-1);};
+        draw(-1);
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Complexity</h3>
+      <table>
+        <tr><th>Operation</th><th>Time</th></tr>
+        <tr><td><code>insert</code></td><td style="color:#f87171;"><strong>O(n)</strong></td></tr>
+        <tr><td><code>removeMin</code></td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+        <tr><td><code>min</code></td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+        <tr><td><code>size</code>, <code>isEmpty</code></td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+      </table>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>removeMin is O(1) — the smallest is always at front. But insert is O(n) — we walk the list to find the correct sorted position.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>When to Use</h3>
+        <p>Good for <strong>remove-heavy</strong> workloads with rare inserts. Terrible if you insert frequently.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 7: COMPARISON ==================== -->
+<div class="slide" id="s7">
+  <h2>Unsorted vs Sorted: Side by Side</h2>
+  <p>Neither list approach gives us the best of both worlds.</p>
+
+  <div class="two-col mt">
+    <div>
+      <div class="center">
+        <table style="margin:0 auto;">
+          <tr><th>Operation</th><th>Unsorted</th><th>Sorted</th></tr>
+          <tr><td><code>insert(k,v)</code></td><td style="color:#4ade80;"><strong>O(1)</strong></td><td style="color:#f87171;"><strong>O(n)</strong></td></tr>
+          <tr><td><code>removeMin()</code></td><td style="color:#f87171;"><strong>O(n)</strong></td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+          <tr><td><code>min()</code></td><td style="color:#f87171;"><strong>O(n)</strong></td><td style="color:#4ade80;"><strong>O(1)</strong></td></tr>
+        </table>
+      </div>
+
+      <canvas id="compBarCanvas" width="480" height="200" style="background:#1e293b;border-radius:12px;border:1px solid #334155;margin-top:16px;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('compBarCanvas'),cx=cv.getContext('2d');
+        const bars=[
+          {label:'insert',unsorted:30,sorted:150,uColor:'#4ade80',sColor:'#f87171'},
+          {label:'removeMin',unsorted:150,sorted:30,uColor:'#f87171',sColor:'#4ade80'},
+        ];
+        cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Time Complexity Comparison',240,18);
+        bars.forEach((b,i)=>{
+          const y=40+i*80;
+          // Label
+          cx.fillStyle='#cbd5e1';cx.font='13px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(b.label,10,y+14);
+          // Unsorted bar
+          cx.fillStyle=b.uColor+'60';cx.strokeStyle=b.uColor;cx.lineWidth=1;
+          cx.beginPath();cx.roundRect(120,y,b.unsorted,24,4);cx.fill();cx.stroke();
+          cx.fillStyle=b.uColor;cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(b.unsorted>50?'O(n)':'O(1)',125,y+16);
+          cx.fillStyle='#64748b';cx.textAlign='right';cx.fillText('Unsorted',470,y+16);
+          // Sorted bar
+          cx.fillStyle=b.sColor+'60';cx.strokeStyle=b.sColor;cx.lineWidth=1;
+          cx.beginPath();cx.roundRect(120,y+30,b.sorted,24,4);cx.fill();cx.stroke();
+          cx.fillStyle=b.sColor;cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(b.sorted>50?'O(n)':'O(1)',125,y+46);
+          cx.fillStyle='#64748b';cx.textAlign='right';cx.fillText('Sorted',470,y+46);
+        });
+      })();
+      </script>
+    </div>
+
+    <div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p><strong>Unsorted list</strong> = throwing clothes into a pile. Fast to add, slow to find what you need.</p>
+        <p><strong>Sorted list</strong> = keeping a perfectly organized closet. Slow to put away, fast to grab the right item.</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Can We Do Better?</h3>
+        <p>What if <em>both</em> insert and removeMin were <strong style="color:#fbbf24;">O(log n)</strong>?</p>
+        <canvas id="heapTease" width="420" height="120" style="margin-top:10px;"></canvas>
+        <script>
+        (function(){
+          const cv=document.getElementById('heapTease'),cx=cv.getContext('2d');
+          cx.fillStyle='rgba(59,130,246,0.15)';cx.strokeStyle='#3b82f6';cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(10,10,400,100,12);cx.fill();cx.stroke();
+          cx.fillStyle='#93c5fd';cx.font='bold 18px system-ui, sans-serif';cx.textAlign='center';
+          cx.fillText('The Binary Heap',210,40);
+          cx.fillStyle='#cbd5e1';cx.font='14px system-ui, sans-serif';
+          cx.fillText('insert: O(log n)  •  removeMin: O(log n)',210,65);
+          cx.fillStyle='#4ade80';cx.font='bold 14px SF Mono, monospace';
+          cx.fillText('PQ-Sort → O(n log n) = Heap Sort!',210,90);
+        })();
+        </script>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 8: SELECTION SORT ==================== -->
+<div class="slide" id="s8">
+  <h2>PQ-Sort: Selection Sort</h2>
+  <p>Use an <strong style="color:#a5f3fc;">unsorted list</strong> PQ to sort — this is Selection Sort!</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Step-Through Animation</h3>
+      <canvas id="selSortCanvas" width="500" height="320" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="selStep()" id="selStepBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="selReset()">Reset</button>
+        <span id="selInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('selSortCanvas'),cx=cv.getContext('2d');
+        const input=[7,4,8,2,5];
+        const steps=[
+          {phase:'Phase 1: Insert all into unsorted PQ',pq:[],sorted:[],op:'Start',scan:-1},
+          {phase:'Phase 1: Insert all into unsorted PQ',pq:[7],sorted:[],op:'insert(7) — O(1)',scan:-1},
+          {phase:'Phase 1: Insert all into unsorted PQ',pq:[7,4],sorted:[],op:'insert(4) — O(1)',scan:-1},
+          {phase:'Phase 1: Insert all into unsorted PQ',pq:[7,4,8],sorted:[],op:'insert(8) — O(1)',scan:-1},
+          {phase:'Phase 1: Insert all into unsorted PQ',pq:[7,4,8,2],sorted:[],op:'insert(2) — O(1)',scan:-1},
+          {phase:'Phase 1: Insert all into unsorted PQ',pq:[7,4,8,2,5],sorted:[],op:'insert(5) — O(1)',scan:-1},
+          {phase:'Phase 2: removeMin repeatedly',pq:[7,4,8,5],sorted:[2],op:'removeMin → 2 (scan 5)',scan:3},
+          {phase:'Phase 2: removeMin repeatedly',pq:[7,8,5],sorted:[2,4],op:'removeMin → 4 (scan 4)',scan:1},
+          {phase:'Phase 2: removeMin repeatedly',pq:[7,8],sorted:[2,4,5],op:'removeMin → 5 (scan 3)',scan:2},
+          {phase:'Phase 2: removeMin repeatedly',pq:[8],sorted:[2,4,5,7],op:'removeMin → 7 (scan 2)',scan:0},
+          {phase:'Phase 2: removeMin repeatedly',pq:[],sorted:[2,4,5,7,8],op:'removeMin → 8 (scan 1)',scan:0},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,500,320);
+          const s=steps[step];
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.phase,250,18);
+          cx.fillStyle='#93c5fd';cx.font='bold 14px SF Mono, monospace';
+          cx.fillText(s.op,250,42);
+          // PQ
+          cx.fillStyle='#94a3b8';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('PQ (unsorted):',10,70);
+          const bw=50;
+          s.pq.forEach((v,i)=>{
+            const x=20+i*(bw+8),y=80;
+            const isMin=s.scan>=0&&v===Math.min(...s.pq);
+            cx.fillStyle=isMin?'rgba(74,222,128,0.3)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isMin?'#4ade80':'#3b82f6';cx.lineWidth=2;
+            cx.beginPath();cx.roundRect(x,y,bw,38,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+bw/2,y+19);
+          });
+          if(s.pq.length===0&&step>0){cx.fillStyle='#475569';cx.font='14px system-ui';cx.textAlign='center';cx.fillText('empty',120,100);}
+          // Sorted output
+          cx.fillStyle='#94a3b8';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Sorted output:',10,160);
+          s.sorted.forEach((v,i)=>{
+            const x=20+i*(bw+8),y=170;
+            cx.fillStyle='rgba(74,222,128,0.2)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+            cx.beginPath();cx.roundRect(x,y,bw,38,6);cx.fill();cx.stroke();
+            cx.fillStyle='#4ade80';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+bw/2,y+19);
+          });
+          // Cost tracking
+          cx.fillStyle='#fbbf24';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          if(step<=5){cx.fillText('Phase 1 cost: '+step+' inserts × O(1) = O(n)',250,250);}
+          else{
+            const scanCosts=[5,4,3,2,1];
+            const removals=step-5;
+            const totalScans=scanCosts.slice(0,removals).reduce((a,b)=>a+b,0);
+            cx.fillText('Phase 2 scans: '+totalScans+' total comparisons → O(n²)',250,250);
+          }
+          if(step===steps.length-1){
+            cx.fillStyle='#4ade80';cx.font='bold 16px system-ui, sans-serif';
+            cx.fillText('Selection Sort complete! Total: O(n²)',250,285);
+          }
+        }
+        window.selStep=function(){
+          if(step<steps.length-1){step++;draw();}
+          if(step>=steps.length-1)document.getElementById('selStepBtn').disabled=true;
+        };
+        window.selReset=function(){step=0;document.getElementById('selStepBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>How It Works</h3>
+      <ol style="padding-left:24px;">
+        <li><strong>Phase 1:</strong> Insert all n elements — each O(1)</li>
+        <li><strong>Phase 2:</strong> Call removeMin() n times — scans n, n-1, ... 1</li>
+      </ol>
+
+      <div class="code-block mt" style="font-size:0.85em;">
+<div class="line">// Phase 1: insert all — O(n)</div>
+<div class="line">for (E elem : input)</div>
+<div class="line">    pq.insert(elem, elem);</div>
+<div class="line"> </div>
+<div class="line">// Phase 2: removeMin n times — O(n²)</div>
+<div class="line">for (int i = 0; i &lt; n; i++)</div>
+<div class="line">    output[i] = pq.removeMin().getValue();</div>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Complexity</h3>
+        <p>Phase 1: n × O(1) = O(n)<br>
+        Phase 2: n + (n-1) + ... + 1 = n(n+1)/2 = <strong>O(n²)</strong><br>
+        Total: <strong>O(n²)</strong></p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Why "Selection" Sort?</h3>
+        <p>Each removeMin <em>selects</em> the minimum from the remaining unsorted elements — exactly what Selection Sort does!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 9: INSERTION SORT ==================== -->
+<div class="slide" id="s9">
+  <h2>PQ-Sort: Insertion Sort</h2>
+  <p>Use a <strong style="color:#a5f3fc;">sorted list</strong> PQ to sort — this is Insertion Sort!</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Step-Through Animation</h3>
+      <canvas id="insSortCanvas" width="500" height="320" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="insStep()" id="insStepBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="insReset()">Reset</button>
+        <span id="insInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('insSortCanvas'),cx=cv.getContext('2d');
+        const steps=[
+          {phase:'Phase 1: Insert into sorted PQ',pq:[],sorted:[],op:'Start',walks:0,totalWalks:0},
+          {phase:'Phase 1: Insert into sorted PQ',pq:[7],sorted:[],op:'insert(7) — walk 0',walks:0,totalWalks:0},
+          {phase:'Phase 1: Insert into sorted PQ',pq:[4,7],sorted:[],op:'insert(4) — walk 1',walks:1,totalWalks:1},
+          {phase:'Phase 1: Insert into sorted PQ',pq:[4,7,8],sorted:[],op:'insert(8) — walk 2',walks:2,totalWalks:3},
+          {phase:'Phase 1: Insert into sorted PQ',pq:[2,4,7,8],sorted:[],op:'insert(2) — walk 0 (front)',walks:0,totalWalks:3},
+          {phase:'Phase 1: Insert into sorted PQ',pq:[2,4,5,7,8],sorted:[],op:'insert(5) — walk 2',walks:2,totalWalks:5},
+          {phase:'Phase 2: removeMin repeatedly',pq:[4,5,7,8],sorted:[2],op:'removeMin → 2 — O(1)',walks:0,totalWalks:5},
+          {phase:'Phase 2: removeMin repeatedly',pq:[5,7,8],sorted:[2,4],op:'removeMin → 4 — O(1)',walks:0,totalWalks:5},
+          {phase:'Phase 2: removeMin repeatedly',pq:[7,8],sorted:[2,4,5],op:'removeMin → 5 — O(1)',walks:0,totalWalks:5},
+          {phase:'Phase 2: removeMin repeatedly',pq:[8],sorted:[2,4,5,7],op:'removeMin → 7 — O(1)',walks:0,totalWalks:5},
+          {phase:'Phase 2: removeMin repeatedly',pq:[],sorted:[2,4,5,7,8],op:'removeMin → 8 — O(1)',walks:0,totalWalks:5},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,500,320);
+          const s=steps[step];
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.phase,250,18);
+          cx.fillStyle='#93c5fd';cx.font='bold 14px SF Mono, monospace';
+          cx.fillText(s.op,250,42);
+          // PQ (sorted)
+          cx.fillStyle='#94a3b8';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('PQ (sorted):',10,70);
+          const bw=50;
+          s.pq.forEach((v,i)=>{
+            const x=20+i*(bw+8),y=80;
+            const isMin=i===0&&s.pq.length>0;
+            cx.fillStyle=isMin?'rgba(74,222,128,0.2)':'rgba(139,92,246,0.15)';
+            cx.strokeStyle=isMin?'#4ade80':'#8b5cf6';cx.lineWidth=isMin?3:2;
+            cx.beginPath();cx.roundRect(x,y,bw,38,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+bw/2,y+19);
+            if(isMin){cx.fillStyle='#4ade80';cx.font='bold 10px SF Mono, monospace';cx.fillText('MIN',x+bw/2,y+50);}
+          });
+          if(s.pq.length===0&&step>0){cx.fillStyle='#475569';cx.font='14px system-ui';cx.textAlign='center';cx.fillText('empty',120,100);}
+          // Sorted output
+          cx.fillStyle='#94a3b8';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Sorted output:',10,155);
+          s.sorted.forEach((v,i)=>{
+            const x=20+i*(bw+8),y=165;
+            cx.fillStyle='rgba(74,222,128,0.2)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+            cx.beginPath();cx.roundRect(x,y,bw,38,6);cx.fill();cx.stroke();
+            cx.fillStyle='#4ade80';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+bw/2,y+19);
+          });
+          // Cost
+          cx.fillStyle='#fbbf24';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          if(step<=5){cx.fillText('Phase 1 walks: '+s.totalWalks+' total → O(n²)',250,245);}
+          else{cx.fillText('Phase 2: each removeMin is O(1) → O(n) total',250,245);}
+          if(step===steps.length-1){
+            cx.fillStyle='#4ade80';cx.font='bold 16px system-ui, sans-serif';
+            cx.fillText('Insertion Sort complete! Total: O(n²)',250,280);
+          }
+        }
+        window.insStep=function(){if(step<steps.length-1){step++;draw();}if(step>=steps.length-1)document.getElementById('insStepBtn').disabled=true;};
+        window.insReset=function(){step=0;document.getElementById('insStepBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>How It Works</h3>
+      <ol style="padding-left:24px;">
+        <li><strong>Phase 1:</strong> Insert all n elements — each walks the sorted list to find position</li>
+        <li><strong>Phase 2:</strong> Call removeMin() n times — each is O(1) from front</li>
+      </ol>
+
+      <div class="code-block mt" style="font-size:0.85em;">
+<div class="line">// Phase 1: insert into sorted PQ — O(n²)</div>
+<div class="line">for (E elem : input)</div>
+<div class="line">    pq.insert(elem, elem); // walks to pos</div>
+<div class="line"> </div>
+<div class="line">// Phase 2: removeMin n times — O(n)</div>
+<div class="line">for (int i = 0; i &lt; n; i++)</div>
+<div class="line">    output[i] = pq.removeMin().getValue();</div>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Complexity</h3>
+        <p>Phase 1: 1 + 2 + ... + n = n(n+1)/2 = <strong>O(n²)</strong><br>
+        Phase 2: n × O(1) = O(n)<br>
+        Total: <strong>O(n²)</strong></p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Why "Insertion" Sort?</h3>
+        <p>Like sorting playing cards: pick up each card and <em>slide it into</em> the right spot among cards you're already holding.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 10: CAN WE DO BETTER? ==================== -->
+<div class="slide" id="s10">
+  <h2>Can We Do Better?</h2>
+  <p>Both PQ-based sorts are O(n²). Is there a middle ground?</p>
+
+  <div class="two-col mt">
+    <div>
+      <canvas id="heapPreview" width="500" height="340" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('heapPreview'),cx=cv.getContext('2d');
+        // Draw comparison table
+        cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('PQ Implementation Comparison',250,25);
+        const rows=[
+          {label:'Unsorted List',insert:'O(1)',remove:'O(n)',sort:'O(n²)',name:'Selection Sort',iColor:'#4ade80',rColor:'#f87171'},
+          {label:'Sorted List',insert:'O(n)',remove:'O(1)',sort:'O(n²)',name:'Insertion Sort',iColor:'#f87171',rColor:'#4ade80'},
+          {label:'Binary Heap',insert:'O(log n)',remove:'O(log n)',sort:'O(n log n)',name:'Heap Sort!',iColor:'#fbbf24',rColor:'#fbbf24'},
+        ];
+        // Headers
+        const cols=[120,220,310,400];
+        cx.fillStyle='#64748b';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        ['','insert','removeMin','PQ-Sort'].forEach((h,i)=>cx.fillText(h,cols[i],52));
+
+        rows.forEach((r,i)=>{
+          const y=70+i*50;
+          const isHeap=i===2;
+          cx.fillStyle=isHeap?'rgba(59,130,246,0.15)':'#0f172a';
+          cx.strokeStyle=isHeap?'#3b82f6':'#334155';cx.lineWidth=isHeap?2:1;
+          cx.beginPath();cx.roundRect(20,y,460,40,6);cx.fill();cx.stroke();
+          cx.fillStyle='#cbd5e1';cx.font='bold 13px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(r.label,30,y+25);
+          cx.textAlign='center';
+          cx.fillStyle=r.iColor;cx.fillText(r.insert,220,y+25);
+          cx.fillStyle=r.rColor;cx.fillText(r.remove,310,y+25);
+          cx.fillStyle=isHeap?'#4ade80':'#f87171';cx.fillText(r.sort,400,y+18);
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';
+          cx.fillText(r.name,400,y+33);
+        });
+
+        // Draw heap tree
+        cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('The Binary Heap',250,240);
+        const nodes=[{x:250,y:265,v:2},{x:170,y:300,v:4},{x:330,y:300,v:5},{x:130,y:335,v:7},{x:210,y:335,v:9},{x:370,y:335,v:8}];
+        // Edges
+        [[0,1],[0,2],[1,3],[1,4],[2,5]].forEach(([a,b])=>{
+          cx.strokeStyle='#475569';cx.lineWidth=2;
+          cx.beginPath();cx.moveTo(nodes[a].x,nodes[a].y+12);cx.lineTo(nodes[b].x,nodes[b].y-12);cx.stroke();
+        });
+        // Nodes
+        nodes.forEach((n,i)=>{
+          const isRoot=i===0;
+          cx.fillStyle=isRoot?'rgba(74,222,128,0.3)':'rgba(59,130,246,0.15)';
+          cx.strokeStyle=isRoot?'#4ade80':'#3b82f6';cx.lineWidth=2;
+          cx.beginPath();cx.arc(n.x,n.y,16,0,Math.PI*2);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(n.v,n.x,n.y);
+        });
+        cx.fillStyle='#4ade80';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('← min always at root!',270,265);
+      })();
+      </script>
+    </div>
+
+    <div>
+      <div class="key-idea">
+        <h3>The Big Insight</h3>
+        <p>The <strong>binary heap</strong> achieves O(log n) for both insert and removeMin by using a complete binary tree with the <em>heap-order property</em>.</p>
+      </div>
+
+      <h3 class="mt">How Does It Work?</h3>
+      <div class="code-block" style="font-size:0.85em;">
+<div class="line">// Heap-order property:</div>
+<div class="line">// Every node's key ≤ its children's keys</div>
+<div class="line">// → min is always at the ROOT</div>
+<div class="line"> </div>
+<div class="line">insert:     add at bottom, BUBBLE UP</div>
+<div class="line">            → O(log n) swaps max</div>
+<div class="line"> </div>
+<div class="line">removeMin:  remove root, move last to top</div>
+<div class="line">            TRICKLE DOWN</div>
+<div class="line">            → O(log n) swaps max</div>
+<div class="line"> </div>
+<div class="line">PQ-Sort:    n × O(log n) = O(n log n)</div>
+<div class="line">            = HEAP SORT!</div>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>The heap is like a corporate hierarchy: the CEO (min key) is always at the top. Promoting someone (insert) bubbles them up through levels. Firing the CEO (removeMin) promotes from below.</p>
+      </div>
+
+      <p class="mt" style="color:#64748b;font-size:0.95em;">Full heap details → next lecture!</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 11: ENTRY / KEY-VALUE PATTERN ==================== -->
+<div class="slide" id="s11">
+  <h2>The Entry / Key-Value Pattern</h2>
+  <p>PQs store <strong style="color:#a5f3fc;">entries</strong>, not bare keys. Each entry is a (key, value) pair.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Why Separate Key from Value?</h3>
+      <ul>
+        <li>The <strong>key</strong> determines priority (ordering)</li>
+        <li>The <strong>value</strong> is the actual data you care about</li>
+        <li>Same value might need different priorities in different contexts</li>
+      </ul>
+
+      <div class="code-block mt" style="font-size:0.85em;">
+<div class="line">interface Entry&lt;K, V&gt; {</div>
+<div class="line">    K getKey();     // the priority</div>
+<div class="line">    V getValue();   // the payload</div>
+<div class="line">}</div>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy: Boarding Pass</h3>
+        <p>The <strong>key</strong> = boarding group number. The <strong>value</strong> = you (the passenger). The airline decides your priority, not your name.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3>Examples Across Domains</h3>
+      <canvas id="entryCanvas" width="460" height="300" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('entryCanvas'),cx=cv.getContext('2d');
+        const examples=[
+          {ctx:'ER Triage',key:'Severity',val:'Patient',color:'#f87171',icon:'🏥'},
+          {ctx:'Print Queue',key:'Priority',val:'Print Job',color:'#60a5fa',icon:'🖨️'},
+          {ctx:'Event Sim',key:'Time',val:'Event',color:'#fbbf24',icon:'⏱️'},
+          {ctx:'Dijkstra\'s',key:'Distance',val:'Vertex',color:'#4ade80',icon:'🗺️'},
+          {ctx:'Huffman',key:'Frequency',val:'Tree Node',color:'#c084fc',icon:'📦'},
+        ];
+        cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Entry = (key, value) in Different Domains',230,20);
+        // Header
+        cx.fillStyle='#64748b';cx.font='bold 12px SF Mono, monospace';
+        cx.textAlign='left';cx.fillText('Context',60,48);
+        cx.textAlign='center';cx.fillText('Key',240,48);cx.fillText('Value',370,48);
+        // Rows
+        examples.forEach((e,i)=>{
+          const y=58+i*46;
+          cx.fillStyle=e.color+'15';cx.strokeStyle=e.color+'60';cx.lineWidth=1;
+          cx.beginPath();cx.roundRect(10,y,440,38,6);cx.fill();cx.stroke();
+          cx.fillStyle=e.color;cx.font='bold 13px system-ui, sans-serif';cx.textAlign='left';
+          cx.fillText(e.ctx,60,y+24);
+          cx.fillStyle='#e2e8f0';cx.font='13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(e.key,240,y+24);
+          cx.fillText(e.val,370,y+24);
+          // icon
+          cx.font='18px system-ui';cx.textAlign='center';
+          cx.fillText(e.icon,30,y+26);
+        });
+        // Entry diagram at bottom
+        cx.fillStyle='#3b82f6';cx.strokeStyle='#3b82f6';cx.lineWidth=2;
+        cx.beginPath();cx.roundRect(100,292-6,260,30,6);cx.stroke();
+        cx.fillStyle='rgba(59,130,246,0.15)';cx.beginPath();cx.roundRect(100,292-6,130,30,0);cx.fill();
+        cx.fillStyle='rgba(139,92,246,0.15)';cx.beginPath();cx.roundRect(230,292-6,130,30,0);cx.fill();
+        cx.fillStyle='#93c5fd';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('key',165,292+12);cx.fillText('value',295,292+12);
+      })();
+      </script>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Entries decouple "what you store" from "how it's prioritized." This makes the PQ reusable across many domains.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 12: ADAPTABLE PRIORITY QUEUE ==================== -->
+<div class="slide" id="s12">
+  <h2>Adaptable Priority Queue</h2>
+  <p>Sometimes you need to <strong>change a key</strong> or <strong>remove an arbitrary entry</strong> — not just the minimum.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Additional Operations</h3>
+      <table>
+        <tr><th>Method</th><th>Description</th></tr>
+        <tr><td style="text-align:left;"><code>remove(e)</code></td><td style="text-align:left;">Remove entry <em>e</em></td></tr>
+        <tr><td style="text-align:left;"><code>replaceKey(e, k)</code></td><td style="text-align:left;">Change key of <em>e</em> to <em>k</em></td></tr>
+        <tr><td style="text-align:left;"><code>replaceValue(e, v)</code></td><td style="text-align:left;">Change value of <em>e</em></td></tr>
+      </table>
+
+      <h3 class="mt">Location-Aware Entries</h3>
+      <canvas id="locatorCanvas" width="460" height="140" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('locatorCanvas'),cx=cv.getContext('2d');
+        // Standard entry
+        cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('Standard entry:',15,20);
+        cx.fillStyle='rgba(59,130,246,0.15)';cx.strokeStyle='#3b82f6';cx.lineWidth=2;
+        cx.beginPath();cx.roundRect(15,28,180,32,6);cx.fill();cx.stroke();
+        cx.fillStyle='#93c5fd';cx.font='13px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('key  |  value',105,50);
+        cx.fillStyle='#64748b';cx.font='11px system-ui';cx.textAlign='left';
+        cx.fillText('→ no idea where it is in PQ',210,48);
+
+        // Location-aware entry
+        cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('Location-aware entry:',15,85);
+        cx.fillStyle='rgba(74,222,128,0.15)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+        cx.beginPath();cx.roundRect(15,93,260,32,6);cx.fill();cx.stroke();
+        cx.fillStyle='#4ade80';cx.font='13px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('key  |  value  |  locator',145,115);
+        // Arrow to PQ
+        cx.strokeStyle='#4ade80';cx.lineWidth=1.5;cx.setLineDash([4,3]);
+        cx.beginPath();cx.moveTo(280,109);cx.lineTo(350,109);cx.stroke();cx.setLineDash([]);
+        cx.fillStyle='#4ade80';cx.beginPath();cx.moveTo(350,109);cx.lineTo(344,104);cx.lineTo(344,114);cx.closePath();cx.fill();
+        cx.fillStyle='#4ade80';cx.font='11px system-ui';cx.textAlign='left';
+        cx.fillText('→ O(1) jump to',355,106);
+        cx.fillText('  position in PQ',355,120);
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>Interactive: Dijkstra Scenario</h3>
+      <canvas id="dijkstraDemo" width="460" height="230" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="dijStep()" id="dijStepBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="dijReset()">Reset</button>
+        <span id="dijInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;"></span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('dijkstraDemo'),cx=cv.getContext('2d');
+        const steps=[
+          {pq:[{k:10,v:'A'},{k:99,v:'B'},{k:99,v:'C'},{k:5,v:'D'}],op:'Initial PQ for Dijkstra',hl:-1,changed:-1},
+          {pq:[{k:5,v:'D'},{k:10,v:'A'},{k:99,v:'B'},{k:99,v:'C'}],op:'removeMin → (5,D)',hl:-1,changed:-1},
+          {pq:[{k:7,v:'B'},{k:10,v:'A'},{k:99,v:'C'}],op:'replaceKey(B, 7) — shorter path found!',hl:-1,changed:0},
+          {pq:[{k:7,v:'B'},{k:10,v:'A'},{k:12,v:'C'}],op:'replaceKey(C, 12) — path via D',hl:-1,changed:2},
+          {pq:[{k:7,v:'B'},{k:10,v:'A'},{k:12,v:'C'}],op:'Now B has the smallest distance',hl:0,changed:-1},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,460,230);
+          const s=steps[step];
+          cx.fillStyle='#93c5fd';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.op,230,22);
+          // PQ entries
+          const sorted=[...s.pq].sort((a,b)=>a.k-b.k);
+          const bw=90,gap=10;
+          const startX=(460-sorted.length*(bw+gap))/2;
+          sorted.forEach((e,i)=>{
+            const x=startX+i*(bw+gap),y=45;
+            const isMin=i===0;
+            const isChanged=i===s.changed;
+            const isHl=i===s.hl;
+            let bg='rgba(59,130,246,0.15)',border='#3b82f6';
+            if(isMin){bg='rgba(74,222,128,0.2)';border='#4ade80';}
+            if(isChanged){bg='rgba(251,191,36,0.3)';border='#fbbf24';}
+            if(isHl){bg='rgba(74,222,128,0.3)';border='#4ade80';}
+            cx.fillStyle=bg;cx.strokeStyle=border;cx.lineWidth=isChanged||isHl?3:2;
+            cx.beginPath();cx.roundRect(x,y,bw,50,8);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText('('+e.k+','+e.v+')',x+bw/2,y+25);
+            if(isMin){cx.fillStyle='#4ade80';cx.font='10px SF Mono, monospace';cx.fillText('MIN',x+bw/2,y+60);}
+            if(isChanged){cx.fillStyle='#fbbf24';cx.font='10px SF Mono, monospace';cx.fillText('CHANGED',x+bw/2,y+60);}
+          });
+          // Explanation
+          cx.fillStyle='#cbd5e1';cx.font='13px system-ui, sans-serif';cx.textAlign='center';
+          if(step===2||step===3){
+            cx.fillText('Without location-aware entry: O(n) to find + O(log n) to fix',230,140);
+            cx.fillText('With location-aware entry: O(1) to find + O(log n) to fix = O(log n)',230,160);
+          }
+          if(step===4){
+            cx.fillStyle='#4ade80';cx.font='bold 14px system-ui, sans-serif';
+            cx.fillText('replaceKey lets Dijkstra update distances efficiently!',230,150);
+          }
+        }
+        window.dijStep=function(){if(step<steps.length-1){step++;draw();}if(step>=steps.length-1)document.getElementById('dijStepBtn').disabled=true;};
+        window.dijReset=function(){step=0;document.getElementById('dijStepBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>An adaptable PQ lets you modify entries already in the queue. Essential for graph algorithms like <strong>Dijkstra's</strong> and <strong>Prim's</strong>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 13: JOB SCHEDULING ==================== -->
+<div class="slide" id="s13">
+  <h2>Application: Job Scheduling</h2>
+  <p>Operating systems use priority queues to decide which process runs next.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Interactive OS Scheduler</h3>
+      <canvas id="schedCanvas" width="500" height="280" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <input type="text" id="schedName" value="Browser" style="width:100px;" placeholder="name">
+        <input type="number" id="schedPri" min="1" max="20" value="3" style="width:60px;" placeholder="pri">
+        <button class="btn btn-sm" onclick="schedInsert()">Add Process</button>
+        <button class="btn btn-sm" onclick="schedRun()">Run Next</button>
+        <button class="btn-secondary btn-sm" onclick="schedReset()">Reset</button>
+      </div>
+      <p id="schedMsg" style="font-size:13px;color:#94a3b8;margin-top:4px;"></p>
+      <script>
+      (function(){
+        const cv=document.getElementById('schedCanvas'),cx=cv.getContext('2d');
+        let procs=[
+          {name:'System IRQ',pri:1},{name:'Video Call',pri:2},
+          {name:'Compiler',pri:5},{name:'Backup',pri:10}
+        ];
+        let running=null;
+        function draw(){
+          cx.clearRect(0,0,500,280);
+          // CPU
+          cx.fillStyle='rgba(74,222,128,0.15)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(180,10,140,50,8);cx.fill();cx.stroke();
+          cx.fillStyle='#4ade80';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('CPU',250,30);
+          if(running){
+            cx.fillStyle='#e2e8f0';cx.font='12px SF Mono, monospace';
+            cx.fillText(running.name+' (pri:'+running.pri+')',250,50);
+          } else {
+            cx.fillStyle='#475569';cx.font='12px system-ui';cx.fillText('idle',250,50);
+          }
+          // Arrow
+          cx.strokeStyle='#475569';cx.lineWidth=1.5;
+          cx.beginPath();cx.moveTo(250,65);cx.lineTo(250,90);cx.stroke();
+          cx.fillStyle='#475569';cx.beginPath();cx.moveTo(250,65);cx.lineTo(245,72);cx.lineTo(255,72);cx.closePath();cx.fill();
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('removeMin()',290,80);
+          // PQ
+          cx.fillStyle='rgba(59,130,246,0.1)';cx.strokeStyle='#3b82f6';cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(30,95,440,130,12);cx.fill();cx.stroke();
+          cx.fillStyle='#93c5fd';cx.font='bold 13px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Priority Queue ('+procs.length+' processes)',45,115);
+          // Sorted processes
+          const sorted=[...procs].sort((a,b)=>a.pri-b.pri);
+          sorted.forEach((p,i)=>{
+            const x=50+i*105,y=125;
+            if(x+95>460)return;
+            const isMin=i===0;
+            cx.fillStyle=isMin?'rgba(74,222,128,0.2)':'#0f172a';
+            cx.strokeStyle=isMin?'#4ade80':'#475569';cx.lineWidth=isMin?2:1;
+            cx.beginPath();cx.roundRect(x,y,95,36,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(p.name,x+47,y+12);
+            cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';
+            cx.fillText('pri: '+p.pri,x+47,y+28);
+          });
+          if(procs.length===0){cx.fillStyle='#475569';cx.font='14px system-ui';cx.textAlign='center';cx.fillText('No processes waiting',250,150);}
+          // Insert arrow
+          cx.strokeStyle='#475569';cx.lineWidth=1.5;
+          cx.beginPath();cx.moveTo(250,230);cx.lineTo(250,225);cx.stroke();
+          cx.fillStyle='#475569';cx.beginPath();cx.moveTo(250,225);cx.lineTo(245,232);cx.lineTo(255,232);cx.closePath();cx.fill();
+          cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('insert(priority, process)',250,250);
+          cx.fillText('↑ new processes arrive',250,265);
+        }
+        window.schedInsert=function(){
+          const name=document.getElementById('schedName').value||'Process';
+          const pri=parseInt(document.getElementById('schedPri').value)||5;
+          procs.push({name,pri});
+          document.getElementById('schedMsg').textContent='Added "'+name+'" with priority '+pri;
+          document.getElementById('schedMsg').style.color='#4ade80';
+          draw();
+        };
+        window.schedRun=function(){
+          if(procs.length===0){document.getElementById('schedMsg').textContent='No processes to run!';document.getElementById('schedMsg').style.color='#f87171';return;}
+          procs.sort((a,b)=>a.pri-b.pri);
+          running=procs.shift();
+          document.getElementById('schedMsg').textContent='Running: '+running.name+' (priority '+running.pri+')';
+          document.getElementById('schedMsg').style.color='#fbbf24';
+          draw();
+          setTimeout(()=>{running=null;draw();},2000);
+        };
+        window.schedReset=function(){
+          procs=[{name:'System IRQ',pri:1},{name:'Video Call',pri:2},{name:'Compiler',pri:5},{name:'Backup',pri:10}];
+          running=null;document.getElementById('schedMsg').textContent='';draw();
+        };
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>How the PQ Helps</h3>
+      <ul>
+        <li>CPU always runs the <strong>highest-priority</strong> (lowest key) process</li>
+        <li>New processes arrive via <code>insert(priority, process)</code></li>
+        <li>Scheduler calls <code>removeMin()</code> to pick the next process</li>
+        <li>With a heap: O(log n) per operation — handles thousands of processes</li>
+      </ul>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Like a hospital with one doctor: the most critical patient always gets treated next, but new patients arrive at any time and get triaged into the queue.</p>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>The PQ ensures that system-critical tasks (interrupts, real-time processes) always preempt lower-priority work like background backups.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 14: EVENT-DRIVEN SIMULATION ==================== -->
+<div class="slide" id="s14">
+  <h2>Application: Event-Driven Simulation</h2>
+  <p>Simulate a system by processing events in chronological order.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Interactive Bank Simulation</h3>
+      <canvas id="eventCanvas" width="500" height="280" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="eventStep()" id="eventStepBtn">Process Next Event</button>
+        <button class="btn-secondary btn-sm" onclick="eventReset()">Reset</button>
+      </div>
+      <p id="eventMsg" style="font-size:13px;color:#94a3b8;margin-top:4px;"></p>
+      <script>
+      (function(){
+        const cv=document.getElementById('eventCanvas'),cx=cv.getContext('2d');
+        let events=[
+          {t:0,desc:'Bank opens'},
+          {t:2,desc:'Customer A arrives'},
+          {t:5,desc:'Customer B arrives'},
+        ];
+        let processed=[];
+        let clock=0;
+        function draw(){
+          cx.clearRect(0,0,500,280);
+          // Timeline
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Simulation Clock: t = '+clock,15,20);
+          // Timeline bar
+          cx.fillStyle='#0f172a';cx.strokeStyle='#334155';cx.lineWidth=1;
+          cx.beginPath();cx.roundRect(15,30,470,16,4);cx.fill();cx.stroke();
+          const maxT=Math.max(15,...events.map(e=>e.t),...processed.map(e=>e.t));
+          const clockX=15+Math.min(1,clock/maxT)*470;
+          cx.fillStyle='rgba(59,130,246,0.4)';
+          cx.fillRect(15,30,clockX-15,16);
+          cx.fillStyle='#3b82f6';cx.beginPath();cx.arc(clockX,38,6,0,Math.PI*2);cx.fill();
+
+          // PQ
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Event PQ (key = time):',15,70);
+          const sorted=[...events].sort((a,b)=>a.t-b.t);
+          sorted.forEach((e,i)=>{
+            const y=80+i*28;
+            const isNext=i===0;
+            cx.fillStyle=isNext?'rgba(74,222,128,0.2)':'#0f172a';
+            cx.strokeStyle=isNext?'#4ade80':'#475569';cx.lineWidth=isNext?2:1;
+            cx.beginPath();cx.roundRect(20,y,300,24,4);cx.fill();cx.stroke();
+            cx.fillStyle=isNext?'#4ade80':'#cbd5e1';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+            cx.fillText('t='+e.t+'  '+e.desc,30,y+16);
+            if(isNext){cx.fillStyle='#4ade80';cx.textAlign='right';cx.fillText('← NEXT',310,y+16);}
+          });
+          if(events.length===0){cx.fillStyle='#475569';cx.font='13px system-ui';cx.fillText('No more events',30,90);}
+
+          // Processed log
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Processed:',350,70);
+          processed.slice(-7).forEach((e,i)=>{
+            cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';
+            cx.fillText('t='+e.t+' '+e.desc,355,88+i*18);
+          });
+        }
+        window.eventStep=function(){
+          if(events.length===0){document.getElementById('eventMsg').textContent='Simulation complete!';document.getElementById('eventMsg').style.color='#4ade80';document.getElementById('eventStepBtn').disabled=true;return;}
+          events.sort((a,b)=>a.t-b.t);
+          const ev=events.shift();
+          clock=ev.t;
+          processed.push(ev);
+          // Generate new events based on what happened
+          if(ev.desc==='Bank opens'){
+            // already have customer arrivals
+          } else if(ev.desc.includes('arrives')){
+            const name=ev.desc.split(' ')[1];
+            events.push({t:ev.t+5,desc:name+' service done'});
+          } else if(ev.desc.includes('service done')){
+            // Chance of new customer
+            if(processed.length<6){
+              events.push({t:ev.t+3,desc:'Customer '+String.fromCharCode(67+processed.length)+' arrives'});
+            }
+          }
+          document.getElementById('eventMsg').textContent='Processed: t='+ev.t+' "'+ev.desc+'"';
+          document.getElementById('eventMsg').style.color='#fbbf24';
+          draw();
+        };
+        window.eventReset=function(){
+          events=[{t:0,desc:'Bank opens'},{t:2,desc:'Customer A arrives'},{t:5,desc:'Customer B arrives'}];
+          processed=[];clock=0;
+          document.getElementById('eventStepBtn').disabled=false;
+          document.getElementById('eventMsg').textContent='';
+          draw();
+        };
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>How It Works</h3>
+      <div class="code-block" style="font-size:0.85em;">
+<div class="line">// key = event time, value = event</div>
+<div class="line">PQ&lt;Event&gt; pq = new PQ&lt;&gt;();</div>
+<div class="line">pq.insert(0, "Bank opens");</div>
+<div class="line"> </div>
+<div class="line">while (!pq.isEmpty()) {</div>
+<div class="line">    Event e = pq.removeMin();</div>
+<div class="line">    clock = e.time;</div>
+<div class="line">    process(e);</div>
+<div class="line">    // processing may INSERT new</div>
+<div class="line">    // future events into the PQ</div>
+<div class="line">}</div>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Events are entries with <strong>time as the key</strong>. Processing an event often creates new future events. The PQ always gives us the chronologically next event — no need to iterate through all possibilities.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Like a director with a schedule of scenes to film. Each scene might add new scenes. The PQ picks the one that happens earliest in the story timeline.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 15: DIJKSTRA PREVIEW ==================== -->
+<div class="slide" id="s15">
+  <h2>Application: Dijkstra's Algorithm Preview</h2>
+  <p>The priority queue is the engine behind the famous shortest-path algorithm.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Interactive Graph Trace</h3>
+      <canvas id="dijGraphCanvas" width="500" height="340" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="dijGStep()" id="dijGStepBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="dijGReset()">Reset</button>
+        <span id="dijGInfo" style="color:#94a3b8;font-size:13px;margin-left:8px;">Click Step to begin</span>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('dijGraphCanvas'),cx=cv.getContext('2d');
+        const V=[
+          {id:'A',x:80,y:80},{id:'B',x:250,y:50},{id:'D',x:420,y:80},
+          {id:'C',x:80,y:230},{id:'E',x:250,y:200},{id:'F',x:420,y:230}
+        ];
+        const E=[
+          {u:0,v:1,w:2},{u:0,v:3,w:4},{u:1,v:2,w:3},{u:1,v:4,w:1},
+          {u:3,v:4,w:5},{u:4,v:5,w:1},{u:2,v:5,w:2}
+        ];
+        const steps=[
+          {dist:[0,99,99,99,99,99],visited:[],pq:[{k:0,v:'A'}],op:'Start: dist[A]=0, all others ∞',current:-1},
+          {dist:[0,2,99,4,99,99],visited:[0],pq:[{k:2,v:'B'},{k:4,v:'C'}],op:'Visit A: update B=2, C=4',current:0},
+          {dist:[0,2,5,4,3,99],visited:[0,1],pq:[{k:3,v:'E'},{k:4,v:'C'},{k:5,v:'D'}],op:'Visit B: update D=5, E=3',current:1},
+          {dist:[0,2,5,4,3,4],visited:[0,1,4],pq:[{k:4,v:'C'},{k:4,v:'F'},{k:5,v:'D'}],op:'Visit E: update F=4',current:4},
+          {dist:[0,2,5,4,3,4],visited:[0,1,4,3],pq:[{k:4,v:'F'},{k:5,v:'D'}],op:'Visit C: no improvements',current:3},
+          {dist:[0,2,5,4,3,4],visited:[0,1,4,3,5],pq:[{k:5,v:'D'}],op:'Visit F: D already 5, no change',current:5},
+          {dist:[0,2,5,4,3,4],visited:[0,1,4,3,5,2],pq:[],op:'Visit D: done! All shortest distances found',current:2},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,500,340);
+          const s=steps[step];
+          // Edges
+          E.forEach(e=>{
+            const u=V[e.u],v=V[e.v];
+            cx.strokeStyle='#475569';cx.lineWidth=2;
+            cx.beginPath();cx.moveTo(u.x,u.y);cx.lineTo(v.x,v.y);cx.stroke();
+            cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+            cx.fillText(e.w,(u.x+v.x)/2+((u.y===v.y)?0:12),(u.y+v.y)/2-8);
+          });
+          // Vertices
+          V.forEach((v,i)=>{
+            const visited=s.visited.includes(i);
+            const isCurrent=i===s.current;
+            let bg='#1e293b',border='#475569',textCol='#cbd5e1';
+            if(isCurrent){bg='rgba(74,222,128,0.4)';border='#4ade80';textCol='#4ade80';}
+            else if(visited){bg='rgba(59,130,246,0.3)';border='#3b82f6';textCol='#93c5fd';}
+            cx.fillStyle=bg;cx.strokeStyle=border;cx.lineWidth=isCurrent?3:2;
+            cx.beginPath();cx.arc(v.x,v.y,22,0,Math.PI*2);cx.fill();cx.stroke();
+            cx.fillStyle=textCol;cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v.id,v.x,v.y);
+            // Distance label
+            const d=s.dist[i];
+            cx.fillStyle=visited||isCurrent?'#fbbf24':'#64748b';cx.font='bold 11px SF Mono, monospace';
+            cx.fillText(d>=99?'∞':d,v.x,v.y+35);
+          });
+          // Operation text
+          cx.fillStyle='#93c5fd';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.op,250,300);
+          // PQ display
+          cx.fillStyle='#94a3b8';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+          const pqStr='PQ: ['+s.pq.map(e=>'('+e.k+','+e.v+')').join(', ')+']';
+          cx.fillText(pqStr,15,325);
+          document.getElementById('dijGInfo').textContent='Step '+step+'/'+( steps.length-1);
+        }
+        window.dijGStep=function(){if(step<steps.length-1){step++;draw();}if(step>=steps.length-1)document.getElementById('dijGStepBtn').disabled=true;};
+        window.dijGReset=function(){step=0;document.getElementById('dijGStepBtn').disabled=false;draw();};
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>The Algorithm</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<div class="line">PQ = { (0, source) }</div>
+<div class="line">dist[source] = 0, all others = ∞</div>
+<div class="line"> </div>
+<div class="line">while PQ not empty:</div>
+<div class="line">    (d, u) = PQ.removeMin()</div>
+<div class="line">    for each neighbor v of u:</div>
+<div class="line">        if d + weight(u,v) &lt; dist[v]:</div>
+<div class="line">            dist[v] = d + weight(u,v)</div>
+<div class="line">            PQ.insert(dist[v], v)</div>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Dijkstra "greedily" picks the unvisited vertex with the smallest known distance using <code>removeMin()</code>. With a heap-based PQ, the algorithm runs in <strong>O((V + E) log V)</strong>.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>Why PQ Matters Here</h3>
+        <p>Without a PQ, finding the next closest vertex costs O(V) per step → O(V²) total. With a heap PQ, each step is O(log V) — a huge speedup on large graphs.</p>
+      </div>
+
+      <p class="mt" style="color:#64748b;font-size:0.9em;">Full details in the Graph Algorithms unit.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== CHALLENGE A: PQ TRACE ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Trace the PQ</h2>
+  <p class="subtitle">What does removeMin() return after this sequence?</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block">
+<div class="line">PQ pq = new PQ();  // min-heap</div>
+<div class="line">pq.insert(8, "X");</div>
+<div class="line">pq.insert(3, "Y");</div>
+<div class="line">pq.insert(5, "Z");</div>
+<div class="line">pq.insert(1, "W");</div>
+<div class="line">pq.removeMin();  // first remove</div>
+<div class="line">pq.insert(2, "V");</div>
+<div class="line">pq.insert(7, "U");</div>
+<div class="line">pq.removeMin();  // second remove</div>
+<div class="line">pq.removeMin();  // ← WHAT IS THIS?</div>
+      </div>
+
+      <p class="mt">What entry does the <strong>third</strong> removeMin() return?</p>
+      <div class="controls mt" style="flex-direction:column;gap:8px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="caAns" value="a"> (3, "Y")</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="caAns" value="b"> (5, "Z")</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="caAns" value="c"> (2, "V")</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="caAns" value="d"> (7, "U")</label>
+      </div>
+      <div class="controls mt">
+        <button class="btn btn-sm" onclick="checkCA()">Check</button>
+      </div>
+      <p id="caFeedback" style="margin-top:8px;font-weight:600;"></p>
+    </div>
+
+    <div>
+      <h3>Step-Through Helper</h3>
+      <canvas id="caCanvas" width="460" height="320" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="caStep()" id="caStepBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="caReset()">Reset</button>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('caCanvas'),cx=cv.getContext('2d');
+        const states=[
+          {pq:[],op:'Start — empty PQ',ret:''},
+          {pq:[{k:8,v:'X'}],op:'insert(8,"X")',ret:''},
+          {pq:[{k:3,v:'Y'},{k:8,v:'X'}],op:'insert(3,"Y")',ret:''},
+          {pq:[{k:3,v:'Y'},{k:5,v:'Z'},{k:8,v:'X'}],op:'insert(5,"Z")',ret:''},
+          {pq:[{k:1,v:'W'},{k:3,v:'Y'},{k:5,v:'Z'},{k:8,v:'X'}],op:'insert(1,"W")',ret:''},
+          {pq:[{k:3,v:'Y'},{k:5,v:'Z'},{k:8,v:'X'}],op:'removeMin() → (1,"W")',ret:'(1,"W")'},
+          {pq:[{k:2,v:'V'},{k:3,v:'Y'},{k:5,v:'Z'},{k:8,v:'X'}],op:'insert(2,"V")',ret:''},
+          {pq:[{k:2,v:'V'},{k:3,v:'Y'},{k:5,v:'Z'},{k:7,v:'U'},{k:8,v:'X'}],op:'insert(7,"U")',ret:''},
+          {pq:[{k:3,v:'Y'},{k:5,v:'Z'},{k:7,v:'U'},{k:8,v:'X'}],op:'removeMin() → (2,"V")',ret:'(2,"V")'},
+          {pq:[{k:5,v:'Z'},{k:7,v:'U'},{k:8,v:'X'}],op:'removeMin() → ???',ret:'???'},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,460,320);
+          const s=states[step];
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Step '+step+' / '+(states.length-1),230,18);
+          cx.fillStyle='#93c5fd';cx.font='bold 14px SF Mono, monospace';
+          cx.fillText(s.op,230,42);
+          // PQ entries sorted
+          const sorted=[...s.pq].sort((a,b)=>a.k-b.k);
+          if(sorted.length===0&&step>0){cx.fillStyle='#475569';cx.font='14px system-ui';cx.fillText('empty',230,110);}
+          const bw=75,gap=8;
+          const startX=(460-sorted.length*(bw+gap))/2;
+          sorted.forEach((e,i)=>{
+            const x=startX+i*(bw+gap),y=60;
+            const isMin=i===0;
+            cx.fillStyle=isMin?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isMin?'#4ade80':'#3b82f6';cx.lineWidth=isMin?3:2;
+            cx.beginPath();cx.roundRect(x,y,bw,44,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText('('+e.k+',"'+e.v+'")',x+bw/2,y+22);
+            if(isMin){cx.fillStyle='#4ade80';cx.font='10px SF Mono, monospace';cx.fillText('MIN',x+bw/2,y+55);}
+          });
+          if(s.ret){
+            cx.fillStyle='#fbbf24';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+            cx.fillText('Returned: '+s.ret,230,145);
+          }
+          // Log of all ops
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Operation Log:',15,175);
+          for(let i=0;i<=step&&i<states.length;i++){
+            cx.fillStyle=i===step?'#93c5fd':'#475569';cx.font='11px SF Mono, monospace';
+            cx.fillText(states[i].op,20,193+i*15);
+          }
+        }
+        window.caStep=function(){if(step<states.length-1){step++;draw();}if(step>=states.length-1)document.getElementById('caStepBtn').disabled=true;};
+        window.caReset=function(){step=0;document.getElementById('caStepBtn').disabled=false;draw();};
+        window.checkCA=function(){
+          const sel=document.querySelector('input[name="caAns"]:checked');
+          const fb=document.getElementById('caFeedback');
+          if(!sel){fb.textContent='Select an answer first.';fb.style.color='#fbbf24';return;}
+          document.querySelectorAll('input[name="caAns"]').forEach(r=>{
+            r.parentElement.style.color=r.value==='b'?'#4ade80':'#cbd5e1';
+            if(sel.value!=='b'&&r.value===sel.value)r.parentElement.style.color='#f87171';
+          });
+          if(sel.value==='b'){fb.textContent='Correct! After removing (1,W) and (2,V), the next min is (3,Y). Then (5,"Z") is returned.';fb.style.color='#4ade80';}
+          else{fb.textContent='Not quite — trace through: after removing keys 1 and 2, the remaining are {3,5,7,8}. The min is 3, so (3,"Y") was already removed. Next is (5,"Z").';fb.style.color='#f87171';}
+        };
+        draw();
+      })();
+      </script>
+    </div>
+  </div>
+  <script>
+  // Fix: the correct answer is actually (3,"Y") not (5,"Z"). Let me re-check:
+  // insert 8,3,5,1 → PQ: {1,3,5,8}. removeMin→1. PQ: {3,5,8}. insert 2,7. PQ: {2,3,5,7,8}. removeMin→2. PQ: {3,5,7,8}. removeMin→3. Answer = (3,"Y").
+  window.checkCA=function(){
+    const sel=document.querySelector('input[name="caAns"]:checked');
+    const fb=document.getElementById('caFeedback');
+    if(!sel){fb.textContent='Select an answer first.';fb.style.color='#fbbf24';return;}
+    document.querySelectorAll('input[name="caAns"]').forEach(r=>{
+      r.parentElement.style.color=r.value==='a'?'#4ade80':'#cbd5e1';
+      if(sel.value!=='a'&&r.value===sel.value)r.parentElement.style.color='#f87171';
+    });
+    if(sel.value==='a'){fb.textContent='Correct! After removing keys 1 and 2, the remaining are {3, 5, 7, 8}. The third removeMin returns (3, "Y").';fb.style.color='#4ade80';}
+    else{fb.textContent='Not quite — trace: remove 1(W), remove 2(V), then remaining PQ is {3,5,7,8}. Min = 3 → returns (3,"Y").';fb.style.color='#f87171';}
+  };
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 16: HUFFMAN CODING PREVIEW ==================== -->
+<div class="slide" id="s16">
+  <h2>Application: Huffman Coding Preview</h2>
+  <p>Build optimal prefix-free codes for data compression using a priority queue.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Interactive Huffman Build</h3>
+      <canvas id="huffCanvas" width="500" height="300" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="huffStep()" id="huffStepBtn">Merge Two Smallest</button>
+        <button class="btn-secondary btn-sm" onclick="huffReset()">Reset</button>
+      </div>
+      <p id="huffMsg" style="font-size:13px;color:#94a3b8;margin-top:4px;"></p>
+      <script>
+      (function(){
+        const cv=document.getElementById('huffCanvas'),cx=cv.getContext('2d');
+        let nodes=[
+          {freq:5,label:'f',children:null},{freq:9,label:'e',children:null},
+          {freq:12,label:'c',children:null},{freq:13,label:'b',children:null},
+          {freq:16,label:'d',children:null},{freq:45,label:'a',children:null}
+        ];
+        let mergeHistory=[];
+        function draw(){
+          cx.clearRect(0,0,500,300);
+          cx.fillStyle='#94a3b8';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('PQ: '+nodes.length+' entries (sorted by frequency)',250,18);
+          // Draw nodes
+          const sorted=[...nodes].sort((a,b)=>a.freq-b.freq);
+          const bw=Math.min(70,450/sorted.length-8);
+          const startX=(500-sorted.length*(bw+8))/2;
+          sorted.forEach((n,i)=>{
+            const x=startX+i*(bw+8),y=35;
+            const isMin=i<2&&sorted.length>1;
+            cx.fillStyle=isMin?'rgba(251,191,36,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isMin?'#fbbf24':'#3b82f6';cx.lineWidth=isMin?3:2;
+            cx.beginPath();cx.roundRect(x,y,bw,50,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(n.freq,x+bw/2,y+18);
+            cx.fillStyle='#94a3b8';cx.font='11px SF Mono, monospace';
+            cx.fillText(n.label,x+bw/2,y+40);
+          });
+          if(sorted.length>1){
+            cx.fillStyle='#fbbf24';cx.font='11px SF Mono, monospace';cx.textAlign='center';
+            cx.fillText('← two smallest to merge',250,100);
+          }
+          // History log
+          cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Merge History:',15,130);
+          mergeHistory.forEach((h,i)=>{
+            cx.fillStyle='#cbd5e1';cx.font='12px SF Mono, monospace';
+            cx.fillText(h,20,150+i*20);
+          });
+          if(sorted.length===1){
+            cx.fillStyle='#4ade80';cx.font='bold 16px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('Huffman tree complete! Root frequency = '+sorted[0].freq,250,280);
+          }
+        }
+        window.huffStep=function(){
+          if(nodes.length<=1){document.getElementById('huffMsg').textContent='Tree is complete!';document.getElementById('huffMsg').style.color='#4ade80';return;}
+          nodes.sort((a,b)=>a.freq-b.freq);
+          const t1=nodes.shift(),t2=nodes.shift();
+          const merged={freq:t1.freq+t2.freq,label:t1.label+t2.label,children:[t1,t2]};
+          nodes.push(merged);
+          mergeHistory.push(t1.label+'('+t1.freq+') + '+t2.label+'('+t2.freq+') → ('+merged.freq+')');
+          document.getElementById('huffMsg').textContent='Merged '+t1.label+' and '+t2.label+' → frequency '+ merged.freq;
+          document.getElementById('huffMsg').style.color='#fbbf24';
+          draw();
+          if(nodes.length<=1)document.getElementById('huffStepBtn').disabled=true;
+        };
+        window.huffReset=function(){
+          nodes=[{freq:5,label:'f'},{freq:9,label:'e'},{freq:12,label:'c'},{freq:13,label:'b'},{freq:16,label:'d'},{freq:45,label:'a'}];
+          mergeHistory=[];document.getElementById('huffStepBtn').disabled=false;document.getElementById('huffMsg').textContent='';draw();
+        };
+        draw();
+      })();
+      </script>
+    </div>
+
+    <div>
+      <h3>The Algorithm</h3>
+      <ol style="padding-left:24px;font-size:1em;">
+        <li>Insert each character as a leaf node into PQ (key = frequency)</li>
+        <li>While PQ has more than one entry:
+          <ul>
+            <li>T1 = PQ.removeMin()</li>
+            <li>T2 = PQ.removeMin()</li>
+            <li>Merge into new node (freq = T1 + T2)</li>
+            <li>PQ.insert(merged node)</li>
+          </ul>
+        </li>
+        <li>Last entry = Huffman tree root</li>
+      </ol>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>The PQ always merges the two <strong>least frequent</strong> nodes. This greedy strategy produces an optimal prefix code. Two <code>removeMin</code> + one <code>insert</code> per step.</p>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Why It Works</h3>
+        <p>Rare characters get long codes (deep in tree), frequent characters get short codes (near root). Total bit usage is minimized.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== CHALLENGE B: FIX THE BUG ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the PQ Sort</h2>
+  <p class="subtitle">This PQ-based sort has a bug — find and fix it</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block" id="cbCode">
+<div class="line">// Sort using an unsorted-list PQ</div>
+<div class="line">public static void pqSort(int[] arr) {</div>
+<div class="line">    PQ pq = new UnsortedListPQ();</div>
+<div class="line">    for (int x : arr)</div>
+<div class="line">        pq.insert(x, x);</div>
+<div class="line">    </div>
+<div class="line" id="cbBugLine">    for (int i = 0; i &lt; arr.length; i++)</div>
+<div class="line">        arr[i] = pq.removeMin().getValue();</div>
+<div class="line">}</div>
+      </div>
+
+      <p class="mt">Wait — this code looks correct. But what if we change the PQ to a <strong>max-heap</strong> (removeMax instead of removeMin)?</p>
+
+      <div class="code-block mt">
+<div class="line">// Using a MAX-heap PQ — has a bug!</div>
+<div class="line">public static void pqSort(int[] arr) {</div>
+<div class="line">    MaxPQ pq = new MaxHeapPQ();</div>
+<div class="line">    for (int x : arr)</div>
+<div class="line">        pq.insert(x, x);</div>
+<div class="line">    </div>
+<div class="line" style="color:#f87171;">    for (int i = 0; i &lt; arr.length; i++)</div>
+<div class="line">        arr[i] = pq.removeMax().getValue();</div>
+<div class="line">}</div>
+      </div>
+
+      <p class="mt">What's wrong and how do you fix it?</p>
+      <div class="controls mt">
+        <select id="cbSelect" style="min-width:300px;">
+          <option value="">— Select the fix —</option>
+          <option value="a">Change removeMax to removeMin</option>
+          <option value="b">Loop backwards: i = arr.length-1 down to 0</option>
+          <option value="c">Reverse the array after the loop</option>
+          <option value="d">Nothing is wrong, it sorts correctly</option>
+        </select>
+        <button class="btn btn-sm" onclick="checkCB()">Check</button>
+      </div>
+      <p id="cbFeedback" style="margin-top:8px;font-weight:600;"></p>
+    </div>
+
+    <div>
+      <canvas id="cbCanvas" width="460" height="340" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('cbCanvas'),cx=cv.getContext('2d');
+        function draw(showFix){
+          cx.clearRect(0,0,460,340);
+          cx.fillStyle='#94a3b8';cx.font='bold 14px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText('Max-Heap PQ Sort Trace: [7, 4, 8, 2, 5]',230,20);
+          // Bug version
+          cx.fillStyle=showFix?'#475569':'#f87171';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(showFix?'BUG (looping forward):':'BUG: looping i = 0, 1, 2, ...',15,50);
+          const bugResult=[8,7,5,4,2];
+          const bw=55;
+          bugResult.forEach((v,i)=>{
+            const x=20+i*(bw+8),y=60;
+            cx.fillStyle='rgba(248,113,113,0.15)';cx.strokeStyle='#f87171';cx.lineWidth=1;
+            cx.beginPath();cx.roundRect(x,y,bw,35,4);cx.fill();cx.stroke();
+            cx.fillStyle='#f87171';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+bw/2,y+17);
+          });
+          cx.fillStyle='#f87171';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('→ DESCENDING order! (not sorted ascending)',20,115);
+
+          // Fix version
+          if(showFix){
+            cx.fillStyle='#4ade80';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+            cx.fillText('FIX: loop backwards i = n-1, n-2, ..., 0',15,150);
+            const fixResult=[2,4,5,7,8];
+            fixResult.forEach((v,i)=>{
+              const x=20+i*(bw+8),y=165;
+              cx.fillStyle='rgba(74,222,128,0.15)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+              cx.beginPath();cx.roundRect(x,y,bw,35,4);cx.fill();cx.stroke();
+              cx.fillStyle='#4ade80';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+              cx.fillText(v,x+bw/2,y+17);
+            });
+            cx.fillStyle='#4ade80';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+            cx.fillText('→ ASCENDING order! Correct!',20,220);
+
+            cx.fillStyle='#cbd5e1';cx.font='13px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('removeMax gives largest first → fill array from end',230,260);
+            cx.fillText('This is exactly how in-place Heap Sort works!',230,280);
+          }
+        }
+        window.drawCBCanvas=draw;
+        draw(false);
+      })();
+      </script>
+    </div>
+  </div>
+  <script>
+  window.checkCB=function(){
+    const v=document.getElementById('cbSelect').value;
+    const fb=document.getElementById('cbFeedback');
+    if(v===''){fb.textContent='Select an answer.';fb.style.color='#fbbf24';return;}
+    if(v==='b'){
+      fb.textContent='Correct! removeMax returns the largest first, so fill the array from the end (i = n-1 down to 0) to get ascending order.';
+      fb.style.color='#4ade80';
+      drawCBCanvas(true);
+    } else if(v==='c'){
+      fb.textContent='That would also work, but looping backwards is more efficient (no extra pass). The best fix is (b).';
+      fb.style.color='#fbbf24';
+    } else {
+      fb.textContent='Not quite. removeMax gives elements largest-first. Think about where the largest element should go in a sorted array.';
+      fb.style.color='#f87171';
+    }
+  };
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 17: IMPLEMENTATION COMPARISON ==================== -->
+<div class="slide" id="s17">
+  <h2>Implementation Comparison</h2>
+  <p>How do all PQ implementations stack up?</p>
+
+  <div class="two-col mt">
+    <div>
+      <canvas id="compAllCanvas" width="500" height="280" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('compAllCanvas'),cx=cv.getContext('2d');
+        const impls=[
+          {name:'Unsorted List',insert:'O(1)',remove:'O(n)',min:'O(n)',sort:'O(n²)',sortName:'Selection',iC:'#4ade80',rC:'#f87171',mC:'#f87171',sC:'#f87171'},
+          {name:'Sorted List',insert:'O(n)',remove:'O(1)',min:'O(1)',sort:'O(n²)',sortName:'Insertion',iC:'#f87171',rC:'#4ade80',mC:'#4ade80',sC:'#f87171'},
+          {name:'Binary Heap',insert:'O(log n)',remove:'O(log n)',min:'O(1)',sort:'O(n log n)',sortName:'Heap Sort',iC:'#fbbf24',rC:'#fbbf24',mC:'#4ade80',sC:'#4ade80'},
+          {name:'Balanced BST',insert:'O(log n)',remove:'O(log n)',min:'O(log n)',sort:'O(n log n)',sortName:'Tree Sort',iC:'#fbbf24',rC:'#fbbf24',mC:'#fbbf24',sC:'#4ade80'},
+        ];
+        // Headers
+        cx.fillStyle='#94a3b8';cx.font='bold 11px SF Mono, monospace';cx.textAlign='center';
+        const cols=[100,210,290,360,440];
+        ['','insert','removeMin','min','PQ-Sort'].forEach((h,i)=>cx.fillText(h,cols[i],18));
+        // Rows
+        impls.forEach((im,i)=>{
+          const y=28+i*58;
+          const isHeap=i===2;
+          cx.fillStyle=isHeap?'rgba(59,130,246,0.15)':'#0f172a';
+          cx.strokeStyle=isHeap?'#3b82f6':'#334155';cx.lineWidth=isHeap?2:1;
+          cx.beginPath();cx.roundRect(10,y,480,48,6);cx.fill();cx.stroke();
+          cx.fillStyle='#cbd5e1';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(im.name,18,y+20);
+          cx.fillStyle='#64748b';cx.font='10px SF Mono, monospace';
+          cx.fillText('→ '+im.sortName,18,y+38);
+          cx.textAlign='center';cx.font='bold 12px SF Mono, monospace';
+          cx.fillStyle=im.iC;cx.fillText(im.insert,210,y+28);
+          cx.fillStyle=im.rC;cx.fillText(im.remove,290,y+28);
+          cx.fillStyle=im.mC;cx.fillText(im.min,360,y+28);
+          cx.fillStyle=im.sC;cx.fillText(im.sort,440,y+28);
+        });
+        // Best choice arrow
+        cx.fillStyle='#3b82f6';cx.font='bold 11px system-ui, sans-serif';cx.textAlign='right';
+        cx.fillText('← BEST DEFAULT',495,28+2*58+28);
+      })();
+      </script>
+
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;margin-top:12px;font-size:0.9em;">
+        <p style="color:#94a3b8;font-weight:600;margin-bottom:8px;">Choose your implementation:</p>
+        <p><span style="color:#4ade80;">Unsorted List</span> — few removes, many inserts, small n</p>
+        <p><span style="color:#60a5fa;">Sorted List</span> — few inserts, many removes, small n</p>
+        <p><span style="color:#fbbf24;">Binary Heap</span> — general purpose PQ — <strong>best default</strong></p>
+        <p><span style="color:#c084fc;">Balanced BST</span> — need ordered iteration or range queries too</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The <strong>binary heap</strong> is the sweet spot: O(log n) insert and removeMin, O(1) min, simple array-based storage, and it gives us <strong>Heap Sort</strong> at O(n log n).</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>BST vs Heap</h3>
+        <p>A balanced BST (AVL, Red-Black) also achieves O(log n) for everything, but has higher constant factors and more complex implementation. Heaps are preferred when you <em>only</em> need PQ operations.</p>
+      </div>
+
+      <h3 class="mt">Sorting Connection Summary</h3>
+      <canvas id="sortConnCanvas" width="420" height="120" style="margin-top:8px;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('sortConnCanvas'),cx=cv.getContext('2d');
+        const rows=[
+          {pq:'Unsorted List',sort:'Selection Sort',comp:'O(n²)',color:'#f87171'},
+          {pq:'Sorted List',sort:'Insertion Sort',comp:'O(n²)',color:'#f87171'},
+          {pq:'Binary Heap',sort:'Heap Sort',comp:'O(n log n)',color:'#4ade80'},
+        ];
+        rows.forEach((r,i)=>{
+          const y=10+i*38;
+          cx.fillStyle='#cbd5e1';cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(r.pq,10,y+18);
+          // Arrow
+          cx.strokeStyle='#475569';cx.lineWidth=1.5;
+          cx.beginPath();cx.moveTo(175,y+14);cx.lineTo(220,y+14);cx.stroke();
+          cx.fillStyle='#475569';cx.beginPath();cx.moveTo(220,y+14);cx.lineTo(214,y+9);cx.lineTo(214,y+19);cx.closePath();cx.fill();
+          cx.fillStyle=r.color;cx.font='bold 12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(r.sort+' '+r.comp,225,y+18);
+        });
+      })();
+      </script>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== CHALLENGE C: WHICH IMPLEMENTATION? ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Pick the Right PQ</h2>
+  <p class="subtitle">Match each scenario to the best PQ implementation</p>
+
+  <div style="max-width:850px;margin:0 auto;">
+    <div id="ccScenarios">
+    </div>
+    <div class="controls mt">
+      <button class="btn" onclick="checkCC()">Check All</button>
+      <button class="btn-secondary" onclick="resetCC()" style="margin-left:8px;">Reset</button>
+      <span id="ccScore" style="font-weight:600;margin-left:12px;"></span>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const scenarios=[
+      {text:'You insert 10,000 items, then remove all of them one at a time. Both operations happen equally.',answer:'heap',explain:'Equal insert/remove → heap gives O(log n) for both.'},
+      {text:'A stream of sensor readings arrives rapidly (1000/sec). You only check the minimum once per minute.',answer:'unsorted',explain:'Insert-heavy, rare removes → unsorted list O(1) insert is ideal.'},
+      {text:'You load 50 items once at startup, then repeatedly pull the minimum for the rest of the program.',answer:'sorted',explain:'One-time insert phase, many removes → sorted list gives O(1) removeMin.'},
+      {text:'Dijkstra\'s algorithm on a graph with 1M vertices. Need replaceKey() for updates.',answer:'heap',explain:'Large n + replaceKey → adaptable heap PQ is essential for efficiency.'},
+    ];
+    const container=document.getElementById('ccScenarios');
+    scenarios.forEach((s,i)=>{
+      const div=document.createElement('div');
+      div.style.cssText='background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px 20px;margin-bottom:12px;';
+      div.innerHTML='<p style="color:#cbd5e1;margin-bottom:10px;font-size:1em;"><strong style="color:#93c5fd;">Scenario '+(i+1)+':</strong> '+s.text+'</p>'+
+        '<div class="controls"><select id="ccSel'+i+'" style="min-width:200px;"><option value="">— Choose —</option><option value="unsorted">Unsorted List</option><option value="sorted">Sorted List</option><option value="heap">Binary Heap</option><option value="bst">Balanced BST</option></select><span id="ccFb'+i+'" style="font-size:13px;font-weight:600;margin-left:10px;"></span></div>';
+      container.appendChild(div);
+    });
+    window.checkCC=function(){
+      let correct=0;
+      scenarios.forEach((s,i)=>{
+        const sel=document.getElementById('ccSel'+i).value;
+        const fb=document.getElementById('ccFb'+i);
+        if(sel===s.answer){correct++;fb.textContent='Correct! '+s.explain;fb.style.color='#4ade80';}
+        else if(sel===''){fb.textContent='Please select.';fb.style.color='#fbbf24';}
+        else{fb.textContent='Not quite. '+s.explain;fb.style.color='#f87171';}
+      });
+      const el=document.getElementById('ccScore');
+      el.textContent=correct+'/4'+(correct===4?' — Perfect!':'');
+      el.style.color=correct===4?'#4ade80':correct>=3?'#fbbf24':'#f87171';
+    };
+    window.resetCC=function(){
+      scenarios.forEach((_,i)=>{document.getElementById('ccSel'+i).value='';document.getElementById('ccFb'+i).textContent='';});
+      document.getElementById('ccScore').textContent='';
+    };
+  })();
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 18: SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary & Cheat Sheet</h2>
+  <p class="subtitle">Everything on one slide</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Core Concepts</h3>
+      <ul style="font-size:1em;">
+        <li><strong>Priority Queue</strong> = smallest (or largest) key removed first</li>
+        <li><strong>Entry</strong> = (key, value) pair; key determines priority</li>
+        <li><strong>Comparator</strong> = defines the total order on keys</li>
+        <li><strong>Adaptable PQ</strong> = supports remove(e), replaceKey(e, k)</li>
+      </ul>
+
+      <h3 class="mt">Sorting Connection</h3>
+      <canvas id="summSortCanvas" width="460" height="90" style="margin-top:4px;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('summSortCanvas'),cx=cv.getContext('2d');
+        const rows=[
+          {pq:'Unsorted List',sort:'Selection Sort',c:'O(n²)',color:'#f87171'},
+          {pq:'Sorted List',sort:'Insertion Sort',c:'O(n²)',color:'#f87171'},
+          {pq:'Binary Heap',sort:'Heap Sort',c:'O(n log n)',color:'#4ade80'},
+        ];
+        rows.forEach((r,i)=>{
+          const y=5+i*28;
+          cx.fillStyle='#cbd5e1';cx.font='13px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText(r.pq,10,y+16);
+          cx.strokeStyle='#475569';cx.lineWidth=1;cx.beginPath();cx.moveTo(170,y+12);cx.lineTo(200,y+12);cx.stroke();
+          cx.fillStyle='#475569';cx.beginPath();cx.moveTo(200,y+12);cx.lineTo(195,y+8);cx.lineTo(195,y+16);cx.closePath();cx.fill();
+          cx.fillStyle=r.color;cx.font='bold 13px SF Mono, monospace';
+          cx.fillText(r.sort+'  '+r.c,205,y+16);
+        });
+      })();
+      </script>
+
+      <h3 class="mt">Applications</h3>
+      <ul style="font-size:0.95em;">
+        <li>OS Job / Process Scheduling</li>
+        <li>Event-Driven Simulation</li>
+        <li>Dijkstra's Shortest Path</li>
+        <li>Huffman Coding (compression)</li>
+        <li>Prim's MST, A* Search</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>Complexity Cheat Sheet</h3>
+      <table style="font-size:0.9em;">
+        <tr><th></th><th>Unsorted</th><th>Sorted</th><th>Heap</th></tr>
+        <tr><td><code>insert</code></td><td style="color:#4ade80;">O(1)</td><td style="color:#f87171;">O(n)</td><td style="color:#fbbf24;">O(log n)</td></tr>
+        <tr><td><code>removeMin</code></td><td style="color:#f87171;">O(n)</td><td style="color:#4ade80;">O(1)</td><td style="color:#fbbf24;">O(log n)</td></tr>
+        <tr><td><code>min</code></td><td style="color:#f87171;">O(n)</td><td style="color:#4ade80;">O(1)</td><td style="color:#4ade80;">O(1)</td></tr>
+      </table>
+
+      <div class="key-idea mt">
+        <h3>Key Takeaways</h3>
+        <ul style="font-size:0.95em;">
+          <li>PQ ≠ Queue — it's <strong>not FIFO!</strong></li>
+          <li>Keys define priority; entries = (key, value)</li>
+          <li>Unsorted list → fast insert, slow remove</li>
+          <li>Sorted list → fast remove, slow insert</li>
+          <li><strong>Heap → fast BOTH!</strong> The gold standard</li>
+          <li>PQ-Sort with heap = O(n log n) = Heap Sort</li>
+        </ul>
+      </div>
+
+      <p class="mt center" style="color:#64748b;font-size:0.9em;">Next up: Binary Heaps — the data structure that makes PQs efficient.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== QUIZ Q1: MULTIPLE CHOICE ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Priority Queues</h2>
+  <p class="subtitle">Test your understanding — 3 questions</p>
+
+  <div style="max-width:800px;margin:0 auto;">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+      <p style="color:#93c5fd;font-weight:600;">Q1: Which PQ implementation gives O(n²) Selection Sort?</p>
+      <div class="controls" style="flex-direction:column;gap:6px;margin-top:10px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1a" value="a"> Sorted list — removeMin walks the list</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1a" value="b"> Unsorted list — removeMin scans for minimum</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1a" value="c"> Binary heap — removeMin is O(log n)</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1a" value="d"> Balanced BST — removeMin is O(log n)</label>
+      </div>
+    </div>
+
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+      <p style="color:#93c5fd;font-weight:600;">Q2: Why does an adaptable PQ need location-aware entries?</p>
+      <div class="controls" style="flex-direction:column;gap:6px;margin-top:10px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1b" value="a"> To store larger values</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1b" value="b"> To find an entry in O(1) instead of O(n) when changing its key</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1b" value="c"> To support FIFO ordering as a fallback</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1b" value="d"> To allow duplicate keys</label>
+      </div>
+    </div>
+
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+      <p style="color:#93c5fd;font-weight:600;">Q3: What makes a binary heap better than both list-based PQ implementations?</p>
+      <div class="controls" style="flex-direction:column;gap:6px;margin-top:10px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1c" value="a"> It uses less memory</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1c" value="b"> It achieves O(log n) for both insert and removeMin</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1c" value="c"> It supports random access by index</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q1c" value="d"> It maintains a sorted order at all times</label>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="checkQ1()">Check Answers</button>
+      <span id="q1Score" style="font-weight:600;margin-left:12px;"></span>
+    </div>
+  </div>
+  <script>
+  window.checkQ1=function(){
+    const answers={q1a:'b',q1b:'b',q1c:'b'};
+    let correct=0;
+    Object.entries(answers).forEach(([name,ans])=>{
+      const sel=document.querySelector('input[name="'+name+'"]:checked');
+      document.querySelectorAll('input[name="'+name+'"]').forEach(r=>{
+        r.parentElement.style.color=r.value===ans?'#4ade80':'#cbd5e1';
+        if(sel&&sel.value!==ans&&sel.value===r.value)r.parentElement.style.color='#f87171';
+      });
+      if(sel&&sel.value===ans)correct++;
+    });
+    const el=document.getElementById('q1Score');
+    el.textContent=correct+'/3 correct'+(correct===3?' — Perfect!':'');
+    el.style.color=correct===3?'#4ade80':correct>=2?'#fbbf24':'#f87171';
+  };
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== QUIZ Q2: SELECTION vs INSERTION SORT ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Selection vs Insertion Sort</h2>
+  <p class="subtitle">Identify which PQ-sort each animation represents</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Sort A</h3>
+      <canvas id="q2CanvasA" width="460" height="200" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('q2CanvasA'),cx=cv.getContext('2d');
+        // Selection sort: insert O(1) into unsorted, then scan
+        cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Phase 1: All inserts are O(1) — just append',230,18);
+        const pq=[7,4,8,2,5];
+        pq.forEach((v,i)=>{
+          const x=30+i*60,y=30;
+          cx.fillStyle='rgba(59,130,246,0.15)';cx.strokeStyle='#3b82f6';cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(x,y,50,35,4);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,x+25,y+17);
+        });
+        cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('unsorted — no ordering maintained',30,82);
+
+        cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Phase 2: Each removeMin scans ALL — O(n)',230,110);
+        cx.fillStyle='#fbbf24';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('scan 5 items → 2, scan 4 → 4, scan 3 → 5, ...',30,130);
+
+        const sorted=[2,4,5,7,8];
+        sorted.forEach((v,i)=>{
+          const x=30+i*60,y=145;
+          cx.fillStyle='rgba(74,222,128,0.15)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(x,y,50,35,4);cx.fill();cx.stroke();
+          cx.fillStyle='#4ade80';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,x+25,y+17);
+        });
+      })();
+      </script>
+      <div class="controls" style="flex-direction:column;gap:6px;margin-top:8px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q2a" value="sel"> Selection Sort (unsorted list PQ)</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q2a" value="ins"> Insertion Sort (sorted list PQ)</label>
+      </div>
+    </div>
+
+    <div>
+      <h3>Sort B</h3>
+      <canvas id="q2CanvasB" width="460" height="200" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <script>
+      (function(){
+        const cv=document.getElementById('q2CanvasB'),cx=cv.getContext('2d');
+        cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Phase 1: Each insert walks to sorted position — O(n)',230,18);
+        const pq=[2,4,5,7,8];
+        pq.forEach((v,i)=>{
+          const x=30+i*60,y=30;
+          cx.fillStyle='rgba(139,92,246,0.15)';cx.strokeStyle='#8b5cf6';cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(x,y,50,35,4);cx.fill();cx.stroke();
+          cx.fillStyle='#e2e8f0';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,x+25,y+17);
+        });
+        cx.fillStyle='#64748b';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('sorted — maintained during insertion',30,82);
+
+        cx.fillStyle='#94a3b8';cx.font='bold 12px SF Mono, monospace';cx.textAlign='center';
+        cx.fillText('Phase 2: Each removeMin is O(1) — front!',230,110);
+        cx.fillStyle='#4ade80';cx.font='11px SF Mono, monospace';cx.textAlign='left';
+        cx.fillText('remove front → 2, remove front → 4, ...',30,130);
+
+        const sorted=[2,4,5,7,8];
+        sorted.forEach((v,i)=>{
+          const x=30+i*60,y=145;
+          cx.fillStyle='rgba(74,222,128,0.15)';cx.strokeStyle='#4ade80';cx.lineWidth=2;
+          cx.beginPath();cx.roundRect(x,y,50,35,4);cx.fill();cx.stroke();
+          cx.fillStyle='#4ade80';cx.font='bold 16px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+          cx.fillText(v,x+25,y+17);
+        });
+      })();
+      </script>
+      <div class="controls" style="flex-direction:column;gap:6px;margin-top:8px;">
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q2b" value="sel"> Selection Sort (unsorted list PQ)</label>
+        <label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="q2b" value="ins"> Insertion Sort (sorted list PQ)</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls mt" style="justify-content:center;">
+    <button class="btn" onclick="checkQ2()">Check</button>
+    <span id="q2Feedback" style="font-weight:600;margin-left:12px;"></span>
+  </div>
+  <script>
+  window.checkQ2=function(){
+    const a=document.querySelector('input[name="q2a"]:checked');
+    const b=document.querySelector('input[name="q2b"]:checked');
+    const fb=document.getElementById('q2Feedback');
+    if(!a||!b){fb.textContent='Answer both questions.';fb.style.color='#fbbf24';return;}
+    const correct=(a.value==='sel'&&b.value==='ins');
+    document.querySelectorAll('input[name="q2a"]').forEach(r=>r.parentElement.style.color=r.value==='sel'?'#4ade80':'#f87171');
+    document.querySelectorAll('input[name="q2b"]').forEach(r=>r.parentElement.style.color=r.value==='ins'?'#4ade80':'#f87171');
+    fb.textContent=correct?'Correct! A: unsorted → scan to select min = Selection Sort. B: sorted → walk to insert = Insertion Sort.':'Not quite. Look at which phase is expensive: O(1) insert + O(n) remove = Selection. O(n) insert + O(1) remove = Insertion.';
+    fb.style.color=correct?'#4ade80':'#f87171';
+  };
+  </script>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== QUIZ Q3: PREDICT OUTPUT ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Predict the Output</h2>
+  <p class="subtitle">What prints at the end?</p>
+
+  <div class="two-col">
+    <div>
+      <div class="code-block">
+<div class="line">PQ pq = new MinHeapPQ();</div>
+<div class="line">int[] data = {6, 1, 8, 3, 5, 2};</div>
+<div class="line"> </div>
+<div class="line">for (int x : data)</div>
+<div class="line">    pq.insert(x, "v"+x);</div>
+<div class="line"> </div>
+<div class="line">String result = "";</div>
+<div class="line">while (pq.size() > 2) {</div>
+<div class="line">    Entry e = pq.removeMin();</div>
+<div class="line">    result += e.getKey() + " ";</div>
+<div class="line">}</div>
+<div class="line">System.out.println(result);</div>
+<div class="line">System.out.println(pq.min().getKey());</div>
+      </div>
+
+      <p class="mt">What are the <strong>two lines</strong> of output?</p>
+      <div class="controls mt">
+        <label style="color:#94a3b8;">Line 1 (result):</label>
+        <input type="text" id="q3Line1" placeholder="e.g. 1 2 3 5" style="width:160px;">
+      </div>
+      <div class="controls">
+        <label style="color:#94a3b8;">Line 2 (min key):</label>
+        <input type="number" id="q3Line2" min="1" max="20" style="width:70px;">
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="checkQ3()">Check</button>
+      </div>
+      <p id="q3Feedback" style="margin-top:8px;font-weight:600;"></p>
+    </div>
+
+    <div>
+      <h3>Work It Out</h3>
+      <canvas id="q3Canvas" width="460" height="320" style="background:#1e293b;border-radius:12px;border:1px solid #334155;"></canvas>
+      <div class="controls">
+        <button class="btn btn-sm" onclick="q3Step()" id="q3StepBtn">Step</button>
+        <button class="btn-secondary btn-sm" onclick="q3Reset()">Reset</button>
+      </div>
+      <script>
+      (function(){
+        const cv=document.getElementById('q3Canvas'),cx=cv.getContext('2d');
+        const states=[
+          {pq:[1,2,3,5,6,8],result:'',op:'After all inserts: PQ = {1,2,3,5,6,8}'},
+          {pq:[2,3,5,6,8],result:'1 ',op:'removeMin → 1, size=5 > 2 → continue'},
+          {pq:[3,5,6,8],result:'1 2 ',op:'removeMin → 2, size=4 > 2 → continue'},
+          {pq:[5,6,8],result:'1 2 3 ',op:'removeMin → 3, size=3 > 2 → continue'},
+          {pq:[6,8],result:'1 2 3 5 ',op:'removeMin → 5, size=2 → STOP loop'},
+          {pq:[6,8],result:'1 2 3 5 ',op:'print result: "1 2 3 5"'},
+          {pq:[6,8],result:'1 2 3 5 ',op:'pq.min().getKey() → 6'},
+        ];
+        let step=0;
+        function draw(){
+          cx.clearRect(0,0,460,320);
+          const s=states[step];
+          cx.fillStyle='#93c5fd';cx.font='bold 13px SF Mono, monospace';cx.textAlign='center';
+          cx.fillText(s.op,230,20);
+          // PQ
+          cx.fillStyle='#94a3b8';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('PQ (size='+s.pq.length+'):',15,50);
+          const bw=55;
+          s.pq.forEach((v,i)=>{
+            const x=20+i*(bw+8),y=60;
+            const isMin=i===0;
+            cx.fillStyle=isMin?'rgba(74,222,128,0.2)':'rgba(59,130,246,0.15)';
+            cx.strokeStyle=isMin?'#4ade80':'#3b82f6';cx.lineWidth=isMin?3:2;
+            cx.beginPath();cx.roundRect(x,y,bw,38,6);cx.fill();cx.stroke();
+            cx.fillStyle='#e2e8f0';cx.font='bold 18px SF Mono, monospace';cx.textAlign='center';cx.textBaseline='middle';
+            cx.fillText(v,x+bw/2,y+19);
+          });
+          // Result so far
+          cx.fillStyle='#94a3b8';cx.font='12px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('result = "'+s.result.trim()+'"',15,130);
+          // Condition check
+          cx.fillStyle='#fbbf24';cx.font='bold 13px SF Mono, monospace';cx.textAlign='left';
+          cx.fillText('Loop condition: pq.size() > 2 → '+s.pq.length+' > 2 = '+(s.pq.length>2),15,160);
+          // Final output
+          if(step>=5){
+            cx.fillStyle='#4ade80';cx.font='bold 16px system-ui, sans-serif';cx.textAlign='center';
+            cx.fillText('Output Line 1: "1 2 3 5"',230,210);
+          }
+          if(step>=6){
+            cx.fillText('Output Line 2: "6"',230,240);
+          }
+        }
+        window.q3Step=function(){if(step<states.length-1){step++;draw();}if(step>=states.length-1)document.getElementById('q3StepBtn').disabled=true;};
+        window.q3Reset=function(){step=0;document.getElementById('q3StepBtn').disabled=false;draw();};
+        window.checkQ3=function(){
+          const l1=document.getElementById('q3Line1').value.trim();
+          const l2=document.getElementById('q3Line2').value.trim();
+          const fb=document.getElementById('q3Feedback');
+          const l1ok=(l1==='1 2 3 5'||l1==='1,2,3,5'||l1==='1235'||l1==='1 2 3 5 ');
+          const l2ok=(l2==='6');
+          if(l1ok&&l2ok){
+            fb.textContent='Correct! Loop removes 4 elements (until size=2), then min() returns 6.';fb.style.color='#4ade80';
+            step=states.length-1;draw();
+          } else if(l1ok){
+            fb.textContent='Line 1 is right! But check line 2 — what\'s left in the PQ after the loop?';fb.style.color='#fbbf24';
+          } else if(l2ok){
+            fb.textContent='Line 2 is right! But check line 1 — the loop runs while size > 2.';fb.style.color='#fbbf24';
+          } else {
+            fb.textContent='Not quite. The loop stops when size reaches 2. Step through to trace.';fb.style.color='#f87171';
+          }
+        };
+        draw();
+      })();
+      </script>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','sCA','s16','sCB','s17','sCC','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+
+  document.querySelectorAll('.slide-number').forEach(el => {
+    el.textContent = (idx + 1) + ' / ' + slideOrder.length;
+  });
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', function(e) {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault(); navigate(1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault(); navigate(-1);
+  } else if (e.key === 'Home') {
+    e.preventDefault(); currentIdx = 0; showSlide(0);
+  } else if (e.key === 'End') {
+    e.preventDefault(); currentIdx = slideOrder.length - 1; showSlide(currentIdx);
+  }
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,2667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recursion - CS205 Data Structures (Enhanced)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.svg-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin: 16px 0; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+.svg-container svg { max-width: 100%; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.controls input[type="number"], .controls input[type="text"], .controls select {
+  background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.controls input:focus, .controls select:focus { border-color: #3b82f6; }
+.controls button, .step-btn {
+  background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; color: #fff;
+  padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+  transition: all 0.2s; white-space: nowrap;
+}
+.controls button:hover, .step-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.controls button:active, .step-btn:active { transform: translateY(0); }
+.controls button.danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.controls button.success { background: linear-gradient(135deg, #10b981, #059669); }
+.controls button.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.controls button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.controls label { color: #94a3b8; font-size: 14px; }
+.status-msg { color: #94a3b8; font-size: 0.95em; min-height: 1.5em; margin: 8px 0; padding: 6px 12px; border-radius: 6px; background: rgba(30,41,59,0.5); }
+.status-msg.success { color: #34d399; }
+.status-msg.error { color: #f87171; }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.85em; line-height: 1.8; white-space: pre; overflow-x: auto; margin: 12px 0; color: #e2e8f0; position: relative; }
+.code-block .line { display: block; padding: 0 8px; border-radius: 4px; transition: background 0.3s; }
+.code-block .line.active { background: rgba(59,130,246,0.25); border-left: 3px solid #3b82f6; padding-left: 5px; }
+.code-block .kw { color: #c084fc; }
+.code-block .type { color: #67e8f9; }
+.code-block .str { color: #86efac; }
+.code-block .cmt { color: #64748b; font-style: italic; }
+.code-block .fn { color: #93c5fd; }
+.code-block .num { color: #fbbf24; }
+.code-block .op { color: #f472b6; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 0.85em; margin-right: 6px; }
+.tag.blue { background: rgba(59,130,246,0.2); color: #93c5fd; }
+.tag.green { background: rgba(16,185,129,0.2); color: #34d399; }
+.tag.yellow { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.tag.red { background: rgba(239,68,68,0.2); color: #f87171; }
+.playground { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin: 16px 0; }
+.playground h3 { font-size: 1.1em; margin-bottom: 12px; }
+canvas { border-radius: 8px; }
+
+/* Stack frame animation */
+.stack-frame { transition: all 0.4s ease; }
+@keyframes framePush { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes framePop { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+
+/* Challenge styles */
+.challenge-option { background: #1e293b; border: 2px solid #334155; border-radius: 10px; padding: 14px 20px; margin: 8px 0; cursor: pointer; transition: all 0.2s; }
+.challenge-option:hover { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
+.challenge-option.correct { border-color: #10b981; background: rgba(16,185,129,0.15); }
+.challenge-option.wrong { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+.challenge-option.disabled { pointer-events: none; opacity: 0.7; }
+.bug-line { cursor: pointer; transition: all 0.2s; padding: 2px 8px; border-radius: 4px; }
+.bug-line:hover { background: rgba(245,158,11,0.2); }
+.bug-line.selected { background: rgba(239,68,68,0.25); border-left: 3px solid #ef4444; }
+.bug-line.correct-pick { background: rgba(16,185,129,0.25); border-left: 3px solid #10b981; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE s1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div class="center" style="width:100%">
+    <h1 style="font-size:3.4em; margin-bottom:10px;">Recursion</h1>
+    <p class="subtitle" style="font-size:1.5em; margin-bottom:30px;">CS205 Data Structures</p>
+    <div class="svg-container" style="display:inline-block; padding:20px 40px;" id="title-dolls"></div>
+    <p style="color:#94a3b8; margin-top:16px; font-size:1.1em;">"To understand recursion, you must first understand recursion."</p>
+    <p style="color:#64748b; margin-top:20px; font-size:0.9em;">Use arrow keys to navigate &middot; Interactive slides ahead!</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+// Animated nesting dolls on title slide
+(function(){
+  const c = document.getElementById('title-dolls');
+  const canvas = document.createElement('canvas');
+  canvas.width = 500; canvas.height = 200;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#8b5cf6','#6366f1','#3b82f6','#06b6d4','#10b981'];
+  let phase = 0;
+  function drawDolls() {
+    ctx.clearRect(0,0,500,200);
+    const cx = 250, cy = 110;
+    for (let i = 0; i < 5; i++) {
+      const r = 80 - i * 15;
+      const breathe = Math.sin(phase + i * 0.5) * 3;
+      const x = cx, y = cy + breathe;
+      // Body
+      ctx.beginPath();
+      ctx.ellipse(x, y + 10, r * 0.7, r, 0, 0, Math.PI * 2);
+      ctx.fillStyle = colors[i] + '40';
+      ctx.fill();
+      ctx.strokeStyle = colors[i];
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Head
+      ctx.beginPath();
+      ctx.arc(x, y - r + 15, r * 0.35, 0, Math.PI * 2);
+      ctx.fillStyle = colors[i] + '60';
+      ctx.fill();
+      ctx.strokeStyle = colors[i];
+      ctx.stroke();
+      // Label
+      if (i === 4) {
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('base case!', x, y + 5);
+      }
+    }
+    // Labels
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('f(n)', 140, 30);
+    ctx.fillText('f(n-1)', 165, 50);
+    ctx.fillText('f(n-2)', 185, 70);
+    ctx.fillText('...', 210, 88);
+    ctx.fillText('f(0)', 225, 100);
+    phase += 0.03;
+    requestAnimationFrame(drawDolls);
+  }
+  drawDolls();
+  c.appendChild(canvas);
+})();
+</script>
+
+<!-- ==================== SLIDE s2: WHAT IS RECURSION ==================== -->
+<div class="slide" id="s2">
+  <h2>What Is Recursion?</h2>
+  <p>A <strong>recursive function</strong> is a function that calls <em>itself</em> to solve smaller instances of the same problem.</p>
+
+  <div class="two-col mt">
+    <div>
+      <div class="analogy">
+        <h3>Analogy: Russian Nesting Dolls</h3>
+        <p>Each doll contains a smaller doll inside it. You keep opening dolls until you reach the <strong>smallest one</strong> (the base case) — then you stop.</p>
+      </div>
+      <div class="svg-container" id="s2-dolls-svg"></div>
+    </div>
+    <div>
+      <h3>Real-World Examples</h3>
+      <ul>
+        <li>A folder that contains subfolders (which contain subfolders...)</li>
+        <li>A mirror reflecting another mirror</li>
+        <li>A story within a story within a story</li>
+        <li>Looking up a word in the dictionary, and the definition uses another word you need to look up</li>
+      </ul>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Recursion works because each call solves a <strong>smaller</strong> version of the same problem, until the problem is so small we know the answer directly.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+// SVG nesting dolls
+(function(){
+  const c = document.getElementById('s2-dolls-svg');
+  const SVG = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(SVG,'svg');
+  svg.setAttribute('viewBox','0 0 360 200');
+  svg.setAttribute('width','360');
+  svg.setAttribute('height','200');
+  const colors = ['#8b5cf6','#6366f1','#3b82f6','#06b6d4','#10b981'];
+  const labels = ['f(n)','f(n-1)','f(n-2)','f(n-3)','f(0)'];
+  for (let i = 0; i < 5; i++) {
+    const rx = 150 - i*28, ry = 85 - i*15;
+    const rect = document.createElementNS(SVG,'rect');
+    rect.setAttribute('x', 180 - rx);
+    rect.setAttribute('y', 100 - ry);
+    rect.setAttribute('width', rx*2);
+    rect.setAttribute('height', ry*2);
+    rect.setAttribute('rx','12');
+    rect.setAttribute('fill', colors[i]+'20');
+    rect.setAttribute('stroke', colors[i]);
+    rect.setAttribute('stroke-width','2');
+    svg.appendChild(rect);
+    const txt = document.createElementNS(SVG,'text');
+    txt.setAttribute('x', 330 - i*28);
+    txt.setAttribute('y', 100 - ry + 14);
+    txt.setAttribute('fill', colors[i]);
+    txt.setAttribute('font-size','11');
+    txt.setAttribute('font-family','monospace');
+    txt.textContent = labels[i];
+    svg.appendChild(txt);
+  }
+  // Base case star
+  const star = document.createElementNS(SVG,'text');
+  star.setAttribute('x','172');
+  star.setAttribute('y','105');
+  star.setAttribute('fill','#34d399');
+  star.setAttribute('font-size','13');
+  star.setAttribute('font-weight','bold');
+  star.setAttribute('font-family','monospace');
+  star.textContent = '★ base';
+  svg.appendChild(star);
+  c.appendChild(svg);
+})();
+</script>
+
+<!-- ==================== SLIDE s3: TWO ESSENTIAL PARTS ==================== -->
+<div class="slide" id="s3">
+  <h2>The Two Essential Parts</h2>
+  <p>Every correct recursive function needs <strong>exactly two things</strong>:</p>
+
+  <div class="two-col mt">
+    <div>
+      <div class="key-idea">
+        <h3>1. Base Case (Termination)</h3>
+        <p>The condition under which the function does <strong>NOT</strong> call itself. This is the "smallest doll" — the answer we know directly.</p>
+      </div>
+      <div class="key-idea">
+        <h3>2. Recursive Case (Progress)</h3>
+        <p>The function calls itself with a <strong>smaller or simpler</strong> input, making progress toward the base case.</p>
+      </div>
+      <div class="warning">
+        <h3>Warning</h3>
+        <p>If you forget the base case, or if the recursive case doesn't make progress, you get <strong>infinite recursion</strong> and a <code>StackOverflowError</code>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Interactive Flowchart</h3>
+      <p style="font-size:0.9em; color:#64748b; margin-bottom:8px;">Click a path to highlight it:</p>
+      <div class="svg-container" id="s3-flowchart"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+// Interactive flowchart
+(function(){
+  const c = document.getElementById('s3-flowchart');
+  const SVG = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(SVG,'svg');
+  svg.setAttribute('viewBox','0 0 300 340');
+  svg.setAttribute('width','300');
+  svg.setAttribute('height','340');
+
+  function makeRect(x,y,w,h,fill,stroke,text,fontSize){
+    const g = document.createElementNS(SVG,'g');
+    const r = document.createElementNS(SVG,'rect');
+    r.setAttribute('x',x); r.setAttribute('y',y);
+    r.setAttribute('width',w); r.setAttribute('height',h);
+    r.setAttribute('rx','8'); r.setAttribute('fill',fill);
+    r.setAttribute('stroke',stroke); r.setAttribute('stroke-width','2');
+    g.appendChild(r);
+    const t = document.createElementNS(SVG,'text');
+    t.setAttribute('x',x+w/2); t.setAttribute('y',y+h/2+5);
+    t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#e2e8f0');
+    t.setAttribute('font-size',fontSize||'13'); t.setAttribute('font-family','sans-serif');
+    t.textContent = text;
+    g.appendChild(t);
+    return g;
+  }
+  function makeDiamond(cx,cy,w,h,fill,stroke,text){
+    const g = document.createElementNS(SVG,'g');
+    const p = document.createElementNS(SVG,'polygon');
+    p.setAttribute('points',`${cx},${cy-h/2} ${cx+w/2},${cy} ${cx},${cy+h/2} ${cx-w/2},${cy}`);
+    p.setAttribute('fill',fill); p.setAttribute('stroke',stroke); p.setAttribute('stroke-width','2');
+    g.appendChild(p);
+    const t = document.createElementNS(SVG,'text');
+    t.setAttribute('x',cx); t.setAttribute('y',cy+5);
+    t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#e2e8f0');
+    t.setAttribute('font-size','12'); t.setAttribute('font-family','sans-serif');
+    t.textContent = text;
+    g.appendChild(t);
+    return g;
+  }
+  function makeLine(x1,y1,x2,y2,color,id){
+    const l = document.createElementNS(SVG,'line');
+    l.setAttribute('x1',x1); l.setAttribute('y1',y1);
+    l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+    l.setAttribute('stroke',color||'#475569'); l.setAttribute('stroke-width','2');
+    if(id) l.setAttribute('data-path',id);
+    return l;
+  }
+  function makeLabel(x,y,text,color){
+    const t = document.createElementNS(SVG,'text');
+    t.setAttribute('x',x); t.setAttribute('y',y);
+    t.setAttribute('fill',color||'#64748b'); t.setAttribute('font-size','11');
+    t.setAttribute('font-family','monospace');
+    t.textContent = text;
+    return t;
+  }
+
+  // function(n) box
+  svg.appendChild(makeRect(90,10,120,40,'#1e293b','#60a5fa','function(n)'));
+  // Arrow down
+  svg.appendChild(makeLine(150,50,150,80,'#475569'));
+  // Diamond
+  svg.appendChild(makeDiamond(150,110,140,50,'#1e293b','#a78bfa','Base case?'));
+  // YES path (left)
+  const yesLine = makeLine(80,110,30,110,'#475569','yes');
+  svg.appendChild(yesLine);
+  svg.appendChild(makeLine(30,110,30,180,'#475569','yes'));
+  svg.appendChild(makeLabel(45,105,'YES','#34d399'));
+  // YES box
+  const yesBox = makeRect(0,180,130,50,'rgba(16,185,129,0.15)','#10b981','Return answer');
+  yesBox.setAttribute('data-path','yes');
+  svg.appendChild(yesBox);
+  // NO path (right)
+  const noLine = makeLine(220,110,270,110,'#475569','no');
+  svg.appendChild(noLine);
+  svg.appendChild(makeLine(270,110,270,180,'#475569','no'));
+  svg.appendChild(makeLabel(230,105,'NO','#f87171'));
+  // NO box
+  const noBox = makeRect(195,180,105,50,'rgba(59,130,246,0.15)','#3b82f6','Do work +');
+  svg.appendChild(noBox);
+  const noBox2 = makeRect(195,235,105,40,'rgba(139,92,246,0.15)','#8b5cf6','call f(smaller)');
+  svg.appendChild(noBox2);
+  // Loop arrow back up
+  svg.appendChild(makeLine(248,275,248,310,'#475569','no'));
+  svg.appendChild(makeLine(248,310,150,310,'#475569','no'));
+  svg.appendChild(makeLine(150,310,150,135,'#475569','no'));
+  // Loop label
+  svg.appendChild(makeLabel(160,325,'repeats until base case','#64748b'));
+
+  // Click interaction
+  let highlighted = null;
+  function highlightPath(path) {
+    // Reset all
+    svg.querySelectorAll('rect,polygon,line').forEach(el => {
+      if(el.getAttribute('data-path')) {
+        el.setAttribute('stroke-width','2');
+        el.style.filter = '';
+      }
+    });
+    if (highlighted === path) { highlighted = null; return; }
+    highlighted = path;
+    const color = path === 'yes' ? '#34d399' : '#60a5fa';
+    svg.querySelectorAll(`[data-path="${path}"]`).forEach(el => {
+      el.setAttribute('stroke', color);
+      el.setAttribute('stroke-width','3');
+      el.style.filter = `drop-shadow(0 0 6px ${color}50)`;
+    });
+  }
+
+  // Make YES side clickable
+  yesBox.style.cursor = 'pointer';
+  yesBox.addEventListener('click', () => highlightPath('yes'));
+  yesLine.style.cursor = 'pointer';
+  yesLine.addEventListener('click', () => highlightPath('yes'));
+
+  // Make NO side clickable
+  noBox.style.cursor = 'pointer';
+  noBox.addEventListener('click', () => highlightPath('no'));
+  noBox2.style.cursor = 'pointer';
+  noBox2.addEventListener('click', () => highlightPath('no'));
+  noLine.style.cursor = 'pointer';
+  noLine.addEventListener('click', () => highlightPath('no'));
+
+  c.appendChild(svg);
+})();
+</script>
+
+<!-- ==================== SLIDE s4: FACTORIAL ==================== -->
+<div class="slide" id="s4">
+  <h2>Example: Factorial</h2>
+  <p><code>n! = n × (n-1) × ... × 1</code> &nbsp;and&nbsp; <code>0! = 1</code></p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Recursive Definition</h3>
+      <div class="code-block" id="s4-code">
+<span class="line" id="s4-l0"><span class="kw">function</span> <span class="fn">factorial</span>(n):</span>
+<span class="line" id="s4-l1">  <span class="kw">if</span> n == <span class="num">0</span>:          <span class="cmt">// base case</span></span>
+<span class="line" id="s4-l2">    <span class="kw">return</span> <span class="num">1</span></span>
+<span class="line" id="s4-l3">  <span class="kw">else</span>:               <span class="cmt">// recursive case</span></span>
+<span class="line" id="s4-l4">    <span class="kw">return</span> n * <span class="fn">factorial</span>(n - <span class="num">1</span>)</span>
+      </div>
+
+      <div class="controls">
+        <label>n =</label>
+        <input type="number" id="s4-n" value="4" min="0" max="8" style="width:60px;">
+        <button onclick="s4Reset()">Reset</button>
+        <button onclick="s4Step()" id="s4-step-btn">Step →</button>
+      </div>
+      <div class="status-msg" id="s4-status">Click "Step" to trace factorial(4)</div>
+    </div>
+    <div>
+      <h3>Call Stack</h3>
+      <div class="svg-container" style="min-height:340px; align-items:flex-end;" id="s4-stack"></div>
+      <div class="key-idea" style="margin-top:8px;">
+        <h3>Key Idea</h3>
+        <p><code>factorial(4)</code> can't finish until <code>factorial(3)</code> finishes, which can't finish until <code>factorial(2)</code>...</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+// Interactive factorial call stack
+(function(){
+  const stackEl = document.getElementById('s4-stack');
+  let n, frames, phase, result;
+
+  window.s4Reset = function() {
+    n = parseInt(document.getElementById('s4-n').value) || 4;
+    frames = [];
+    phase = 'expanding'; // expanding | collapsing | done
+    result = null;
+    document.getElementById('s4-step-btn').disabled = false;
+    document.getElementById('s4-status').textContent = `Click "Step" to trace factorial(${n})`;
+    document.getElementById('s4-status').className = 'status-msg';
+    // Clear code highlighting
+    for (let i = 0; i <= 4; i++) document.getElementById('s4-l'+i).classList.remove('active');
+    renderStack();
+  };
+
+  function renderStack() {
+    stackEl.innerHTML = '';
+    const SVG = 'http://www.w3.org/2000/svg';
+    const frameH = 36, gap = 4, w = 280;
+    const totalH = Math.max(200, (frames.length) * (frameH + gap) + 40);
+    const svg = document.createElementNS(SVG,'svg');
+    svg.setAttribute('viewBox',`0 0 ${w} ${totalH}`);
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', totalH);
+
+    const colors = ['#3b82f6','#6366f1','#8b5cf6','#a78bfa','#c084fc','#d946ef','#ec4899','#f43f5e','#f97316'];
+
+    for (let i = 0; i < frames.length; i++) {
+      const f = frames[i];
+      const x = 10, y = totalH - (i + 1) * (frameH + gap);
+      const color = colors[i % colors.length];
+
+      // Frame rect
+      const rect = document.createElementNS(SVG,'rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', w - 20); rect.setAttribute('height', frameH);
+      rect.setAttribute('rx','6');
+      rect.setAttribute('fill', f.done ? 'rgba(16,185,129,0.15)' : color + '20');
+      rect.setAttribute('stroke', f.done ? '#10b981' : color);
+      rect.setAttribute('stroke-width', f.active ? '3' : '1.5');
+      if (f.active) rect.style.filter = `drop-shadow(0 0 8px ${color}50)`;
+      svg.appendChild(rect);
+
+      // Text
+      const txt = document.createElementNS(SVG,'text');
+      txt.setAttribute('x', x + 10); txt.setAttribute('y', y + 22);
+      txt.setAttribute('fill', f.done ? '#34d399' : '#e2e8f0');
+      txt.setAttribute('font-size','13'); txt.setAttribute('font-family','monospace');
+      txt.textContent = f.label;
+      svg.appendChild(txt);
+
+      // Return value
+      if (f.returnVal !== undefined) {
+        const rv = document.createElementNS(SVG,'text');
+        rv.setAttribute('x', w - 30); rv.setAttribute('y', y + 22);
+        rv.setAttribute('text-anchor','end');
+        rv.setAttribute('fill','#34d399');
+        rv.setAttribute('font-size','13'); rv.setAttribute('font-family','monospace');
+        rv.setAttribute('font-weight','bold');
+        rv.textContent = '→ ' + f.returnVal;
+        svg.appendChild(rv);
+      }
+
+      // TOP label on the topmost frame
+      if (i === frames.length - 1) {
+        const top = document.createElementNS(SVG,'text');
+        top.setAttribute('x', w - 30); top.setAttribute('y', y - 5);
+        top.setAttribute('text-anchor','end');
+        top.setAttribute('fill','#64748b');
+        top.setAttribute('font-size','10'); top.setAttribute('font-family','sans-serif');
+        top.textContent = '← TOP';
+        svg.appendChild(top);
+      }
+    }
+
+    // Bottom line
+    if (frames.length > 0) {
+      const base = document.createElementNS(SVG,'line');
+      base.setAttribute('x1','10'); base.setAttribute('y1', totalH - 2);
+      base.setAttribute('x2', w-10); base.setAttribute('y2', totalH - 2);
+      base.setAttribute('stroke','#475569'); base.setAttribute('stroke-width','2');
+      svg.appendChild(base);
+    }
+
+    stackEl.appendChild(svg);
+  }
+
+  window.s4Step = function() {
+    // Clear highlights
+    for (let i = 0; i <= 4; i++) document.getElementById('s4-l'+i).classList.remove('active');
+    frames.forEach(f => f.active = false);
+
+    if (phase === 'expanding') {
+      const current = frames.length === 0 ? n : frames[frames.length-1].n - 1;
+      if (current < 0) { phase = 'done'; return; }
+
+      const frame = { n: current, label: `factorial(${current})  n=${current}`, active: true, done: false };
+      frames.push(frame);
+
+      if (current === 0) {
+        // Base case hit
+        document.getElementById('s4-l1').classList.add('active');
+        document.getElementById('s4-l2').classList.add('active');
+        frame.label = `factorial(0)  n=0  BASE CASE`;
+        frame.returnVal = 1;
+        frame.done = true;
+        document.getElementById('s4-status').textContent = `Base case! factorial(0) returns 1. Now collapsing...`;
+        document.getElementById('s4-status').className = 'status-msg success';
+        phase = 'collapsing';
+      } else {
+        document.getElementById('s4-l0').classList.add('active');
+        document.getElementById('s4-l4').classList.add('active');
+        frame.label = `factorial(${current})  n=${current}  waiting...`;
+        document.getElementById('s4-status').textContent = `factorial(${current}) calls factorial(${current-1}). Stack depth: ${frames.length}`;
+      }
+    } else if (phase === 'collapsing') {
+      // Pop the top done frame visually, compute return for next
+      // Find the topmost frame without a return value
+      let idx = -1;
+      for (let i = frames.length - 1; i >= 0; i--) {
+        if (frames[i].returnVal === undefined) { idx = i; break; }
+      }
+      if (idx === -1) {
+        phase = 'done';
+        const finalVal = frames[0].returnVal;
+        document.getElementById('s4-status').textContent = `Done! factorial(${n}) = ${finalVal}`;
+        document.getElementById('s4-status').className = 'status-msg success';
+        document.getElementById('s4-step-btn').disabled = true;
+        renderStack();
+        return;
+      }
+      const f = frames[idx];
+      const childVal = frames[idx + 1].returnVal;
+      f.returnVal = f.n * childVal;
+      f.done = true;
+      f.active = true;
+      f.label = `factorial(${f.n})  ${f.n} × ${childVal} = ${f.returnVal}`;
+      document.getElementById('s4-l4').classList.add('active');
+      document.getElementById('s4-status').textContent = `factorial(${f.n}) = ${f.n} × ${childVal} = ${f.returnVal}`;
+
+      // Check if we're done
+      if (idx === 0) {
+        phase = 'done';
+        document.getElementById('s4-status').textContent = `Done! factorial(${n}) = ${f.returnVal}`;
+        document.getElementById('s4-status').className = 'status-msg success';
+        document.getElementById('s4-step-btn').disabled = true;
+      }
+    }
+    renderStack();
+  };
+
+  s4Reset();
+})();
+</script>
+
+<!-- ==================== SLIDE s5: THE CALL STACK ==================== -->
+<div class="slide" id="s5">
+  <h2>The Call Stack</h2>
+  <p>The <strong>call stack</strong> is how the computer keeps track of which function called which, what each function's local variables are, and where to return to.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>How It Works</h3>
+      <ul>
+        <li>Each function call creates a <strong>stack frame</strong></li>
+        <li>A frame holds: parameters, local variables, return address</li>
+        <li>Frames are <strong>pushed</strong> on call, <strong>popped</strong> on return</li>
+        <li>The stack grows upward in our diagrams</li>
+      </ul>
+
+      <div class="warning mt">
+        <h3>Stack Overflow</h3>
+        <p>The stack has a <strong>finite size</strong> (typically a few MB). Too many recursive calls without returning will exhaust it, causing a <code>StackOverflowError</code>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Build the Stack: factorial(4)</h3>
+      <div class="controls">
+        <button onclick="s5Build()" id="s5-build-btn">Push Next Frame</button>
+        <button onclick="s5Pop()" id="s5-pop-btn" disabled>Pop Frame</button>
+        <button onclick="s5AutoPlay()" id="s5-auto-btn">▶ Auto Play</button>
+        <button onclick="s5Reset()" class="danger">Reset</button>
+      </div>
+      <div class="svg-container" style="min-height:300px; align-items:flex-end;" id="s5-stack"></div>
+      <div class="status-msg" id="s5-status">Click "Push Next Frame" to build the stack</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const allFrames = [
+    { label: 'main()', detail: 'calls factorial(4)' },
+    { label: 'factorial(4)', detail: 'n=4, waiting for factorial(3)' },
+    { label: 'factorial(3)', detail: 'n=3, waiting for factorial(2)' },
+    { label: 'factorial(2)', detail: 'n=2, waiting for factorial(1)' },
+    { label: 'factorial(1)', detail: 'n=1, waiting for factorial(0)' },
+    { label: 'factorial(0)', detail: 'n=0, return 1  ← BASE CASE' },
+  ];
+  let visibleCount = 0;
+  let autoTimer = null;
+
+  function render() {
+    const el = document.getElementById('s5-stack');
+    el.innerHTML = '';
+    const SVG = 'http://www.w3.org/2000/svg';
+    const frameH = 42, gap = 4, w = 300;
+    const totalH = Math.max(120, visibleCount * (frameH + gap) + 20);
+    const svg = document.createElementNS(SVG,'svg');
+    svg.setAttribute('viewBox',`0 0 ${w} ${totalH}`);
+    svg.setAttribute('width', w); svg.setAttribute('height', totalH);
+
+    const colors = ['#475569','#3b82f6','#6366f1','#8b5cf6','#a78bfa','#10b981'];
+
+    for (let i = 0; i < visibleCount; i++) {
+      const f = allFrames[i];
+      const x = 10, y = totalH - (i + 1) * (frameH + gap);
+      const color = colors[i];
+      const isTop = (i === visibleCount - 1);
+
+      const rect = document.createElementNS(SVG,'rect');
+      rect.setAttribute('x',x); rect.setAttribute('y',y);
+      rect.setAttribute('width', w-20); rect.setAttribute('height', frameH);
+      rect.setAttribute('rx','6');
+      rect.setAttribute('fill', color + '20');
+      rect.setAttribute('stroke', color);
+      rect.setAttribute('stroke-width', isTop ? '3' : '1.5');
+      if (isTop) rect.style.filter = `drop-shadow(0 0 8px ${color}50)`;
+      svg.appendChild(rect);
+
+      const t1 = document.createElementNS(SVG,'text');
+      t1.setAttribute('x',x+10); t1.setAttribute('y',y+17);
+      t1.setAttribute('fill','#e2e8f0'); t1.setAttribute('font-size','13');
+      t1.setAttribute('font-family','monospace'); t1.setAttribute('font-weight','bold');
+      t1.textContent = f.label;
+      svg.appendChild(t1);
+
+      const t2 = document.createElementNS(SVG,'text');
+      t2.setAttribute('x',x+10); t2.setAttribute('y',y+34);
+      t2.setAttribute('fill','#94a3b8'); t2.setAttribute('font-size','11');
+      t2.setAttribute('font-family','monospace');
+      t2.textContent = f.detail;
+      svg.appendChild(t2);
+
+      if (isTop) {
+        const arr = document.createElementNS(SVG,'text');
+        arr.setAttribute('x', w-20); arr.setAttribute('y', y-3);
+        arr.setAttribute('text-anchor','end'); arr.setAttribute('fill','#64748b');
+        arr.setAttribute('font-size','10'); arr.setAttribute('font-family','sans-serif');
+        arr.textContent = '← TOP';
+        svg.appendChild(arr);
+      }
+    }
+    el.appendChild(svg);
+
+    document.getElementById('s5-build-btn').disabled = (visibleCount >= allFrames.length);
+    document.getElementById('s5-pop-btn').disabled = (visibleCount <= 0);
+  }
+
+  window.s5Build = function(){
+    if (visibleCount < allFrames.length) {
+      visibleCount++;
+      const f = allFrames[visibleCount-1];
+      document.getElementById('s5-status').textContent = `PUSH: ${f.label} — ${f.detail}`;
+      if (visibleCount === allFrames.length) {
+        document.getElementById('s5-status').className = 'status-msg success';
+        document.getElementById('s5-status').textContent += '  Stack at deepest point!';
+      }
+      render();
+    }
+  };
+  window.s5Pop = function(){
+    if (visibleCount > 0) {
+      const f = allFrames[visibleCount-1];
+      document.getElementById('s5-status').textContent = `POP: ${f.label} returns`;
+      visibleCount--;
+      render();
+      if (visibleCount === 0) {
+        document.getElementById('s5-status').textContent = 'Stack empty — all frames returned!';
+        document.getElementById('s5-status').className = 'status-msg success';
+      }
+    }
+  };
+  window.s5Reset = function(){
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    document.getElementById('s5-auto-btn').textContent = '▶ Auto Play';
+    visibleCount = 0;
+    document.getElementById('s5-status').textContent = 'Click "Push Next Frame" to build the stack';
+    document.getElementById('s5-status').className = 'status-msg';
+    render();
+  };
+  window.s5AutoPlay = function(){
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('s5-auto-btn').textContent = '▶ Auto Play'; return; }
+    document.getElementById('s5-auto-btn').textContent = '⏸ Pause';
+    let buildPhase = visibleCount < allFrames.length;
+    autoTimer = setInterval(() => {
+      if (buildPhase) {
+        s5Build();
+        if (visibleCount >= allFrames.length) { buildPhase = false; }
+      } else {
+        s5Pop();
+        if (visibleCount <= 0) { clearInterval(autoTimer); autoTimer = null; document.getElementById('s5-auto-btn').textContent = '▶ Auto Play'; }
+      }
+    }, 800);
+  };
+
+  render();
+})();
+</script>
+
+<!-- ==================== SLIDE s6: TRACING RECURSION (Interactive) ==================== -->
+<div class="slide" id="s6">
+  <h2>Tracing Recursion Step by Step</h2>
+  <p>Watch <code>factorial(4)</code> expand and collapse. The left shows the call chain, the right shows the stack.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Call Trace</h3>
+      <div class="controls">
+        <button onclick="s6Prev()" id="s6-prev-btn" disabled>← Back</button>
+        <button onclick="s6Next()" id="s6-next-btn">Next →</button>
+        <button onclick="s6AutoPlay()" id="s6-auto-btn">▶ Auto</button>
+      </div>
+      <div class="code-block" id="s6-trace" style="min-height:260px; font-size:0.82em; line-height:1.9;">
+<span class="line" id="s6-t0">factorial(<span class="num">4</span>)</span>
+<span class="line" id="s6-t1">  = <span class="num">4</span> × factorial(<span class="num">3</span>)</span>
+<span class="line" id="s6-t2">       = <span class="num">3</span> × factorial(<span class="num">2</span>)</span>
+<span class="line" id="s6-t3">            = <span class="num">2</span> × factorial(<span class="num">1</span>)</span>
+<span class="line" id="s6-t4">                 = <span class="num">1</span> × factorial(<span class="num">0</span>)</span>
+<span class="line" id="s6-t5">                      = <span class="num">1</span>  <span class="cmt">← base case!</span></span>
+<span class="line" id="s6-t6"><span class="cmt">── Collapsing ──</span></span>
+<span class="line" id="s6-t7">factorial(<span class="num">0</span>) = <span class="str">1</span></span>
+<span class="line" id="s6-t8">factorial(<span class="num">1</span>) = 1 × 1 = <span class="str">1</span></span>
+<span class="line" id="s6-t9">factorial(<span class="num">2</span>) = 2 × 1 = <span class="str">2</span></span>
+<span class="line" id="s6-t10">factorial(<span class="num">3</span>) = 3 × 2 = <span class="str">6</span></span>
+<span class="line" id="s6-t11">factorial(<span class="num">4</span>) = 4 × 6 = <span class="str">24</span>  <span class="cmt">← answer!</span></span>
+      </div>
+    </div>
+    <div>
+      <h3>Stack State</h3>
+      <div class="svg-container" style="min-height:300px; align-items:flex-end;" id="s6-stack"></div>
+      <div class="status-msg" id="s6-status">Step 0 of 11 — Ready</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Each step: which trace lines are highlighted, and what the stack looks like
+  const steps = [
+    { lines:[0], stack:['factorial(4)  n=4'], msg:'factorial(4) is called' },
+    { lines:[1], stack:['factorial(4)  n=4, waiting','factorial(3)  n=3'], msg:'factorial(4) calls factorial(3)' },
+    { lines:[2], stack:['factorial(4)  waiting','factorial(3)  waiting','factorial(2)  n=2'], msg:'factorial(3) calls factorial(2)' },
+    { lines:[3], stack:['factorial(4)  waiting','factorial(3)  waiting','factorial(2)  waiting','factorial(1)  n=1'], msg:'factorial(2) calls factorial(1)' },
+    { lines:[4], stack:['factorial(4)  waiting','factorial(3)  waiting','factorial(2)  waiting','factorial(1)  waiting','factorial(0)  n=0'], msg:'factorial(1) calls factorial(0)' },
+    { lines:[5], stack:['factorial(4)  waiting','factorial(3)  waiting','factorial(2)  waiting','factorial(1)  waiting','factorial(0) → 1  BASE'], msg:'Base case! factorial(0) returns 1', isBase:true },
+    { lines:[6,7], stack:['factorial(4)  waiting','factorial(3)  waiting','factorial(2)  waiting','factorial(1) → 1×1=1'], msg:'factorial(1) = 1×1 = 1, frame popped' },
+    { lines:[8], stack:['factorial(4)  waiting','factorial(3)  waiting','factorial(2) → 2×1=2'], msg:'factorial(2) = 2×1 = 2' },
+    { lines:[9], stack:['factorial(4)  waiting','factorial(3) → 3×2=6'], msg:'factorial(3) = 3×2 = 6' },
+    { lines:[10], stack:['factorial(4) → 4×6=24'], msg:'factorial(4) = 4×6 = 24' },
+    { lines:[11], stack:[], msg:'Done! factorial(4) = 24. Stack is empty.' },
+  ];
+
+  let step = -1;
+  let autoTimer = null;
+
+  function render() {
+    // Highlight trace lines
+    for (let i = 0; i <= 11; i++) {
+      const el = document.getElementById('s6-t'+i);
+      if (el) { el.classList.remove('active'); el.style.opacity = (step < 0) ? '0.3' : (i <= Math.max(...(steps[step]?.lines||[0]))) ? '1' : '0.3'; }
+    }
+    if (step >= 0) {
+      steps[step].lines.forEach(l => {
+        const el = document.getElementById('s6-t'+l);
+        if(el) el.classList.add('active');
+      });
+    }
+
+    // Draw stack
+    const el = document.getElementById('s6-stack');
+    el.innerHTML = '';
+    if (step < 0) return;
+    const st = steps[step].stack;
+    const SVG = 'http://www.w3.org/2000/svg';
+    const frameH = 36, gap = 3, w = 300;
+    const totalH = Math.max(100, st.length * (frameH + gap) + 20);
+    const svg = document.createElementNS(SVG,'svg');
+    svg.setAttribute('viewBox',`0 0 ${w} ${totalH}`);
+    svg.setAttribute('width',w); svg.setAttribute('height',totalH);
+
+    const colors = ['#3b82f6','#6366f1','#8b5cf6','#a78bfa','#c084fc'];
+    for (let i = 0; i < st.length; i++) {
+      const y = totalH - (i+1)*(frameH+gap);
+      const isTop = (i === st.length-1);
+      const isDone = st[i].includes('→');
+      const color = isDone ? '#10b981' : colors[i % colors.length];
+
+      const rect = document.createElementNS(SVG,'rect');
+      rect.setAttribute('x','10'); rect.setAttribute('y',y);
+      rect.setAttribute('width',w-20); rect.setAttribute('height',frameH);
+      rect.setAttribute('rx','6');
+      rect.setAttribute('fill', color+'20');
+      rect.setAttribute('stroke', color);
+      rect.setAttribute('stroke-width', isTop?'3':'1.5');
+      svg.appendChild(rect);
+
+      const txt = document.createElementNS(SVG,'text');
+      txt.setAttribute('x','20'); txt.setAttribute('y',y+22);
+      txt.setAttribute('fill', isDone?'#34d399':'#e2e8f0');
+      txt.setAttribute('font-size','12'); txt.setAttribute('font-family','monospace');
+      txt.textContent = st[i];
+      svg.appendChild(txt);
+    }
+    el.appendChild(svg);
+
+    document.getElementById('s6-status').textContent = `Step ${step+1} of ${steps.length} — ${steps[step].msg}`;
+    document.getElementById('s6-status').className = steps[step].isBase ? 'status-msg success' : (step === steps.length-1 ? 'status-msg success' : 'status-msg');
+    document.getElementById('s6-prev-btn').disabled = (step <= 0);
+    document.getElementById('s6-next-btn').disabled = (step >= steps.length-1);
+  }
+
+  window.s6Next = function(){ if(step < steps.length-1){ step++; render(); } };
+  window.s6Prev = function(){ if(step > 0){ step--; render(); } else { step = -1; render(); } };
+  window.s6AutoPlay = function(){
+    if(autoTimer){ clearInterval(autoTimer); autoTimer=null; document.getElementById('s6-auto-btn').textContent='▶ Auto'; return; }
+    document.getElementById('s6-auto-btn').textContent='⏸ Pause';
+    autoTimer = setInterval(()=>{
+      if(step < steps.length-1){ step++; render(); }
+      else { clearInterval(autoTimer); autoTimer=null; document.getElementById('s6-auto-btn').textContent='▶ Auto'; }
+    }, 1000);
+  };
+
+  step = -1;
+  // Make all lines visible initially
+  for(let i=0;i<=11;i++){ const e=document.getElementById('s6-t'+i); if(e)e.style.opacity='0.3'; }
+})();
+</script>
+
+<!-- ==================== SLIDE s7: FIBONACCI ==================== -->
+<div class="slide" id="s7">
+  <h2>Example: Fibonacci</h2>
+  <p><code>fib(0)=0, fib(1)=1, fib(n) = fib(n-1) + fib(n-2)</code> for n &ge; 2</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Code</h3>
+      <div class="code-block">
+<span class="line"><span class="kw">function</span> <span class="fn">fib</span>(n):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">0</span>: <span class="kw">return</span> <span class="num">0</span>   <span class="cmt">// base</span></span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">1</span>: <span class="kw">return</span> <span class="num">1</span>   <span class="cmt">// base</span></span>
+<span class="line">  <span class="kw">return</span> <span class="fn">fib</span>(n-<span class="num">1</span>) + <span class="fn">fib</span>(n-<span class="num">2</span>)</span>
+      </div>
+
+      <h3>Sequence</h3>
+      <table>
+        <tr><th>n</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr>
+        <tr><td>fib(n)</td><td>0</td><td>1</td><td>1</td><td>2</td><td>3</td><td>5</td><td>8</td><td>13</td></tr>
+      </table>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Unlike factorial (one recursive call), Fibonacci makes <strong>two</strong> recursive calls per invocation. This creates a <strong>binary tree</strong> of calls.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Recursion Tree for fib(n)</h3>
+      <div class="controls">
+        <label>n =</label>
+        <input type="number" id="s7-n" value="5" min="2" max="7" style="width:60px;">
+        <button onclick="s7Draw()">Draw Tree</button>
+        <button onclick="s7Animate()" id="s7-anim-btn">▶ Animate</button>
+      </div>
+      <div class="svg-container" style="min-height:280px;" id="s7-tree"></div>
+      <div class="status-msg" id="s7-status">Draws the full recursion tree — redundant calls in <span style="color:#f87171;">red</span></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Fibonacci recursion tree drawn on Canvas
+  let animTimer = null;
+
+  function buildTree(n) {
+    if (n <= 1) return { val: n, result: n, left: null, right: null };
+    const left = buildTree(n - 1);
+    const right = buildTree(n - 2);
+    return { val: n, result: left.result + right.result, left, right };
+  }
+
+  function layoutTree(node, depth, left, right) {
+    if (!node) return [];
+    const x = (left + right) / 2;
+    const y = depth * 55 + 30;
+    node.x = x; node.y = y;
+    const nodes = [node];
+    if (node.left) nodes.push(...layoutTree(node.left, depth + 1, left, x));
+    if (node.right) nodes.push(...layoutTree(node.right, depth + 1, x, right));
+    return nodes;
+  }
+
+  function countCalls(node, counts) {
+    if (!node) return;
+    counts[node.val] = (counts[node.val] || 0) + 1;
+    countCalls(node.left, counts);
+    countCalls(node.right, counts);
+  }
+
+  window.s7Draw = function(animateUpTo) {
+    if (animTimer) { clearInterval(animTimer); animTimer = null; }
+    const n = parseInt(document.getElementById('s7-n').value) || 5;
+    const tree = buildTree(n);
+    const w = Math.max(500, Math.pow(2, n) * 40);
+    const allNodes = layoutTree(tree, 0, 0, w);
+    const h = (n + 1) * 55 + 20;
+    const maxShow = animateUpTo !== undefined ? animateUpTo : allNodes.length;
+
+    const counts = {};
+    countCalls(tree, counts);
+
+    const el = document.getElementById('s7-tree');
+    el.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.style.width = '100%';
+    canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+
+    // Draw edges first
+    for (let i = 0; i < maxShow; i++) {
+      const nd = allNodes[i];
+      if (nd.left && allNodes.indexOf(nd.left) < maxShow) {
+        ctx.beginPath();
+        ctx.moveTo(nd.x, nd.y + 15);
+        ctx.lineTo(nd.left.x, nd.left.y - 15);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      if (nd.right && allNodes.indexOf(nd.right) < maxShow) {
+        ctx.beginPath();
+        ctx.moveTo(nd.x, nd.y + 15);
+        ctx.lineTo(nd.right.x, nd.right.y - 15);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+
+    // Draw nodes
+    for (let i = 0; i < maxShow; i++) {
+      const nd = allNodes[i];
+      const isDuplicate = counts[nd.val] > 1 && nd.val >= 2;
+      const isBase = nd.val <= 1;
+      const color = isBase ? '#10b981' : (isDuplicate ? '#f87171' : '#60a5fa');
+
+      ctx.beginPath();
+      ctx.arc(nd.x, nd.y, 18, 0, Math.PI * 2);
+      ctx.fillStyle = color + '30';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = isBase ? '#34d399' : (isDuplicate ? '#fca5a5' : '#93c5fd');
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`f(${nd.val})`, nd.x, nd.y);
+    }
+
+    el.appendChild(canvas);
+
+    const totalCalls = allNodes.length;
+    document.getElementById('s7-status').innerHTML = `Total calls: <strong>${maxShow >= allNodes.length ? totalCalls : maxShow + '...'}</strong> for fib(${n}). <span style="color:#f87171">Red = duplicate</span>, <span style="color:#10b981">Green = base case</span>`;
+
+    return allNodes;
+  };
+
+  window.s7Animate = function() {
+    if (animTimer) { clearInterval(animTimer); animTimer = null; document.getElementById('s7-anim-btn').textContent = '▶ Animate'; return; }
+    document.getElementById('s7-anim-btn').textContent = '⏸ Stop';
+    const n = parseInt(document.getElementById('s7-n').value) || 5;
+    const tree = buildTree(n);
+    const w = Math.max(500, Math.pow(2, n) * 40);
+    const allNodes = layoutTree(tree, 0, 0, w);
+    let count = 1;
+    animTimer = setInterval(() => {
+      s7Draw(count);
+      count++;
+      if (count > allNodes.length) {
+        clearInterval(animTimer); animTimer = null;
+        document.getElementById('s7-anim-btn').textContent = '▶ Animate';
+      }
+    }, 200);
+  };
+
+  s7Draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s8: WHY FIBONACCI IS SLOW ==================== -->
+<div class="slide" id="s8">
+  <h2>Why Naive Fibonacci Is Slow</h2>
+  <p>The recursion tree has <strong>O(2<sup>n</sup>)</strong> nodes because we recompute the same values over and over.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Repeated Subproblems</h3>
+      <div class="diagram small">
+  In fib(5), look how many times
+  each value is computed:
+
+  fib(5): 1 time
+  fib(4): 1 time
+  fib(3): 2 times   &lt;-- waste!
+  fib(2): 3 times   &lt;-- waste!
+  fib(1): 5 times   &lt;-- waste!
+  fib(0): 3 times   &lt;-- waste!
+
+  For fib(40):
+    ~331 million calls!
+    But only 41 unique subproblems.
+      </div>
+
+      <div class="warning">
+        <h3>Exponential Growth</h3>
+        <p><code>fib(50)</code> would take <strong>minutes</strong>. <code>fib(100)</code> would take longer than the age of the universe.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Naive vs Memoized — Live Comparison</h3>
+      <div class="controls">
+        <label>n =</label>
+        <input type="number" id="s8-n" value="8" min="2" max="20" style="width:60px;">
+        <button onclick="s8Run()">Run Both</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+        <div class="playground">
+          <h3 style="color:#f87171;">Naive <span class="tag red">O(2<sup>n</sup>)</span></h3>
+          <div style="font-family:monospace; font-size:1.8em; color:#fca5a5;" id="s8-naive-count">0</div>
+          <div style="color:#64748b; font-size:0.85em;">calls made</div>
+        </div>
+        <div class="playground">
+          <h3 style="color:#34d399;">Memoized <span class="tag green">O(n)</span></h3>
+          <div style="font-family:monospace; font-size:1.8em; color:#6ee7b7;" id="s8-memo-count">0</div>
+          <div style="color:#64748b; font-size:0.85em;">calls made</div>
+        </div>
+      </div>
+      <div class="status-msg" id="s8-status">Click "Run Both" to compare call counts</div>
+
+      <div class="code-block mt" style="font-size:0.8em;">
+<span class="line"><span class="cmt">// The Fix: Memoization</span></span>
+<span class="line"><span class="kw">function</span> <span class="fn">fib_memo</span>(n, memo={}):</span>
+<span class="line">  <span class="kw">if</span> n <span class="kw">in</span> memo: <span class="kw">return</span> memo[n]</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">0</span>: <span class="kw">return</span> <span class="num">0</span></span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">1</span>: <span class="kw">return</span> <span class="num">1</span></span>
+<span class="line">  memo[n] = <span class="fn">fib_memo</span>(n-<span class="num">1</span>) + <span class="fn">fib_memo</span>(n-<span class="num">2</span>)</span>
+<span class="line">  <span class="kw">return</span> memo[n]</span>
+      </div>
+
+      <table class="mt" style="width:100%; font-size:0.9em;">
+        <tr><th>Approach</th><th>Time</th><th>Space</th></tr>
+        <tr><td>Naive recursion</td><td>O(2<sup>n</sup>)</td><td>O(n) stack</td></tr>
+        <tr class="highlight"><td>Memoized</td><td>O(n)</td><td>O(n)</td></tr>
+        <tr><td>Iterative</td><td>O(n)</td><td>O(1)</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s8Run = function() {
+    const n = parseInt(document.getElementById('s8-n').value) || 8;
+    // Naive count
+    let naiveCount = 0;
+    function fibNaive(k) { naiveCount++; if (k <= 1) return k; return fibNaive(k-1) + fibNaive(k-2); }
+    // Memo count
+    let memoCount = 0;
+    const memo = {};
+    function fibMemo(k) { memoCount++; if (k in memo) return memo[k]; if (k <= 1) return k; memo[k] = fibMemo(k-1) + fibMemo(k-2); return memo[k]; }
+
+    fibNaive(Math.min(n, 25)); // cap naive at 25 for performance
+    fibMemo(n);
+
+    // Animate the counters
+    const naiveEl = document.getElementById('s8-naive-count');
+    const memoEl = document.getElementById('s8-memo-count');
+    let naiveShown = 0, memoShown = 0;
+    const naiveStep = Math.max(1, Math.floor(naiveCount / 30));
+    const memoStep = Math.max(1, Math.floor(memoCount / 30));
+
+    const timer = setInterval(() => {
+      let done = true;
+      if (naiveShown < naiveCount) { naiveShown = Math.min(naiveShown + naiveStep, naiveCount); naiveEl.textContent = naiveShown.toLocaleString(); done = false; }
+      if (memoShown < memoCount) { memoShown = Math.min(memoShown + memoStep, memoCount); memoEl.textContent = memoShown.toLocaleString(); done = false; }
+      if (done) clearInterval(timer);
+    }, 30);
+
+    const ratio = naiveCount > 0 ? (naiveCount / memoCount).toFixed(1) : '?';
+    document.getElementById('s8-status').textContent = `fib(${n}): Naive = ${naiveCount.toLocaleString()} calls, Memoized = ${memoCount} calls. Naive is ${ratio}x slower!`;
+    document.getElementById('s8-status').className = 'status-msg success';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s9: SUM OF ARRAY ==================== -->
+<div class="slide" id="s9">
+  <h2>Example: Sum of an Array</h2>
+  <p>Compute the sum of an array recursively: peel off one element at a time.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Code</h3>
+      <div class="code-block" id="s9-code">
+<span class="line" id="s9-l0"><span class="kw">function</span> <span class="fn">sum</span>(arr, n):</span>
+<span class="line" id="s9-l1">  <span class="cmt">// n = number of elements</span></span>
+<span class="line" id="s9-l2">  <span class="kw">if</span> n == <span class="num">0</span>:           <span class="cmt">// base case</span></span>
+<span class="line" id="s9-l3">    <span class="kw">return</span> <span class="num">0</span></span>
+<span class="line" id="s9-l4">  <span class="kw">return</span> arr[n-<span class="num">1</span>] + <span class="fn">sum</span>(arr, n-<span class="num">1</span>)</span>
+      </div>
+
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Imagine a stack of bills. Take the top bill, add its value to the total of the remaining stack. If empty, total is $0.</p>
+      </div>
+
+      <div class="controls">
+        <button onclick="s9Step()" id="s9-step-btn">Step →</button>
+        <button onclick="s9Reset()" class="danger">Reset</button>
+      </div>
+      <div class="status-msg" id="s9-status">Click Step to trace sum([3, 7, 2, 5], 4)</div>
+    </div>
+    <div>
+      <h3>Array &amp; Stack</h3>
+      <div class="svg-container" style="min-height:120px;" id="s9-array"></div>
+      <div class="svg-container" style="min-height:220px; align-items:flex-end;" id="s9-stack"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const arr = [3, 7, 2, 5];
+  const steps = [
+    { highlight: 3, stack: ['sum(arr,4)  processing arr[3]=5'], activeLines: [0,4], msg: 'sum(arr,4): take arr[3]=5, call sum(arr,3)' },
+    { highlight: 2, stack: ['sum(arr,4)  waiting','sum(arr,3)  processing arr[2]=2'], activeLines: [4], msg: 'sum(arr,3): take arr[2]=2, call sum(arr,2)' },
+    { highlight: 1, stack: ['sum(arr,4)  waiting','sum(arr,3)  waiting','sum(arr,2)  processing arr[1]=7'], activeLines: [4], msg: 'sum(arr,2): take arr[1]=7, call sum(arr,1)' },
+    { highlight: 0, stack: ['sum(arr,4)  waiting','sum(arr,3)  waiting','sum(arr,2)  waiting','sum(arr,1)  processing arr[0]=3'], activeLines: [4], msg: 'sum(arr,1): take arr[0]=3, call sum(arr,0)' },
+    { highlight: -1, stack: ['sum(arr,4)  waiting','sum(arr,3)  waiting','sum(arr,2)  waiting','sum(arr,1)  waiting','sum(arr,0) → 0  BASE'], activeLines: [2,3], msg: 'Base case! sum(arr,0) = 0' },
+    { highlight: -1, stack: ['sum(arr,4)  waiting','sum(arr,3)  waiting','sum(arr,2)  waiting','sum(arr,1) → 3+0=3'], activeLines: [4], msg: 'sum(arr,1) = 3 + 0 = 3' },
+    { highlight: -1, stack: ['sum(arr,4)  waiting','sum(arr,3)  waiting','sum(arr,2) → 7+3=10'], activeLines: [4], msg: 'sum(arr,2) = 7 + 3 = 10' },
+    { highlight: -1, stack: ['sum(arr,4)  waiting','sum(arr,3) → 2+10=12'], activeLines: [4], msg: 'sum(arr,3) = 2 + 10 = 12' },
+    { highlight: -1, stack: ['sum(arr,4) → 5+12=17'], activeLines: [4], msg: 'sum(arr,4) = 5 + 12 = 17. Done!' },
+  ];
+  let step = -1;
+
+  function renderArray() {
+    const el = document.getElementById('s9-array');
+    el.innerHTML = '';
+    const SVG = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(SVG,'svg');
+    svg.setAttribute('viewBox','0 0 400 80'); svg.setAttribute('width','400'); svg.setAttribute('height','80');
+    for (let i = 0; i < arr.length; i++) {
+      const x = 40 + i * 80;
+      const isHighlighted = step >= 0 && step < 4 && steps[step].highlight === i;
+      const color = isHighlighted ? '#fbbf24' : '#60a5fa';
+      const rect = document.createElementNS(SVG,'rect');
+      rect.setAttribute('x',x); rect.setAttribute('y','15');
+      rect.setAttribute('width','65'); rect.setAttribute('height','40');
+      rect.setAttribute('rx','6'); rect.setAttribute('fill', color+'20');
+      rect.setAttribute('stroke', color); rect.setAttribute('stroke-width', isHighlighted ? '3' : '1.5');
+      svg.appendChild(rect);
+      const txt = document.createElementNS(SVG,'text');
+      txt.setAttribute('x',x+32); txt.setAttribute('y','40');
+      txt.setAttribute('text-anchor','middle'); txt.setAttribute('fill', color);
+      txt.setAttribute('font-size','18'); txt.setAttribute('font-family','monospace'); txt.setAttribute('font-weight','bold');
+      txt.textContent = arr[i];
+      svg.appendChild(txt);
+      const idx = document.createElementNS(SVG,'text');
+      idx.setAttribute('x',x+32); idx.setAttribute('y','70');
+      idx.setAttribute('text-anchor','middle'); idx.setAttribute('fill','#64748b');
+      idx.setAttribute('font-size','11'); idx.setAttribute('font-family','monospace');
+      idx.textContent = '['+i+']';
+      svg.appendChild(idx);
+    }
+    el.appendChild(svg);
+  }
+
+  function renderStack() {
+    const el = document.getElementById('s9-stack');
+    el.innerHTML = '';
+    if (step < 0) return;
+    const st = steps[step].stack;
+    const SVG = 'http://www.w3.org/2000/svg';
+    const frameH = 34, gap = 3, w = 340;
+    const totalH = Math.max(80, st.length * (frameH + gap) + 10);
+    const svg = document.createElementNS(SVG,'svg');
+    svg.setAttribute('viewBox',`0 0 ${w} ${totalH}`); svg.setAttribute('width',w); svg.setAttribute('height',totalH);
+    const colors = ['#3b82f6','#6366f1','#8b5cf6','#a78bfa','#10b981'];
+    for (let i = 0; i < st.length; i++) {
+      const y = totalH - (i+1)*(frameH+gap);
+      const isDone = st[i].includes('→');
+      const color = isDone ? '#10b981' : colors[i % colors.length];
+      const rect = document.createElementNS(SVG,'rect');
+      rect.setAttribute('x','5'); rect.setAttribute('y',y);
+      rect.setAttribute('width',w-10); rect.setAttribute('height',frameH);
+      rect.setAttribute('rx','5'); rect.setAttribute('fill',color+'20');
+      rect.setAttribute('stroke',color); rect.setAttribute('stroke-width','1.5');
+      svg.appendChild(rect);
+      const txt = document.createElementNS(SVG,'text');
+      txt.setAttribute('x','15'); txt.setAttribute('y',y+21);
+      txt.setAttribute('fill', isDone?'#34d399':'#e2e8f0');
+      txt.setAttribute('font-size','12'); txt.setAttribute('font-family','monospace');
+      txt.textContent = st[i];
+      svg.appendChild(txt);
+    }
+    el.appendChild(svg);
+  }
+
+  function render() {
+    for (let i=0;i<=4;i++) document.getElementById('s9-l'+i).classList.remove('active');
+    if (step >= 0) steps[step].activeLines.forEach(l => document.getElementById('s9-l'+l).classList.add('active'));
+    renderArray();
+    renderStack();
+    if (step >= 0) {
+      document.getElementById('s9-status').textContent = `Step ${step+1}/${steps.length}: ${steps[step].msg}`;
+      document.getElementById('s9-status').className = step >= steps.length-1 ? 'status-msg success' : 'status-msg';
+    }
+    document.getElementById('s9-step-btn').disabled = (step >= steps.length-1);
+  }
+
+  window.s9Step = function() { if(step < steps.length-1){ step++; render(); } };
+  window.s9Reset = function() {
+    step = -1;
+    document.getElementById('s9-status').textContent = 'Click Step to trace sum([3, 7, 2, 5], 4)';
+    document.getElementById('s9-status').className = 'status-msg';
+    document.getElementById('s9-step-btn').disabled = false;
+    for (let i=0;i<=4;i++) document.getElementById('s9-l'+i).classList.remove('active');
+    renderArray(); renderStack();
+  };
+  renderArray();
+})();
+</script>
+
+<!-- ==================== SLIDE s10: BINARY SEARCH ==================== -->
+<div class="slide" id="s10">
+  <h2>Example: Binary Search (Recursive)</h2>
+  <p>Search a <strong>sorted</strong> array by repeatedly halving the search space. Classic <strong>divide and conquer</strong>.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Code</h3>
+      <div class="code-block" id="s10-code" style="font-size:0.8em;">
+<span class="line" id="s10-l0"><span class="kw">function</span> <span class="fn">binarySearch</span>(arr, target, lo, hi):</span>
+<span class="line" id="s10-l1">  <span class="kw">if</span> lo > hi:              <span class="cmt">// not found</span></span>
+<span class="line" id="s10-l2">    <span class="kw">return</span> -<span class="num">1</span></span>
+<span class="line" id="s10-l3">  mid = (lo + hi) / <span class="num">2</span></span>
+<span class="line" id="s10-l4">  <span class="kw">if</span> arr[mid] == target:   <span class="cmt">// found!</span></span>
+<span class="line" id="s10-l5">    <span class="kw">return</span> mid</span>
+<span class="line" id="s10-l6">  <span class="kw">if</span> target &lt; arr[mid]:</span>
+<span class="line" id="s10-l7">    <span class="kw">return</span> <span class="fn">binarySearch</span>(arr, target, lo, mid-<span class="num">1</span>)</span>
+<span class="line" id="s10-l8">  <span class="kw">else</span>:</span>
+<span class="line" id="s10-l9">    <span class="kw">return</span> <span class="fn">binarySearch</span>(arr, target, mid+<span class="num">1</span>, hi)</span>
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Each call eliminates <strong>half</strong> the remaining elements → <strong>O(log n)</strong> time.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Interactive Search</h3>
+      <div class="controls">
+        <label>Target:</label>
+        <select id="s10-target" style="width:70px;">
+          <option value="1">1</option><option value="3">3</option><option value="5">5</option>
+          <option value="7" selected>7</option><option value="9">9</option><option value="11">11</option>
+          <option value="13">13</option><option value="8">8 (not found)</option>
+        </select>
+        <button onclick="s10Step()" id="s10-step-btn">Step →</button>
+        <button onclick="s10Reset()" class="danger">Reset</button>
+      </div>
+      <div class="svg-container" style="min-height:140px;" id="s10-array"></div>
+      <div class="status-msg" id="s10-status">Search arr = [1, 3, 5, 7, 9, 11, 13]</div>
+      <div class="playground mt" style="padding:12px;">
+        <div style="font-family:monospace; font-size:0.9em; color:#94a3b8;" id="s10-log"></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const arr = [1, 3, 5, 7, 9, 11, 13];
+  let lo, hi, mid, target, callNum, done;
+
+  function renderArray() {
+    const el = document.getElementById('s10-array');
+    el.innerHTML = '';
+    const SVG = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(SVG,'svg');
+    const cellW = 58, padL = 15;
+    svg.setAttribute('viewBox',`0 0 ${padL*2+cellW*7} 120`); svg.setAttribute('width', padL*2+cellW*7); svg.setAttribute('height','120');
+
+    for (let i = 0; i < arr.length; i++) {
+      const x = padL + i * cellW;
+      let color = '#475569';
+      let fill = '#1e293b';
+      if (!done && i >= lo && i <= hi) {
+        color = '#60a5fa';
+        fill = 'rgba(59,130,246,0.1)';
+      }
+      if (!done && i === mid) {
+        color = '#fbbf24'; fill = 'rgba(245,158,11,0.15)';
+      }
+      if (done && arr[i] === target) {
+        color = '#10b981'; fill = 'rgba(16,185,129,0.15)';
+      }
+      if (!done && (i < lo || i > hi)) {
+        fill = 'rgba(30,41,59,0.3)';
+      }
+
+      const rect = document.createElementNS(SVG,'rect');
+      rect.setAttribute('x',x); rect.setAttribute('y','25');
+      rect.setAttribute('width',cellW-4); rect.setAttribute('height','40');
+      rect.setAttribute('rx','5'); rect.setAttribute('fill',fill);
+      rect.setAttribute('stroke',color); rect.setAttribute('stroke-width', i===mid?'3':'1.5');
+      svg.appendChild(rect);
+
+      const val = document.createElementNS(SVG,'text');
+      val.setAttribute('x',x+(cellW-4)/2); val.setAttribute('y','50');
+      val.setAttribute('text-anchor','middle');
+      val.setAttribute('fill', (i < lo || i > hi) && !done ? '#475569' : '#e2e8f0');
+      val.setAttribute('font-size','16'); val.setAttribute('font-family','monospace'); val.setAttribute('font-weight','bold');
+      val.textContent = arr[i];
+      svg.appendChild(val);
+
+      const idx = document.createElementNS(SVG,'text');
+      idx.setAttribute('x',x+(cellW-4)/2); idx.setAttribute('y','82');
+      idx.setAttribute('text-anchor','middle'); idx.setAttribute('fill','#64748b');
+      idx.setAttribute('font-size','10'); idx.setAttribute('font-family','monospace');
+      idx.textContent = i;
+      svg.appendChild(idx);
+
+      // Markers
+      if (!done && i === lo) { const t = document.createElementNS(SVG,'text'); t.setAttribute('x',x+(cellW-4)/2); t.setAttribute('y','15'); t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#60a5fa'); t.setAttribute('font-size','11'); t.setAttribute('font-family','monospace'); t.textContent='lo'; svg.appendChild(t); }
+      if (!done && i === hi) { const t = document.createElementNS(SVG,'text'); t.setAttribute('x',x+(cellW-4)/2); t.setAttribute('y','15'); t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#60a5fa'); t.setAttribute('font-size','11'); t.setAttribute('font-family','monospace'); t.textContent='hi'; svg.appendChild(t); }
+      if (!done && i === mid) { const t = document.createElementNS(SVG,'text'); t.setAttribute('x',x+(cellW-4)/2); t.setAttribute('y','100'); t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#fbbf24'); t.setAttribute('font-size','11'); t.setAttribute('font-family','monospace'); t.setAttribute('font-weight','bold'); t.textContent='↑ mid'; svg.appendChild(t); }
+    }
+    el.appendChild(svg);
+  }
+
+  window.s10Reset = function() {
+    target = parseInt(document.getElementById('s10-target').value);
+    lo = 0; hi = arr.length - 1; mid = -1; callNum = 0; done = false;
+    document.getElementById('s10-log').innerHTML = '';
+    document.getElementById('s10-status').textContent = `Searching for ${target} in [${arr.join(', ')}]`;
+    document.getElementById('s10-status').className = 'status-msg';
+    document.getElementById('s10-step-btn').disabled = false;
+    for(let i=0;i<=9;i++){const e=document.getElementById('s10-l'+i);if(e)e.classList.remove('active');}
+    renderArray();
+  };
+
+  window.s10Step = function() {
+    if (done) return;
+    for(let i=0;i<=9;i++){const e=document.getElementById('s10-l'+i);if(e)e.classList.remove('active');}
+
+    if (lo > hi) {
+      done = true;
+      document.getElementById('s10-l1').classList.add('active');
+      document.getElementById('s10-l2').classList.add('active');
+      document.getElementById('s10-log').innerHTML += `<div style="color:#f87171;">Call ${callNum+1}: lo=${lo} > hi=${hi} → NOT FOUND</div>`;
+      document.getElementById('s10-status').textContent = `${target} not found! Took ${callNum+1} calls.`;
+      document.getElementById('s10-status').className = 'status-msg error';
+      document.getElementById('s10-step-btn').disabled = true;
+      renderArray();
+      return;
+    }
+
+    callNum++;
+    mid = Math.floor((lo + hi) / 2);
+    document.getElementById('s10-l3').classList.add('active');
+
+    if (arr[mid] === target) {
+      done = true;
+      document.getElementById('s10-l4').classList.add('active');
+      document.getElementById('s10-l5').classList.add('active');
+      document.getElementById('s10-log').innerHTML += `<div style="color:#34d399;">Call ${callNum}: lo=${lo}, hi=${hi}, mid=${mid} → arr[${mid}]=${arr[mid]} == ${target}. <strong>FOUND!</strong></div>`;
+      document.getElementById('s10-status').textContent = `Found ${target} at index ${mid}! Took ${callNum} call${callNum>1?'s':''}.`;
+      document.getElementById('s10-status').className = 'status-msg success';
+      document.getElementById('s10-step-btn').disabled = true;
+    } else if (target < arr[mid]) {
+      document.getElementById('s10-l6').classList.add('active');
+      document.getElementById('s10-l7').classList.add('active');
+      document.getElementById('s10-log').innerHTML += `<div>Call ${callNum}: lo=${lo}, hi=${hi}, mid=${mid} → arr[${mid}]=${arr[mid]}. ${target} < ${arr[mid]}, go left.</div>`;
+      hi = mid - 1;
+    } else {
+      document.getElementById('s10-l8').classList.add('active');
+      document.getElementById('s10-l9').classList.add('active');
+      document.getElementById('s10-log').innerHTML += `<div>Call ${callNum}: lo=${lo}, hi=${hi}, mid=${mid} → arr[${mid}]=${arr[mid]}. ${target} > ${arr[mid]}, go right.</div>`;
+      lo = mid + 1;
+    }
+    mid = done ? mid : -1;
+    renderArray();
+  };
+
+  s10Reset();
+})();
+</script>
+
+<!-- ==================== SLIDE s11: POWER FUNCTION ==================== -->
+<div class="slide" id="s11">
+  <h2>Example: Power Function</h2>
+  <p>Compute x<sup>n</sup> recursively. Two approaches with very different performance.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Naive: O(n) <span class="tag red">Slow</span></h3>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="line"><span class="kw">function</span> <span class="fn">power</span>(x, n):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">0</span>: <span class="kw">return</span> <span class="num">1</span></span>
+<span class="line">  <span class="kw">return</span> x * <span class="fn">power</span>(x, n-<span class="num">1</span>)</span>
+      </div>
+
+      <h3 class="mt">Fast: O(log n) <span class="tag green">Fast</span></h3>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="line"><span class="kw">function</span> <span class="fn">fastPower</span>(x, n):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">0</span>: <span class="kw">return</span> <span class="num">1</span></span>
+<span class="line">  half = <span class="fn">fastPower</span>(x, n / <span class="num">2</span>)</span>
+<span class="line">  <span class="kw">if</span> n is even:</span>
+<span class="line">    <span class="kw">return</span> half * half</span>
+<span class="line">  <span class="kw">else</span>:</span>
+<span class="line">    <span class="kw">return</span> x * half * half</span>
+      </div>
+
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Squaring the half-result <strong>halves</strong> the exponent each time. This is <strong>exponentiation by squaring</strong>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Live Comparison</h3>
+      <div class="controls">
+        <label>x =</label>
+        <input type="number" id="s11-x" value="2" min="1" max="10" style="width:55px;">
+        <label>n =</label>
+        <input type="number" id="s11-n" value="16" min="1" max="64" style="width:60px;">
+        <button onclick="s11Run()">Compare</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+        <div class="playground">
+          <h3 style="color:#f87171;">Naive O(n)</h3>
+          <div style="font-family:monospace;" id="s11-naive-log"></div>
+        </div>
+        <div class="playground">
+          <h3 style="color:#34d399;">Fast O(log n)</h3>
+          <div style="font-family:monospace;" id="s11-fast-log"></div>
+        </div>
+      </div>
+      <div class="status-msg" id="s11-status">Click Compare to see step-by-step traces</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s11Run = function() {
+    const x = parseInt(document.getElementById('s11-x').value) || 2;
+    const n = parseInt(document.getElementById('s11-n').value) || 16;
+
+    // Naive trace
+    let naiveSteps = [];
+    function naivePow(b, e) {
+      if (e === 0) { naiveSteps.push(`power(${b},0) = 1`); return 1; }
+      const r = naivePow(b, e-1);
+      const res = b * r;
+      naiveSteps.push(`power(${b},${e}) = ${b}×${r} = ${res}`);
+      return res;
+    }
+
+    // Fast trace
+    let fastSteps = [];
+    function fastPow(b, e) {
+      if (e === 0) { fastSteps.push(`fast(${b},0) = 1`); return 1; }
+      const half = fastPow(b, Math.floor(e/2));
+      let res;
+      if (e % 2 === 0) { res = half * half; fastSteps.push(`fast(${b},${e}) = ${half}² = ${res}`); }
+      else { res = b * half * half; fastSteps.push(`fast(${b},${e}) = ${b}×${half}² = ${res}`); }
+      return res;
+    }
+
+    naivePow(x, n); fastPow(x, n);
+
+    // Show last ~8 steps for naive (can be very long)
+    const naiveShow = naiveSteps.length > 8 ? [`... (${naiveSteps.length - 8} more steps)`, ...naiveSteps.slice(-8)] : naiveSteps;
+    document.getElementById('s11-naive-log').innerHTML = naiveShow.map(s => `<div style="font-size:0.75em; color:#fca5a5; margin:2px 0;">${s}</div>`).join('');
+    document.getElementById('s11-fast-log').innerHTML = fastSteps.map(s => `<div style="font-size:0.75em; color:#6ee7b7; margin:2px 0;">${s}</div>`).join('');
+
+    document.getElementById('s11-status').textContent = `${x}^${n}: Naive = ${naiveSteps.length} calls, Fast = ${fastSteps.length} calls`;
+    document.getElementById('s11-status').className = 'status-msg success';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s12: LINEAR VS BINARY RECURSION ==================== -->
+<div class="slide" id="s12">
+  <h2>Linear vs Binary/Multiple Recursion</h2>
+  <p>Recursive functions are classified by <strong>how many</strong> recursive calls they make.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Linear Recursion (1 call) <span class="tag blue">Chain</span></h3>
+      <div class="svg-container" id="s12-linear" style="min-height:100px;"></div>
+      <p><strong>Examples:</strong> factorial, sum, binary search</p>
+      <p>Depth & total calls: O(n) or O(log n)</p>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Linear recursion creates a <strong>chain</strong>. Easy to convert to iteration.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Binary/Multiple Recursion (2+ calls) <span class="tag yellow">Tree</span></h3>
+      <div class="svg-container" id="s12-binary" style="min-height:140px;"></div>
+      <p><strong>Examples:</strong> fibonacci, merge sort, Towers of Hanoi</p>
+      <p>Depth: O(n) or O(log n), but total calls up to O(2<sup>n</sup>)!</p>
+      <div class="warning">
+        <h3>Warning</h3>
+        <p>Binary recursion can be <strong>exponential</strong> in total calls even though stack depth is only O(n).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  // Linear chain
+  const lin = document.getElementById('s12-linear');
+  const svg1 = document.createElementNS(SVG,'svg');
+  svg1.setAttribute('viewBox','0 0 450 70'); svg1.setAttribute('width','450'); svg1.setAttribute('height','70');
+  const labels = ['f(n)','f(n-1)','f(n-2)','...','f(0)'];
+  for (let i = 0; i < labels.length; i++) {
+    const x = 20 + i * 100;
+    const circle = document.createElementNS(SVG,'circle');
+    circle.setAttribute('cx',x+25); circle.setAttribute('cy','35'); circle.setAttribute('r','22');
+    circle.setAttribute('fill', i===labels.length-1?'#10b98120':'#60a5fa20');
+    circle.setAttribute('stroke', i===labels.length-1?'#10b981':'#60a5fa'); circle.setAttribute('stroke-width','2');
+    svg1.appendChild(circle);
+    const txt = document.createElementNS(SVG,'text');
+    txt.setAttribute('x',x+25); txt.setAttribute('y','39'); txt.setAttribute('text-anchor','middle');
+    txt.setAttribute('fill', i===labels.length-1?'#34d399':'#93c5fd');
+    txt.setAttribute('font-size','11'); txt.setAttribute('font-family','monospace');
+    txt.textContent = labels[i];
+    svg1.appendChild(txt);
+    if (i < labels.length-1) {
+      const line = document.createElementNS(SVG,'line');
+      line.setAttribute('x1',x+47); line.setAttribute('y1','35');
+      line.setAttribute('x2',x+78); line.setAttribute('y2','35');
+      line.setAttribute('stroke','#60a5fa'); line.setAttribute('stroke-width','2');
+      line.setAttribute('marker-end','url(#arr-blue)');
+      svg1.appendChild(line);
+    }
+  }
+  // Arrow marker
+  const defs1 = document.createElementNS(SVG,'defs');
+  const m1 = document.createElementNS(SVG,'marker');
+  m1.setAttribute('id','arr-blue'); m1.setAttribute('markerWidth','8'); m1.setAttribute('markerHeight','6');
+  m1.setAttribute('refX','8'); m1.setAttribute('refY','3'); m1.setAttribute('orient','auto');
+  const p1 = document.createElementNS(SVG,'polygon');
+  p1.setAttribute('points','0 0, 8 3, 0 6'); p1.setAttribute('fill','#60a5fa');
+  m1.appendChild(p1); defs1.appendChild(m1); svg1.appendChild(defs1);
+  lin.appendChild(svg1);
+
+  // Binary tree
+  const bin = document.getElementById('s12-binary');
+  const svg2 = document.createElementNS(SVG,'svg');
+  svg2.setAttribute('viewBox','0 0 400 130'); svg2.setAttribute('width','400'); svg2.setAttribute('height','130');
+  const nodes = [
+    {x:200,y:22,label:'f(n)'},
+    {x:110,y:62,label:'f(n-1)'}, {x:290,y:62,label:'f(n-2)'},
+    {x:65,y:105,label:'...'}, {x:155,y:105,label:'...'}, {x:245,y:105,label:'...'}, {x:335,y:105,label:'...'},
+  ];
+  const edges = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]];
+  edges.forEach(([a,b])=>{
+    const line = document.createElementNS(SVG,'line');
+    line.setAttribute('x1',nodes[a].x); line.setAttribute('y1',nodes[a].y+14);
+    line.setAttribute('x2',nodes[b].x); line.setAttribute('y2',nodes[b].y-14);
+    line.setAttribute('stroke','#fbbf24'); line.setAttribute('stroke-width','1.5');
+    svg2.appendChild(line);
+  });
+  nodes.forEach((nd,i)=>{
+    const c = document.createElementNS(SVG,'circle');
+    c.setAttribute('cx',nd.x); c.setAttribute('cy',nd.y); c.setAttribute('r','18');
+    c.setAttribute('fill','#fbbf2420'); c.setAttribute('stroke','#fbbf24'); c.setAttribute('stroke-width','2');
+    svg2.appendChild(c);
+    const t = document.createElementNS(SVG,'text');
+    t.setAttribute('x',nd.x); t.setAttribute('y',nd.y+4); t.setAttribute('text-anchor','middle');
+    t.setAttribute('fill','#fde68a'); t.setAttribute('font-size','10'); t.setAttribute('font-family','monospace');
+    t.textContent = nd.label;
+    svg2.appendChild(t);
+  });
+  bin.appendChild(svg2);
+})();
+</script>
+
+<!-- ==================== SLIDE s13: TAIL RECURSION ==================== -->
+<div class="slide" id="s13">
+  <h2>Tail Recursion</h2>
+  <p>A recursive call is a <strong>tail call</strong> if it is the <strong>very last operation</strong> — nothing happens after the call returns.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>NOT Tail Recursive</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="line"><span class="kw">function</span> <span class="fn">factorial</span>(n):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">0</span>: <span class="kw">return</span> <span class="num">1</span></span>
+<span class="line">  <span class="kw">return</span> n * <span class="fn">factorial</span>(n-<span class="num">1</span>)  <span class="cmt">// multiply AFTER call</span></span>
+      </div>
+
+      <h3 class="mt">Tail Recursive Version</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="line"><span class="kw">function</span> <span class="fn">factorial</span>(n, acc=<span class="num">1</span>):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">0</span>: <span class="kw">return</span> acc</span>
+<span class="line">  <span class="kw">return</span> <span class="fn">factorial</span>(n-<span class="num">1</span>, n*acc)  <span class="cmt">// call IS the return</span></span>
+      </div>
+
+      <div class="warning mt">
+        <h3>Note</h3>
+        <p>Java and Python do <strong>not</strong> optimize tail calls. Functional languages (Haskell, Scheme, Scala) typically do.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Stack Comparison (n = 4)</h3>
+      <div class="controls">
+        <button onclick="s13Animate()" id="s13-anim-btn">▶ Animate Both</button>
+        <button onclick="s13Reset()" class="danger">Reset</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+        <div>
+          <p style="font-size:0.85em; color:#f87171; text-align:center; font-weight:bold;">Non-Tail (stack grows)</p>
+          <div class="svg-container" style="min-height:220px; align-items:flex-end;" id="s13-nontail"></div>
+        </div>
+        <div>
+          <p style="font-size:0.85em; color:#34d399; text-align:center; font-weight:bold;">Tail (1 frame reused)</p>
+          <div class="svg-container" style="min-height:220px; align-items:flex-end;" id="s13-tail"></div>
+        </div>
+      </div>
+      <div class="status-msg" id="s13-status">Click Animate to see the difference</div>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Tail recursion carries the result in an <strong>accumulator</strong>. The compiler can reuse a single frame — same speed, O(1) stack.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const nonTailSteps = [
+    ['f(4) n=4 waiting'],
+    ['f(4) n=4 waiting','f(3) n=3 waiting'],
+    ['f(4) n=4 waiting','f(3) n=3 waiting','f(2) n=2 waiting'],
+    ['f(4) n=4 waiting','f(3) n=3 waiting','f(2) n=2 waiting','f(1) n=1 waiting'],
+    ['f(4) n=4 waiting','f(3) n=3 waiting','f(2) n=2 waiting','f(1) n=1 waiting','f(0)→1 BASE'],
+    ['f(4) n=4 waiting','f(3) n=3 waiting','f(2) n=2 waiting','f(1)→1×1=1'],
+    ['f(4) n=4 waiting','f(3) n=3 waiting','f(2)→2×1=2'],
+    ['f(4) n=4 waiting','f(3)→3×2=6'],
+    ['f(4)→4×6=24'],
+    [],
+  ];
+  const tailSteps = [
+    ['f(4, acc=1)'],
+    ['f(3, acc=4)'],
+    ['f(2, acc=12)'],
+    ['f(1, acc=24)'],
+    ['f(0, acc=24)→24 BASE'],
+    ['→ 24 done'],
+    [],
+    [],
+    [],
+    [],
+  ];
+  let step = -1;
+  let animTimer = null;
+
+  function drawStack(containerId, frames, isNonTail) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    const SVG = 'http://www.w3.org/2000/svg';
+    const frameH = 30, gap = 3, w = 200;
+    const totalH = Math.max(60, frames.length * (frameH + gap) + 10);
+    const svg = document.createElementNS(SVG,'svg');
+    svg.setAttribute('viewBox',`0 0 ${w} ${totalH}`); svg.setAttribute('width',w); svg.setAttribute('height',totalH);
+
+    for (let i = 0; i < frames.length; i++) {
+      const y = totalH - (i+1)*(frameH+gap);
+      const isDone = frames[i].includes('→');
+      const color = isDone ? '#10b981' : (isNonTail ? '#f87171' : '#34d399');
+      const rect = document.createElementNS(SVG,'rect');
+      rect.setAttribute('x','5'); rect.setAttribute('y',y);
+      rect.setAttribute('width',w-10); rect.setAttribute('height',frameH);
+      rect.setAttribute('rx','5'); rect.setAttribute('fill',color+'20');
+      rect.setAttribute('stroke',color); rect.setAttribute('stroke-width','1.5');
+      svg.appendChild(rect);
+      const txt = document.createElementNS(SVG,'text');
+      txt.setAttribute('x','12'); txt.setAttribute('y',y+19);
+      txt.setAttribute('fill', isDone?'#34d399':'#e2e8f0');
+      txt.setAttribute('font-size','11'); txt.setAttribute('font-family','monospace');
+      txt.textContent = frames[i];
+      svg.appendChild(txt);
+    }
+    el.appendChild(svg);
+  }
+
+  function render() {
+    if (step < 0 || step >= nonTailSteps.length) {
+      drawStack('s13-nontail', [], true);
+      drawStack('s13-tail', [], false);
+      return;
+    }
+    drawStack('s13-nontail', nonTailSteps[step], true);
+    drawStack('s13-tail', tailSteps[step], false);
+    const maxNT = Math.max(...nonTailSteps.map(s=>s.length));
+    const maxT = Math.max(...tailSteps.map(s=>s.length));
+    document.getElementById('s13-status').textContent = `Step ${step+1}/${nonTailSteps.length}: Non-tail max frames: ${maxNT}, Tail max frames: ${maxT}`;
+  }
+
+  window.s13Animate = function() {
+    if (animTimer) { clearInterval(animTimer); animTimer = null; document.getElementById('s13-anim-btn').textContent = '▶ Animate Both'; return; }
+    step = -1;
+    document.getElementById('s13-anim-btn').textContent = '⏸ Pause';
+    animTimer = setInterval(() => {
+      step++;
+      if (step >= nonTailSteps.length) {
+        clearInterval(animTimer); animTimer = null;
+        document.getElementById('s13-anim-btn').textContent = '▶ Animate Both';
+        document.getElementById('s13-status').textContent = 'Done! Non-tail used 5 frames. Tail used only 1 (reused).';
+        document.getElementById('s13-status').className = 'status-msg success';
+        return;
+      }
+      render();
+    }, 800);
+  };
+
+  window.s13Reset = function() {
+    if (animTimer) { clearInterval(animTimer); animTimer = null; }
+    document.getElementById('s13-anim-btn').textContent = '▶ Animate Both';
+    step = -1;
+    document.getElementById('s13-status').textContent = 'Click Animate to see the difference';
+    document.getElementById('s13-status').className = 'status-msg';
+    render();
+  };
+
+  render();
+})();
+</script>
+
+<!-- ==================== SLIDE s14: RECURSION VS ITERATION ==================== -->
+<div class="slide" id="s14">
+  <h2>Recursion vs Iteration</h2>
+  <p>Any recursive algorithm can be converted to iteration (and vice versa). When should you use which?</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Side by Side: Factorial</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="code-block" style="font-size:0.78em;">
+<span class="line"><span class="cmt">// RECURSIVE</span></span>
+<span class="line"><span class="kw">function</span> <span class="fn">factorial</span>(n):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">0</span>:</span>
+<span class="line">    <span class="kw">return</span> <span class="num">1</span></span>
+<span class="line">  <span class="kw">return</span> n *</span>
+<span class="line">    <span class="fn">factorial</span>(n-<span class="num">1</span>)</span>
+        </div>
+        <div class="code-block" style="font-size:0.78em;">
+<span class="line"><span class="cmt">// ITERATIVE</span></span>
+<span class="line"><span class="kw">function</span> <span class="fn">factorial</span>(n):</span>
+<span class="line">  result = <span class="num">1</span></span>
+<span class="line">  <span class="kw">for</span> i <span class="kw">in</span> <span class="num">1</span>..n:</span>
+<span class="line">    result *= i</span>
+<span class="line">  <span class="kw">return</span> result</span>
+        </div>
+      </div>
+
+      <table class="mt" style="width:100%; font-size:0.9em;">
+        <tr><th>Aspect</th><th>Recursion</th><th>Iteration</th></tr>
+        <tr><td>Clarity</td><td>Cleaner for trees, D&amp;C</td><td>Cleaner for simple loops</td></tr>
+        <tr><td>Stack</td><td>O(n) frames</td><td>O(1)</td></tr>
+        <tr><td>Speed</td><td>Call overhead</td><td>Slightly faster</td></tr>
+        <tr><td>Risk</td><td>Stack overflow</td><td>Infinite loop</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>When to Use Recursion</h3>
+      <ul>
+        <li>Problem has a <strong>recursive structure</strong> (trees, graphs, nested data)</li>
+        <li><strong>Divide and conquer</strong> algorithms (merge sort, quicksort)</li>
+        <li><strong>Backtracking</strong> problems (N-queens, mazes)</li>
+        <li>The recursive solution is <strong>much simpler</strong> than iterative</li>
+      </ul>
+
+      <h3 class="mt">When to Use Iteration</h3>
+      <ul>
+        <li>Simple <strong>linear</strong> computations (sum, factorial)</li>
+        <li><strong>Performance-critical</strong> code</li>
+        <li>Very <strong>deep</strong> recursion possible (n > 10000)</li>
+        <li>Language lacks tail-call optimization</li>
+      </ul>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Recursion is like giving <strong>instructions to a chain of helpers</strong> — each passes a smaller task down. Iteration is like <strong>doing it yourself</strong> in a loop.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE s15: COMMON PATTERNS ==================== -->
+<div class="slide" id="s15">
+  <h2>Common Recursion Patterns</h2>
+  <p>Most recursive algorithms fall into one of these three families. <strong>Click a pattern</strong> to see it animated.</p>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:24px; margin-top:20px;">
+    <div class="challenge-option" id="s15-opt-dc" onclick="s15Pick('dc')" style="cursor:pointer;">
+      <h3 style="color:#93c5fd;">Divide &amp; Conquer</h3>
+      <p style="font-size:0.9em;">Split into <strong>independent subproblems</strong>, solve each, then <strong>combine</strong>.</p>
+      <p style="font-size:0.85em; color:#64748b;"><strong>Examples:</strong> merge sort, quicksort, binary search, fast power</p>
+    </div>
+    <div class="challenge-option" id="s15-opt-dec" onclick="s15Pick('dec')" style="cursor:pointer;">
+      <h3 style="color:#c084fc;">Decrease &amp; Conquer</h3>
+      <p style="font-size:0.9em;">Reduce by a <strong>constant amount</strong> (usually 1) each step. Linear chain.</p>
+      <p style="font-size:0.85em; color:#64748b;"><strong>Examples:</strong> factorial, sum of array, insertion sort</p>
+    </div>
+    <div class="challenge-option" id="s15-opt-bt" onclick="s15Pick('bt')" style="cursor:pointer;">
+      <h3 style="color:#34d399;">Backtracking</h3>
+      <p style="font-size:0.9em;">Try a choice, recurse. If fail, <strong>undo</strong> and try next option.</p>
+      <p style="font-size:0.85em; color:#64748b;"><strong>Examples:</strong> N-queens, maze, sudoku, permutations</p>
+    </div>
+  </div>
+
+  <div class="svg-container mt" style="min-height:180px;" id="s15-viz"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let selected = null;
+  window.s15Pick = function(pattern) {
+    ['dc','dec','bt'].forEach(p => {
+      document.getElementById('s15-opt-'+p).style.borderColor = (p===pattern) ? '#3b82f6' : '#334155';
+      document.getElementById('s15-opt-'+p).style.background = (p===pattern) ? 'rgba(59,130,246,0.1)' : '#1e293b';
+    });
+    selected = pattern;
+    const el = document.getElementById('s15-viz');
+    el.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    canvas.width = 600; canvas.height = 170;
+    canvas.style.width = '100%'; canvas.style.height = '170px';
+    const ctx = canvas.getContext('2d');
+
+    if (pattern === 'dc') {
+      // Divide & Conquer tree
+      const nodes = [{x:300,y:25,l:'problem'},{x:150,y:75,l:'sub1'},{x:450,y:75,l:'sub2'},{x:150,y:125,l:'solve'},{x:450,y:125,l:'solve'},{x:300,y:155,l:'combine'}];
+      // Edges
+      ctx.strokeStyle='#60a5fa'; ctx.lineWidth=2;
+      [[0,1],[0,2],[1,3],[2,4]].forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y+14);ctx.lineTo(nodes[b].x,nodes[b].y-14);ctx.stroke();});
+      // Combine arrows
+      ctx.strokeStyle='#34d399'; ctx.setLineDash([4,4]);
+      [[3,5],[4,5]].forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y+14);ctx.lineTo(nodes[b].x,nodes[b].y-10);ctx.stroke();});
+      ctx.setLineDash([]);
+      // Nodes
+      nodes.forEach((nd,i)=>{
+        const color = i===5?'#10b981':(i>=3?'#a78bfa':'#60a5fa');
+        ctx.beginPath(); ctx.arc(nd.x,nd.y,18,0,Math.PI*2);
+        ctx.fillStyle=color+'30'; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+        ctx.fillStyle=color; ctx.font='bold 11px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(nd.l,nd.x,nd.y);
+      });
+    } else if (pattern === 'dec') {
+      // Chain
+      for(let i=0;i<6;i++){
+        const x=50+i*100, y=80;
+        const isBase = i===5;
+        ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2);
+        ctx.fillStyle=(isBase?'#10b981':'#a78bfa')+'30'; ctx.fill();
+        ctx.strokeStyle=isBase?'#10b981':'#a78bfa'; ctx.lineWidth=2; ctx.stroke();
+        ctx.fillStyle=isBase?'#34d399':'#d8b4fe'; ctx.font='bold 11px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        const labels=['f(n)','f(n-1)','f(n-2)','f(n-3)','...','f(0)'];
+        ctx.fillText(labels[i],x,y);
+        if(i<5){ctx.beginPath();ctx.moveTo(x+22,y);ctx.lineTo(x+78,y);ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;ctx.stroke();
+          ctx.beginPath();ctx.moveTo(x+74,y-4);ctx.lineTo(x+78,y);ctx.lineTo(x+74,y+4);ctx.stroke();}
+      }
+      ctx.fillStyle='#64748b'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('Each call reduces by 1 → O(n) depth',300,140);
+    } else if (pattern === 'bt') {
+      // Backtracking tree with X marks
+      const nodes=[{x:300,y:20,l:'try A'},{x:150,y:65,l:'try B',ok:true},{x:450,y:65,l:'try C',fail:true},
+        {x:80,y:115,l:'ok!',ok:true},{x:220,y:115,l:'fail',fail:true},{x:380,y:115,l:'undo',fail:true},{x:520,y:115,l:'try D'}];
+      [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]].forEach(([a,b])=>{
+        ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y+14);ctx.lineTo(nodes[b].x,nodes[b].y-14);
+        ctx.strokeStyle=nodes[b].fail?'#f87171':'#60a5fa';ctx.lineWidth=1.5;ctx.stroke();
+      });
+      nodes.forEach(nd=>{
+        const color=nd.ok?'#10b981':(nd.fail?'#f87171':'#60a5fa');
+        ctx.beginPath();ctx.arc(nd.x,nd.y,18,0,Math.PI*2);
+        ctx.fillStyle=color+'30';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+        ctx.fillStyle=color;ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(nd.l,nd.x,nd.y);
+        if(nd.fail){ctx.strokeStyle='#f87171';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(nd.x-10,nd.y-10);ctx.lineTo(nd.x+10,nd.y+10);ctx.stroke();ctx.beginPath();ctx.moveTo(nd.x+10,nd.y-10);ctx.lineTo(nd.x-10,nd.y+10);ctx.stroke();}
+      });
+      ctx.fillStyle='#64748b'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('Red X = failed path, undo and try another branch',300,155);
+    }
+    el.appendChild(canvas);
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s16: TOWERS OF HANOI ==================== -->
+<div class="slide" id="s16">
+  <h2>Towers of Hanoi</h2>
+  <p>Move <strong>n</strong> disks from peg A to peg C. Rules: one disk at a time; never place larger on smaller.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Recursive Solution</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="line"><span class="kw">function</span> <span class="fn">hanoi</span>(n, from, to, aux):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">1</span>:</span>
+<span class="line">    move disk <span class="num">1</span> from <span class="str">'from'</span> to <span class="str">'to'</span></span>
+<span class="line">    <span class="kw">return</span></span>
+<span class="line">  <span class="fn">hanoi</span>(n-<span class="num">1</span>, from, aux, to)  <span class="cmt">// top n-1 to aux</span></span>
+<span class="line">  move disk n from <span class="str">'from'</span> to <span class="str">'to'</span></span>
+<span class="line">  <span class="fn">hanoi</span>(n-<span class="num">1</span>, aux, to, from)  <span class="cmt">// n-1 from aux to to</span></span>
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Move top n-1 out of the way, move the big disk, put n-1 back on top. Takes <strong>2<sup>n</sup> - 1</strong> moves.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Interactive Playground</h3>
+      <div class="controls">
+        <label>Disks:</label>
+        <select id="s16-disks" onchange="s16Reset()">
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+        <button onclick="s16AutoSolve()" id="s16-auto-btn">▶ Auto-Solve</button>
+        <button onclick="s16Step()" id="s16-step-btn">Step</button>
+        <button onclick="s16Reset()" class="danger">Reset</button>
+      </div>
+      <canvas id="s16-canvas" width="480" height="200" style="width:100%; border-radius:8px; background:#1e293b;"></canvas>
+      <div class="status-msg" id="s16-status">Moves: 0 | Minimum: 7</div>
+      <div class="playground mt" style="padding:8px 12px; max-height:100px; overflow-y:auto;">
+        <div style="font-family:monospace; font-size:0.8em; color:#94a3b8;" id="s16-log"></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let pegs, numDisks, moves, moveList, moveIdx, autoTimer;
+  const canvas = document.getElementById('s16-canvas');
+  const ctx = canvas.getContext('2d');
+  const diskColors = ['#f87171','#fbbf24','#34d399','#60a5fa','#a78bfa'];
+
+  function draw() {
+    ctx.clearRect(0,0,480,200);
+    // Pegs
+    for(let p=0;p<3;p++){
+      const cx=80+p*160;
+      ctx.fillStyle='#475569';
+      ctx.fillRect(cx-3,40,6,140);
+      ctx.fillRect(cx-60,175,120,8);
+      ctx.fillStyle='#64748b'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(['A','B','C'][p],cx,196);
+    }
+    // Disks
+    for(let p=0;p<3;p++){
+      const cx=80+p*160;
+      for(let d=0;d<pegs[p].length;d++){
+        const disk=pegs[p][d];
+        const w=30+disk*22;
+        const y=175-((d+1)*24);
+        ctx.fillStyle=diskColors[disk%5];
+        ctx.beginPath();
+        ctx.roundRect(cx-w/2,y,w,22,6);
+        ctx.fill();
+        ctx.fillStyle='#0f172a'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+        ctx.fillText(disk+1,cx,y+15);
+      }
+    }
+  }
+
+  function generateMoves(n,from,to,aux){
+    if(n===0)return;
+    generateMoves(n-1,from,aux,to);
+    moveList.push([from,to,n]);
+    generateMoves(n-1,aux,to,from);
+  }
+
+  window.s16Reset = function(){
+    if(autoTimer){clearInterval(autoTimer);autoTimer=null;}
+    document.getElementById('s16-auto-btn').textContent='▶ Auto-Solve';
+    numDisks=parseInt(document.getElementById('s16-disks').value)||3;
+    pegs=[[],[],[]];
+    for(let i=numDisks-1;i>=0;i--)pegs[0].push(i);
+    moves=0; moveList=[]; moveIdx=0;
+    generateMoves(numDisks,0,2,1);
+    document.getElementById('s16-log').innerHTML='';
+    document.getElementById('s16-status').textContent=`Moves: 0 | Minimum: ${Math.pow(2,numDisks)-1}`;
+    document.getElementById('s16-status').className='status-msg';
+    document.getElementById('s16-step-btn').disabled=false;
+    draw();
+  };
+
+  window.s16Step = function(){
+    if(moveIdx>=moveList.length){
+      document.getElementById('s16-status').textContent=`Solved in ${moves} moves! (minimum: ${Math.pow(2,numDisks)-1})`;
+      document.getElementById('s16-status').className='status-msg success';
+      document.getElementById('s16-step-btn').disabled=true;
+      return;
+    }
+    const[from,to,diskNum]=moveList[moveIdx];
+    const disk=pegs[from].pop();
+    pegs[to].push(disk);
+    moves++; moveIdx++;
+    const names=['A','B','C'];
+    document.getElementById('s16-log').innerHTML+=`<div>Move ${moves}: disk ${diskNum} ${names[from]}→${names[to]}</div>`;
+    document.getElementById('s16-status').textContent=`Moves: ${moves} | Minimum: ${Math.pow(2,numDisks)-1}`;
+    draw();
+    if(moveIdx>=moveList.length){
+      document.getElementById('s16-status').textContent=`Solved in ${moves} moves!`;
+      document.getElementById('s16-status').className='status-msg success';
+      document.getElementById('s16-step-btn').disabled=true;
+    }
+  };
+
+  window.s16AutoSolve = function(){
+    if(autoTimer){clearInterval(autoTimer);autoTimer=null;document.getElementById('s16-auto-btn').textContent='▶ Auto-Solve';return;}
+    document.getElementById('s16-auto-btn').textContent='⏸ Pause';
+    autoTimer=setInterval(()=>{
+      if(moveIdx>=moveList.length){clearInterval(autoTimer);autoTimer=null;document.getElementById('s16-auto-btn').textContent='▶ Auto-Solve';return;}
+      s16Step();
+    },500);
+  };
+
+  s16Reset();
+})();
+</script>
+
+<!-- ==================== SLIDE s17: COMMON MISTAKES ==================== -->
+<div class="slide" id="s17">
+  <h2>Common Mistakes</h2>
+  <p>Debugging recursion can be tricky. Watch out for these pitfalls.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:20px;">
+    <div class="warning">
+      <h3>1. Missing Base Case</h3>
+      <div class="code-block" style="font-size:0.78em; border-color:#f59e0b;">
+<span class="line"><span class="cmt">// BROKEN — no base case!</span></span>
+<span class="line"><span class="kw">function</span> <span class="fn">factorial</span>(n):</span>
+<span class="line">  <span class="kw">return</span> n * <span class="fn">factorial</span>(n-<span class="num">1</span>)</span>
+<span class="line"><span class="cmt">// → factorial(0) → factorial(-1) → ... OVERFLOW</span></span>
+      </div>
+      <p><strong>Fix:</strong> Always define when to <em>stop</em>.</p>
+    </div>
+
+    <div class="warning">
+      <h3>2. Not Making Progress</h3>
+      <div class="code-block" style="font-size:0.78em; border-color:#f59e0b;">
+<span class="line"><span class="cmt">// BROKEN — n never changes!</span></span>
+<span class="line"><span class="kw">function</span> <span class="fn">countdown</span>(n):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">0</span>: <span class="kw">return</span></span>
+<span class="line">  print(n)</span>
+<span class="line">  <span class="fn">countdown</span>(n)     <span class="cmt">// should be n-1</span></span>
+      </div>
+      <p><strong>Fix:</strong> Each call must move <em>closer</em> to the base case.</p>
+    </div>
+
+    <div class="warning">
+      <h3>3. Wrong Base Case</h3>
+      <div class="code-block" style="font-size:0.78em; border-color:#f59e0b;">
+<span class="line"><span class="cmt">// BROKEN — misses n=0!</span></span>
+<span class="line"><span class="kw">function</span> <span class="fn">factorial</span>(n):</span>
+<span class="line">  <span class="kw">if</span> n == <span class="num">1</span>: <span class="kw">return</span> <span class="num">1</span></span>
+<span class="line">  <span class="kw">return</span> n * <span class="fn">factorial</span>(n-<span class="num">1</span>)</span>
+<span class="line"><span class="cmt">// factorial(0) → 0 * factorial(-1) → ...</span></span>
+      </div>
+      <p><strong>Fix:</strong> Consider <em>all</em> inputs including edge cases.</p>
+    </div>
+
+    <div class="warning">
+      <h3>4. Redundant Computation</h3>
+      <div class="code-block" style="font-size:0.78em; border-color:#f59e0b;">
+<span class="line"><span class="cmt">// WORKS but O(2^n) slow!</span></span>
+<span class="line"><span class="kw">function</span> <span class="fn">fib</span>(n):</span>
+<span class="line">  <span class="kw">if</span> n &lt;= <span class="num">1</span>: <span class="kw">return</span> n</span>
+<span class="line">  <span class="kw">return</span> <span class="fn">fib</span>(n-<span class="num">1</span>) + <span class="fn">fib</span>(n-<span class="num">2</span>)</span>
+<span class="line"><span class="cmt">// fib(5) computes fib(2) three times!</span></span>
+      </div>
+      <p><strong>Fix:</strong> Use <strong>memoization</strong> or convert to iteration.</p>
+    </div>
+  </div>
+
+  <div class="key-idea mt">
+    <h3>Debugging Tip</h3>
+    <p>Add print statements at the <strong>start</strong> of the function showing parameters, and at the <strong>end</strong> showing the return value. This makes the call tree visible.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE s18: SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary &amp; Cheat Sheet</h2>
+
+  <div class="two-col mt">
+    <div>
+      <div class="key-idea">
+        <h3>The Recursion Recipe</h3>
+        <ol style="padding-left:20px;">
+          <li style="margin-bottom:8px; font-size:1.05em;">Identify the <strong>base case(s)</strong> — simplest inputs with known answers</li>
+          <li style="margin-bottom:8px; font-size:1.05em;">Identify the <strong>recursive case</strong> — how to break into smaller pieces</li>
+          <li style="margin-bottom:8px; font-size:1.05em;">Ensure each call <strong>makes progress</strong> toward a base case</li>
+          <li style="margin-bottom:8px; font-size:1.05em;"><strong>Trust the recursion</strong> — assume the recursive call works for smaller input</li>
+          <li style="margin-bottom:8px; font-size:1.05em;">Combine the result of the recursive call with the current step</li>
+        </ol>
+      </div>
+
+      <div class="diagram small" style="margin-top:12px;">
+  Pattern             Time         Example
+  ─────────────────────────────────────────
+  Decrease by 1       O(n)         factorial
+  Decrease by half    O(log n)     bin search
+  Two calls (dep.)    O(2^n)*      fibonacci*
+  Two calls (indep.)  O(n log n)   merge sort
+  Backtracking        varies       N-queens
+
+  * without memoization
+      </div>
+    </div>
+    <div>
+      <h3>Key Concepts</h3>
+      <table style="width:100%; font-size:0.9em;">
+        <tr><th>Concept</th><th>What It Means</th></tr>
+        <tr><td>Base Case</td><td>When to stop recursing</td></tr>
+        <tr><td>Recursive Case</td><td>Self-call with smaller input</td></tr>
+        <tr><td>Call Stack</td><td>Frames tracking each call</td></tr>
+        <tr><td>Stack Overflow</td><td>Too-deep recursion</td></tr>
+        <tr><td>Tail Recursion</td><td>Recursive call is last op</td></tr>
+        <tr><td>Memoization</td><td>Cache repeated subproblems</td></tr>
+        <tr><td>Divide &amp; Conquer</td><td>Split, solve halves, combine</td></tr>
+        <tr><td>Backtracking</td><td>Try, recurse, undo if fail</td></tr>
+      </table>
+
+      <div class="analogy mt">
+        <h3>Final Analogy</h3>
+        <p>Recursion is the art of solving a problem by saying: <em>"If I could magically solve a slightly smaller version, how would I use that to solve the original?"</em> Then handle the tiniest case directly.</p>
+      </div>
+
+      <p class="mt" style="text-align:center; color:#64748b; font-size:0.9em;">CS205 Data Structures &middot; Recursion</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== CHALLENGE sCA: PREDICT THE STACK ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the Stack</h2>
+  <p>At step 3 of <code>factorial(5)</code>, which shows the correct call stack?</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;">
+    <div class="challenge-option" onclick="sCAPick(this,1)">
+      <h3>Option A</h3>
+      <div class="code-block" style="font-size:0.8em;">
+<span class="line">factorial(2)  n=2, waiting</span>
+<span class="line">factorial(3)  n=3, waiting</span>
+<span class="line">factorial(4)  n=4, waiting</span>
+<span class="line">factorial(5)  n=5, waiting</span>
+<span class="line">main()</span>
+      </div>
+    </div>
+    <div class="challenge-option" onclick="sCAPick(this,0)">
+      <h3>Option B</h3>
+      <div class="code-block" style="font-size:0.8em;">
+<span class="line">factorial(5)  n=5, waiting</span>
+<span class="line">factorial(4)  n=4, waiting</span>
+<span class="line">factorial(3)  n=3, waiting</span>
+<span class="line">main()</span>
+      </div>
+    </div>
+    <div class="challenge-option" onclick="sCAPick(this,0)">
+      <h3>Option C</h3>
+      <div class="code-block" style="font-size:0.8em;">
+<span class="line">factorial(3)  n=3, waiting</span>
+<span class="line">factorial(4)  n=4, waiting</span>
+<span class="line">factorial(5)  n=5, waiting</span>
+<span class="line">main()</span>
+      </div>
+    </div>
+    <div class="challenge-option" onclick="sCAPick(this,0)">
+      <h3>Option D</h3>
+      <div class="code-block" style="font-size:0.8em;">
+<span class="line">factorial(2)  n=2, waiting</span>
+<span class="line">factorial(3)  n=3, waiting</span>
+<span class="line">factorial(5)  n=5, waiting</span>
+<span class="line">main()</span>
+      </div>
+    </div>
+  </div>
+  <div class="status-msg mt" id="sCA-status" style="font-size:1.1em;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+window.sCAPick = function(el,correct){
+  document.querySelectorAll('#sCA .challenge-option').forEach(o=>{o.classList.add('disabled');o.classList.remove('correct','wrong');});
+  el.classList.add(correct?'correct':'wrong');
+  // Highlight the correct one
+  if(!correct) document.querySelectorAll('#sCA .challenge-option')[0].classList.add('correct');
+  document.getElementById('sCA-status').textContent = correct
+    ? 'Correct! After 3 calls: factorial(5)→(4)→(3)→calls (2). Stack shows newest on top.'
+    : 'Not quite. After step 3, we have: main→f(5)→f(4)→f(3), with f(3) calling f(2). The newest frame (f(2)) is on top.';
+  document.getElementById('sCA-status').className = correct ? 'status-msg success' : 'status-msg error';
+};
+</script>
+
+<!-- ==================== CHALLENGE sCB: FIX THE BUG ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Memoized Fibonacci</h2>
+  <p>This memoized fibonacci has a bug. <strong>Click the buggy line</strong> to fix it.</p>
+
+  <div class="two-col mt">
+    <div>
+      <div class="code-block" style="font-size:0.9em;" id="sCB-code">
+<span class="bug-line" id="sCB-l0" onclick="sCBPick(0)"><span class="kw">function</span> <span class="fn">fib</span>(n, memo={}):</span>
+<span class="bug-line" id="sCB-l1" onclick="sCBPick(1)">  <span class="kw">if</span> n <span class="kw">in</span> memo: <span class="kw">return</span> memo[n]</span>
+<span class="bug-line" id="sCB-l2" onclick="sCBPick(2)">  <span class="kw">if</span> n &lt;= <span class="num">1</span>: <span class="kw">return</span> n</span>
+<span class="bug-line" id="sCB-l3" onclick="sCBPick(3)">  result = <span class="fn">fib</span>(n-<span class="num">1</span>) + <span class="fn">fib</span>(n-<span class="num">2</span>)</span>
+<span class="bug-line" id="sCB-l4" onclick="sCBPick(4)">  <span class="kw">return</span> result</span>
+      </div>
+      <div class="status-msg" id="sCB-status">Click the line that has the bug</div>
+    </div>
+    <div>
+      <div class="key-idea" id="sCB-hint" style="display:none;">
+        <h3>Hint</h3>
+        <p>For memoization to work, you need to both <strong>check</strong> the cache AND <strong>store</strong> results in it. Is anything missing?</p>
+      </div>
+      <div class="playground" id="sCB-explain" style="display:none;">
+        <h3>The Fix</h3>
+        <div class="code-block" style="font-size:0.85em;">
+<span class="line">  result = <span class="fn">fib</span>(n-<span class="num">1</span>, memo) + <span class="fn">fib</span>(n-<span class="num">2</span>, memo)</span>
+<span class="line">  <span class="str">memo[n] = result</span>  <span class="cmt">// ← must store!</span></span>
+<span class="line">  <span class="kw">return</span> result</span>
+        </div>
+        <p style="font-size:0.9em; color:#cbd5e1;">Two bugs: (1) recursive calls don't pass <code>memo</code>, and (2) result is never stored in <code>memo[n]</code>. Without storing, the memo is empty and we get O(2<sup>n</sup>) again.</p>
+      </div>
+      <div class="controls mt">
+        <button onclick="document.getElementById('sCB-hint').style.display='block'">Show Hint</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+window.sCBPick = function(line){
+  for(let i=0;i<=4;i++){document.getElementById('sCB-l'+i).classList.remove('selected','correct-pick');}
+  const bugLines = [3,4]; // line 3 missing memo pass + line 4 missing memo store
+  const isBug = line===3 || line===4;
+  document.getElementById('sCB-l'+line).classList.add(isBug?'correct-pick':'selected');
+  if(isBug){
+    document.getElementById('sCB-l3').classList.add('correct-pick');
+    document.getElementById('sCB-l4').classList.add('correct-pick');
+    document.getElementById('sCB-status').textContent = 'Correct! Lines 4-5 are buggy: memo is never passed and result is never stored.';
+    document.getElementById('sCB-status').className = 'status-msg success';
+    document.getElementById('sCB-explain').style.display = 'block';
+  } else {
+    document.getElementById('sCB-status').textContent = 'Not quite — that line is fine. Look at where memo should be used...';
+    document.getElementById('sCB-status').className = 'status-msg error';
+  }
+};
+</script>
+
+<!-- ==================== CHALLENGE sCC: BINARY SEARCH CALLS ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: How Many Calls?</h2>
+  <p>Binary search in a sorted array of <strong>15 elements</strong>. The target is at index 12. How many recursive calls to find it?</p>
+
+  <div class="svg-container mt" id="sCC-array"></div>
+
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:16px;">
+    <div class="challenge-option" onclick="sCCPick(this,0)"><h3 style="text-align:center;">1 call</h3></div>
+    <div class="challenge-option" onclick="sCCPick(this,0)"><h3 style="text-align:center;">2 calls</h3></div>
+    <div class="challenge-option" onclick="sCCPick(this,0)"><h3 style="text-align:center;">3 calls</h3></div>
+    <div class="challenge-option" onclick="sCCPick(this,1)"><h3 style="text-align:center;">4 calls</h3></div>
+  </div>
+  <div class="status-msg mt" id="sCC-status" style="font-size:1.05em;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+// Draw the array for sCC
+(function(){
+  const el=document.getElementById('sCC-array');
+  const SVG='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(SVG,'svg');
+  const n=15,cellW=42;
+  svg.setAttribute('viewBox',`0 0 ${n*cellW+20} 65`);svg.setAttribute('width',n*cellW+20);svg.setAttribute('height','65');
+  for(let i=0;i<n;i++){
+    const x=10+i*cellW;
+    const color=i===12?'#fbbf24':'#60a5fa';
+    const rect=document.createElementNS(SVG,'rect');
+    rect.setAttribute('x',x);rect.setAttribute('y','5');rect.setAttribute('width',cellW-3);rect.setAttribute('height','32');
+    rect.setAttribute('rx','4');rect.setAttribute('fill',color+'20');rect.setAttribute('stroke',color);rect.setAttribute('stroke-width',i===12?'2.5':'1');
+    svg.appendChild(rect);
+    const txt=document.createElementNS(SVG,'text');
+    txt.setAttribute('x',x+(cellW-3)/2);txt.setAttribute('y','26');txt.setAttribute('text-anchor','middle');
+    txt.setAttribute('fill',color);txt.setAttribute('font-size','13');txt.setAttribute('font-family','monospace');
+    txt.textContent=(i*3+2);
+    svg.appendChild(txt);
+    const idx=document.createElementNS(SVG,'text');
+    idx.setAttribute('x',x+(cellW-3)/2);idx.setAttribute('y','55');idx.setAttribute('text-anchor','middle');
+    idx.setAttribute('fill','#64748b');idx.setAttribute('font-size','9');idx.setAttribute('font-family','monospace');
+    idx.textContent=i;
+    svg.appendChild(idx);
+  }
+  el.appendChild(svg);
+})();
+
+window.sCCPick = function(el,correct){
+  document.querySelectorAll('#sCC .challenge-option').forEach(o=>{o.classList.add('disabled');o.classList.remove('correct','wrong');});
+  el.classList.add(correct?'correct':'wrong');
+  if(!correct) document.querySelectorAll('#sCC .challenge-option')[3].classList.add('correct');
+  document.getElementById('sCC-status').textContent = correct
+    ? 'Correct! Call 1: mid=7 (go right). Call 2: mid=11 (go right). Call 3: mid=13 (go left). Call 4: mid=12 (found!).'
+    : 'Not quite. Trace it: mid=7→right, mid=11→right, mid=13→left, mid=12→found! That\'s 4 calls.';
+  document.getElementById('sCC-status').className = correct ? 'status-msg success' : 'status-msg error';
+};
+</script>
+
+<!-- ==================== CHALLENGE sQ1: QUIZ ROUND ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz Round</h2>
+
+  <div id="sQ1-questions">
+    <div class="playground mt" id="sQ1-q1">
+      <h3>Q1: What happens if a recursive function has no base case?</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+        <div class="challenge-option" onclick="sQ1Pick('q1',this,0)">Returns 0</div>
+        <div class="challenge-option" onclick="sQ1Pick('q1',this,1)">StackOverflowError</div>
+        <div class="challenge-option" onclick="sQ1Pick('q1',this,0)">Returns null</div>
+        <div class="challenge-option" onclick="sQ1Pick('q1',this,0)">Compiler error</div>
+      </div>
+      <div class="status-msg" id="sQ1-q1-status"></div>
+    </div>
+
+    <div class="playground mt" id="sQ1-q2">
+      <h3>Q2: What is the time complexity of naive recursive fibonacci?</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-top:10px;">
+        <div class="challenge-option" onclick="sQ1Pick('q2',this,0)">O(n)</div>
+        <div class="challenge-option" onclick="sQ1Pick('q2',this,0)">O(n log n)</div>
+        <div class="challenge-option" onclick="sQ1Pick('q2',this,1)">O(2<sup>n</sup>)</div>
+        <div class="challenge-option" onclick="sQ1Pick('q2',this,0)">O(n<sup>2</sup>)</div>
+      </div>
+      <div class="status-msg" id="sQ1-q2-status"></div>
+    </div>
+
+    <div class="playground mt" id="sQ1-q3">
+      <h3>Q3: Which is NOT true about tail recursion?</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+        <div class="challenge-option" onclick="sQ1Pick('q3',this,0)">The recursive call is the last operation</div>
+        <div class="challenge-option" onclick="sQ1Pick('q3',this,0)">It can be optimized to O(1) stack space</div>
+        <div class="challenge-option" onclick="sQ1Pick('q3',this,1)">Java automatically optimizes tail calls</div>
+        <div class="challenge-option" onclick="sQ1Pick('q3',this,0)">It uses an accumulator parameter</div>
+      </div>
+      <div class="status-msg" id="sQ1-q3-status"></div>
+    </div>
+  </div>
+
+  <div class="status-msg mt" id="sQ1-score" style="font-size:1.2em; text-align:center;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let score = 0, answered = 0;
+  window.sQ1Pick = function(q, el, correct) {
+    const container = document.getElementById('sQ1-'+q);
+    container.querySelectorAll('.challenge-option').forEach(o=>{o.classList.add('disabled');o.classList.remove('correct','wrong');});
+    el.classList.add(correct?'correct':'wrong');
+    if(!correct){
+      // highlight correct
+      const opts = container.querySelectorAll('.challenge-option');
+      opts.forEach(o=>{ if(!o.classList.contains('disabled')||o===el) return; });
+    }
+    const msgs = {
+      q1: correct ? 'Correct! Without a base case, recursion never stops → stack overflow.' : 'Nope — infinite recursion causes StackOverflowError.',
+      q2: correct ? 'Correct! Each call spawns 2 more → exponential O(2^n).' : 'Nope — two recursive calls per invocation → O(2^n).',
+      q3: correct ? 'Correct! Java does NOT optimize tail calls (Python doesn\'t either).' : 'Wrong — the false statement is about Java optimizing tail calls (it doesn\'t).',
+    };
+    document.getElementById('sQ1-'+q+'-status').textContent = msgs[q];
+    document.getElementById('sQ1-'+q+'-status').className = correct ? 'status-msg success' : 'status-msg error';
+    if(correct) score++;
+    answered++;
+    if(answered>=3){
+      document.getElementById('sQ1-score').textContent = `Score: ${score}/3`;
+      document.getElementById('sQ1-score').className = score===3 ? 'status-msg success' : 'status-msg';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== CHALLENGE sQ2: TOWERS PUZZLE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Challenge: Solve Towers of Hanoi</h2>
+  <p>Move all <strong>4 disks</strong> from A to C in the <strong>minimum number of moves</strong> (15). Click pegs to move the top disk.</p>
+
+  <div class="controls">
+    <button onclick="sQ2Reset()" class="danger">Reset</button>
+    <span class="status-msg" id="sQ2-status" style="display:inline; margin-left:12px;">Moves: 0 / 15</span>
+  </div>
+  <canvas id="sQ2-canvas" width="540" height="220" style="width:100%; border-radius:8px; background:#1e293b; margin-top:12px; cursor:pointer;"></canvas>
+  <p style="color:#64748b; font-size:0.9em; margin-top:8px;">Click a peg to pick up the top disk, then click another peg to drop it.</p>
+  <div class="status-msg mt" id="sQ2-result" style="font-size:1.1em; text-align:center;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let pegs, moves, holding, holdingFrom;
+  const canvas = document.getElementById('sQ2-canvas');
+  const ctx = canvas.getContext('2d');
+  const diskColors = ['#f87171','#fbbf24','#34d399','#60a5fa'];
+
+  function draw() {
+    ctx.clearRect(0,0,540,220);
+    for(let p=0;p<3;p++){
+      const cx=90+p*180;
+      ctx.fillStyle = (holding!==null && holdingFrom===p) ? '#60a5fa40' : '#33415540';
+      ctx.fillRect(cx-70,30,140,170);
+      ctx.fillStyle='#475569'; ctx.fillRect(cx-3,30,6,155); ctx.fillRect(cx-70,180,140,8);
+      ctx.fillStyle='#94a3b8'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(['A','B','C'][p],cx,210);
+    }
+    // Disks on pegs
+    for(let p=0;p<3;p++){
+      const cx=90+p*180;
+      for(let d=0;d<pegs[p].length;d++){
+        const disk=pegs[p][d];
+        const w=35+disk*28;
+        const y=180-((d+1)*28);
+        ctx.fillStyle=diskColors[disk];
+        ctx.beginPath(); ctx.roundRect(cx-w/2,y,w,25,6); ctx.fill();
+        ctx.fillStyle='#0f172a'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+        ctx.fillText(disk+1,cx,y+17);
+      }
+    }
+    // Holding disk
+    if(holding!==null){
+      const cx=90+holdingFrom*180;
+      const w=35+holding*28;
+      ctx.fillStyle=diskColors[holding]+'90';
+      ctx.beginPath(); ctx.roundRect(cx-w/2,5,w,22,6); ctx.fill();
+      ctx.fillStyle='#0f172a'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText(holding+1,cx,20);
+    }
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const x=(e.clientX-rect.left)*(540/rect.width);
+    let peg=-1;
+    if(x<180)peg=0; else if(x<360)peg=1; else peg=2;
+
+    if(holding===null){
+      if(pegs[peg].length===0)return;
+      holding=pegs[peg].pop();
+      holdingFrom=peg;
+    } else {
+      // Try to drop
+      if(pegs[peg].length>0 && pegs[peg][pegs[peg].length-1]<holding){
+        // Invalid — put back
+        pegs[holdingFrom].push(holding);
+        holding=null; holdingFrom=null;
+        document.getElementById('sQ2-result').textContent='Invalid! Cannot place larger disk on smaller.';
+        document.getElementById('sQ2-result').className='status-msg error';
+        draw(); return;
+      }
+      pegs[peg].push(holding);
+      holding=null;
+      moves++;
+      document.getElementById('sQ2-status').textContent=`Moves: ${moves} / 15`;
+      document.getElementById('sQ2-result').textContent='';
+      document.getElementById('sQ2-result').className='status-msg';
+      // Check win
+      if(pegs[2].length===4){
+        if(moves===15){
+          document.getElementById('sQ2-result').textContent=`Perfect! Solved in exactly 15 moves (the minimum)!`;
+          document.getElementById('sQ2-result').className='status-msg success';
+        } else {
+          document.getElementById('sQ2-result').textContent=`Solved in ${moves} moves! Minimum is 15.`;
+          document.getElementById('sQ2-result').className='status-msg success';
+        }
+      }
+    }
+    draw();
+  });
+
+  window.sQ2Reset = function(){
+    pegs=[[3,2,1,0],[],[]]; moves=0; holding=null; holdingFrom=null;
+    document.getElementById('sQ2-status').textContent='Moves: 0 / 15';
+    document.getElementById('sQ2-result').textContent='';
+    document.getElementById('sQ2-result').className='status-msg';
+    draw();
+  };
+  sQ2Reset();
+})();
+</script>
+
+<!-- ==================== CHALLENGE sQ3: TRACE THE RECURSION ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Challenge: Trace the Recursion</h2>
+  <p>Given this function, what does <code>mystery(4)</code> return?</p>
+
+  <div class="two-col mt">
+    <div>
+      <div class="code-block" style="font-size:0.95em;">
+<span class="line"><span class="kw">function</span> <span class="fn">mystery</span>(n):</span>
+<span class="line">  <span class="kw">if</span> n &lt;= <span class="num">1</span>:</span>
+<span class="line">    <span class="kw">return</span> <span class="num">1</span></span>
+<span class="line">  <span class="kw">return</span> n + <span class="fn">mystery</span>(n - <span class="num">2</span>)</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;">
+        <div class="challenge-option" onclick="sQ3Pick(this,0)">4</div>
+        <div class="challenge-option" onclick="sQ3Pick(this,0)">6</div>
+        <div class="challenge-option" onclick="sQ3Pick(this,1)">7</div>
+        <div class="challenge-option" onclick="sQ3Pick(this,0)">10</div>
+      </div>
+      <div class="status-msg mt" id="sQ3-status"></div>
+    </div>
+    <div>
+      <div class="playground" id="sQ3-trace" style="display:none;">
+        <h3>Trace</h3>
+        <div class="code-block" style="font-size:0.85em;">
+<span class="line">mystery(<span class="num">4</span>)</span>
+<span class="line">  = <span class="num">4</span> + mystery(<span class="num">2</span>)</span>
+<span class="line">       = <span class="num">2</span> + mystery(<span class="num">0</span>)</span>
+<span class="line">              = <span class="num">1</span>  <span class="cmt">← base (0 ≤ 1)</span></span>
+<span class="line"><span class="cmt">Unwinding:</span></span>
+<span class="line">  mystery(<span class="num">0</span>) = <span class="str">1</span></span>
+<span class="line">  mystery(<span class="num">2</span>) = 2 + 1 = <span class="str">3</span></span>
+<span class="line">  mystery(<span class="num">4</span>) = 4 + 3 = <span class="str">7</span></span>
+        </div>
+        <p style="font-size:0.9em; color:#cbd5e1;">This function sums the even numbers from n down to 0 (plus 1 from the base case). With n=4: 4 + 2 + 1 = 7.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+window.sQ3Pick = function(el,correct){
+  document.querySelectorAll('#sQ3 .challenge-option').forEach(o=>{o.classList.add('disabled');o.classList.remove('correct','wrong');});
+  el.classList.add(correct?'correct':'wrong');
+  if(!correct) document.querySelectorAll('#sQ3 .challenge-option')[2].classList.add('correct');
+  document.getElementById('sQ3-status').textContent = correct
+    ? 'Correct! mystery(4) = 4 + mystery(2) = 4 + 2 + mystery(0) = 4 + 2 + 1 = 7'
+    : 'Not quite. Trace it: mystery(4) = 4 + mystery(2) = 4 + (2 + mystery(0)) = 4 + 2 + 1 = 7';
+  document.getElementById('sQ3-status').className = correct ? 'status-msg success' : 'status-msg error';
+  document.getElementById('sQ3-trace').style.display = 'block';
+};
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','sCA','s11','s12','s13','sCB','s14','s15','s16','s17','sCC','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+
+  // Update slide numbers
+  document.querySelectorAll('.slide-number').forEach(el => {
+    el.textContent = (idx + 1) + ' / ' + slideOrder.length;
+  });
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', function(e) {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); navigate(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); navigate(-1); }
+});
+
+showSlide(0);
+</script>
+
+</body>
+</html>

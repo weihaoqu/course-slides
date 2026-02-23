@@ -1,0 +1,3149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFS - Depth-First Search (Enhanced) - CS205</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;}
+.slide{display:none;min-height:100vh;padding:40px 60px;position:relative;}
+.slide.active{display:flex;flex-direction:column;justify-content:center;}
+.slide.fade-in{animation:fadeIn .5s ease-in;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+#progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:200;}
+#progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#8b5cf6);transition:width .3s;}
+h1{font-size:2.8em;margin-bottom:20px;background:linear-gradient(135deg,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2;}
+h2{font-size:2em;margin-bottom:12px;color:#38bdf8;}
+h3{font-size:1.2em;margin-bottom:8px;color:#a78bfa;}
+p,li{font-size:1.05em;line-height:1.6;color:#cbd5e1;margin-bottom:8px;}
+.subtitle{font-size:1.2em;color:#94a3b8;margin-bottom:20px;}
+.btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;transition:all .2s;}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(99,102,241,0.4);}
+.btn-sm{padding:5px 12px;font-size:0.78rem;}
+.btn-secondary{background:#334155;border:1px solid #475569;color:#e2e8f0;}
+.btn-secondary:hover{background:#475569;transform:translateY(-1px);}
+.key-idea{background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(16,185,129,0.1));border-left:4px solid #22c55e;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0;}
+.key-idea h3{color:#22c55e;margin-bottom:6px;}
+.warning{background:rgba(245,158,11,0.1);border-left:4px solid #f59e0b;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0;}
+.warning h3{color:#fbbf24;margin-bottom:6px;}
+.analogy{background:rgba(139,92,246,0.1);border-left:4px solid #a78bfa;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0;}
+.analogy h3{color:#a78bfa;margin-bottom:6px;}
+.code-block{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px 20px;margin:10px 0;overflow-x:auto;}
+.code-content{font-family:monospace;font-size:0.82rem;line-height:1.7;color:#e2e8f0;}
+.line{padding:1px 8px;border-left:3px solid transparent;white-space:pre;}
+.line.active{background:rgba(99,102,241,0.15);border-left-color:#6366f1;}
+table{border-collapse:collapse;margin:10px 0;width:100%;font-size:0.85rem;}
+th,td{border:1px solid #475569;padding:8px 12px;text-align:center;}
+th{background:#334155;color:#93c5fd;font-weight:600;}
+td{background:#1e293b;color:#e2e8f0;}
+.slide-number{position:absolute;bottom:20px;right:40px;color:#64748b;font-size:14px;}
+ul{padding-left:20px;}
+ul li{margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide active" id="s1">
+  <div style="text-align:center;width:100%;">
+    <h1 style="font-size:3.2em;">DFS — Depth-First Search</h1>
+    <p class="subtitle" style="font-size:1.5em;">Go Deep, Then Backtrack</p>
+    <canvas id="cS1" width="700" height="300" style="background:rgba(0,0,0,0.2);border-radius:12px;margin:20px auto;display:block;max-width:100%;"></canvas>
+    <p class="subtitle">CS205 Data Structures</p>
+    <p style="color:#64748b;font-size:0.9em;">Use arrow keys or buttons to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS1');
+  const ctx=canvas.getContext('2d');
+  const nodes=[
+    {x:100,y:80,l:'A'},{x:230,y:50,l:'B'},{x:360,y:80,l:'D'},
+    {x:100,y:200,l:'C'},{x:230,y:170,l:'E'},{x:360,y:200,l:'F'},
+    {x:500,y:130,l:'G'},{x:600,y:80,l:'H'}
+  ];
+  const edges=[[0,1],[1,2],[0,3],[1,4],[4,5],[2,6],[6,7],[0,4]];
+  // DFS order: A(0)->B(1)->D(2)->G(6)->H(7)->backtrack->E(4)->F(5)->backtrack->C(3)
+  const dfsOrder=[0,1,2,6,7,6,2,1,4,5,4,1,0,3];
+  let frame=0, visited=new Set(), currentIdx=0, timer=null;
+  const pathEdges=[];
+
+  function draw(){
+    ctx.clearRect(0,0,700,300);
+    // edges
+    edges.forEach(([a,b])=>{
+      const onPath=pathEdges.some(([pa,pb])=>(pa===a&&pb===b)||(pa===b&&pb===a));
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle=onPath?'#22c55e':'#334155';ctx.lineWidth=onPath?3:1.5;ctx.stroke();
+    });
+    // nodes
+    nodes.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      let fill='#334155';
+      if(i===dfsOrder[currentIdx]) fill='#f59e0b';
+      else if(visited.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();
+      ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    // label
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+    const visitedArr=[...visited].map(i=>nodes[i].l);
+    ctx.fillText('Visited: {'+visitedArr.join(', ')+'}',350,280);
+  }
+
+  function step(){
+    if(currentIdx>=dfsOrder.length){
+      currentIdx=0;visited.clear();pathEdges.length=0;
+    }
+    const cur=dfsOrder[currentIdx];
+    if(!visited.has(cur)){
+      visited.add(cur);
+      if(currentIdx>0){
+        // find the parent edge
+        for(let j=currentIdx-1;j>=0;j--){
+          if(visited.has(dfsOrder[j])&&edges.some(([a,b])=>(a===dfsOrder[j]&&b===cur)||(b===dfsOrder[j]&&a===cur))){
+            pathEdges.push([dfsOrder[j],cur]);break;
+          }
+        }
+      }
+    }
+    draw();
+    currentIdx++;
+  }
+
+  function animate(){
+    timer=setInterval(step,700);
+  }
+
+  function init(){
+    currentIdx=0;visited.clear();pathEdges.length=0;draw();
+    if(timer)clearInterval(timer);
+    setTimeout(animate,500);
+  }
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s1').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: What is DFS? ==================== -->
+<div class="slide" id="s2">
+  <h2>What is DFS?</h2>
+  <p class="subtitle">Explore as deep as possible, then backtrack</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS2" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="color:#94a3b8;font-size:0.8rem;margin-top:0.4rem;">Click any node as source. Watch DFS go deep then backtrack.</p>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s2Step()">Step</button>
+        <button class="btn btn-sm" onclick="s2Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s2Reset()">Reset</button>
+      </div>
+      <div id="s2Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:140px;overflow-y:auto;color:#94a3b8;">Click a node to start DFS...</div>
+
+      <div class="analogy" style="margin-top:0.75rem;">
+        <h3>Analogy: Maze Explorer</h3>
+        <p>Always walk forward, taking the first available turn. When you hit a dead end, backtrack to the last intersection and try a different path.</p>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Key Idea</h3>
+        <p>DFS is driven by a <strong>stack</strong> (either the call stack via recursion, or an explicit stack). It visits vertices in a deep-first manner, not level-by-level.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS2');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E','F','G'];
+  const pos=[{x:260,y:40},{x:100,y:130},{x:420,y:130},{x:60,y:250},{x:180,y:250},{x:340,y:250},{x:460,y:250}];
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,5]];
+  const adj=Array.from({length:7},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort());
+
+  let source=-1, steps=[], stepIdx=0, timer=null;
+  const R=22;
+
+  function buildDFS(src){
+    const stps=[];
+    const visited=new Set();
+    function dfs(u,parent){
+      visited.add(u);
+      stps.push({type:'visit',node:u,from:parent,visited:new Set(visited),stack:[...visited]});
+      for(const v of adj[u]){
+        if(!visited.has(v)){
+          dfs(v,u);
+          stps.push({type:'backtrack',node:u,visited:new Set(visited)});
+        }
+      }
+    }
+    dfs(src,-1);
+    stps.push({type:'done',visited:new Set(visited)});
+    return stps;
+  }
+
+  function draw(vis,current,treeEdges,backtrackNode){
+    ctx.clearRect(0,0,520,370);
+    // edges
+    edges.forEach(([a,b])=>{
+      const isTree=treeEdges&&treeEdges.some(([ta,tb])=>(ta===a&&tb===b)||(ta===b&&tb===a));
+      ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      ctx.strokeStyle=isTree?'#22c55e':'#475569';ctx.lineWidth=isTree?3:1.5;ctx.stroke();
+    });
+    // nodes
+    for(let i=0;i<7;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,R,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(i===backtrackNode) fill='#f59e0b';
+      else if(vis&&vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+  }
+
+  let treeEdges=[];
+
+  canvas.addEventListener('click',function(e){
+    if(source!==-1) return;
+    const rect=canvas.getBoundingClientRect();
+    const sx=520/rect.width,sy=370/rect.height;
+    const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
+    for(let i=0;i<7;i++){
+      const dx=mx-pos[i].x,dy=my-pos[i].y;
+      if(dx*dx+dy*dy<=R*R){
+        source=i;steps=buildDFS(i);stepIdx=0;treeEdges=[];
+        document.getElementById('s2Log').innerHTML='<span style="color:#f59e0b;">DFS from '+labels[i]+'</span>';
+        draw(new Set([i]),i,[],null);
+        return;
+      }
+    }
+  });
+
+  window.s2Step=function(){
+    if(source===-1||stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const log=document.getElementById('s2Log');
+    if(s.type==='visit'){
+      if(s.from!==-1) treeEdges.push([s.from,s.node]);
+      draw(s.visited,s.node,treeEdges,null);
+      log.innerHTML+='<div>Visit <span style="color:#f59e0b;">'+labels[s.node]+'</span>'+(s.from!==-1?' from '+labels[s.from]:'')+'</div>';
+    } else if(s.type==='backtrack'){
+      draw(s.visited,null,treeEdges,s.node);
+      log.innerHTML+='<div style="color:#fbbf24;">↩ Backtrack to '+labels[s.node]+'</div>';
+    } else if(s.type==='done'){
+      draw(s.visited,-1,treeEdges,null);
+      log.innerHTML+='<div style="color:#22c55e;">DFS complete!</div>';
+    }
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s2Auto=function(){
+    if(timer||source===-1) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s2Step();},600);
+  };
+
+  window.s2Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    source=-1;steps=[];stepIdx=0;treeEdges=[];
+    document.getElementById('s2Log').innerHTML='Click a node to start DFS...';
+    draw(new Set(),-1,[],null);
+  };
+
+  function init(){s2Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s2').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: Stack vs Recursion ==================== -->
+<div class="slide" id="s3">
+  <h2>DFS Uses a Stack (or Recursion)</h2>
+  <p class="subtitle">Two equivalent approaches — toggle to compare</p>
+
+  <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+    <button class="btn btn-sm" id="s3TabRec" onclick="s3Tab('rec')">Recursive (Call Stack)</button>
+    <button class="btn btn-sm btn-secondary" id="s3TabIter" onclick="s3Tab('iter')">Iterative (Explicit Stack)</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS3" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s3Step()">Step</button>
+        <button class="btn btn-sm" onclick="s3Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+      <div id="s3Stack" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;min-height:60px;color:#94a3b8;margin-bottom:0.5rem;"></div>
+      <div id="s3Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:80px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Key Insight</h3>
+        <p>Recursive DFS uses the <strong>program's call stack</strong> implicitly. Iterative DFS uses an <strong>explicit Stack</strong> data structure. Both do the same thing!</p>
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Stack Overflow Risk</h3>
+        <p>Recursive DFS can overflow on deep graphs (100K+ nodes). The iterative version uses heap memory, avoiding this limit.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS3');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E'];
+  const pos=[{x:260,y:40},{x:120,y:140},{x:400,y:140},{x:60,y:260},{x:200,y:260}];
+  const edges=[[0,1],[0,2],[1,3],[1,4]];
+  const adj=Array.from({length:5},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort());
+
+  let mode='rec', stepIdx=0, timer=null, steps=[];
+
+  function buildRecSteps(){
+    const stps=[];const vis=new Set();const callStack=[];
+    function dfs(u){
+      vis.add(u);callStack.push(u);
+      stps.push({type:'call',node:u,vis:new Set(vis),stack:[...callStack]});
+      for(const v of adj[u]){
+        if(!vis.has(v)) dfs(v);
+      }
+      callStack.pop();
+      stps.push({type:'return',node:u,vis:new Set(vis),stack:[...callStack]});
+    }
+    dfs(0);
+    stps.push({type:'done',vis:new Set(vis),stack:[]});
+    return stps;
+  }
+
+  function buildIterSteps(){
+    const stps=[];const vis=new Set();const stack=[0];
+    stps.push({type:'push',node:0,vis:new Set(vis),stack:[...stack]});
+    while(stack.length){
+      const u=stack.pop();
+      if(vis.has(u)){stps.push({type:'skip',node:u,vis:new Set(vis),stack:[...stack]});continue;}
+      vis.add(u);
+      stps.push({type:'pop',node:u,vis:new Set(vis),stack:[...stack]});
+      const neighbors=[...adj[u]].reverse(); // reverse so alphabetical comes out first
+      for(const v of neighbors){
+        if(!vis.has(v)){stack.push(v);stps.push({type:'push',node:v,vis:new Set(vis),stack:[...stack]});}
+      }
+    }
+    stps.push({type:'done',vis:new Set(vis),stack:[]});
+    return stps;
+  }
+
+  function draw(vis,current,treeEdges){
+    ctx.clearRect(0,0,520,340);
+    edges.forEach(([a,b])=>{
+      const isTree=treeEdges.some(([ta,tb])=>(ta===a&&tb===b)||(ta===b&&tb===a));
+      ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      ctx.strokeStyle=isTree?'#22c55e':'#475569';ctx.lineWidth=isTree?3:1.5;ctx.stroke();
+    });
+    for(let i=0;i<5;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(vis&&vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+  }
+
+  let treeEdges3=[];let lastVisited=-1;
+
+  window.s3Tab=function(m){
+    mode=m;s3Reset();
+    document.getElementById('s3TabRec').className=m==='rec'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s3TabIter').className=m==='iter'?'btn btn-sm':'btn btn-sm btn-secondary';
+  };
+
+  window.s3Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const log=document.getElementById('s3Log');
+    const stackEl=document.getElementById('s3Stack');
+    const stackLabel=mode==='rec'?'Call Stack':'Explicit Stack';
+
+    if(s.type==='call'){
+      if(lastVisited!==-1&&s.node!==lastVisited) treeEdges3.push([lastVisited,s.node]);
+      if(lastVisited===-1) lastVisited=s.node;
+      else{
+        // find parent from stack
+        const st=s.stack;
+        if(st.length>=2) treeEdges3.push([st[st.length-2],s.node]);
+      }
+      draw(s.vis,s.node,treeEdges3);
+      log.innerHTML+='<div style="color:#22c55e;">Call DFS('+labels[s.node]+')</div>';
+    } else if(s.type==='return'){
+      draw(s.vis,s.stack.length?s.stack[s.stack.length-1]:-1,treeEdges3);
+      log.innerHTML+='<div style="color:#fbbf24;">Return from DFS('+labels[s.node]+')</div>';
+    } else if(s.type==='pop'){
+      if(lastVisited!==-1){
+        // find connection
+        for(const[a,b] of edges){
+          if((a===s.node||b===s.node)&&(s.vis.has(a)||s.vis.has(b))){
+            const other=a===s.node?b:a;
+            if(!treeEdges3.some(([ta,tb])=>(ta===s.node&&tb===other)||(tb===s.node&&ta===other))){
+              // check if other was visited before this
+              const prevVis=new Set(s.vis);prevVis.delete(s.node);
+              if(prevVis.has(other)){treeEdges3.push([other,s.node]);break;}
+            }
+          }
+        }
+      }
+      lastVisited=s.node;
+      draw(s.vis,s.node,treeEdges3);
+      log.innerHTML+='<div style="color:#22c55e;">Pop '+labels[s.node]+' → visit</div>';
+    } else if(s.type==='push'){
+      draw(s.vis,null,treeEdges3);
+      log.innerHTML+='<div>Push '+labels[s.node]+'</div>';
+    } else if(s.type==='skip'){
+      draw(s.vis,null,treeEdges3);
+      log.innerHTML+='<div style="color:#64748b;">Pop '+labels[s.node]+' (already visited, skip)</div>';
+    } else if(s.type==='done'){
+      draw(s.vis,-1,treeEdges3);
+      log.innerHTML+='<div style="color:#22c55e;">DFS complete!</div>';
+    }
+
+    // draw stack visualization
+    stackEl.innerHTML='<span style="color:#38bdf8;">'+stackLabel+':</span> ['+s.stack.map(i=>labels[i]).join(', ')+']'+(s.stack.length===0?' <span style="color:#64748b;">(empty)</span>':'');
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s3Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s3Step();},700);
+  };
+
+  window.s3Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;treeEdges3=[];lastVisited=-1;
+    steps=mode==='rec'?buildRecSteps():buildIterSteps();
+    document.getElementById('s3Log').innerHTML='';
+    document.getElementById('s3Stack').innerHTML='<span style="color:#38bdf8;">'+(mode==='rec'?'Call Stack':'Explicit Stack')+':</span> <span style="color:#64748b;">(empty)</span>';
+    draw(new Set(),-1,[]);
+  };
+
+  function init(){mode='rec';s3Tab('rec');}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s3').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: Recursive Algorithm ==================== -->
+<div class="slide" id="s4">
+  <h2>DFS Algorithm (Recursive)</h2>
+  <p class="subtitle">Code synced with Canvas — watch the recursion tree build</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s4Code">
+          <div class="line">DFS(G):</div>
+          <div class="line">  for each vertex v in G:</div>
+          <div class="line">    visited[v] = false</div>
+          <div class="line"> </div>
+          <div class="line">  for each vertex v in G:</div>
+          <div class="line">    if not visited[v]:</div>
+          <div class="line">      DFS-Visit(v)</div>
+          <div class="line"> </div>
+          <div class="line">DFS-Visit(u):</div>
+          <div class="line">  visited[u] = true</div>
+          <div class="line">  // process u</div>
+          <div class="line"> </div>
+          <div class="line">  for each neighbor v of u:</div>
+          <div class="line">    if not visited[v]:</div>
+          <div class="line">      DFS-Visit(v)  // recurse!</div>
+        </div>
+      </div>
+      <canvas id="cS4" width="520" height="160" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:0.5rem;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s4Step()">Step</button>
+        <button class="btn btn-sm" onclick="s4Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+      </div>
+      <div id="s4Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:140px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div style="margin-top:0.5rem;">
+        <h3>How It Works</h3>
+        <ul style="font-size:0.82rem;color:#cbd5e1;">
+          <li><strong>Mark</strong> current vertex as visited</li>
+          <li><strong>Recurse</strong> on each unvisited neighbor</li>
+          <li>When all neighbors visited, <strong>return</strong> (backtrack)</li>
+          <li>Outer loop handles <strong>disconnected</strong> graphs</li>
+        </ul>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Key Idea</h3>
+        <p style="font-size:0.85rem;">The recursion tree of DFS-Visit calls <strong>IS</strong> the DFS tree of the graph.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS4');
+  const ctx=canvas.getContext('2d');
+  // Small graph for the code walkthrough
+  const labels=['A','B','C','D','E'];
+  const gPos=[{x:60,y:80},{x:160,y:40},{x:160,y:120},{x:300,y:40},{x:300,y:120}];
+  const edges=[[0,1],[0,2],[1,3],[2,4]];
+  const adj=Array.from({length:5},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort());
+
+  // Precompute steps with line highlights
+  const steps=[
+    {line:9,node:0,msg:'DFS-Visit(A): mark visited',vis:[0],te:[]},
+    {line:12,node:0,msg:'Check neighbors of A: [B, C]',vis:[0],te:[]},
+    {line:14,node:1,msg:'B not visited → DFS-Visit(B)',vis:[0,1],te:[[0,1]]},
+    {line:12,node:1,msg:'Check neighbors of B: [A, D]',vis:[0,1],te:[[0,1]]},
+    {line:14,node:3,msg:'D not visited → DFS-Visit(D)',vis:[0,1,3],te:[[0,1],[1,3]]},
+    {line:12,node:3,msg:'Neighbors of D: [B] — all visited',vis:[0,1,3],te:[[0,1],[1,3]]},
+    {line:-1,node:1,msg:'Return from DFS-Visit(D) → back to B',vis:[0,1,3],te:[[0,1],[1,3]]},
+    {line:12,node:1,msg:'B: no more unvisited neighbors',vis:[0,1,3],te:[[0,1],[1,3]]},
+    {line:-1,node:0,msg:'Return from DFS-Visit(B) → back to A',vis:[0,1,3],te:[[0,1],[1,3]]},
+    {line:13,node:2,msg:'C not visited → DFS-Visit(C)',vis:[0,1,3,2],te:[[0,1],[1,3],[0,2]]},
+    {line:14,node:4,msg:'E not visited → DFS-Visit(E)',vis:[0,1,3,2,4],te:[[0,1],[1,3],[0,2],[2,4]]},
+    {line:12,node:4,msg:'Neighbors of E: [C] — all visited',vis:[0,1,3,2,4],te:[[0,1],[1,3],[0,2],[2,4]]},
+    {line:-1,node:0,msg:'All done! Visit order: A→B→D→C→E',vis:[0,1,3,2,4],te:[[0,1],[1,3],[0,2],[2,4]]}
+  ];
+
+  let stepIdx=0,timer=null;
+
+  function draw(vis,current,te){
+    ctx.clearRect(0,0,520,160);
+    edges.forEach(([a,b])=>{
+      const isTree=te.some(([ta,tb])=>(ta===a&&tb===b)||(ta===b&&tb===a));
+      ctx.beginPath();ctx.moveTo(gPos[a].x,gPos[a].y);ctx.lineTo(gPos[b].x,gPos[b].y);
+      ctx.strokeStyle=isTree?'#22c55e':'#475569';ctx.lineWidth=isTree?2.5:1.5;ctx.stroke();
+    });
+    for(let i=0;i<5;i++){
+      ctx.beginPath();ctx.arc(gPos[i].x,gPos[i].y,18,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(vis.includes(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],gPos[i].x,gPos[i].y);
+    }
+    // Recursion tree
+    const treeNodes=[
+      {l:'A',x:400,y:30},{l:'B',x:360,y:80},{l:'C',x:440,y:80},
+      {l:'D',x:360,y:130},{l:'E',x:440,y:130}
+    ];
+    const treeMap={0:0,1:1,2:2,3:3,4:4};
+    const treeEdges=[[0,1],[0,2],[1,3],[2,4]];
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText('Recursion Tree',400,15);
+    treeEdges.forEach(([a,b])=>{
+      // show if both nodes visited
+      if(vis.includes(a)&&vis.includes(b)){
+        ctx.beginPath();ctx.moveTo(treeNodes[a].x,treeNodes[a].y);ctx.lineTo(treeNodes[b].x,treeNodes[b].y);
+        ctx.strokeStyle='#22c55e';ctx.lineWidth=1.5;ctx.stroke();
+      }
+    });
+    treeNodes.forEach((n,i)=>{
+      if(vis.includes(i)){
+        ctx.beginPath();ctx.arc(n.x,n.y,14,0,Math.PI*2);
+        ctx.fillStyle=i===current?'#f59e0b':'#6366f1';ctx.fill();
+        ctx.strokeStyle='#818cf8';ctx.lineWidth=1.5;ctx.stroke();
+        ctx.fillStyle='#e2e8f0';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(n.l,n.x,n.y);
+      }
+    });
+  }
+
+  window.s4Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    // highlight code line
+    const lines=document.querySelectorAll('#s4Code .line');
+    lines.forEach(l=>l.classList.remove('active'));
+    if(s.line>=0&&s.line<lines.length) lines[s.line].classList.add('active');
+    draw(s.vis,s.node,s.te);
+    const log=document.getElementById('s4Log');
+    const color=s.msg.includes('Return')||s.msg.includes('back')?'#fbbf24':s.msg.includes('not visited')?'#22c55e':'#cbd5e1';
+    log.innerHTML+='<div style="color:'+color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s4Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s4Step();},900);
+  };
+
+  window.s4Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;
+    document.getElementById('s4Log').innerHTML='';
+    document.querySelectorAll('#s4Code .line').forEach(l=>l.classList.remove('active'));
+    draw([],- 1,[]);
+  };
+
+  function init(){s4Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s4').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: Iterative Algorithm ==================== -->
+<div class="slide" id="s5">
+  <h2>DFS Algorithm (Iterative)</h2>
+  <p class="subtitle">Explicit stack — watch push/pop operations</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s5Code">
+          <div class="line">DFS-Iterative(G, source):</div>
+          <div class="line">  S = new Stack()</div>
+          <div class="line">  S.push(source)</div>
+          <div class="line"> </div>
+          <div class="line">  while S is not empty:</div>
+          <div class="line">    u = S.pop()</div>
+          <div class="line"> </div>
+          <div class="line">    if u not in visited:</div>
+          <div class="line">      visited.add(u)</div>
+          <div class="line">      // process u</div>
+          <div class="line"> </div>
+          <div class="line">      for each neighbor v of u:</div>
+          <div class="line">        if v not in visited:</div>
+          <div class="line">          S.push(v)</div>
+        </div>
+      </div>
+
+      <canvas id="cS5" width="520" height="130" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:0.5rem;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s5Step()">Step</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+      <div id="s5Stack" style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.85rem;color:#a78bfa;margin-bottom:0.5rem;min-height:40px;">Stack: []</div>
+      <div id="s5Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>BFS vs DFS: One Character Difference</h3>
+        <p style="font-size:0.85rem;">Replace the <strong>Stack</strong> with a <strong>Queue</strong>, and you get BFS! That's the only structural difference.</p>
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Subtle Difference</h3>
+        <p style="font-size:0.85rem;">Iterative DFS may visit in a different order than recursive, because it pushes ALL neighbors at once. Recursive visits one neighbor completely before looking at the next.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS5');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E','F'];
+  const gPos=[{x:60,y:65},{x:160,y:30},{x:160,y:100},{x:280,y:30},{x:280,y:100},{x:400,y:65}];
+  const edges=[[0,1],[0,2],[1,3],[2,4],[3,5],[4,5]];
+  const adj=Array.from({length:6},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort());
+
+  let stepIdx=0,timer=null,steps=[];
+
+  function buildSteps(){
+    const stps=[];
+    const vis=new Set();
+    const stack=[0];
+    stps.push({line:2,msg:'Push A',stack:[...stack],vis:new Set(vis),current:-1});
+    while(stack.length){
+      const u=stack.pop();
+      if(vis.has(u)){
+        stps.push({line:7,msg:'Pop '+labels[u]+' — already visited, skip',stack:[...stack],vis:new Set(vis),current:-1});
+        continue;
+      }
+      vis.add(u);
+      stps.push({line:5,msg:'Pop '+labels[u]+' → mark visited',stack:[...stack],vis:new Set(vis),current:u});
+      const neighbors=[...adj[u]].reverse();
+      for(const v of neighbors){
+        if(!vis.has(v)){
+          stack.push(v);
+          stps.push({line:13,msg:'Push '+labels[v],stack:[...stack],vis:new Set(vis),current:u});
+        }
+      }
+    }
+    stps.push({line:-1,msg:'Stack empty — DFS complete!',stack:[],vis:new Set(vis),current:-1});
+    return stps;
+  }
+
+  function draw(vis,current){
+    ctx.clearRect(0,0,520,130);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(gPos[a].x,gPos[a].y);ctx.lineTo(gPos[b].x,gPos[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    for(let i=0;i<6;i++){
+      ctx.beginPath();ctx.arc(gPos[i].x,gPos[i].y,18,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],gPos[i].x,gPos[i].y);
+    }
+  }
+
+  window.s5Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const lines=document.querySelectorAll('#s5Code .line');
+    lines.forEach(l=>l.classList.remove('active'));
+    if(s.line>=0&&s.line<lines.length) lines[s.line].classList.add('active');
+    draw(s.vis,s.current);
+    document.getElementById('s5Stack').innerHTML='Stack: ['+s.stack.map(i=>'<span style="color:#f59e0b;">'+labels[i]+'</span>').join(', ')+']'+(s.stack.length===0?' <span style="color:#64748b;">(empty)</span>':'')+ ' <span style="color:#64748b;">← top</span>';
+    const log=document.getElementById('s5Log');
+    const color=s.msg.includes('visit')?'#22c55e':s.msg.includes('skip')?'#64748b':s.msg.includes('complete')?'#22c55e':'#cbd5e1';
+    log.innerHTML+='<div style="color:'+color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s5Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s5Step();},700);
+  };
+
+  window.s5Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;steps=buildSteps();
+    document.getElementById('s5Log').innerHTML='';
+    document.getElementById('s5Stack').innerHTML='Stack: [] <span style="color:#64748b;">(empty)</span>';
+    document.querySelectorAll('#s5Code .line').forEach(l=>l.classList.remove('active'));
+    draw(new Set(),-1);
+  };
+
+  function init(){s5Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s5').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: Full Step-by-Step ==================== -->
+<div class="slide" id="s6">
+  <h2>DFS Step-by-Step Walkthrough</h2>
+  <p class="subtitle">7-node graph — watch the stack, visited set, and DFS tree build live</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS6" width="520" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s6Step()">Step</button>
+        <button class="btn btn-sm" onclick="s6Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Reset()">Reset</button>
+      </div>
+      <div id="s6Stack" style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.82rem;color:#a78bfa;margin-bottom:0.4rem;">Call Stack: []</div>
+      <div id="s6Visited" style="font-family:monospace;font-size:0.82rem;color:#94a3b8;margin-bottom:0.4rem;">Visited: {}</div>
+      <div id="s6Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:120px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div style="margin-top:0.5rem;">
+        <p style="color:#94a3b8;font-size:0.8rem;">DFS Tree edges shown in <span style="color:#22c55e;">green</span>. Current vertex in <span style="color:#f59e0b;">amber</span>. Backtracking shown in <span style="color:#fbbf24;">yellow</span>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS6');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E','F','G'];
+  const pos=[
+    {x:260,y:40},{x:100,y:120},{x:420,y:120},
+    {x:60,y:240},{x:200,y:240},{x:340,y:240},{x:460,y:240}
+  ];
+  // A-B, A-C, A-D(direct), B-D, B-E, C-E, C-G, E-F
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,5]];
+  const adj=Array.from({length:7},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort());
+
+  let stepIdx=0,timer=null,steps=[];
+
+  function buildSteps(){
+    const stps=[];
+    const vis=new Set();
+    const callStack=[];
+    const treeEdges=[];
+
+    function dfs(u,from){
+      vis.add(u);callStack.push(u);
+      if(from!==-1) treeEdges.push([from,u]);
+      stps.push({type:'visit',node:u,from,vis:new Set(vis),stack:[...callStack],te:[...treeEdges]});
+      for(const v of adj[u]){
+        if(!vis.has(v)){
+          dfs(v,u);
+          stps.push({type:'backtrack',to:u,vis:new Set(vis),stack:[...callStack],te:[...treeEdges]});
+        }
+      }
+      callStack.pop();
+    }
+    dfs(0,-1);
+    stps.push({type:'done',vis:new Set(vis),stack:[],te:[...treeEdges]});
+    return stps;
+  }
+
+  function draw(vis,current,te,backtrackTo){
+    ctx.clearRect(0,0,520,380);
+    // edges
+    edges.forEach(([a,b])=>{
+      const isTree=te.some(([ta,tb])=>(ta===a&&tb===b)||(ta===b&&tb===a));
+      ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      ctx.strokeStyle=isTree?'#22c55e':'#475569';ctx.lineWidth=isTree?3:1.5;ctx.stroke();
+    });
+    // nodes
+    for(let i=0;i<7;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(i===backtrackTo) fill='rgba(245,158,11,0.6)';
+      else if(vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+    // DFS tree on right side
+    const treePos=[
+      {x:260,y:310},{x:160,y:340},{x:360,y:340},
+      {x:110,y:370},{x:210,y:370},{x:310,y:370},{x:410,y:370}
+    ];
+    // Small tree representation at bottom
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText('DFS Visit Order: '+[...vis].map(i=>labels[i]).join(' → '),260,375);
+  }
+
+  window.s6Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const log=document.getElementById('s6Log');
+    if(s.type==='visit'){
+      draw(s.vis,s.node,s.te,null);
+      document.getElementById('s6Stack').innerHTML='Call Stack: ['+s.stack.map(i=>'<span style="color:#f59e0b;">'+labels[i]+'</span>').join(' → ')+'] <span style="color:#64748b;">← top</span>';
+      document.getElementById('s6Visited').innerHTML='Visited: {'+[...s.vis].map(i=>'<span style="color:#22c55e;">'+labels[i]+'</span>').join(', ')+'}';
+      log.innerHTML+='<div style="color:#22c55e;">Visit '+labels[s.node]+(s.from!==-1?' (from '+labels[s.from]+')':' (source)')+'</div>';
+    } else if(s.type==='backtrack'){
+      draw(s.vis,null,s.te,s.to);
+      document.getElementById('s6Stack').innerHTML='Call Stack: ['+s.stack.map(i=>'<span style="color:#f59e0b;">'+labels[i]+'</span>').join(' → ')+']'+(s.stack.length?' <span style="color:#64748b;">← top</span>':'');
+      log.innerHTML+='<div style="color:#fbbf24;">↩ Backtrack to '+labels[s.to]+'</div>';
+    } else if(s.type==='done'){
+      draw(s.vis,-1,s.te,null);
+      document.getElementById('s6Stack').innerHTML='Call Stack: [] <span style="color:#64748b;">(empty)</span>';
+      log.innerHTML+='<div style="color:#22c55e;font-weight:bold;">DFS complete! Order: '+[...s.vis].map(i=>labels[i]).join(' → ')+'</div>';
+    }
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s6Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s6Step();},700);
+  };
+
+  window.s6Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;steps=buildSteps();
+    document.getElementById('s6Log').innerHTML='';
+    document.getElementById('s6Stack').innerHTML='Call Stack: []';
+    document.getElementById('s6Visited').innerHTML='Visited: {}';
+    draw(new Set(),-1,[],null);
+  };
+
+  function init(){s6Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s6').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: DFS Tree & Edge Classification ==================== -->
+<div class="slide" id="s7">
+  <h2>DFS Tree & Edge Classification</h2>
+  <p class="subtitle">Every edge in a directed graph falls into one of four categories</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS7" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s7Step()">Step DFS</button>
+        <button class="btn btn-sm" onclick="s7Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s7Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:110px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <table style="margin-top:0.5rem;font-size:0.8rem;">
+        <tr><th>Edge Type</th><th>Goes To</th><th>Color</th></tr>
+        <tr><td style="color:#22c55e;">Tree</td><td>Unvisited (WHITE)</td><td style="background:#22c55e;color:#0f172a;">GREEN</td></tr>
+        <tr><td style="color:#f59e0b;">Back</td><td>Ancestor (GRAY) → <strong>CYCLE!</strong></td><td style="background:#f59e0b;color:#0f172a;">AMBER</td></tr>
+        <tr><td style="color:#38bdf8;">Forward</td><td>Descendant (BLACK, d[u]<d[v])</td><td style="background:#38bdf8;color:#0f172a;">BLUE</td></tr>
+        <tr><td style="color:#a78bfa;">Cross</td><td>Neither (BLACK, d[u]>d[v])</td><td style="background:#a78bfa;color:#0f172a;">PURPLE</td></tr>
+      </table>
+
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Undirected Graphs</h3>
+        <p style="font-size:0.82rem;">In undirected graphs, only <strong>tree edges</strong> and <strong>back edges</strong> exist. Forward and cross edges cannot occur.</p>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Key Rule</h3>
+        <p style="font-size:0.85rem;"><strong style="color:#f59e0b;">Back edge = CYCLE</strong>. This is the foundation of DFS-based cycle detection.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS7');
+  const ctx=canvas.getContext('2d');
+  // Directed graph: A→B, A→C, B→D, B→E, D→E(forward from B), E→A(back), C→D(cross)
+  const labels=['A','B','C','D','E'];
+  const pos=[{x:260,y:50},{x:120,y:150},{x:400,y:150},{x:120,y:290},{x:300,y:290}];
+  const dirEdges=[
+    {from:0,to:1,type:null},{from:0,to:2,type:null},
+    {from:1,to:3,type:null},{from:1,to:4,type:null},
+    {from:3,to:4,type:null},{from:4,to:0,type:null},
+    {from:2,to:3,type:null}
+  ];
+  // DFS from A: A(W→G), A→B(tree), B(W→G), B→D(tree), D(W→G), D→E(tree?), E(W→G), E→A(back! A is gray)
+  // Actually let me precompute properly
+  // adj[A]=[B,C], adj[B]=[D,E], adj[C]=[D], adj[D]=[E], adj[E]=[A]
+  // DFS: visit A(gray), explore A→B(tree), visit B(gray), explore B→D(tree), visit D(gray),
+  //       explore D→E(tree), visit E(gray), explore E→A: A is GRAY → BACK edge!
+  //       E finishes(black), D finishes(black), B explores B→E: E is BLACK, d[B]<d[E]? B=2,E=4 → forward
+  //       B finishes(black), A explores A→C(tree), visit C(gray), C→D: D is BLACK, d[C]>d[D]? C=7,D=3 → cross
+  //       C finishes, A finishes
+
+  const dfsSteps=[
+    {msg:'Visit A — mark GRAY',colors:['gray','white','white','white','white'],classified:[],d:[1,0,0,0,0],current:0},
+    {msg:'Edge A→B: B is WHITE → Tree edge',colors:['gray','gray','white','white','white'],classified:[{idx:0,type:'tree'}],d:[1,2,0,0,0],current:1},
+    {msg:'Edge B→D: D is WHITE → Tree edge',colors:['gray','gray','white','gray','white'],classified:[{idx:0,type:'tree'},{idx:2,type:'tree'}],d:[1,2,0,3,0],current:3},
+    {msg:'Edge D→E: E is WHITE → Tree edge',colors:['gray','gray','white','gray','gray'],classified:[{idx:0,type:'tree'},{idx:2,type:'tree'},{idx:4,type:'tree'}],d:[1,2,0,3,4],current:4},
+    {msg:'Edge E→A: A is GRAY → Back edge (CYCLE!)',colors:['gray','gray','white','gray','gray'],classified:[{idx:0,type:'tree'},{idx:2,type:'tree'},{idx:4,type:'tree'},{idx:5,type:'back'}],d:[1,2,0,3,4],current:4},
+    {msg:'E finishes → BLACK. Backtrack to D.',colors:['gray','gray','white','gray','black'],classified:[{idx:0,type:'tree'},{idx:2,type:'tree'},{idx:4,type:'tree'},{idx:5,type:'back'}],d:[1,2,0,3,4],current:3},
+    {msg:'D finishes → BLACK. Backtrack to B.',colors:['gray','gray','white','black','black'],classified:[{idx:0,type:'tree'},{idx:2,type:'tree'},{idx:4,type:'tree'},{idx:5,type:'back'}],d:[1,2,0,3,4],current:1},
+    {msg:'Edge B→E: E is BLACK, d[B]=2<d[E]=4 → Forward',colors:['gray','gray','white','black','black'],classified:[{idx:0,type:'tree'},{idx:2,type:'tree'},{idx:3,type:'forward'},{idx:4,type:'tree'},{idx:5,type:'back'}],d:[1,2,0,3,4],current:1},
+    {msg:'B finishes → BLACK. Backtrack to A.',colors:['gray','black','white','black','black'],classified:[{idx:0,type:'tree'},{idx:2,type:'tree'},{idx:3,type:'forward'},{idx:4,type:'tree'},{idx:5,type:'back'}],d:[1,2,0,3,4],current:0},
+    {msg:'Edge A→C: C is WHITE → Tree edge',colors:['gray','black','gray','black','black'],classified:[{idx:0,type:'tree'},{idx:1,type:'tree'},{idx:2,type:'tree'},{idx:3,type:'forward'},{idx:4,type:'tree'},{idx:5,type:'back'}],d:[1,2,7,3,4],current:2},
+    {msg:'Edge C→D: D is BLACK, d[C]=7>d[D]=3 → Cross',colors:['gray','black','gray','black','black'],classified:[{idx:0,type:'tree'},{idx:1,type:'tree'},{idx:2,type:'tree'},{idx:3,type:'forward'},{idx:4,type:'tree'},{idx:5,type:'back'},{idx:6,type:'cross'}],d:[1,2,7,3,4],current:2},
+    {msg:'C finishes. A finishes. DFS complete!',colors:['black','black','black','black','black'],classified:[{idx:0,type:'tree'},{idx:1,type:'tree'},{idx:2,type:'tree'},{idx:3,type:'forward'},{idx:4,type:'tree'},{idx:5,type:'back'},{idx:6,type:'cross'}],d:[1,2,7,3,4],current:-1}
+  ];
+
+  let stepIdx=0,timer=null;
+  const typeColors={tree:'#22c55e',back:'#f59e0b',forward:'#38bdf8',cross:'#a78bfa'};
+  const colorMap={white:'#334155',gray:'#94a3b8',black:'#1e293b'};
+  const borderMap={white:'#818cf8',gray:'#f59e0b',black:'#475569'};
+
+  function drawArrow(x1,y1,x2,y2,color,width){
+    const R=22;
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len;
+    const sx=x1+ux*R,sy=y1+uy*R,ex=x2-ux*(R+8),ey=y2-uy*(R+8);
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();
+    const ax=x2-ux*R,ay=y2-uy*R;
+    const angle=Math.atan2(dy,dx);
+    ctx.beginPath();ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-10*Math.cos(angle-0.3),ay-10*Math.sin(angle-0.3));
+    ctx.lineTo(ax-10*Math.cos(angle+0.3),ay-10*Math.sin(angle+0.3));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function draw(s){
+    ctx.clearRect(0,0,520,370);
+    // classify edges
+    const edgeColors={};
+    if(s.classified){
+      s.classified.forEach(c=>{edgeColors[c.idx]=typeColors[c.type];});
+    }
+    // draw edges
+    dirEdges.forEach((e,i)=>{
+      const col=edgeColors[i]||'#475569';
+      // curved for E→A to avoid overlap
+      if(i===5){
+        // back edge E→A: draw curved
+        const x1=pos[4].x,y1=pos[4].y,x2=pos[0].x,y2=pos[0].y;
+        const cx=x1+80,cy=(y1+y2)/2-60;
+        ctx.beginPath();ctx.moveTo(x1+15,y1-15);ctx.quadraticCurveTo(cx,cy,x2+15,y2+15);
+        ctx.strokeStyle=col;ctx.lineWidth=edgeColors[i]?2.5:1.5;ctx.stroke();
+        // arrowhead
+        const t=0.95;const ax=(1-t)*(1-t)*( x1+15)+2*(1-t)*t*cx+t*t*(x2+15);
+        const ay=(1-t)*(1-t)*(y1-15)+2*(1-t)*t*cy+t*t*(y2+15);
+        const t2=0.9;const bx=(1-t2)*(1-t2)*(x1+15)+2*(1-t2)*t2*cx+t2*t2*(x2+15);
+        const by=(1-t2)*(1-t2)*(y1-15)+2*(1-t2)*t2*cy+t2*t2*(y2+15);
+        const angle=Math.atan2(ay-by,ax-bx);
+        ctx.beginPath();ctx.moveTo(ax,ay);
+        ctx.lineTo(ax-10*Math.cos(angle-0.4),ay-10*Math.sin(angle-0.4));
+        ctx.lineTo(ax-10*Math.cos(angle+0.4),ay-10*Math.sin(angle+0.4));
+        ctx.closePath();ctx.fillStyle=col;ctx.fill();
+        if(edgeColors[i]){
+          ctx.fillStyle=col;ctx.font='bold 10px monospace';ctx.textAlign='center';
+          ctx.fillText('BACK',cx+10,cy+5);
+        }
+      } else {
+        drawArrow(pos[e.from].x,pos[e.from].y,pos[e.to].x,pos[e.to].y,col,edgeColors[i]?2.5:1.5);
+        // label classified edges
+        if(edgeColors[i]){
+          const mx=(pos[e.from].x+pos[e.to].x)/2,my=(pos[e.from].y+pos[e.to].y)/2;
+          const type=s.classified.find(c=>c.idx===i);
+          if(type){
+            ctx.fillStyle=col;ctx.font='bold 9px monospace';ctx.textAlign='center';
+            const offset=i===3?-12:i===6?12:i===1?-10:10;
+            ctx.fillText(type.type.toUpperCase(),mx+offset,my-8);
+          }
+        }
+      }
+    });
+    // nodes
+    for(let i=0;i<5;i++){
+      const col=s.colors[i];
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      ctx.fillStyle=colorMap[col];ctx.fill();
+      ctx.strokeStyle=borderMap[col];ctx.lineWidth=i===s.current?3:2;ctx.stroke();
+      if(i===s.current){
+        ctx.strokeStyle='#f59e0b';ctx.lineWidth=3;ctx.stroke();
+      }
+      ctx.fillStyle=col==='black'?'#94a3b8':'#e2e8f0';
+      ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+      // color label
+      ctx.fillStyle=col==='gray'?'#f59e0b':col==='black'?'#64748b':'#94a3b8';
+      ctx.font='10px monospace';
+      ctx.fillText(col.toUpperCase(),pos[i].x,pos[i].y+32);
+    }
+  }
+
+  window.s7Step=function(){
+    if(stepIdx>=dfsSteps.length) return;
+    const s=dfsSteps[stepIdx];
+    draw(s);
+    const log=document.getElementById('s7Log');
+    let color='#cbd5e1';
+    if(s.msg.includes('Tree')) color='#22c55e';
+    else if(s.msg.includes('Back')) color='#f59e0b';
+    else if(s.msg.includes('Forward')) color='#38bdf8';
+    else if(s.msg.includes('Cross')) color='#a78bfa';
+    else if(s.msg.includes('complete')) color='#22c55e';
+    log.innerHTML+='<div style="color:'+color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s7Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=dfsSteps.length){clearInterval(timer);timer=null;return;}s7Step();},1000);
+  };
+
+  window.s7Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;
+    document.getElementById('s7Log').innerHTML='';
+    draw({colors:['white','white','white','white','white'],classified:[],current:-1});
+  };
+
+  function init(){s7Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s7').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: Discovery & Finish Times ==================== -->
+<div class="slide" id="s8">
+  <h2>Discovery & Finish Times</h2>
+  <p class="subtitle">DFS assigns two timestamps: d[v] (discovery) and f[v] (finish)</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS8" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s8Step()">Step</button>
+        <button class="btn btn-sm" onclick="s8Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+      <div id="s8Timeline" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;color:#94a3b8;min-height:40px;margin-bottom:0.4rem;overflow-x:auto;white-space:nowrap;"></div>
+      <div id="s8Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:90px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Parenthesis Theorem</h3>
+        <p style="font-size:0.82rem;">For any two vertices u, v: their intervals [d[u],f[u]] and [d[v],f[v]] are either <strong>entirely disjoint</strong> or one <strong>completely contains</strong> the other. They never partially overlap — like properly nested parentheses!</p>
+      </div>
+      <div class="analogy" style="margin-top:0.5rem;">
+        <h3>Nested Boxes</h3>
+        <p style="font-size:0.82rem;">Each vertex is a box that opens at d[v] and closes at f[v]. Boxes are completely inside each other or completely separate.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS8');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E'];
+  const pos=[{x:260,y:50},{x:120,y:150},{x:400,y:150},{x:180,y:280},{x:340,y:280}];
+  const dirEdges=[[0,1],[0,2],[1,3],[2,4]];
+  const adj=Array.from({length:5},()=>[]);
+  dirEdges.forEach(([a,b])=>adj[a].push(b));
+
+  // DFS: A(d=1), B(d=2), D(d=3,f=4), B(f=5), A→C(d=6), E(d=7,f=8), C(f=9), A(f=10)
+  const steps=[
+    {msg:'Discover A (d=1)',d:[1,0,0,0,0],f:[0,0,0,0,0],colors:['gray','white','white','white','white'],cur:0,time:1},
+    {msg:'Discover B (d=2)',d:[1,2,0,0,0],f:[0,0,0,0,0],colors:['gray','gray','white','white','white'],cur:1,time:2},
+    {msg:'Discover D (d=3)',d:[1,2,0,3,0],f:[0,0,0,0,0],colors:['gray','gray','white','gray','white'],cur:3,time:3},
+    {msg:'Finish D (f=4) — no unvisited neighbors',d:[1,2,0,3,0],f:[0,0,0,4,0],colors:['gray','gray','white','black','white'],cur:3,time:4},
+    {msg:'Finish B (f=5) — backtrack to A',d:[1,2,0,3,0],f:[0,5,0,4,0],colors:['gray','black','white','black','white'],cur:1,time:5},
+    {msg:'Discover C (d=6)',d:[1,2,6,3,0],f:[0,5,0,4,0],colors:['gray','black','gray','black','white'],cur:2,time:6},
+    {msg:'Discover E (d=7)',d:[1,2,6,3,7],f:[0,5,0,4,0],colors:['gray','black','gray','black','gray'],cur:4,time:7},
+    {msg:'Finish E (f=8)',d:[1,2,6,3,7],f:[0,5,0,4,8],colors:['gray','black','gray','black','black'],cur:4,time:8},
+    {msg:'Finish C (f=9)',d:[1,2,6,3,7],f:[0,5,9,4,8],colors:['gray','black','black','black','black'],cur:2,time:9},
+    {msg:'Finish A (f=10) — DFS complete!',d:[1,2,6,3,7],f:[10,5,9,4,8],colors:['black','black','black','black','black'],cur:0,time:10}
+  ];
+
+  let stepIdx=0,timer=null;
+  const colorMap={white:'#334155',gray:'#94a3b8',black:'#1e293b'};
+  const borderMap={white:'#818cf8',gray:'#f59e0b',black:'#475569'};
+
+  function drawArrow(x1,y1,x2,y2,color){
+    const R=22,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len;
+    ctx.beginPath();ctx.moveTo(x1+ux*R,y1+uy*R);ctx.lineTo(x2-ux*(R+8),y2-uy*(R+8));
+    ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.stroke();
+    const ax=x2-ux*R,ay=y2-uy*R,angle=Math.atan2(dy,dx);
+    ctx.beginPath();ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-10*Math.cos(angle-0.3),ay-10*Math.sin(angle-0.3));
+    ctx.lineTo(ax-10*Math.cos(angle+0.3),ay-10*Math.sin(angle+0.3));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function draw(s){
+    ctx.clearRect(0,0,520,370);
+    dirEdges.forEach(([a,b])=>{
+      drawArrow(pos[a].x,pos[a].y,pos[b].x,pos[b].y,'#475569');
+    });
+    for(let i=0;i<5;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      ctx.fillStyle=colorMap[s.colors[i]];ctx.fill();
+      ctx.strokeStyle=i===s.cur?'#f59e0b':borderMap[s.colors[i]];ctx.lineWidth=i===s.cur?3:2;ctx.stroke();
+      ctx.fillStyle=s.colors[i]==='black'?'#94a3b8':'#e2e8f0';
+      ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+      // timestamps
+      const dv=s.d[i]?s.d[i]:'–';
+      const fv=s.f[i]?s.f[i]:'–';
+      ctx.fillStyle='#94a3b8';ctx.font='10px monospace';
+      ctx.fillText(dv+'/'+fv,pos[i].x,pos[i].y+34);
+    }
+    // Timeline bar at bottom
+    const ty=350,tw=480,tx=20;
+    ctx.fillStyle='#334155';ctx.fillRect(tx,ty-4,tw,8);
+    for(let t=1;t<=10;t++){
+      const x=tx+(t-1)*(tw/10)+tw/20;
+      ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='center';
+      ctx.fillText(t,x,ty+16);
+    }
+    // draw parenthesis spans
+    const spanColors=['#ef4444','#38bdf8','#a78bfa','#22c55e','#f59e0b'];
+    for(let i=0;i<5;i++){
+      if(s.d[i]&&s.f[i]){
+        const x1=tx+(s.d[i]-1)*(tw/10)+tw/20;
+        const x2=tx+(s.f[i]-1)*(tw/10)+tw/20;
+        const y=ty-14-i*6;
+        ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);
+        ctx.strokeStyle=spanColors[i];ctx.lineWidth=3;ctx.stroke();
+        ctx.fillStyle=spanColors[i];ctx.font='bold 8px monospace';ctx.textAlign='center';
+        ctx.fillText(labels[i],x1-8,y+3);
+      }
+    }
+  }
+
+  function updateTimeline(s){
+    const el=document.getElementById('s8Timeline');
+    // Build parenthesis view
+    const events=[];
+    for(let i=0;i<5;i++){
+      if(s.d[i]) events.push({time:s.d[i],label:'('+labels[i],color:['#ef4444','#38bdf8','#a78bfa','#22c55e','#f59e0b'][i]});
+      if(s.f[i]) events.push({time:s.f[i],label:labels[i]+')',color:['#ef4444','#38bdf8','#a78bfa','#22c55e','#f59e0b'][i]});
+    }
+    events.sort((a,b)=>a.time-b.time);
+    el.innerHTML='<span style="color:#38bdf8;">Parenthesis: </span>'+events.map(e=>'<span style="color:'+e.color+';">'+e.label+'</span>').join(' ');
+  }
+
+  window.s8Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    draw(s);
+    updateTimeline(s);
+    const log=document.getElementById('s8Log');
+    const color=s.msg.includes('Discover')?'#22c55e':s.msg.includes('Finish')?'#fbbf24':'#cbd5e1';
+    log.innerHTML+='<div style="color:'+color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s8Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s8Step();},900);
+  };
+
+  window.s8Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;
+    document.getElementById('s8Log').innerHTML='';
+    document.getElementById('s8Timeline').innerHTML='<span style="color:#38bdf8;">Parenthesis: </span><span style="color:#64748b;">(run DFS to see)</span>';
+    draw({d:[0,0,0,0,0],f:[0,0,0,0,0],colors:['white','white','white','white','white'],cur:-1});
+  };
+
+  function init(){s8Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: BFS vs DFS ==================== -->
+<div class="slide" id="s9">
+  <h2>BFS vs DFS Comparison</h2>
+  <p class="subtitle">Same graph, different exploration — toggle to compare</p>
+
+  <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+    <button class="btn btn-sm" id="s9TabDFS" onclick="s9Tab('dfs')">DFS (Stack)</button>
+    <button class="btn btn-sm btn-secondary" id="s9TabBFS" onclick="s9Tab('bfs')">BFS (Queue)</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS9" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s9Step()">Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+      <div id="s9DS" style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.82rem;color:#a78bfa;margin-bottom:0.4rem;min-height:30px;"></div>
+      <div id="s9Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <table style="margin-top:0.5rem;font-size:0.78rem;">
+        <tr><th>Property</th><th>BFS</th><th>DFS</th></tr>
+        <tr><td>Data structure</td><td>Queue (FIFO)</td><td>Stack (LIFO)</td></tr>
+        <tr><td>Exploration</td><td>Level by level</td><td>Deep first</td></tr>
+        <tr><td>Shortest path?</td><td style="color:#22c55e;">Yes (unweighted)</td><td style="color:#ef4444;">No</td></tr>
+        <tr><td>Cycle detection</td><td>Possible</td><td style="color:#22c55e;">Natural</td></tr>
+        <tr><td>Topological sort</td><td style="color:#ef4444;">No</td><td style="color:#22c55e;">Yes</td></tr>
+        <tr><td>Time</td><td>O(V+E)</td><td>O(V+E)</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS9');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E','F','G'];
+  const pos=[{x:260,y:40},{x:100,y:130},{x:420,y:130},{x:60,y:250},{x:200,y:250},{x:340,y:250},{x:460,y:250}];
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,5]];
+  const adj=Array.from({length:7},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort());
+
+  let mode='dfs',stepIdx=0,timer=null,steps=[];
+
+  function buildDFS(){
+    const stps=[];const vis=new Set();const stack=[];
+    function dfs(u){
+      vis.add(u);stack.push(u);
+      stps.push({node:u,vis:new Set(vis),ds:[...stack],dsLabel:'Call Stack'});
+      for(const v of adj[u]){if(!vis.has(v))dfs(v);}
+      stack.pop();
+    }
+    dfs(0);return stps;
+  }
+
+  function buildBFS(){
+    const stps=[];const vis=new Set([0]);const q=[0];
+    stps.push({node:0,vis:new Set(vis),ds:[...q],dsLabel:'Queue'});
+    while(q.length){
+      const u=q.shift();
+      for(const v of adj[u]){
+        if(!vis.has(v)){vis.add(v);q.push(v);stps.push({node:v,vis:new Set(vis),ds:[...q],dsLabel:'Queue'});}
+      }
+    }
+    return stps;
+  }
+
+  function draw(vis,current){
+    ctx.clearRect(0,0,520,340);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    for(let i=0;i<7;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+    // Visit order
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+    ctx.fillText('Visit order: '+[...vis].map(i=>labels[i]).join(' → '),260,320);
+  }
+
+  window.s9Tab=function(m){
+    mode=m;s9Reset();
+    document.getElementById('s9TabDFS').className=m==='dfs'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s9TabBFS').className=m==='bfs'?'btn btn-sm':'btn btn-sm btn-secondary';
+  };
+
+  window.s9Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    draw(s.vis,s.node);
+    document.getElementById('s9DS').innerHTML=s.dsLabel+': ['+s.ds.map(i=>'<span style="color:#f59e0b;">'+labels[i]+'</span>').join(', ')+']';
+    const log=document.getElementById('s9Log');
+    log.innerHTML+='<div style="color:#22c55e;">Visit '+labels[s.node]+'</div>';
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s9Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s9Step();},600);
+  };
+
+  window.s9Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;steps=mode==='dfs'?buildDFS():buildBFS();
+    document.getElementById('s9Log').innerHTML='';
+    document.getElementById('s9DS').innerHTML=(mode==='dfs'?'Call Stack':'Queue')+': []';
+    draw(new Set(),-1);
+  };
+
+  function init(){mode='dfs';s9Tab('dfs');}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: Edge Classification in Directed Graphs ==================== -->
+<div class="slide" id="s10">
+  <h2>Edge Classification via Colors</h2>
+  <p class="subtitle">WHITE → GRAY → BLACK vertex states determine edge types</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS10" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:120px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="code-block" style="margin-top:0.5rem;padding:10px 14px;">
+        <div class="code-content" style="font-size:0.75rem;">
+          <div class="line">// When exploring edge u → v:</div>
+          <div class="line">if color[v] == WHITE:</div>
+          <div class="line">    // <span style="color:#22c55e;">Tree edge</span></div>
+          <div class="line">if color[v] == GRAY:</div>
+          <div class="line">    // <span style="color:#f59e0b;">Back edge (CYCLE!)</span></div>
+          <div class="line">if color[v] == BLACK:</div>
+          <div class="line">    if d[u] < d[v]: // <span style="color:#38bdf8;">Forward</span></div>
+          <div class="line">    else:            // <span style="color:#a78bfa;">Cross</span></div>
+        </div>
+      </div>
+
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>The Critical Rule</h3>
+        <p style="font-size:0.82rem;">Edge to a <strong style="color:#f59e0b;">GRAY</strong> vertex = ancestor still being processed = <strong style="color:#f59e0b;">CYCLE</strong>!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS10');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E','F'];
+  const pos=[{x:100,y:50},{x:300,y:50},{x:480,y:50},{x:100,y:220},{x:300,y:220},{x:480,y:220}];
+  // A→B, B→C, C→F, A→D, D→E, E→B(cross), F→D(back? let's make it: A→B, B→C, C→F, F→A(back), A→D, D→E, E→B(cross))
+  const dirEdges=[
+    {f:0,t:1},{f:1,t:2},{f:2,t:5},{f:5,t:0},{f:0,t:3},{f:3,t:4},{f:4,t:1}
+  ];
+
+  // DFS from A:
+  // Visit A(gray,d=1)→B(gray,d=2)→C(gray,d=3)→F(gray,d=4)
+  //   F→A: A is GRAY → BACK
+  //   F finish(black,f=5)
+  //   C finish(black,f=6)
+  //   B→ no more unvisited from B neighbors
+  //   B finish(black,f=7)
+  //   A→D(gray,d=8)→E(gray,d=9)
+  //   E→B: B is BLACK, d[E]=9>d[B]=2 → CROSS
+  //   E finish(black,f=10)
+  //   D finish(black,f=11)
+  //   A finish(black,f=12)
+
+  const dfsSteps=[
+    {msg:'Visit A — GRAY (d=1)',colors:['gray','white','white','white','white','white'],cur:0,edges:[]},
+    {msg:'A→B: WHITE → Tree edge. Visit B (d=2)',colors:['gray','gray','white','white','white','white'],cur:1,edges:[{i:0,type:'tree'}]},
+    {msg:'B→C: WHITE → Tree edge. Visit C (d=3)',colors:['gray','gray','gray','white','white','white'],cur:2,edges:[{i:0,type:'tree'},{i:1,type:'tree'}]},
+    {msg:'C→F: WHITE → Tree edge. Visit F (d=4)',colors:['gray','gray','gray','white','white','gray'],cur:5,edges:[{i:0,type:'tree'},{i:1,type:'tree'},{i:2,type:'tree'}]},
+    {msg:'F→A: A is GRAY → Back edge (CYCLE!)',colors:['gray','gray','gray','white','white','gray'],cur:5,edges:[{i:0,type:'tree'},{i:1,type:'tree'},{i:2,type:'tree'},{i:3,type:'back'}]},
+    {msg:'F finishes → BLACK (f=5)',colors:['gray','gray','gray','white','white','black'],cur:2,edges:[{i:0,type:'tree'},{i:1,type:'tree'},{i:2,type:'tree'},{i:3,type:'back'}]},
+    {msg:'C finishes → BLACK (f=6). B finishes → BLACK (f=7)',colors:['gray','black','black','white','white','black'],cur:0,edges:[{i:0,type:'tree'},{i:1,type:'tree'},{i:2,type:'tree'},{i:3,type:'back'}]},
+    {msg:'A→D: WHITE → Tree edge. Visit D (d=8)',colors:['gray','black','black','gray','white','black'],cur:3,edges:[{i:0,type:'tree'},{i:1,type:'tree'},{i:2,type:'tree'},{i:3,type:'back'},{i:4,type:'tree'}]},
+    {msg:'D→E: WHITE → Tree edge. Visit E (d=9)',colors:['gray','black','black','gray','gray','black'],cur:4,edges:[{i:0,type:'tree'},{i:1,type:'tree'},{i:2,type:'tree'},{i:3,type:'back'},{i:4,type:'tree'},{i:5,type:'tree'}]},
+    {msg:'E→B: B is BLACK, d[E]>d[B] → Cross edge',colors:['gray','black','black','gray','gray','black'],cur:4,edges:[{i:0,type:'tree'},{i:1,type:'tree'},{i:2,type:'tree'},{i:3,type:'back'},{i:4,type:'tree'},{i:5,type:'tree'},{i:6,type:'cross'}]},
+    {msg:'E,D finish → BLACK. A finishes. Done!',colors:['black','black','black','black','black','black'],cur:-1,edges:[{i:0,type:'tree'},{i:1,type:'tree'},{i:2,type:'tree'},{i:3,type:'back'},{i:4,type:'tree'},{i:5,type:'tree'},{i:6,type:'cross'}]}
+  ];
+
+  let stepIdx=0,timer=null;
+  const typeCol={tree:'#22c55e',back:'#f59e0b',forward:'#38bdf8',cross:'#a78bfa'};
+  const colMap={white:'#334155',gray:'#94a3b8',black:'#1e293b'};
+  const bordMap={white:'#818cf8',gray:'#f59e0b',black:'#475569'};
+
+  function drawArrow(x1,y1,x2,y2,color,w,curved){
+    const R=22,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    if(curved){
+      const mx=(x1+x2)/2,my=(y1+y2)/2;
+      const nx=-(y2-y1)/len*40,ny=(x2-x1)/len*40;
+      const cx=mx+nx,cy=my+ny;
+      ctx.beginPath();ctx.moveTo(x1+dx/len*R,y1+dy/len*R);
+      ctx.quadraticCurveTo(cx,cy,x2-dx/len*R,y2-dy/len*R);
+      ctx.strokeStyle=color;ctx.lineWidth=w;ctx.stroke();
+      const t=0.92;
+      const bx=(1-t)*(1-t)*(x1+dx/len*R)+2*(1-t)*t*cx+t*t*(x2-dx/len*R);
+      const by=(1-t)*(1-t)*(y1+dy/len*R)+2*(1-t)*t*cy+t*t*(y2-dy/len*R);
+      const angle=Math.atan2((y2-dy/len*R)-by,(x2-dx/len*R)-bx);
+      ctx.beginPath();ctx.moveTo(x2-dx/len*R,y2-dy/len*R);
+      ctx.lineTo(x2-dx/len*R-10*Math.cos(angle-0.3),y2-dy/len*R-10*Math.sin(angle-0.3));
+      ctx.lineTo(x2-dx/len*R-10*Math.cos(angle+0.3),y2-dy/len*R-10*Math.sin(angle+0.3));
+      ctx.closePath();ctx.fillStyle=color;ctx.fill();
+    } else {
+      const ux=dx/len,uy=dy/len;
+      ctx.beginPath();ctx.moveTo(x1+ux*R,y1+uy*R);ctx.lineTo(x2-ux*(R+8),y2-uy*(R+8));
+      ctx.strokeStyle=color;ctx.lineWidth=w;ctx.stroke();
+      const ax=x2-ux*R,ay=y2-uy*R,angle=Math.atan2(dy,dx);
+      ctx.beginPath();ctx.moveTo(ax,ay);
+      ctx.lineTo(ax-10*Math.cos(angle-0.3),ay-10*Math.sin(angle-0.3));
+      ctx.lineTo(ax-10*Math.cos(angle+0.3),ay-10*Math.sin(angle+0.3));
+      ctx.closePath();ctx.fillStyle=color;ctx.fill();
+    }
+  }
+
+  function draw(s){
+    ctx.clearRect(0,0,520,370);
+    const edgeMap={};
+    s.edges.forEach(e=>{edgeMap[e.i]=e.type;});
+    dirEdges.forEach((e,i)=>{
+      const col=edgeMap[i]?typeCol[edgeMap[i]]:'#475569';
+      const w=edgeMap[i]?2.5:1.5;
+      const curved=(i===3)||(i===6); // F→A and E→B
+      drawArrow(pos[e.f].x,pos[e.f].y,pos[e.t].x,pos[e.t].y,col,w,curved);
+      if(edgeMap[i]){
+        const mx=(pos[e.f].x+pos[e.t].x)/2,my=(pos[e.f].y+pos[e.t].y)/2;
+        const offset=curved?-20:10;
+        ctx.fillStyle=col;ctx.font='bold 9px monospace';ctx.textAlign='center';
+        ctx.fillText(edgeMap[i].toUpperCase(),mx+(curved?0:offset),my+(curved?offset:0));
+      }
+    });
+    for(let i=0;i<6;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      ctx.fillStyle=colMap[s.colors[i]];ctx.fill();
+      ctx.strokeStyle=i===s.cur?'#f59e0b':bordMap[s.colors[i]];ctx.lineWidth=i===s.cur?3:2;ctx.stroke();
+      ctx.fillStyle=s.colors[i]==='black'?'#94a3b8':'#e2e8f0';
+      ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+      ctx.fillStyle=s.colors[i]==='gray'?'#f59e0b':s.colors[i]==='black'?'#64748b':'#818cf8';
+      ctx.font='10px monospace';ctx.fillText(s.colors[i].toUpperCase(),pos[i].x,pos[i].y+34);
+    }
+  }
+
+  window.s10Step=function(){
+    if(stepIdx>=dfsSteps.length) return;
+    const s=dfsSteps[stepIdx];draw(s);
+    const log=document.getElementById('s10Log');
+    let color='#cbd5e1';
+    if(s.msg.includes('Tree')) color='#22c55e';
+    else if(s.msg.includes('Back')) color='#f59e0b';
+    else if(s.msg.includes('Cross')) color='#a78bfa';
+    else if(s.msg.includes('Done')) color='#22c55e';
+    log.innerHTML+='<div style="color:'+color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;stepIdx++;
+  };
+
+  window.s10Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=dfsSteps.length){clearInterval(timer);timer=null;return;}s10Step();},1000);
+  };
+
+  window.s10Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;
+    document.getElementById('s10Log').innerHTML='';
+    draw({colors:['white','white','white','white','white','white'],cur:-1,edges:[]});
+  };
+
+  function init(){s10Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: Cycle Detection ==================== -->
+<div class="slide" id="s11">
+  <h2>Cycle Detection with DFS</h2>
+  <p class="subtitle">Toggle directed (3-color) vs undirected (parent-check)</p>
+
+  <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+    <button class="btn btn-sm" id="s11TabDir" onclick="s11Tab('dir')">Directed (3-Color)</button>
+    <button class="btn btn-sm btn-secondary" id="s11TabUnd" onclick="s11Tab('und')">Undirected (Parent)</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS11" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s11Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:120px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div id="s11DirCode" class="code-block" style="margin-top:0.5rem;padding:10px 14px;">
+        <div class="code-content" style="font-size:0.72rem;">
+          <div class="line">dfsDetect(u):</div>
+          <div class="line">  color[u] = GRAY</div>
+          <div class="line">  for each neighbor v of u:</div>
+          <div class="line">    if color[v] == GRAY:</div>
+          <div class="line">      return true  // CYCLE!</div>
+          <div class="line">    if color[v] == WHITE:</div>
+          <div class="line">      if dfsDetect(v): return true</div>
+          <div class="line">  color[u] = BLACK</div>
+          <div class="line">  return false</div>
+        </div>
+      </div>
+      <div id="s11UndCode" class="code-block" style="margin-top:0.5rem;padding:10px 14px;display:none;">
+        <div class="code-content" style="font-size:0.72rem;">
+          <div class="line">dfsDetect(u, parent):</div>
+          <div class="line">  visited[u] = true</div>
+          <div class="line">  for each neighbor v of u:</div>
+          <div class="line">    if not visited[v]:</div>
+          <div class="line">      if dfsDetect(v, u): return true</div>
+          <div class="line">    else if v != parent:</div>
+          <div class="line">      return true  // CYCLE!</div>
+          <div class="line">  return false</div>
+        </div>
+      </div>
+
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Undirected Caveat</h3>
+        <p style="font-size:0.82rem;">Every undirected edge appears twice (u-v and v-u). Exclude the <strong>parent</strong> edge when checking for back edges.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS11');
+  const ctx=canvas.getContext('2d');
+  let mode='dir',stepIdx=0,timer=null,steps=[];
+
+  // Directed: A→B→C→A (cycle!)
+  const dirLabels=['A','B','C','D'];
+  const dirPos=[{x:160,y:60},{x:380,y:60},{x:380,y:220},{x:160,y:220}];
+  const dirEdges=[{f:0,t:1},{f:1,t:2},{f:2,t:0},{f:0,t:3}]; // A→B, B→C, C→A(back!), A→D
+
+  const dirSteps=[
+    {msg:'Visit A — mark GRAY',colors:['gray','white','white','white'],cur:0,cycleEdge:null},
+    {msg:'A→B: WHITE → recurse. Visit B — GRAY',colors:['gray','gray','white','white'],cur:1,cycleEdge:null},
+    {msg:'B→C: WHITE → recurse. Visit C — GRAY',colors:['gray','gray','gray','white'],cur:2,cycleEdge:null},
+    {msg:'C→A: A is GRAY → BACK EDGE → CYCLE FOUND!',colors:['gray','gray','gray','white'],cur:2,cycleEdge:{f:2,t:0}},
+  ];
+
+  // Undirected: A-B, B-C, C-A, A-D (triangle = cycle)
+  const undLabels=['A','B','C','D'];
+  const undPos=[{x:160,y:60},{x:380,y:60},{x:380,y:220},{x:160,y:220}];
+  const undEdges=[[0,1],[1,2],[2,0],[0,3]];
+
+  const undSteps=[
+    {msg:'Visit A (parent=none)',vis:new Set([0]),cur:0,parent:{0:-1},cycleEdge:null},
+    {msg:'A→B: not visited → recurse (parent=A)',vis:new Set([0,1]),cur:1,parent:{0:-1,1:0},cycleEdge:null},
+    {msg:'B→C: not visited → recurse (parent=B)',vis:new Set([0,1,2]),cur:2,parent:{0:-1,1:0,2:1},cycleEdge:null},
+    {msg:'C→A: visited AND A ≠ parent(B) → CYCLE FOUND!',vis:new Set([0,1,2]),cur:2,parent:{0:-1,1:0,2:1},cycleEdge:[2,0]},
+  ];
+
+  function drawArrow(x1,y1,x2,y2,color,w){
+    const R=22,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy),ux=dx/len,uy=dy/len;
+    ctx.beginPath();ctx.moveTo(x1+ux*R,y1+uy*R);ctx.lineTo(x2-ux*(R+8),y2-uy*(R+8));
+    ctx.strokeStyle=color;ctx.lineWidth=w;ctx.stroke();
+    const ax=x2-ux*R,ay=y2-uy*R,angle=Math.atan2(dy,dx);
+    ctx.beginPath();ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-10*Math.cos(angle-0.3),ay-10*Math.sin(angle-0.3));
+    ctx.lineTo(ax-10*Math.cos(angle+0.3),ay-10*Math.sin(angle+0.3));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function drawDir(s){
+    ctx.clearRect(0,0,520,320);
+    const colMap={white:'#334155',gray:'#94a3b8',black:'#1e293b'};
+    const bordMap={white:'#818cf8',gray:'#f59e0b',black:'#475569'};
+    dirEdges.forEach((e,i)=>{
+      const isCycle=s.cycleEdge&&s.cycleEdge.f===e.f&&s.cycleEdge.t===e.t;
+      drawArrow(dirPos[e.f].x,dirPos[e.f].y,dirPos[e.t].x,dirPos[e.t].y,isCycle?'#ef4444':'#475569',isCycle?3:1.5);
+      if(isCycle){ctx.fillStyle='#ef4444';ctx.font='bold 11px monospace';ctx.textAlign='center';
+        ctx.fillText('CYCLE!',( dirPos[e.f].x+dirPos[e.t].x)/2-30,(dirPos[e.f].y+dirPos[e.t].y)/2);}
+    });
+    for(let i=0;i<4;i++){
+      ctx.beginPath();ctx.arc(dirPos[i].x,dirPos[i].y,22,0,Math.PI*2);
+      ctx.fillStyle=colMap[s.colors[i]];ctx.fill();
+      ctx.strokeStyle=i===s.cur?'#f59e0b':bordMap[s.colors[i]];ctx.lineWidth=i===s.cur?3:2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(dirLabels[i],dirPos[i].x,dirPos[i].y);
+      ctx.fillStyle=s.colors[i]==='gray'?'#f59e0b':'#94a3b8';ctx.font='10px monospace';
+      ctx.fillText(s.colors[i].toUpperCase(),dirPos[i].x,dirPos[i].y+34);
+    }
+  }
+
+  function drawUnd(s){
+    ctx.clearRect(0,0,520,320);
+    undEdges.forEach(([a,b])=>{
+      const isCycle=s.cycleEdge&&((s.cycleEdge[0]===a&&s.cycleEdge[1]===b)||(s.cycleEdge[0]===b&&s.cycleEdge[1]===a));
+      ctx.beginPath();ctx.moveTo(undPos[a].x,undPos[a].y);ctx.lineTo(undPos[b].x,undPos[b].y);
+      ctx.strokeStyle=isCycle?'#ef4444':'#475569';ctx.lineWidth=isCycle?3:1.5;ctx.stroke();
+      if(isCycle){ctx.fillStyle='#ef4444';ctx.font='bold 11px monospace';ctx.textAlign='center';
+        ctx.fillText('CYCLE!',(undPos[a].x+undPos[b].x)/2-30,(undPos[a].y+undPos[b].y)/2);}
+    });
+    for(let i=0;i<4;i++){
+      ctx.beginPath();ctx.arc(undPos[i].x,undPos[i].y,22,0,Math.PI*2);
+      let fill='#334155';
+      if(i===s.cur) fill='#f59e0b';
+      else if(s.vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(undLabels[i],undPos[i].x,undPos[i].y);
+    }
+  }
+
+  window.s11Tab=function(m){
+    mode=m;s11Reset();
+    document.getElementById('s11TabDir').className=m==='dir'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s11TabUnd').className=m==='und'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s11DirCode').style.display=m==='dir'?'':'none';
+    document.getElementById('s11UndCode').style.display=m==='und'?'':'none';
+  };
+
+  window.s11Step=function(){
+    const stps=mode==='dir'?dirSteps:undSteps;
+    if(stepIdx>=stps.length) return;
+    const s=stps[stepIdx];
+    if(mode==='dir') drawDir(s); else drawUnd(s);
+    const log=document.getElementById('s11Log');
+    const color=s.msg.includes('CYCLE')?'#ef4444':s.msg.includes('GRAY')||s.msg.includes('≠')?'#f59e0b':'#22c55e';
+    log.innerHTML+='<div style="color:'+color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;stepIdx++;
+  };
+
+  window.s11Auto=function(){
+    if(timer) return;
+    const stps=mode==='dir'?dirSteps:undSteps;
+    timer=setInterval(()=>{if(stepIdx>=stps.length){clearInterval(timer);timer=null;return;}s11Step();},900);
+  };
+
+  window.s11Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;
+    document.getElementById('s11Log').innerHTML='';
+    if(mode==='dir') drawDir({colors:['white','white','white','white'],cur:-1,cycleEdge:null});
+    else drawUnd({vis:new Set(),cur:-1,cycleEdge:null});
+  };
+
+  function init(){mode='dir';s11Tab('dir');}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 12: Topological Sort ==================== -->
+<div class="slide" id="s12">
+  <h2>Topological Sort</h2>
+  <p class="subtitle">Linear ordering where u comes before v for every edge u → v</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS12" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s12Step()">Step DFS</button>
+        <button class="btn btn-sm" onclick="s12Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+      <div id="s12Finish" style="font-family:monospace;font-size:0.82rem;color:#94a3b8;margin-bottom:0.3rem;">Finish stack: []</div>
+      <div id="s12Result" style="font-family:monospace;font-size:0.82rem;color:#94a3b8;margin-bottom:0.3rem;">Topo order: (run DFS)</div>
+      <div id="s12Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:90px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Key Idea</h3>
+        <p style="font-size:0.85rem;">Topological sort = <strong>reverse of DFS finish order</strong>. When a vertex finishes (all descendants explored), prepend it to the result.</p>
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Prerequisite</h3>
+        <p style="font-size:0.85rem;">Only works on <strong>DAGs</strong> (Directed Acyclic Graphs). If there's a cycle, no valid topological order exists!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS12');
+  const ctx=canvas.getContext('2d');
+  // Course DAG: CS101→CS201, CS101→CS102, CS201→CS301, CS201→CS202, CS102→CS202, CS301→CS401
+  const labels=['CS101','CS201','CS301','CS401','CS102','CS202'];
+  const pos=[{x:80,y:60},{x:260,y:60},{x:420,y:60},{x:480,y:180},{x:80,y:180},{x:260,y:180}];
+  const dirEdges=[[0,1],[0,4],[1,2],[1,5],[4,5],[2,3]];
+  const adj=Array.from({length:6},()=>[]);
+  dirEdges.forEach(([a,b])=>adj[a].push(b));
+
+  let stepIdx=0,timer=null,steps=[],finishStack=[];
+
+  function buildSteps(){
+    const stps=[];const vis=new Set();const fStack=[];
+    function dfs(u){
+      vis.add(u);
+      stps.push({type:'discover',node:u,vis:new Set(vis),fStack:[...fStack]});
+      for(const v of adj[u]){
+        if(!vis.has(v)) dfs(v);
+      }
+      fStack.push(u);
+      stps.push({type:'finish',node:u,vis:new Set(vis),fStack:[...fStack]});
+    }
+    dfs(0);
+    stps.push({type:'done',vis:new Set(vis),fStack:[...fStack]});
+    return stps;
+  }
+
+  function drawArrow(x1,y1,x2,y2,color,w){
+    const R=26,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy),ux=dx/len,uy=dy/len;
+    ctx.beginPath();ctx.moveTo(x1+ux*R,y1+uy*R);ctx.lineTo(x2-ux*(R+6),y2-uy*(R+6));
+    ctx.strokeStyle=color;ctx.lineWidth=w;ctx.stroke();
+    const ax=x2-ux*R,ay=y2-uy*R,angle=Math.atan2(dy,dx);
+    ctx.beginPath();ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-10*Math.cos(angle-0.3),ay-10*Math.sin(angle-0.3));
+    ctx.lineTo(ax-10*Math.cos(angle+0.3),ay-10*Math.sin(angle+0.3));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function draw(vis,current,fStack){
+    ctx.clearRect(0,0,520,370);
+    dirEdges.forEach(([a,b])=>{
+      drawArrow(pos[a].x,pos[a].y,pos[b].x,pos[b].y,'#475569',1.5);
+    });
+    for(let i=0;i<6;i++){
+      const isFinished=fStack.includes(i);
+      ctx.beginPath();
+      // rounded rect approximation with arc
+      ctx.roundRect?ctx.roundRect(pos[i].x-32,pos[i].y-16,64,32,8):ctx.rect(pos[i].x-32,pos[i].y-16,64,32);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(isFinished) fill='#22c55e';
+      else if(vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=(fill==='#22c55e'||fill==='#f59e0b')?'#0f172a':'#e2e8f0';
+      ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+    // Draw topological result at bottom
+    if(fStack.length>0){
+      const reversed=[...fStack].reverse();
+      ctx.fillStyle='#38bdf8';ctx.font='bold 13px monospace';ctx.textAlign='center';
+      ctx.fillText('Topological Order:',260,280);
+      const startX=260-(reversed.length*45)/2;
+      reversed.forEach((n,i)=>{
+        const x=startX+i*45+22;
+        ctx.fillStyle='#22c55e';
+        ctx.fillRect(x-20,295,40,24);
+        ctx.fillStyle='#0f172a';ctx.font='bold 9px monospace';
+        ctx.fillText(labels[n],x,307);
+        if(i<reversed.length-1){
+          ctx.fillStyle='#94a3b8';ctx.font='12px monospace';
+          ctx.fillText('→',x+22,307);
+        }
+      });
+    }
+  }
+
+  window.s12Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const log=document.getElementById('s12Log');
+    if(s.type==='discover'){
+      draw(s.vis,s.node,s.fStack);
+      log.innerHTML+='<div style="color:#38bdf8;">Discover '+labels[s.node]+'</div>';
+    } else if(s.type==='finish'){
+      draw(s.vis,s.node,s.fStack);
+      log.innerHTML+='<div style="color:#22c55e;">Finish '+labels[s.node]+' → push to stack</div>';
+    } else if(s.type==='done'){
+      draw(s.vis,-1,s.fStack);
+      log.innerHTML+='<div style="color:#22c55e;font-weight:bold;">DFS complete! Reverse finish stack for topo order.</div>';
+    }
+    document.getElementById('s12Finish').innerHTML='Finish stack: ['+s.fStack.map(i=>'<span style="color:#22c55e;">'+labels[i]+'</span>').join(', ')+']';
+    const rev=[...s.fStack].reverse();
+    document.getElementById('s12Result').innerHTML='Topo order: '+( rev.length?rev.map(i=>'<span style="color:#f59e0b;">'+labels[i]+'</span>').join(' → '):'(run DFS)');
+    log.scrollTop=log.scrollHeight;stepIdx++;
+  };
+
+  window.s12Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s12Step();},800);
+  };
+
+  window.s12Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;steps=buildSteps();
+    document.getElementById('s12Log').innerHTML='';
+    document.getElementById('s12Finish').innerHTML='Finish stack: []';
+    document.getElementById('s12Result').innerHTML='Topo order: (run DFS)';
+    draw(new Set(),-1,[]);
+  };
+
+  function init(){s12Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: Connected Components ==================== -->
+<div class="slide" id="s13">
+  <h2>Connected Components (Undirected)</h2>
+  <p class="subtitle">Each DFS call from the outer loop discovers one full component</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS13" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s13Next()">Find Next Component</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      </div>
+      <div id="s13Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:140px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="code-block" style="margin-top:0.5rem;padding:10px 14px;">
+        <div class="code-content" style="font-size:0.72rem;">
+          <div class="line">connectedComponents(G):</div>
+          <div class="line">  comp = 0</div>
+          <div class="line">  for each vertex v in G:</div>
+          <div class="line">    if v not visited:</div>
+          <div class="line">      dfs(v, comp)  // new component!</div>
+          <div class="line">      comp += 1</div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Key Idea</h3>
+        <p style="font-size:0.85rem;">Number of outer-loop DFS calls = number of connected components.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS13');
+  const ctx=canvas.getContext('2d');
+  // 3 components: {A,B,C}, {D,E,F}, {G,H}
+  const labels=['A','B','C','D','E','F','G','H'];
+  const pos=[
+    {x:80,y:80},{x:180,y:40},{x:180,y:120},  // comp 0
+    {x:320,y:80},{x:420,y:40},{x:420,y:120},  // comp 1
+    {x:180,y:260},{x:320,y:260}                // comp 2
+  ];
+  const edges=[[0,1],[0,2],[1,2],[3,4],[3,5],[4,5],[6,7]];
+  const adj=Array.from({length:8},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+
+  const compColors=['#6366f1','#22c55e','#f59e0b'];
+  let visited=new Set(), compId=0, compMap={};
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      const sameComp=compMap[a]!==undefined&&compMap[a]===compMap[b];
+      ctx.strokeStyle=sameComp?compColors[compMap[a]]:'#475569';
+      ctx.lineWidth=sameComp?2.5:1.5;ctx.stroke();
+    });
+    for(let i=0;i<8;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      ctx.fillStyle=compMap[i]!==undefined?compColors[compMap[i]]:'#334155';
+      ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+      if(compMap[i]!==undefined){
+        ctx.fillStyle='#94a3b8';ctx.font='10px monospace';
+        ctx.fillText('comp '+compMap[i],pos[i].x,pos[i].y+34);
+      }
+    }
+    // Summary
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+    ctx.fillText('Components found: '+compId,260,350);
+  }
+
+  window.s13Next=function(){
+    // Find next unvisited
+    let start=-1;
+    for(let i=0;i<8;i++){if(!visited.has(i)){start=i;break;}}
+    if(start===-1) return;
+
+    // DFS from start
+    const stack=[start];
+    const found=[];
+    while(stack.length){
+      const u=stack.pop();
+      if(visited.has(u)) continue;
+      visited.add(u);compMap[u]=compId;found.push(u);
+      for(const v of adj[u]) if(!visited.has(v)) stack.push(v);
+    }
+
+    const log=document.getElementById('s13Log');
+    log.innerHTML+='<div style="color:'+compColors[compId]+';">Component '+compId+': {'+found.map(i=>labels[i]).join(', ')+'} — DFS from '+labels[start]+'</div>';
+
+    compId++;
+    draw();
+
+    if(compId>=3){
+      log.innerHTML+='<div style="color:#22c55e;font-weight:bold;">All 3 components found!</div>';
+    }
+    log.scrollTop=log.scrollHeight;
+  };
+
+  window.s13Reset=function(){
+    visited=new Set();compId=0;compMap={};
+    document.getElementById('s13Log').innerHTML='';
+    draw();
+  };
+
+  function init(){s13Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 14: Strongly Connected Components ==================== -->
+<div class="slide" id="s14">
+  <h2>Strongly Connected Components (Directed)</h2>
+  <p class="subtitle">Kosaraju's Algorithm: DFS → Reverse → DFS again</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS14d" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s14Step()">Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+      <div id="s14Phase" style="font-family:monospace;font-size:0.85rem;color:#38bdf8;margin-bottom:0.3rem;">Phase 1: DFS on original graph</div>
+      <div id="s14Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:100px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Kosaraju's Algorithm</h3>
+        <ol style="font-size:0.8rem;color:#cbd5e1;">
+          <li>Run DFS on G, record <strong>finish times</strong></li>
+          <li>Compute G<sup>T</sup> (reverse all edges)</li>
+          <li>Run DFS on G<sup>T</sup> in <strong>decreasing finish time</strong></li>
+          <li>Each DFS tree in step 3 = one SCC</li>
+        </ol>
+      </div>
+      <div class="analogy" style="margin-top:0.5rem;">
+        <h3>Analogy</h3>
+        <p style="font-size:0.82rem;">SCCs are "islands" where you can travel between any two cities. Kosaraju finds them by looking at the graph forwards AND backwards.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS14d');
+  const ctx=canvas.getContext('2d');
+  // Two SCCs: {A,B,C,D} cycle, {E,F,G,H} cycle, plus D→E connecting them
+  const labels=['A','B','C','D','E','F','G','H'];
+  const pos=[
+    {x:60,y:80},{x:200,y:80},{x:200,y:220},{x:60,y:220},
+    {x:320,y:80},{x:460,y:80},{x:460,y:220},{x:320,y:220}
+  ];
+  const fwdEdges=[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6],[6,7],[7,4]];
+  const revEdges=fwdEdges.map(([a,b])=>[b,a]);
+
+  const sccColors=['#6366f1','#22c55e'];
+
+  // Precomputed steps for the animation
+  const allSteps=[
+    // Phase 1: DFS on original, collecting finish order
+    {phase:1,msg:'Phase 1: DFS on original graph G',vis:new Set(),fStack:[],scc:{},reversed:false,cur:-1},
+    {phase:1,msg:'Visit A→B→C→D (cycle back to A, skip)',vis:new Set([0,1,2,3]),fStack:[],scc:{},reversed:false,cur:0},
+    {phase:1,msg:'D→E: explore other SCC',vis:new Set([0,1,2,3,4,5,6,7]),fStack:[],scc:{},reversed:false,cur:4},
+    {phase:1,msg:'Finish order: H(1),G(2),F(3),E(4),D(5),C(6),B(7),A(8)',vis:new Set([0,1,2,3,4,5,6,7]),fStack:[7,6,5,4,3,2,1,0],scc:{},reversed:false,cur:-1},
+    // Phase 2: Reverse edges
+    {phase:2,msg:'Phase 2: Reverse all edges → G^T',vis:new Set(),fStack:[7,6,5,4,3,2,1,0],scc:{},reversed:true,cur:-1},
+    // Phase 3: DFS on reversed graph in decreasing finish order
+    {phase:3,msg:'Phase 3: DFS on G^T, start from A (highest finish)',vis:new Set([0,1,2,3]),fStack:[7,6,5,4,3,2,1,0],scc:{0:0,1:0,2:0,3:0},reversed:true,cur:0},
+    {phase:3,msg:'SCC 1 found: {A,B,C,D}! Next unvisited: E',vis:new Set([0,1,2,3]),fStack:[7,6,5,4,3,2,1,0],scc:{0:0,1:0,2:0,3:0},reversed:true,cur:-1},
+    {phase:3,msg:'DFS from E on G^T: visits E,F,G,H',vis:new Set([0,1,2,3,4,5,6,7]),fStack:[7,6,5,4,3,2,1,0],scc:{0:0,1:0,2:0,3:0,4:1,5:1,6:1,7:1},reversed:true,cur:4},
+    {phase:3,msg:'SCC 2 found: {E,F,G,H}! All vertices assigned.',vis:new Set([0,1,2,3,4,5,6,7]),fStack:[7,6,5,4,3,2,1,0],scc:{0:0,1:0,2:0,3:0,4:1,5:1,6:1,7:1},reversed:true,cur:-1}
+  ];
+
+  let stepIdx=0,timer=null;
+
+  function drawArrow(x1,y1,x2,y2,color,w){
+    const R=20,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy),ux=dx/len,uy=dy/len;
+    ctx.beginPath();ctx.moveTo(x1+ux*R,y1+uy*R);ctx.lineTo(x2-ux*(R+6),y2-uy*(R+6));
+    ctx.strokeStyle=color;ctx.lineWidth=w;ctx.stroke();
+    const ax=x2-ux*R,ay=y2-uy*R,angle=Math.atan2(dy,dx);
+    ctx.beginPath();ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-8*Math.cos(angle-0.3),ay-8*Math.sin(angle-0.3));
+    ctx.lineTo(ax-8*Math.cos(angle+0.3),ay-8*Math.sin(angle+0.3));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function draw(s){
+    ctx.clearRect(0,0,520,370);
+    const edgeList=s.reversed?revEdges:fwdEdges;
+    edgeList.forEach(([a,b])=>{
+      drawArrow(pos[a].x,pos[a].y,pos[b].x,pos[b].y,'#475569',1.5);
+    });
+    for(let i=0;i<8;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,20,0,Math.PI*2);
+      let fill='#334155';
+      if(i===s.cur) fill='#f59e0b';
+      else if(s.scc[i]!==undefined) fill=sccColors[s.scc[i]];
+      else if(s.vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+    // SCC labels
+    if(Object.keys(s.scc).length>0){
+      ctx.fillStyle='#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';
+      if(s.scc[0]!==undefined) ctx.fillText('SCC 1',130,300);
+      if(s.scc[4]!==undefined) ctx.fillText('SCC 2',390,300);
+    }
+    // Phase label
+    if(s.reversed){
+      ctx.fillStyle='#f59e0b';ctx.font='11px monospace';ctx.textAlign='center';
+      ctx.fillText('(edges reversed — G^T)',260,360);
+    }
+  }
+
+  window.s14Step=function(){
+    if(stepIdx>=allSteps.length) return;
+    const s=allSteps[stepIdx];
+    draw(s);
+    document.getElementById('s14Phase').innerHTML='Phase '+s.phase+': '+(s.phase===1?'DFS on G':s.phase===2?'Reverse edges':'DFS on G<sup>T</sup>');
+    const log=document.getElementById('s14Log');
+    const color=s.msg.includes('SCC')?'#22c55e':s.msg.includes('Phase')?'#38bdf8':'#cbd5e1';
+    log.innerHTML+='<div style="color:'+color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;stepIdx++;
+  };
+
+  window.s14Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=allSteps.length){clearInterval(timer);timer=null;return;}s14Step();},1200);
+  };
+
+  window.s14Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;
+    document.getElementById('s14Log').innerHTML='';
+    document.getElementById('s14Phase').innerHTML='Phase 1: DFS on original graph';
+    draw({vis:new Set(),fStack:[],scc:{},reversed:false,cur:-1});
+  };
+
+  function init(){s14Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 15: Maze Generation & Solving ==================== -->
+<div class="slide" id="s15">
+  <h2>Maze Generation & Solving</h2>
+  <p class="subtitle">DFS creates long winding corridors — perfect for mazes</p>
+
+  <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+    <button class="btn btn-sm" id="s15TabGen" onclick="s15Tab('gen')">Generate Maze</button>
+    <button class="btn btn-sm btn-secondary" id="s15TabSolve" onclick="s15Tab('solve')">Solve Maze</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS15" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s15Step()">Step</button>
+        <button class="btn btn-sm" onclick="s15Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+      <div id="s15Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:110px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div id="s15GenInfo" class="key-idea" style="margin-top:0.5rem;">
+        <h3>DFS Maze Generation</h3>
+        <p style="font-size:0.82rem;">Start at a cell, pick a <strong>random</strong> unvisited neighbor, remove the wall between them. When stuck, <strong>backtrack</strong>. This creates a "perfect maze" — exactly one path between any two cells.</p>
+      </div>
+      <div id="s15SolveInfo" class="key-idea" style="margin-top:0.5rem;display:none;">
+        <h3>DFS Maze Solving</h3>
+        <p style="font-size:0.82rem;">DFS naturally <strong>backtracks</strong> at dead ends, making it ideal for maze solving. It finds <em>a</em> path (not necessarily shortest — use BFS for that).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS15');
+  const ctx=canvas.getContext('2d');
+  const ROWS=8,COLS=10;
+  let mode='gen',stepIdx=0,timer=null,steps=[];
+  // walls: walls[r][c] = {top,right,bottom,left}
+  let walls,visited,solvePath;
+
+  function initWalls(){
+    walls=Array.from({length:ROWS},()=>Array.from({length:COLS},()=>({top:true,right:true,bottom:true,left:true})));
+    visited=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+    solvePath=[];
+  }
+
+  function buildGenSteps(){
+    initWalls();
+    const stps=[];const vis=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+    const stack=[[0,0]];vis[0][0]=true;
+    const dirs=[[-1,0,'top','bottom'],[1,0,'bottom','top'],[0,-1,'left','right'],[0,1,'right','left']];
+    stps.push({walls:JSON.parse(JSON.stringify(walls)),vis:JSON.parse(JSON.stringify(vis)),current:[0,0],stack:stack.length});
+    while(stack.length){
+      const[r,c]=stack[stack.length-1];
+      const neighbors=[];
+      for(const[dr,dc,w1,w2] of dirs){
+        const nr=r+dr,nc=c+dc;
+        if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!vis[nr][nc]) neighbors.push({nr,nc,w1,w2,dr,dc});
+      }
+      if(neighbors.length){
+        const n=neighbors[Math.floor(Math.random()*neighbors.length)];
+        walls[r][c][n.w1]=false;walls[n.nr][n.nc][n.w2]=false;
+        vis[n.nr][n.nc]=true;stack.push([n.nr,n.nc]);
+        stps.push({walls:JSON.parse(JSON.stringify(walls)),vis:JSON.parse(JSON.stringify(vis)),current:[n.nr,n.nc],stack:stack.length});
+      } else {
+        stack.pop();
+        if(stack.length) stps.push({walls:JSON.parse(JSON.stringify(walls)),vis:JSON.parse(JSON.stringify(vis)),current:[...stack[stack.length-1]],stack:stack.length,backtrack:true});
+      }
+    }
+    stps.push({walls:JSON.parse(JSON.stringify(walls)),vis:JSON.parse(JSON.stringify(vis)),current:null,stack:0,done:true});
+    return stps;
+  }
+
+  function buildSolveSteps(){
+    // Use the walls from the last gen to solve
+    const stps=[];
+    const vis=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+    const stack=[[0,0]];vis[0][0]=true;
+    const path=[[0,0]];
+    const dirs=[[-1,0,'top'],[1,0,'bottom'],[0,-1,'left'],[0,1,'right']];
+    stps.push({vis:JSON.parse(JSON.stringify(vis)),path:[...path],current:[0,0]});
+    while(stack.length){
+      const[r,c]=stack[stack.length-1];
+      if(r===ROWS-1&&c===COLS-1){stps.push({vis:JSON.parse(JSON.stringify(vis)),path:[...path],current:[r,c],done:true});break;}
+      let found=false;
+      for(const[dr,dc,wall] of dirs){
+        const nr=r+dr,nc=c+dc;
+        if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!vis[nr][nc]&&!walls[r][c][wall]){
+          vis[nr][nc]=true;stack.push([nr,nc]);path.push([nr,nc]);
+          stps.push({vis:JSON.parse(JSON.stringify(vis)),path:[...path],current:[nr,nc]});
+          found=true;break;
+        }
+      }
+      if(!found){
+        stack.pop();path.pop();
+        if(stack.length) stps.push({vis:JSON.parse(JSON.stringify(vis)),path:[...path],current:[...stack[stack.length-1]],backtrack:true});
+      }
+    }
+    return stps;
+  }
+
+  function drawMaze(w,vis,current,path,genMode){
+    ctx.clearRect(0,0,520,340);
+    const cw=520/COLS,ch=340/ROWS;
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const x=c*cw,y=r*ch;
+      let fill='#1e293b';
+      if(current&&current[0]===r&&current[1]===c) fill='#f59e0b';
+      else if(path&&path.some(p=>p[0]===r&&p[1]===c)) fill='#22c55e';
+      else if(vis&&vis[r][c]) fill=genMode?'rgba(99,102,241,0.3)':'rgba(99,102,241,0.2)';
+      if(r===0&&c===0&&!current) fill='#6366f1';
+      if(r===ROWS-1&&c===COLS-1) fill=path&&path.some(p=>p[0]===r&&p[1]===c)?'#22c55e':'#38bdf8';
+      ctx.fillStyle=fill;ctx.fillRect(x+1,y+1,cw-2,ch-2);
+      // walls
+      ctx.strokeStyle='#818cf8';ctx.lineWidth=2;
+      if(w[r][c].top){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+cw,y);ctx.stroke();}
+      if(w[r][c].right){ctx.beginPath();ctx.moveTo(x+cw,y);ctx.lineTo(x+cw,y+ch);ctx.stroke();}
+      if(w[r][c].bottom){ctx.beginPath();ctx.moveTo(x,y+ch);ctx.lineTo(x+cw,y+ch);ctx.stroke();}
+      if(w[r][c].left){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+ch);ctx.stroke();}
+    }
+    // Start/End labels
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('S',cw/2,ch/2);
+    ctx.fillText('E',(COLS-0.5)*cw,(ROWS-0.5)*ch);
+  }
+
+  window.s15Tab=function(m){
+    mode=m;s15Reset();
+    document.getElementById('s15TabGen').className=m==='gen'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s15TabSolve').className=m==='solve'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s15GenInfo').style.display=m==='gen'?'':'none';
+    document.getElementById('s15SolveInfo').style.display=m==='solve'?'':'none';
+  };
+
+  window.s15Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const log=document.getElementById('s15Log');
+    if(mode==='gen'){
+      drawMaze(s.walls,s.vis,s.current,null,true);
+      if(s.done) log.innerHTML+='<div style="color:#22c55e;">Maze generation complete!</div>';
+      else if(s.backtrack) log.innerHTML+='<div style="color:#fbbf24;">↩ Backtrack (dead end)</div>';
+      else log.innerHTML+='<div>Carve to ('+s.current[0]+','+s.current[1]+') — stack: '+s.stack+'</div>';
+    } else {
+      drawMaze(walls,s.vis,s.current,s.path,false);
+      if(s.done) log.innerHTML+='<div style="color:#22c55e;">Path found! Length: '+s.path.length+' cells</div>';
+      else if(s.backtrack) log.innerHTML+='<div style="color:#fbbf24;">↩ Dead end — backtrack</div>';
+      else log.innerHTML+='<div>Explore ('+s.current[0]+','+s.current[1]+')</div>';
+    }
+    log.scrollTop=log.scrollHeight;stepIdx++;
+  };
+
+  window.s15Auto=function(){
+    if(timer) return;
+    const speed=mode==='gen'?40:150;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s15Step();},speed);
+  };
+
+  window.s15Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;
+    document.getElementById('s15Log').innerHTML='';
+    if(mode==='gen'){
+      steps=buildGenSteps();
+      // save final walls for solving
+      const last=steps[steps.length-1];
+      walls=last.walls;
+      drawMaze(Array.from({length:ROWS},()=>Array.from({length:COLS},()=>({top:true,right:true,bottom:true,left:true}))),null,null,null,true);
+    } else {
+      if(!walls) {
+        // generate a maze first
+        const genSteps=buildGenSteps();
+        walls=genSteps[genSteps.length-1].walls;
+      }
+      steps=buildSolveSteps();
+      drawMaze(walls,null,null,null,false);
+    }
+  };
+
+  function init(){mode='gen';s15Tab('gen');}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: Time & Space Complexity ==================== -->
+<div class="slide" id="s16">
+  <h2>Time & Space Complexity</h2>
+  <p class="subtitle">O(V + E) time, O(V) space — same as BFS</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS16" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s16Step()">Step DFS</button>
+        <button class="btn btn-sm" onclick="s16Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+      </div>
+      <div id="s16Counters" style="font-family:monospace;font-size:0.85rem;color:#94a3b8;margin-bottom:0.4rem;">Vertex visits: 0 | Edge checks: 0</div>
+      <div id="s16Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:80px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <table style="margin-top:0.5rem;font-size:0.8rem;">
+        <tr><th>Representation</th><th>DFS Time</th><th>Space</th></tr>
+        <tr><td>Adjacency List</td><td style="color:#22c55e;">O(V + E)</td><td>O(V)</td></tr>
+        <tr><td>Adjacency Matrix</td><td style="color:#f59e0b;">O(V²)</td><td>O(V)</td></tr>
+      </table>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Why O(V + E)?</h3>
+        <p style="font-size:0.82rem;">Each vertex visited <strong>once</strong> (O(V)). Each edge checked <strong>once</strong> per direction (O(E)). Total = O(V + E).</p>
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Stack Depth</h3>
+        <p style="font-size:0.82rem;">Worst case: path graph → stack depth = V. This can cause <strong>stack overflow</strong> with recursion on deep graphs!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS16');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E','F','G','H'];
+  const pos=[{x:260,y:40},{x:120,y:120},{x:400,y:120},{x:60,y:230},{x:180,y:230},{x:340,y:230},{x:460,y:230},{x:260,y:320}];
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,7],[5,7]];
+  const adj=Array.from({length:8},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort());
+
+  let stepIdx=0,timer=null,steps=[],vertexCount=0,edgeCount=0;
+
+  function buildSteps(){
+    const stps=[];const vis=new Set();let vc=0,ec=0;
+    function dfs(u){
+      vis.add(u);vc++;
+      stps.push({type:'visit',node:u,vis:new Set(vis),vc,ec});
+      for(const v of adj[u]){
+        ec++;
+        if(!vis.has(v)){
+          stps.push({type:'edge',from:u,to:v,vis:new Set(vis),vc,ec,tree:true});
+          dfs(v);
+        } else {
+          stps.push({type:'edge',from:u,to:v,vis:new Set(vis),vc,ec,tree:false});
+        }
+      }
+    }
+    dfs(0);
+    stps.push({type:'done',vis:new Set(vis),vc,ec});
+    return stps;
+  }
+
+  function draw(vis,current,edgeHL){
+    ctx.clearRect(0,0,520,370);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      const hl=edgeHL&&((edgeHL[0]===a&&edgeHL[1]===b)||(edgeHL[0]===b&&edgeHL[1]===a));
+      ctx.strokeStyle=hl?'#22c55e':'#475569';ctx.lineWidth=hl?3:1.5;ctx.stroke();
+    });
+    for(let i=0;i<8;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,20,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+  }
+
+  window.s16Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const log=document.getElementById('s16Log');
+    if(s.type==='visit'){
+      draw(s.vis,s.node,null);
+      log.innerHTML+='<div style="color:#22c55e;">Visit '+labels[s.node]+'</div>';
+    } else if(s.type==='edge'){
+      draw(s.vis,null,[s.from,s.to]);
+      if(s.tree) log.innerHTML+='<div>Check edge '+labels[s.from]+'→'+labels[s.to]+' (unvisited → recurse)</div>';
+      else log.innerHTML+='<div style="color:#64748b;">Check edge '+labels[s.from]+'→'+labels[s.to]+' (already visited)</div>';
+    } else if(s.type==='done'){
+      draw(s.vis,-1,null);
+      log.innerHTML+='<div style="color:#22c55e;font-weight:bold;">Done! V='+s.vc+' visits + E='+s.ec+' edge checks = O(V+E)</div>';
+    }
+    document.getElementById('s16Counters').innerHTML='Vertex visits: <span style="color:#22c55e;">'+s.vc+'</span> / 8 | Edge checks: <span style="color:#38bdf8;">'+s.ec+'</span> / '+(edges.length*2);
+    log.scrollTop=log.scrollHeight;stepIdx++;
+  };
+
+  window.s16Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s16Step();},500);
+  };
+
+  window.s16Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;steps=buildSteps();
+    document.getElementById('s16Log').innerHTML='';
+    document.getElementById('s16Counters').innerHTML='Vertex visits: 0 | Edge checks: 0';
+    draw(new Set(),-1,null);
+  };
+
+  function init(){s16Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s16').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE A: Predict DFS Order ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the DFS Order</h2>
+  <p class="subtitle">Given this graph and source A (recursive DFS, alphabetical neighbors), what's the visit order?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cCA" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="color:#94a3b8;font-size:0.8rem;margin-top:0.4rem;">Undirected graph. Neighbors in alphabetical order. Source = A.</p>
+    </div>
+    <div>
+      <p style="color:#cbd5e1;margin-bottom:0.5rem;">Type the DFS visit order (comma-separated):</p>
+      <input type="text" id="sCAinput" placeholder="A, B, C, ..." style="width:90%;padding:0.5rem 0.7rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.9rem;">
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="sCACheck()">Check Answer</button>
+        <button class="btn btn-sm" onclick="sCAAuto()">Show DFS Step-by-Step</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCAReset()">Reset</button>
+      </div>
+      <div id="sCAResult" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+      <div id="sCALog" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:130px;overflow-y:auto;color:#94a3b8;margin-top:0.5rem;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCA');
+  const ctx=canvas.getContext('2d');
+  // A-B, A-C, B-D, B-E, C-F, D-F, E-F
+  const labels=['A','B','C','D','E','F'];
+  const pos=[{x:260,y:40},{x:120,y:140},{x:400,y:140},{x:60,y:270},{x:200,y:270},{x:400,y:270}];
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[3,5],[4,5]];
+  const adj=Array.from({length:6},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort());
+  // DFS from A: A→B(first)→D(first of B's unvisited)→F(first of D's unvisited)→C(F's unvisited: C,E → C first)→(C's unvisited: none)→back to F→E→done
+  // A→B→D→F→C→E? Let's trace: adj[A]=[B,C], adj[B]=[A,D,E], adj[D]=[B,F], adj[F]=[C,D,E], adj[C]=[A,F], adj[E]=[B,F]
+  // DFS(A): visit A, recurse B
+  //   DFS(B): visit B, recurse D (A visited)
+  //     DFS(D): visit D, B visited, recurse F
+  //       DFS(F): visit F, recurse C (D visited)
+  //         DFS(C): visit C, A visited, F visited, return
+  //       back to F, D visited, recurse E
+  //         DFS(E): visit E, B visited, F visited, return
+  //       F done, D done, B done
+  //   back to A, C visited, done
+  const correctOrder='A,B,D,F,C,E';
+
+  let stepIdx=0,timer=null,bfsSteps=[];
+
+  function buildSteps(){
+    const stps=[];const vis=new Set();
+    function dfs(u){
+      vis.add(u);
+      stps.push({node:u,vis:new Set(vis)});
+      for(const v of adj[u]) if(!vis.has(v)) dfs(v);
+    }
+    dfs(0);return stps;
+  }
+
+  function draw(vis,current){
+    ctx.clearRect(0,0,520,320);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    for(let i=0;i<6;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(vis&&vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+  }
+
+  window.sCACheck=function(){
+    const input=document.getElementById('sCAinput').value.replace(/\s/g,'').toUpperCase();
+    const res=document.getElementById('sCAResult');
+    if(input===correctOrder) res.innerHTML='<span style="color:#22c55e;">Correct! DFS visits: '+correctOrder+'</span>';
+    else res.innerHTML='<span style="color:#ef4444;">Not quite. Remember: recursive DFS goes deep on the FIRST unvisited neighbor (alphabetical).</span>';
+  };
+
+  window.sCAAuto=function(){
+    if(timer) return;sCAReset();
+    bfsSteps=buildSteps();
+    timer=setInterval(()=>{
+      if(stepIdx>=bfsSteps.length){clearInterval(timer);timer=null;return;}
+      const s=bfsSteps[stepIdx];
+      draw(s.vis,s.node);
+      const log=document.getElementById('sCALog');
+      log.innerHTML+='<div>Visit <span style="color:#f59e0b;">'+labels[s.node]+'</span></div>';
+      log.scrollTop=log.scrollHeight;stepIdx++;
+    },800);
+  };
+
+  window.sCAReset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;
+    document.getElementById('sCALog').innerHTML='';document.getElementById('sCAResult').innerHTML='';
+    draw(new Set(),-1);
+  };
+
+  function init(){sCAReset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCA').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE B: Fix the Bug ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <p class="subtitle">This iterative DFS has a subtle bug — can you find it?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line">DFS-Iterative(G, source):</div>
+          <div class="line">&nbsp;&nbsp;S = new Stack()</div>
+          <div class="line">&nbsp;&nbsp;S.push(source)</div>
+          <div class="line">&nbsp;&nbsp;</div>
+          <div class="line">&nbsp;&nbsp;while S is not empty:</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;u = S.pop()</div>
+          <div class="line" style="background:rgba(239,68,68,0.15);border-left:3px solid #ef4444;">&nbsp;&nbsp;&nbsp;&nbsp;visited[u] = true  // always mark</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;process(u)</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;for each neighbor v of u:</div>
+          <div class="line" style="background:rgba(239,68,68,0.15);border-left:3px solid #ef4444;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;S.push(v)  // push ALL neighbors!</div>
+        </div>
+      </div>
+      <canvas id="cCB" width="520" height="160" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:0.5rem;"></canvas>
+    </div>
+    <div>
+      <p style="color:#cbd5e1;margin-bottom:0.5rem;">What's wrong with this code?</p>
+      <select id="sCBsel" style="width:100%;padding:0.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85rem;">
+        <option value="">— Select the bug —</option>
+        <option value="a">It visits vertices in the wrong order</option>
+        <option value="b">It pushes already-visited vertices (infinite loop on cycles)</option>
+        <option value="c">It processes the source vertex twice</option>
+        <option value="d">It doesn't handle disconnected graphs</option>
+      </select>
+      <button class="btn btn-sm" onclick="sCBCheck()" style="margin-top:0.5rem;">Check</button>
+      <div id="sCBResult" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+
+      <div id="sCBExplain" style="display:none;margin-top:0.5rem;">
+        <div class="warning">
+          <h3>The Fix</h3>
+          <p style="font-size:0.85rem;">Check <code>if v not in visited</code> before pushing, OR check <code>if u not in visited</code> after popping (and skip if already visited). Without either guard, cycles cause infinite loops!</p>
+        </div>
+        <div class="code-block" style="margin-top:0.5rem;">
+          <div class="code-content" style="font-size:0.78rem;">
+            <div class="line">&nbsp;&nbsp;while S is not empty:</div>
+            <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;u = S.pop()</div>
+            <div class="line" style="background:rgba(34,197,94,0.15);border-left:3px solid #22c55e;">&nbsp;&nbsp;&nbsp;&nbsp;if u not in visited:  // guard!</div>
+            <div class="line" style="background:rgba(34,197,94,0.15);border-left:3px solid #22c55e;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;visited[u] = true</div>
+            <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for each neighbor v of u:</div>
+            <div class="line" style="background:rgba(34,197,94,0.15);border-left:3px solid #22c55e;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if v not in visited:</div>
+            <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;S.push(v)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCB');
+  const ctx=canvas.getContext('2d');
+  const nodes=[{x:100,y:80,l:'A'},{x:260,y:80,l:'B'},{x:420,y:80,l:'C'}];
+  const edges=[[0,1],[1,2],[2,0]];
+
+  function draw(){
+    ctx.clearRect(0,0,520,160);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    ctx.fillStyle='#ef4444';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText('Triangle: A—B—C—A (cycle)',260,140);
+    ctx.fillText('Without visited check: push A→B→C→A→B→C→... forever!',260,155);
+  }
+
+  window.sCBCheck=function(){
+    const v=document.getElementById('sCBsel').value;
+    const res=document.getElementById('sCBResult');
+    if(v==='b'){
+      res.innerHTML='<span style="color:#22c55e;">Correct! Without a visited check, cycles cause vertices to be pushed infinitely.</span>';
+      document.getElementById('sCBExplain').style.display='';
+    } else if(v) {
+      res.innerHTML='<span style="color:#ef4444;">Not quite. Think about what happens with a cycle — vertices keep getting re-pushed.</span>';
+    }
+  };
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCB').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE C: BFS or DFS for scenarios ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: BFS or DFS?</h2>
+  <p class="subtitle">Pick the best algorithm for each scenario</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;border:2px solid #334155;" id="sCCq1box">
+      <p style="color:#cbd5e1;font-size:0.85rem;"><strong>1.</strong> Find if there's a circular dependency in a build system (DAG check).</p>
+      <select id="sCCq1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+        <option value="">Choose...</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="both">Either works equally</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;border:2px solid #334155;" id="sCCq2box">
+      <p style="color:#cbd5e1;font-size:0.85rem;"><strong>2.</strong> Find the minimum number of hops between two routers in a network.</p>
+      <select id="sCCq2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+        <option value="">Choose...</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="both">Either works equally</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;border:2px solid #334155;" id="sCCq3box">
+      <p style="color:#cbd5e1;font-size:0.85rem;"><strong>3.</strong> Determine a valid course schedule that respects all prerequisites.</p>
+      <select id="sCCq3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+        <option value="">Choose...</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="both">Either works equally</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;border:2px solid #334155;" id="sCCq4box">
+      <p style="color:#cbd5e1;font-size:0.85rem;"><strong>4.</strong> Count the number of connected components in an undirected graph.</p>
+      <select id="sCCq4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+        <option value="">Choose...</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="both">Either works equally</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+    <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+    <button class="btn btn-sm btn-secondary" onclick="sCCReset()">Reset</button>
+  </div>
+  <div id="sCCExplain" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;font-size:0.82rem;color:#cbd5e1;">
+    <strong style="color:#38bdf8;">Explanations:</strong><br>
+    <strong>1. DFS</strong> — Cycle detection is natural with DFS: a back edge (to a GRAY vertex) = cycle.<br>
+    <strong>2. BFS</strong> — BFS guarantees shortest path (minimum hops) in unweighted graphs.<br>
+    <strong>3. DFS</strong> — Topological sort = reverse DFS finish order. DFS is the standard approach.<br>
+    <strong>4. Either</strong> — Both BFS and DFS can count components: each outer-loop call = one component.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={sCCq1:'dfs',sCCq2:'bfs',sCCq3:'dfs',sCCq4:'both'};
+  window.sCCCheck=function(){
+    let correct=0;
+    Object.entries(answers).forEach(([id,ans])=>{
+      const sel=document.getElementById(id);
+      const box=document.getElementById(id+'box');
+      if(sel.value===ans){correct++;box.style.borderColor='#22c55e';}
+      else if(sel.value) box.style.borderColor='#ef4444';
+      else box.style.borderColor='#f59e0b';
+    });
+    if(correct>=3) document.getElementById('sCCExplain').style.display='';
+  };
+  window.sCCReset=function(){
+    ['sCCq1','sCCq2','sCCq3','sCCq4'].forEach(id=>{
+      document.getElementById(id).value='';
+      document.getElementById(id+'box').style.borderColor='#334155';
+    });
+    document.getElementById('sCCExplain').style.display='none';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 18: Summary Canvas Cheat Sheet ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary & Cheat Sheet</h2>
+  <p class="subtitle">Everything you need to know about DFS</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS18" width="520" height="350" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Core Applications</h3>
+        <ul style="font-size:0.82rem;color:#cbd5e1;">
+          <li><strong>Cycle detection</strong> — back edge = cycle</li>
+          <li><strong>Topological sort</strong> — reverse finish order</li>
+          <li><strong>Connected components</strong> (undirected)</li>
+          <li><strong>SCCs</strong> — Kosaraju / Tarjan</li>
+          <li><strong>Path finding</strong> & backtracking</li>
+          <li><strong>Maze</strong> generation and solving</li>
+        </ul>
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Common Pitfalls</h3>
+        <ul style="font-size:0.82rem;color:#cbd5e1;">
+          <li>Iterative DFS: missing visited check → infinite loop on cycles</li>
+          <li>Recursive DFS: stack overflow on deep graphs</li>
+          <li>Using DFS for shortest path (use BFS instead!)</li>
+          <li>Undirected cycle detection: forgetting to exclude parent edge</li>
+        </ul>
+      </div>
+      <table style="margin-top:0.5rem;font-size:0.78rem;">
+        <tr><th>Property</th><th>DFS</th><th>BFS</th></tr>
+        <tr><td>Data structure</td><td>Stack</td><td>Queue</td></tr>
+        <tr><td>Shortest path?</td><td style="color:#ef4444;">No</td><td style="color:#22c55e;">Yes</td></tr>
+        <tr><td>Topological sort?</td><td style="color:#22c55e;">Yes</td><td style="color:#ef4444;">No</td></tr>
+        <tr><td>Time</td><td>O(V+E)</td><td>O(V+E)</td></tr>
+        <tr><td>Space</td><td>O(V)</td><td>O(V)</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS18');
+  const ctx=canvas.getContext('2d');
+
+  function draw(){
+    ctx.clearRect(0,0,520,350);
+    // Title
+    ctx.fillStyle='#38bdf8';ctx.font='bold 16px monospace';ctx.textAlign='center';
+    ctx.fillText('DFS Pseudocode',260,25);
+    // Recursive
+    const recLines=[
+      'Recursive:',
+      '  DFS-Visit(u):',
+      '    visited[u] = true',
+      '    d[u] = ++time',
+      '    for each v in adj[u]:',
+      '      if not visited[v]:',
+      '        DFS-Visit(v)',
+      '    f[u] = ++time',
+    ];
+    const recColors=['#a78bfa','#e2e8f0','#22c55e','#f59e0b','#38bdf8','#cbd5e1','#22c55e','#f59e0b'];
+    ctx.font='12px monospace';ctx.textAlign='left';
+    recLines.forEach((l,i)=>{ctx.fillStyle=recColors[i];ctx.fillText(l,20,50+i*20);});
+
+    // Iterative
+    ctx.fillStyle='#a78bfa';ctx.font='12px monospace';
+    ctx.fillText('Iterative:',20,220);
+    const iterLines=[
+      '  stack.push(source)',
+      '  while stack not empty:',
+      '    u = stack.pop()',
+      '    if not visited[u]:',
+      '      visited[u] = true',
+      '      for v in adj[u]:',
+      '        stack.push(v)',
+    ];
+    const iterColors=['#e2e8f0','#38bdf8','#e2e8f0','#f59e0b','#22c55e','#38bdf8','#e2e8f0'];
+    iterLines.forEach((l,i)=>{ctx.fillStyle=iterColors[i];ctx.fillText(l,20,240+i*16);});
+  }
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s18').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== QUIZ 1: 3-Question Quiz ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Test Your DFS Knowledge</h2>
+  <p class="subtitle">3 questions — check your answers when ready</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;">
+      <p style="color:#38bdf8;font-weight:bold;font-size:0.85rem;">Q1: What does a back edge in DFS indicate?</p>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="a"> A shorter path exists</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="b"> A cycle exists</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="c"> The graph is disconnected</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="d"> A vertex was visited twice</label>
+      <div id="sQ1f1" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;">
+      <p style="color:#38bdf8;font-weight:bold;font-size:0.85rem;">Q2: How do you get topological sort from DFS?</p>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="a"> Visit order as-is</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="b"> Reverse of discovery order</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="c"> Reverse of finish order</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="d"> Sorted by degree</label>
+      <div id="sQ1f2" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;">
+      <p style="color:#38bdf8;font-weight:bold;font-size:0.85rem;">Q3: What color means "in progress" in 3-color DFS?</p>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="a"> WHITE</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="b"> GRAY</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="c"> BLACK</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="d"> RED</label>
+      <div id="sQ1f3" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;text-align:center;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-size:1rem;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={sQ1q1:'b',sQ1q2:'c',sQ1q3:'b'};
+  const feedback={
+    sQ1q1:{correct:'Back edge goes to an ancestor still on the stack → forms a cycle.',wrong:'A back edge points to an ancestor (GRAY vertex), which means there\'s a path back = cycle.'},
+    sQ1q2:{correct:'Topological sort = reverse of DFS finish order (post-order).',wrong:'It\'s the reverse of FINISH order, not discovery order. Vertices are added when they complete.'},
+    sQ1q3:{correct:'GRAY = discovered but not finished (still on the DFS stack).',wrong:'GRAY means "in progress" — discovered but not yet finished. WHITE=undiscovered, BLACK=finished.'}
+  };
+  window.sQ1Check=function(){
+    let score=0;
+    Object.entries(answers).forEach(([name,ans])=>{
+      const sel=document.querySelector('input[name="'+name+'"]:checked');
+      const fb=document.getElementById(name.replace('q','f'));
+      if(!sel){fb.innerHTML='<span style="color:#f59e0b;">Select an answer.</span>';return;}
+      if(sel.value===ans){score++;fb.innerHTML='<span style="color:#22c55e;">✓ '+feedback[name].correct+'</span>';}
+      else fb.innerHTML='<span style="color:#ef4444;">✗ '+feedback[name].wrong+'</span>';
+    });
+    document.getElementById('sQ1Score').innerHTML='<span style="color:'+(score===3?'#22c55e':'#f59e0b')+';">'+score+'/3</span>';
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ 2: Trace DFS with Timestamps ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Trace: DFS with Timestamps</h2>
+  <p class="subtitle">Step through DFS on this directed graph, track d[v] and f[v]</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cQ2" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="sQ2Step()">Step</button>
+        <button class="btn btn-sm" onclick="sQ2Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ2Reset()">Reset</button>
+      </div>
+      <div id="sQ2Table" style="display:flex;gap:3px;flex-wrap:wrap;font-family:monospace;font-size:0.8rem;margin-bottom:0.4rem;"></div>
+      <div id="sQ2Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:110px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Edge Classification via Timestamps</h3>
+        <ul style="font-size:0.78rem;color:#cbd5e1;">
+          <li><strong>Tree/Forward:</strong> d[u] < d[v] < f[v] < f[u]</li>
+          <li><strong>Back:</strong> d[v] < d[u] < f[u] < f[v]</li>
+          <li><strong>Cross:</strong> d[v] < f[v] < d[u] < f[u]</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cQ2');
+  const ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D','E'];
+  const pos=[{x:260,y:50},{x:100,y:160},{x:420,y:160},{x:160,y:300},{x:360,y:300}];
+  // A→B, A→C, B→D, C→D, D→B(back edge!)
+  const dirEdges=[[0,1],[0,2],[1,3],[2,4],[3,1]];
+
+  const dfsSteps=[
+    {msg:'Discover A (d=1)',d:[1,0,0,0,0],f:[0,0,0,0,0],colors:['gray','white','white','white','white'],cur:0},
+    {msg:'A→B: Tree. Discover B (d=2)',d:[1,2,0,0,0],f:[0,0,0,0,0],colors:['gray','gray','white','white','white'],cur:1},
+    {msg:'B→D: Tree. Discover D (d=3)',d:[1,2,0,3,0],f:[0,0,0,0,0],colors:['gray','gray','white','gray','white'],cur:3},
+    {msg:'D→B: B is GRAY → Back edge (CYCLE!)',d:[1,2,0,3,0],f:[0,0,0,0,0],colors:['gray','gray','white','gray','white'],cur:3},
+    {msg:'Finish D (f=4)',d:[1,2,0,3,0],f:[0,0,0,4,0],colors:['gray','gray','white','black','white'],cur:3},
+    {msg:'Finish B (f=5)',d:[1,2,0,3,0],f:[0,5,0,4,0],colors:['gray','black','white','black','white'],cur:1},
+    {msg:'A→C: Tree. Discover C (d=6)',d:[1,2,6,3,0],f:[0,5,0,4,0],colors:['gray','black','gray','black','white'],cur:2},
+    {msg:'C→E: Tree. Discover E (d=7)',d:[1,2,6,3,7],f:[0,5,0,4,0],colors:['gray','black','gray','black','gray'],cur:4},
+    {msg:'Finish E (f=8)',d:[1,2,6,3,7],f:[0,5,0,4,8],colors:['gray','black','gray','black','black'],cur:4},
+    {msg:'Finish C (f=9)',d:[1,2,6,3,7],f:[0,5,9,4,8],colors:['gray','black','black','black','black'],cur:2},
+    {msg:'Finish A (f=10) — DFS complete!',d:[1,2,6,3,7],f:[10,5,9,4,8],colors:['black','black','black','black','black'],cur:-1}
+  ];
+
+  let stepIdx=0,timer=null;
+  const colMap={white:'#334155',gray:'#94a3b8',black:'#1e293b'};
+  const bordMap={white:'#818cf8',gray:'#f59e0b',black:'#475569'};
+
+  function drawArrow(x1,y1,x2,y2,color,w){
+    const R=22,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy),ux=dx/len,uy=dy/len;
+    ctx.beginPath();ctx.moveTo(x1+ux*R,y1+uy*R);ctx.lineTo(x2-ux*(R+8),y2-uy*(R+8));
+    ctx.strokeStyle=color;ctx.lineWidth=w;ctx.stroke();
+    const ax=x2-ux*R,ay=y2-uy*R,angle=Math.atan2(dy,dx);
+    ctx.beginPath();ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-10*Math.cos(angle-0.3),ay-10*Math.sin(angle-0.3));
+    ctx.lineTo(ax-10*Math.cos(angle+0.3),ay-10*Math.sin(angle+0.3));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function draw(s){
+    ctx.clearRect(0,0,520,370);
+    dirEdges.forEach(([a,b],i)=>{
+      const isBack=(i===4);
+      drawArrow(pos[a].x,pos[a].y,pos[b].x,pos[b].y,isBack&&stepIdx>3?'#f59e0b':'#475569',isBack&&stepIdx>3?2.5:1.5);
+      if(isBack&&stepIdx>3){ctx.fillStyle='#f59e0b';ctx.font='bold 9px monospace';ctx.textAlign='center';
+        ctx.fillText('BACK',(pos[a].x+pos[b].x)/2-20,(pos[a].y+pos[b].y)/2);}
+    });
+    for(let i=0;i<5;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      ctx.fillStyle=colMap[s.colors[i]];ctx.fill();
+      ctx.strokeStyle=i===s.cur?'#f59e0b':bordMap[s.colors[i]];ctx.lineWidth=i===s.cur?3:2;ctx.stroke();
+      ctx.fillStyle=s.colors[i]==='black'?'#94a3b8':'#e2e8f0';
+      ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+      const dv=s.d[i]||'–',fv=s.f[i]||'–';
+      ctx.fillStyle='#94a3b8';ctx.font='10px monospace';
+      ctx.fillText(dv+'/'+fv,pos[i].x,pos[i].y+34);
+    }
+  }
+
+  function updateTable(s){
+    const el=document.getElementById('sQ2Table');
+    el.innerHTML=labels.map((l,i)=>{
+      const d=s.d[i]||'–',f=s.f[i]||'–';
+      const bg=s.colors[i]==='gray'?'#f59e0b':s.colors[i]==='black'?'#475569':'#334155';
+      return '<div style="background:'+bg+';padding:4px 8px;border-radius:4px;text-align:center;min-width:50px;"><div style="color:#e2e8f0;font-weight:bold;">'+l+'</div><div style="color:#cbd5e1;font-size:0.75rem;">d='+d+' f='+f+'</div></div>';
+    }).join('');
+  }
+
+  window.sQ2Step=function(){
+    if(stepIdx>=dfsSteps.length) return;
+    const s=dfsSteps[stepIdx];draw(s);updateTable(s);
+    const log=document.getElementById('sQ2Log');
+    let color=s.msg.includes('Back')?'#f59e0b':s.msg.includes('Discover')?'#22c55e':s.msg.includes('Finish')?'#fbbf24':'#cbd5e1';
+    if(s.msg.includes('complete')) color='#22c55e';
+    log.innerHTML+='<div style="color:'+color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;stepIdx++;
+  };
+
+  window.sQ2Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=dfsSteps.length){clearInterval(timer);timer=null;return;}sQ2Step();},900);
+  };
+
+  window.sQ2Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;
+    document.getElementById('sQ2Log').innerHTML='';
+    const init={d:[0,0,0,0,0],f:[0,0,0,0,0],colors:['white','white','white','white','white'],cur:-1};
+    draw(init);updateTable(init);
+  };
+
+  function init(){sQ2Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sQ2').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== QUIZ 3: Predict Output ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Predict the Output</h2>
+  <p class="subtitle">What does this Java DFS code print?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="sQ3Code">
+          <div class="line">// Graph: 0→1, 0→2, 1→3, 2→3, 3→4</div>
+          <div class="line">// Adjacency list, neighbors in order</div>
+          <div class="line">boolean[] visited = new boolean[5];</div>
+          <div class="line">List&lt;Integer&gt; order = new ArrayList&lt;&gt;();</div>
+          <div class="line">List&lt;Integer&gt; finish = new ArrayList&lt;&gt;();</div>
+          <div class="line">&nbsp;</div>
+          <div class="line">void dfs(int u) {</div>
+          <div class="line">&nbsp;&nbsp;visited[u] = true;</div>
+          <div class="line">&nbsp;&nbsp;order.add(u);</div>
+          <div class="line">&nbsp;&nbsp;for (int v : adj[u]) {</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;if (!visited[v]) dfs(v);</div>
+          <div class="line">&nbsp;&nbsp;}</div>
+          <div class="line">&nbsp;&nbsp;finish.add(u);</div>
+          <div class="line">}</div>
+          <div class="line">&nbsp;</div>
+          <div class="line">dfs(0);</div>
+          <div class="line">System.out.println(order);</div>
+          <div class="line">System.out.println(finish);</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p style="color:#cbd5e1;font-size:0.85rem;">What is the <strong>visit order</strong> (order list)?</p>
+      <input type="text" id="sQ3a1" placeholder="e.g. [0, 1, 3, 4, 2]" style="width:90%;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+
+      <p style="color:#cbd5e1;font-size:0.85rem;margin-top:0.5rem;">What is the <strong>finish order</strong> (finish list)?</p>
+      <input type="text" id="sQ3a2" placeholder="e.g. [4, 3, 1, 2, 0]" style="width:90%;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="sQ3Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ3Trace()">Show Trace</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ3Reset()">Reset</button>
+      </div>
+      <div id="sQ3Result" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+      <div id="sQ3Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:120px;overflow-y:auto;color:#94a3b8;margin-top:0.5rem;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Graph: 0→1, 0→2, 1→3, 2→3, 3→4. adj[0]=[1,2], adj[1]=[3], adj[2]=[3], adj[3]=[4]
+  // DFS(0): visit 0, recurse 1, visit 1, recurse 3, visit 3, recurse 4, visit 4, finish 4, finish 3, finish 1
+  //         back to 0, recurse 2, visit 2, 3 already visited, finish 2, finish 0
+  // order = [0,1,3,4,2], finish = [4,3,1,2,0]
+  const correctOrder='[0,1,3,4,2]';
+  const correctFinish='[4,3,1,2,0]';
+
+  window.sQ3Check=function(){
+    const a1=document.getElementById('sQ3a1').value.trim().replace(/\s/g,'');
+    const a2=document.getElementById('sQ3a2').value.trim().replace(/\s/g,'');
+    const res=document.getElementById('sQ3Result');
+    let msg='';
+    if(a1===correctOrder) msg+='<span style="color:#22c55e;">✓ Visit order correct!</span><br>';
+    else if(a1) msg+='<span style="color:#ef4444;">✗ Visit order: expected '+correctOrder+'</span><br>';
+    if(a2===correctFinish) msg+='<span style="color:#22c55e;">✓ Finish order correct!</span>';
+    else if(a2) msg+='<span style="color:#ef4444;">✗ Finish order: expected '+correctFinish+'</span>';
+    res.innerHTML=msg;
+  };
+
+  let traceIdx=0,traceTimer=null;
+  const traceSteps=[
+    {line:15,msg:'Call dfs(0)'},
+    {line:7,msg:'visited[0]=true, order=[0]'},
+    {line:10,msg:'Neighbor 1: not visited → dfs(1)'},
+    {line:7,msg:'visited[1]=true, order=[0,1]'},
+    {line:10,msg:'Neighbor 3: not visited → dfs(3)'},
+    {line:7,msg:'visited[3]=true, order=[0,1,3]'},
+    {line:10,msg:'Neighbor 4: not visited → dfs(4)'},
+    {line:7,msg:'visited[4]=true, order=[0,1,3,4]'},
+    {line:12,msg:'4 has no neighbors → finish.add(4), finish=[4]'},
+    {line:12,msg:'3 done → finish.add(3), finish=[4,3]'},
+    {line:12,msg:'1 done → finish.add(1), finish=[4,3,1]'},
+    {line:10,msg:'Back to 0: neighbor 2 not visited → dfs(2)'},
+    {line:7,msg:'visited[2]=true, order=[0,1,3,4,2]'},
+    {line:10,msg:'Neighbor 3: already visited → skip'},
+    {line:12,msg:'2 done → finish.add(2), finish=[4,3,1,2]'},
+    {line:12,msg:'0 done → finish.add(0), finish=[4,3,1,2,0]'},
+    {line:16,msg:'Print order: [0, 1, 3, 4, 2]'},
+    {line:17,msg:'Print finish: [4, 3, 1, 2, 0]'}
+  ];
+
+  window.sQ3Trace=function(){
+    if(traceTimer) return;sQ3Reset();
+    traceTimer=setInterval(()=>{
+      if(traceIdx>=traceSteps.length){clearInterval(traceTimer);traceTimer=null;return;}
+      const s=traceSteps[traceIdx];
+      const lines=document.querySelectorAll('#sQ3Code .line');
+      lines.forEach(l=>l.classList.remove('active'));
+      if(s.line<lines.length) lines[s.line].classList.add('active');
+      const log=document.getElementById('sQ3Log');
+      log.innerHTML+='<div>'+s.msg+'</div>';
+      log.scrollTop=log.scrollHeight;traceIdx++;
+    },800);
+  };
+
+  window.sQ3Reset=function(){
+    if(traceTimer){clearInterval(traceTimer);traceTimer=null;}traceIdx=0;
+    document.getElementById('sQ3Log').innerHTML='';document.getElementById('sQ3Result').innerHTML='';
+    document.querySelectorAll('#sQ3Code .line').forEach(l=>l.classList.remove('active'));
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:100;">
+  <button id="prevBtn" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;" onclick="navigate(-1)">&#9664; Prev</button>
+  <button id="nextBtn" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;" onclick="navigate(1)">Next &#9654;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','s16','sCA','sCB','sCC','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+
+</body>
+</html>

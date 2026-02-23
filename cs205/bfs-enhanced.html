@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BFS - Breadth-First Search | CS205 Data Structures</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0}
+.slide{display:none;min-height:100vh;padding:40px 60px;position:relative}
+.slide.active{display:flex;flex-direction:column;justify-content:center}
+.slide-number{position:absolute;bottom:20px;right:40px;color:#64748b;font-size:14px}
+h1{font-size:2.8em;margin-bottom:20px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+h2{font-size:2em;margin-bottom:16px;color:#38bdf8}
+h3{font-size:1.4em;margin-bottom:12px;color:#a5b4fc}
+p,li{font-size:1.1em;line-height:1.7;color:#cbd5e1;margin-bottom:8px}
+.subtitle{font-size:1.3em;color:#94a3b8;margin-bottom:30px}
+ul,ol{padding-left:24px}
+ul li,ol li{margin-bottom:8px}
+code{background:#1e293b;padding:2px 8px;border-radius:4px;font-family:monospace;color:#a5f3fc;font-size:0.95em}
+.key-idea{background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(139,92,246,0.15));border-left:4px solid #3b82f6;border-radius:0 12px 12px 0;padding:20px 24px;margin:16px 0}
+.key-idea h3{margin-bottom:8px}
+.warning{background:rgba(245,158,11,0.12);border-left:4px solid #f59e0b;border-radius:0 12px 12px 0;padding:20px 24px;margin:16px 0}
+.warning h3{color:#fbbf24}
+.analogy{background:rgba(16,185,129,0.12);border-left:4px solid #10b981;border-radius:0 12px 12px 0;padding:20px 24px;margin:16px 0}
+.analogy h3{color:#34d399}
+.btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:0.95em;transition:all 0.2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(99,102,241,0.4)}
+.btn-sm{padding:6px 14px;font-size:0.85em}
+.btn-secondary{background:#334155;border:1px solid #475569}
+.btn-secondary:hover{background:#475569}
+.code-block{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;margin:12px 0;overflow-x:auto}
+.code-content{font-family:monospace;font-size:0.85em;line-height:1.8}
+.line{display:block;padding:1px 8px;border-left:3px solid transparent;white-space:pre}
+.line.active{background:rgba(99,102,241,0.15);border-left-color:#6366f1}
+#progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:rgba(255,255,255,0.05);z-index:200}
+#progress{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa);width:0%;transition:width 0.3s}
+.fade-in{animation:fadeIn 0.4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide active" id="s1">
+  <div style="text-align:center;">
+    <h1 style="font-size:3.2em;">BFS &mdash; Breadth-First Search</h1>
+    <p class="subtitle" style="font-size:1.4em;">Explore a graph level by level</p>
+    <canvas id="cS1" width="600" height="320" style="width:100%;max-width:600px;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:20px;"></canvas>
+    <p style="color:#64748b;margin-top:16px;">Use arrow keys or buttons to navigate &bull; 24 slides</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS1'),ctx=canvas.getContext('2d');
+  const nodes=[
+    {x:300,y:40,id:'A'},{x:160,y:110,id:'B'},{x:440,y:110,id:'C'},
+    {x:80,y:200,id:'D'},{x:240,y:200,id:'E'},{x:360,y:200,id:'F'},
+    {x:520,y:200,id:'G'},{x:160,y:280,id:'H'},{x:440,y:280,id:'I'}
+  ];
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7],[4,5],[6,8],[5,8]];
+  const bfsOrder=[0,1,2,3,4,5,6,7,8];
+  const levels=[0,1,1,2,2,2,2,3,3];
+  const levelColors=['#f59e0b','#38bdf8','#22c55e','#a78bfa'];
+  let animStep=0,timer=null;
+
+  function draw(){
+    ctx.clearRect(0,0,600,320);
+    // edges
+    edges.forEach(([a,b])=>{
+      const aVis=bfsOrder.indexOf(a)<animStep,bVis=bfsOrder.indexOf(b)<animStep;
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle=(aVis&&bVis)?'rgba(255,255,255,0.2)':'#1e293b';ctx.lineWidth=2;ctx.stroke();
+    });
+    // ripple circles
+    if(animStep>0&&animStep<=levels.length){
+      const maxLevel=levels[bfsOrder[Math.min(animStep-1,bfsOrder.length-1)]];
+      for(let l=maxLevel;l>=0;l--){
+        const r=60+l*70;
+        ctx.beginPath();ctx.arc(300,40,r,0,Math.PI*2);
+        ctx.strokeStyle=levelColors[l]||'#6366f1';ctx.lineWidth=1;ctx.globalAlpha=0.15;ctx.stroke();ctx.globalAlpha=1;
+      }
+    }
+    // nodes
+    nodes.forEach((n,i)=>{
+      const orderIdx=bfsOrder.indexOf(i);
+      const isVis=orderIdx<animStep;
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=isVis?levelColors[levels[i]]:'#334155';ctx.fill();
+      ctx.strokeStyle=isVis?'rgba(255,255,255,0.3)':'#475569';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(isVis){
+        ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='10px monospace';
+        ctx.fillText('L'+levels[i],n.x,n.y-28);
+      }
+    });
+    // level legend
+    if(animStep>bfsOrder.length){
+      ctx.font='12px sans-serif';ctx.textAlign='left';
+      levelColors.forEach((c,l)=>{
+        ctx.fillStyle=c;ctx.fillText('Level '+l,15,25+l*18);
+      });
+    }
+  }
+
+  function animate(){
+    if(timer)return;
+    animStep=0;
+    timer=setInterval(()=>{
+      animStep++;draw();
+      if(animStep>bfsOrder.length+1){clearInterval(timer);timer=null;}
+    },400);
+  }
+
+  function init(){animStep=0;if(timer){clearInterval(timer);timer=null;}draw();setTimeout(animate,500);}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s1').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: What is BFS? ==================== -->
+<div class="slide" id="s2">
+  <h2>What is BFS?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <p>Breadth-First Search starts at a <strong>source vertex</strong> and explores in expanding rings:</p>
+      <ul style="margin-top:8px;">
+        <li>First, visit all <strong>neighbors</strong> of source (distance 1)</li>
+        <li>Then all <strong>neighbors of neighbors</strong> (distance 2)</li>
+        <li>Then distance 3, 4, 5&hellip; until everything reachable is explored</li>
+      </ul>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy: Ripples in a Pond</h3>
+        <p>Drop a stone into still water. Ripples expand outward in concentric circles. BFS radiates outward, reaching everything at distance <em>k</em> before anything at <em>k+1</em>.</p>
+      </div>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Key Idea</h3>
+        <p>BFS guarantees that when you first reach a vertex, you&rsquo;ve found the <strong>shortest path</strong> (in edge count) from the source.</p>
+      </div>
+    </div>
+    <div>
+      <p style="font-size:0.9em;color:#94a3b8;margin-bottom:6px;"><strong>Try it:</strong> Click any node as the source, then watch BFS expand.</p>
+      <canvas id="cS2" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s2Auto()">Auto Play</button>
+        <button class="btn btn-sm" onclick="s2Step()">Step</button>
+        <button class="btn btn-sm btn-secondary" onclick="s2Reset()">Reset</button>
+      </div>
+      <div id="s2Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Click a node to set it as source
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS2'),ctx=canvas.getContext('2d');
+  const nodes=[
+    {x:260,y:40,id:'A'},{x:120,y:120,id:'B'},{x:400,y:120,id:'C'},
+    {x:60,y:230,id:'D'},{x:200,y:230,id:'E'},{x:340,y:230,id:'F'},
+    {x:460,y:230,id:'G'},{x:130,y:310,id:'H'}
+  ];
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[4,5],[2,6],[3,7],[5,7]];
+  const levelColors=['#f59e0b','#38bdf8','#22c55e','#a78bfa','#f472b6'];
+  let source=-1,visited=[],dist=[],queue=[],bfsSteps=[],stepIdx=0,timer=null;
+
+  function adj(u){const nb=[];edges.forEach(([a,b])=>{if(a===u)nb.push(b);if(b===u)nb.push(a);});return nb;}
+
+  function prepareBFS(src){
+    visited=Array(nodes.length).fill(false);
+    dist=Array(nodes.length).fill(-1);
+    queue=[src];visited[src]=true;dist[src]=0;
+    bfsSteps=[{queue:[src],visited:[...visited],dist:[...dist],msg:'Enqueue source '+nodes[src].id+', dist=0'}];
+    const q=[src];
+    while(q.length){
+      const u=q.shift();
+      const nbs=adj(u);
+      nbs.forEach(v=>{
+        if(!visited[v]){
+          visited[v]=true;dist[v]=dist[u]+1;q.push(v);
+          bfsSteps.push({queue:[...q],visited:[...visited],dist:[...dist],dequeued:u,discovered:v,
+            msg:'Dequeue '+nodes[u].id+' → discover '+nodes[v].id+' (dist='+dist[v]+')'});
+        }
+      });
+    }
+    bfsSteps.push({queue:[],visited:[...visited],dist:[...dist],msg:'BFS complete! All reachable vertices visited.'});
+    // reset for stepping
+    visited=Array(nodes.length).fill(false);dist=Array(nodes.length).fill(-1);
+    stepIdx=0;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    // edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#334155';ctx.lineWidth=2;ctx.stroke();
+    });
+    // ripple rings from source
+    if(source>=0&&stepIdx>0){
+      const curDist=bfsSteps[Math.min(stepIdx,bfsSteps.length-1)].dist;
+      const maxD=Math.max(...curDist.filter(d=>d>=0));
+      for(let d=0;d<=maxD;d++){
+        ctx.beginPath();ctx.arc(nodes[source].x,nodes[source].y,50+d*60,0,Math.PI*2);
+        ctx.strokeStyle=levelColors[d%levelColors.length];ctx.lineWidth=1;ctx.globalAlpha=0.12;ctx.stroke();ctx.globalAlpha=1;
+      }
+    }
+    // nodes
+    const curState=stepIdx>0&&stepIdx<=bfsSteps.length?bfsSteps[stepIdx-1]:null;
+    nodes.forEach((n,i)=>{
+      const isVis=curState?curState.visited[i]:false;
+      const d=curState?curState.dist[i]:-1;
+      const isInQueue=curState?curState.queue&&curState.queue.includes(i):false;
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isVis?(d>=0?levelColors[d%levelColors.length]:'#6366f1'):(i===source?'#f59e0b':'#334155');
+      ctx.fill();
+      ctx.strokeStyle=isInQueue?'#fbbf24':'rgba(255,255,255,0.2)';ctx.lineWidth=isInQueue?3:2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(d>=0){
+        ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='10px monospace';
+        ctx.fillText('d='+d,n.x,n.y-30);
+      }
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    if(timer){clearInterval(timer);timer=null;}
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width),my=(e.clientY-rect.top)*(340/rect.height);
+    for(let i=0;i<nodes.length;i++){
+      if(Math.hypot(mx-nodes[i].x,my-nodes[i].y)<24){
+        source=i;prepareBFS(i);stepIdx=0;draw();
+        document.getElementById('s2Log').innerHTML='Source: <span style="color:#f59e0b;">'+nodes[i].id+'</span> — click Step or Auto Play';
+        return;
+      }
+    }
+  });
+
+  window.s2Step=function(){
+    if(source<0){document.getElementById('s2Log').innerHTML='Click a node first to set source';return;}
+    if(stepIdx>=bfsSteps.length)return;
+    stepIdx++;draw();
+    document.getElementById('s2Log').innerHTML=bfsSteps[stepIdx-1].msg;
+  };
+  window.s2Auto=function(){
+    if(source<0){document.getElementById('s2Log').innerHTML='Click a node first to set source';return;}
+    if(timer)return;
+    timer=setInterval(()=>{
+      if(stepIdx>=bfsSteps.length){clearInterval(timer);timer=null;return;}
+      s2Step();
+    },700);
+  };
+  window.s2Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    source=-1;stepIdx=0;visited=[];dist=[];bfsSteps=[];draw();
+    document.getElementById('s2Log').innerHTML='Click a node to set it as source';
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}source=-1;stepIdx=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s2').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: BFS Uses a Queue ==================== -->
+<div class="slide" id="s3">
+  <h2>BFS Uses a Queue</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>Two Key Data Structures</h3>
+      <ul>
+        <li><strong>Queue (FIFO)</strong> &mdash; holds vertices waiting to be explored. First in, first out ensures level-by-level order.</li>
+        <li><strong>Visited set</strong> &mdash; prevents revisiting and infinite loops in cyclic graphs.</li>
+      </ul>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Why a Queue?</h3>
+        <p>A queue processes vertices in <strong>discovery order</strong>. All level-1 vertices enqueued before any level-2, so level-1 is fully processed first. That&rsquo;s what makes it &ldquo;breadth-first.&rdquo;</p>
+      </div>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Stack &ne; BFS</h3>
+        <p>Replace the queue with a stack → you get <strong>DFS</strong> (goes deep before wide). The data structure is the fundamental difference.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS3" width="520" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s3Step()">Step (Queue=BFS)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Toggle()">Toggle: Stack (DFS)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+      <div id="s3Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Watch how Queue (BFS) vs Stack (DFS) produce different visit orders
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS3'),ctx=canvas.getContext('2d');
+  const nodes=[{x:260,y:40,id:'A'},{x:130,y:120,id:'B'},{x:390,y:120,id:'C'},{x:70,y:220,id:'D'},{x:200,y:220,id:'E'},{x:330,y:220,id:'F'},{x:460,y:220,id:'G'}];
+  const edges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]];
+  let useStack=false,ds=[],visited=[],order=[],stepCount=0;
+
+  function adj(u){const nb=[];edges.forEach(([a,b])=>{if(a===u)nb.push(b);if(b===u)nb.push(a);});return nb.sort();}
+
+  function reset(){
+    ds=[0];visited=Array(nodes.length).fill(false);visited[0]=true;order=[];stepCount=0;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,380);
+    // edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#334155';ctx.lineWidth=2;ctx.stroke();
+    });
+    // nodes
+    nodes.forEach((n,i)=>{
+      const oi=order.indexOf(i);
+      const inDS=ds.includes(i);
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=oi>=0?'#22c55e':inDS?'#f59e0b':'#334155';ctx.fill();
+      ctx.strokeStyle=inDS?'#fbbf24':'rgba(255,255,255,0.2)';ctx.lineWidth=inDS?3:2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(oi>=0){ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='bold 10px monospace';ctx.fillText(''+(oi+1),n.x+26,n.y-14);}
+    });
+    // data structure visualization
+    const dsY=290;
+    ctx.fillStyle='#38bdf8';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(useStack?'STACK (LIFO) → DFS':'QUEUE (FIFO) → BFS',260,dsY);
+    const boxW=45,boxH=30;
+    const startX=260-(ds.length*boxW)/2;
+    ds.forEach((v,i)=>{
+      ctx.fillStyle='rgba(245,158,11,0.2)';ctx.fillRect(startX+i*boxW,dsY+10,boxW,boxH);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=1;ctx.strokeRect(startX+i*boxW,dsY+10,boxW,boxH);
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(nodes[v].id,startX+i*boxW+boxW/2,dsY+10+boxH/2);
+    });
+    if(ds.length>0){
+      // show which end gets removed
+      const removeIdx=useStack?ds.length-1:0;
+      const rx=startX+removeIdx*boxW+boxW/2;
+      ctx.fillStyle='#f59e0b';ctx.font='10px sans-serif';ctx.textAlign='center';
+      ctx.fillText(useStack?'↑ pop':'↑ dequeue',rx,dsY+48);
+      ctx.fillText('add →',startX+ds.length*boxW+15,dsY+25);
+    }
+    // visit order
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+    ctx.fillText('Visit order: '+order.map(i=>nodes[i].id).join(' → '),260,dsY+70);
+  }
+
+  window.s3Step=function(){
+    if(ds.length===0){document.getElementById('s3Log').innerHTML='Done! All reachable vertices visited.';return;}
+    const u=useStack?ds.pop():ds.shift();
+    order.push(u);
+    const nbs=adj(u);
+    const added=[];
+    nbs.forEach(v=>{
+      if(!visited[v]){visited[v]=true;ds.push(v);added.push(nodes[v].id);}
+    });
+    draw();
+    document.getElementById('s3Log').innerHTML=(useStack?'Pop ':'Dequeue ')+'<strong style="color:#22c55e;">'+nodes[u].id+'</strong>'+
+      (added.length?' → add: '+added.join(', '):' → no new neighbors');
+  };
+  window.s3Toggle=function(){
+    useStack=!useStack;reset();draw();
+    document.getElementById('s3Log').innerHTML='Now using <strong>'+(useStack?'STACK (DFS)':'QUEUE (BFS)')+'</strong> — click Step to compare';
+  };
+  window.s3Reset=function(){reset();draw();
+    document.getElementById('s3Log').innerHTML='Watch how Queue (BFS) vs Stack (DFS) produce different visit orders';};
+
+  function init(){useStack=false;reset();draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s3').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: BFS Algorithm Detailed ==================== -->
+<div class="slide" id="s4">
+  <h2>BFS Algorithm &mdash; Detailed</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s4code">
+          <span class="line" id="s4L0">BFS(graph, source):</span>
+          <span class="line" id="s4L1">  for each vertex v:</span>
+          <span class="line" id="s4L2">    dist[v] = ∞, parent[v] = null</span>
+          <span class="line" id="s4L3">    color[v] = WHITE</span>
+          <span class="line" id="s4L4"> </span>
+          <span class="line" id="s4L5">  dist[source] = 0</span>
+          <span class="line" id="s4L6">  color[source] = GRAY</span>
+          <span class="line" id="s4L7">  Q.enqueue(source)</span>
+          <span class="line" id="s4L8"> </span>
+          <span class="line" id="s4L9">  while Q is not empty:</span>
+          <span class="line" id="s4L10">    u = Q.dequeue()</span>
+          <span class="line" id="s4L11">    for each neighbor v of u:</span>
+          <span class="line" id="s4L12">      if color[v] == WHITE:</span>
+          <span class="line" id="s4L13">        color[v] = GRAY</span>
+          <span class="line" id="s4L14">        dist[v] = dist[u] + 1</span>
+          <span class="line" id="s4L15">        parent[v] = u</span>
+          <span class="line" id="s4L16">        Q.enqueue(v)</span>
+          <span class="line" id="s4L17">    color[u] = BLACK</span>
+        </div>
+      </div>
+      <h3 style="font-size:1.1em;margin-top:10px;">Color Scheme (CLRS)</h3>
+      <table style="border-collapse:collapse;width:100%;font-size:0.88em;">
+        <tr><th style="border:1px solid #475569;padding:6px 10px;background:#334155;color:#93c5fd;">Color</th><th style="border:1px solid #475569;padding:6px 10px;background:#334155;color:#93c5fd;">Meaning</th></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><span style="color:#64748b;">WHITE</span></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Undiscovered</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><span style="color:#fbbf24;">GRAY</span></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Discovered, in queue</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><span style="color:#22c55e;">BLACK</span></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Fully explored (dequeued)</td></tr>
+      </table>
+    </div>
+    <div>
+      <canvas id="cS4" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s4Step()">Step</button>
+        <button class="btn btn-sm" onclick="s4Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+      </div>
+      <div id="s4Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;max-height:70px;overflow-y:auto;">
+        Step through BFS with color tracking &amp; code sync
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS4'),ctx=canvas.getContext('2d');
+  const ns=[{x:260,y:40,id:'A'},{x:120,y:130,id:'B'},{x:400,y:130,id:'C'},{x:60,y:230,id:'D'},{x:200,y:230,id:'E'},{x:340,y:230,id:'F'},{x:460,y:230,id:'G'}];
+  const es=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]];
+  // precompute BFS steps with code line highlights
+  let steps=[],stepIdx=0,timer=null;
+
+  function adj(u){const nb=[];es.forEach(([a,b])=>{if(a===u)nb.push(b);if(b===u)nb.push(a);});return nb.sort();}
+
+  function buildSteps(){
+    steps=[];
+    const color=Array(ns.length).fill('W'),dist=Array(ns.length).fill(Infinity),parent=Array(ns.length).fill(-1);
+    steps.push({color:[...color],dist:[...dist],parent:[...parent],queue:[],line:[1,2,3],msg:'Initialize all vertices: WHITE, dist=∞'});
+    dist[0]=0;color[0]='G';
+    steps.push({color:[...color],dist:[...dist],parent:[...parent],queue:[0],line:[5,6,7],msg:'Set source A: dist=0, GRAY, enqueue A'});
+    const q=[0];
+    while(q.length){
+      const u=q[0];
+      steps.push({color:[...color],dist:[...dist],parent:[...parent],queue:[...q],line:[9,10],msg:'Dequeue '+ns[u].id,dequeued:u});
+      q.shift();
+      const nbs=adj(u);
+      nbs.forEach(v=>{
+        if(color[v]==='W'){
+          color[v]='G';dist[v]=dist[u]+1;parent[v]=u;q.push(v);
+          steps.push({color:[...color],dist:[...dist],parent:[...parent],queue:[...q],line:[12,13,14,15,16],
+            msg:'Discover '+ns[v].id+' from '+ns[u].id+': GRAY, dist='+dist[v]+', enqueue'});
+        }
+      });
+      color[u]='B';
+      steps.push({color:[...color],dist:[...dist],parent:[...parent],queue:[...q],line:[17],msg:ns[u].id+' fully explored → BLACK'});
+    }
+    steps.push({color:[...color],dist:[...dist],parent:[...parent],queue:[],line:[],msg:'BFS complete!'});
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    const st=stepIdx<steps.length?steps[stepIdx]:steps[steps.length-1];
+    // edges
+    es.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);ctx.strokeStyle='#334155';ctx.lineWidth=2;ctx.stroke();});
+    // nodes
+    ns.forEach((n,i)=>{
+      const c=st.color[i];
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=c==='B'?'#22c55e':c==='G'?'#f59e0b':'#334155';ctx.fill();
+      ctx.strokeStyle=st.queue.includes(i)?'#fbbf24':'rgba(255,255,255,0.2)';ctx.lineWidth=st.queue.includes(i)?3:2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(st.dist[i]<Infinity){
+        ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='10px monospace';
+        ctx.fillText('d='+st.dist[i],n.x,n.y-30);
+      }
+    });
+    // queue display
+    ctx.fillStyle='#38bdf8';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('Queue:',10,285);
+    st.queue.forEach((v,i)=>{
+      ctx.fillStyle='rgba(245,158,11,0.2)';ctx.fillRect(70+i*40,270,35,25);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=1;ctx.strokeRect(70+i*40,270,35,25);
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(ns[v].id,70+i*40+17,282);
+    });
+    if(st.queue.length===0&&stepIdx>0){
+      ctx.fillStyle='#64748b';ctx.font='12px monospace';ctx.textAlign='left';
+      ctx.fillText('(empty)',70,285);
+    }
+    // highlight code lines
+    for(let i=0;i<=17;i++){
+      const el=document.getElementById('s4L'+i);
+      if(el)el.classList.toggle('active',st.line.includes(i));
+    }
+  }
+
+  window.s4Step=function(){
+    if(stepIdx>=steps.length-1)return;
+    stepIdx++;draw();
+    document.getElementById('s4Log').innerHTML=steps[stepIdx].msg;
+  };
+  window.s4Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{
+      if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}
+      s4Step();
+    },900);
+  };
+  window.s4Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;draw();
+    document.getElementById('s4Log').innerHTML='Step through BFS with color tracking & code sync';
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}buildSteps();stepIdx=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s4').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: Full Step-by-Step ==================== -->
+<div class="slide" id="s5">
+  <h2>BFS Step-by-Step: Full Example</h2>
+  <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS5" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s5Step()">Step</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s5Queue" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.82em;color:#94a3b8;margin-bottom:8px;">Queue: [ ]</div>
+      <div id="s5Visited" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.82em;color:#94a3b8;margin-bottom:8px;">Visited: { }</div>
+      <div id="s5Table" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78em;color:#94a3b8;margin-bottom:8px;overflow-x:auto;"></div>
+      <div id="s5Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;max-height:100px;overflow-y:auto;">
+        Source = A. Step through to see queue, visited, dist, and parent evolve.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS5'),ctx=canvas.getContext('2d');
+  const ns=[{x:200,y:40,id:'A'},{x:80,y:130,id:'B'},{x:320,y:90,id:'C'},{x:440,y:130,id:'D'},
+    {x:40,y:240,id:'E'},{x:180,y:240,id:'F'},{x:320,y:240,id:'G'},{x:460,y:240,id:'H'}];
+  const es=[[0,1],[0,2],[1,4],[1,5],[2,3],[2,6],[3,7],[4,5],[6,7]];
+  let steps=[],stepIdx=0,timer=null;
+
+  function adj(u){const nb=[];es.forEach(([a,b])=>{if(a===u)nb.push(b);if(b===u)nb.push(a);});return nb.sort();}
+
+  function buildSteps(){
+    steps=[];
+    const vis=Array(ns.length).fill(false),dist=Array(ns.length).fill(-1),parent=Array(ns.length).fill(-1);
+    vis[0]=true;dist[0]=0;
+    steps.push({vis:[...vis],dist:[...dist],parent:[...parent],queue:[0],msg:'Init: enqueue A, dist[A]=0'});
+    const q=[0];
+    while(q.length){
+      const u=q.shift();
+      const nbs=adj(u);
+      const discovered=[];
+      nbs.forEach(v=>{
+        if(!vis[v]){vis[v]=true;dist[v]=dist[u]+1;parent[v]=u;q.push(v);discovered.push(v);}
+      });
+      steps.push({vis:[...vis],dist:[...dist],parent:[...parent],queue:[...q],dequeued:u,discovered,
+        msg:'Dequeue '+ns[u].id+' → discover: '+(discovered.length?discovered.map(v=>ns[v].id).join(', '):'(none new)')});
+    }
+    steps.push({vis:[...vis],dist:[...dist],parent:[...parent],queue:[],msg:'BFS complete!'});
+  }
+
+  const levelColors=['#f59e0b','#38bdf8','#22c55e','#a78bfa'];
+
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    const st=stepIdx<steps.length?steps[stepIdx]:steps[steps.length-1];
+    // tree edges (parent links)
+    ns.forEach((n,i)=>{
+      if(st.parent[i]>=0){
+        const p=ns[st.parent[i]];
+        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(n.x,n.y);
+        ctx.strokeStyle='#22c55e';ctx.lineWidth=3;ctx.stroke();
+      }
+    });
+    // all edges
+    es.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle='rgba(71,85,105,0.5)';ctx.lineWidth=1;ctx.stroke();
+    });
+    // nodes
+    ns.forEach((n,i)=>{
+      const d=st.dist[i];
+      const isVis=st.vis[i];
+      const isDequeued=st.dequeued===i;
+      const isDiscovered=st.discovered&&st.discovered.includes(i);
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isVis?(d>=0?levelColors[d%levelColors.length]:'#6366f1'):'#334155';
+      ctx.fill();
+      ctx.strokeStyle=isDequeued?'#ef4444':isDiscovered?'#fbbf24':st.queue.includes(i)?'#fbbf24':'rgba(255,255,255,0.2)';
+      ctx.lineWidth=(isDequeued||isDiscovered||st.queue.includes(i))?3:2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(d>=0){ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='10px monospace';ctx.fillText('d='+d,n.x,n.y-30);}
+    });
+    // update panels
+    document.getElementById('s5Queue').innerHTML='Queue: [ '+st.queue.map(v=>'<span style="color:#f59e0b;">'+ns[v].id+'</span>').join(', ')+' ]';
+    document.getElementById('s5Visited').innerHTML='Visited: { '+ns.filter((_,i)=>st.vis[i]).map(n=>'<span style="color:#22c55e;">'+n.id+'</span>').join(', ')+' }';
+    // dist/parent table
+    let tbl='<table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #475569;padding:3px 6px;background:#334155;color:#93c5fd;font-size:0.85em;"></th>';
+    ns.forEach(n=>{tbl+='<th style="border:1px solid #475569;padding:3px 6px;background:#334155;color:#93c5fd;font-size:0.85em;">'+n.id+'</th>';});
+    tbl+='</tr><tr><td style="border:1px solid #475569;padding:3px 6px;background:#1e293b;font-size:0.85em;"><strong>dist</strong></td>';
+    ns.forEach((_,i)=>{tbl+='<td style="border:1px solid #475569;padding:3px 6px;background:#1e293b;font-size:0.85em;">'+(st.dist[i]>=0?st.dist[i]:'∞')+'</td>';});
+    tbl+='</tr><tr><td style="border:1px solid #475569;padding:3px 6px;background:#1e293b;font-size:0.85em;"><strong>par</strong></td>';
+    ns.forEach((_,i)=>{tbl+='<td style="border:1px solid #475569;padding:3px 6px;background:#1e293b;font-size:0.85em;">'+(st.parent[i]>=0?ns[st.parent[i]].id:'—')+'</td>';});
+    tbl+='</tr></table>';
+    document.getElementById('s5Table').innerHTML=tbl;
+  }
+
+  window.s5Step=function(){
+    if(stepIdx>=steps.length-1)return;
+    stepIdx++;draw();
+    document.getElementById('s5Log').innerHTML=steps[stepIdx].msg+'<br>'+document.getElementById('s5Log').innerHTML;
+  };
+  window.s5Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s5Step();},900);
+  };
+  window.s5Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}stepIdx=0;draw();
+    document.getElementById('s5Log').innerHTML='Source = A. Step through to see queue, visited, dist, and parent evolve.';
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}buildSteps();stepIdx=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s5').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: BFS Tree ==================== -->
+<div class="slide" id="s6">
+  <h2>The BFS Tree</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>What Is the BFS Tree?</h3>
+      <p>Each vertex (except source) is discovered from exactly one vertex. That edge is a <strong>tree edge</strong>. All tree edges form a <strong>spanning tree</strong> &mdash; the BFS tree.</p>
+      <canvas id="cS6" width="520" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s6Toggle()" id="s6btn">Show BFS Tree Only</button>
+      </div>
+    </div>
+    <div>
+      <h3>Edge Classification</h3>
+      <table style="border-collapse:collapse;width:100%;font-size:0.9em;">
+        <tr><th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;">Type</th><th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;">Definition</th></tr>
+        <tr><td style="border:1px solid #475569;padding:8px;background:#1e293b;"><strong style="color:#22c55e;">Tree edge</strong></td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">Used to discover a new vertex</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px;background:#1e293b;"><strong style="color:#64748b;">Cross edge</strong></td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">Connects same/adjacent levels, not used for discovery</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Idea</h3>
+        <p>The BFS tree encodes <strong>shortest paths</strong>. The path from any vertex back to the root in the BFS tree IS the shortest path in the original graph.</p>
+      </div>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Important Property</h3>
+        <p>In undirected BFS, cross edges only connect vertices whose levels differ by <strong>at most 1</strong>. No edges skip levels.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS6'),ctx=canvas.getContext('2d');
+  const ns=[{x:260,y:30,id:'A'},{x:130,y:110,id:'B'},{x:390,y:110,id:'C'},{x:70,y:200,id:'D'},{x:200,y:200,id:'E'},{x:330,y:200,id:'F'},{x:460,y:200,id:'G'},{x:130,y:260,id:'H'}];
+  const allEdges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7],[4,5],[6,7]];
+  const treeEdges=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7]]; // parent links from BFS source=A
+  const crossEdges=[[4,5],[6,7]];
+  let showTree=false;
+
+  function draw(){
+    ctx.clearRect(0,0,520,280);
+    if(!showTree){
+      // all edges, color-coded
+      treeEdges.forEach(([a,b])=>{
+        ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+        ctx.strokeStyle='#22c55e';ctx.lineWidth=3;ctx.stroke();
+      });
+      crossEdges.forEach(([a,b])=>{
+        ctx.beginPath();ctx.setLineDash([6,4]);ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+        ctx.strokeStyle='#64748b';ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+      });
+    }else{
+      treeEdges.forEach(([a,b])=>{
+        ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+        ctx.strokeStyle='#22c55e';ctx.lineWidth=3;ctx.stroke();
+      });
+    }
+    const levelColors=['#f59e0b','#38bdf8','#22c55e','#a78bfa'];
+    const levels=[0,1,1,2,2,2,2,3];
+    ns.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=levelColors[levels[i]];ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='9px monospace';
+      ctx.fillText('L'+levels[i],n.x,n.y-28);
+    });
+    // legend
+    ctx.font='11px sans-serif';ctx.textAlign='left';
+    ctx.fillStyle='#22c55e';ctx.fillText('— Tree edge',10,20);
+    if(!showTree){ctx.fillStyle='#64748b';ctx.fillText('--- Cross edge',10,36);}
+  }
+
+  window.s6Toggle=function(){
+    showTree=!showTree;draw();
+    document.getElementById('s6btn').textContent=showTree?'Show All Edges':'Show BFS Tree Only';
+  };
+
+  function init(){showTree=false;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s6').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: Shortest Paths ==================== -->
+<div class="slide" id="s7">
+  <h2>BFS Finds Shortest Paths (Unweighted)</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS7" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s7FindPath()">Find Shortest Path</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+      <div id="s7Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Click two nodes: source and destination. BFS finds the shortest path.
+      </div>
+    </div>
+    <div>
+      <h3>The Guarantee</h3>
+      <p>In an <strong>unweighted graph</strong> (all edges cost 1), BFS discovers every vertex at the <strong>minimum distance</strong> from the source.</p>
+      <h3 style="margin-top:12px;">Why Does This Work?</h3>
+      <ol>
+        <li>BFS processes vertices in <strong>non-decreasing distance order</strong></li>
+        <li>When we discover v from u: <code>dist[v] = dist[u] + 1</code></li>
+        <li>Since u was dequeued first, <code>dist[u]</code> is already optimal</li>
+        <li>Therefore <code>dist[v]</code> is also optimal</li>
+      </ol>
+      <div class="warning" style="margin-top:12px;">
+        <h3>Only Unweighted Graphs!</h3>
+        <p>BFS does <strong>NOT</strong> find shortest paths in weighted graphs. Use <strong>Dijkstra&rsquo;s</strong> (non-negative weights) or <strong>Bellman-Ford</strong> (negative weights).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS7'),ctx=canvas.getContext('2d');
+  const ns=[{x:260,y:30,id:'A'},{x:100,y:110,id:'B'},{x:420,y:110,id:'C'},{x:50,y:220,id:'D'},{x:180,y:220,id:'E'},
+    {x:340,y:220,id:'F'},{x:470,y:220,id:'G'},{x:120,y:300,id:'H'},{x:400,y:300,id:'I'}];
+  const es=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7],[4,5],[5,8],[6,8],[7,8]];
+  let selA=-1,selB=-1,pathEdges=null,dist=[];
+
+  function adj(u){const nb=[];es.forEach(([a,b])=>{if(a===u)nb.push(b);if(b===u)nb.push(a);});return nb;}
+
+  function bfs(src){
+    const n=ns.length;dist=Array(n).fill(-1);const prev=Array(n).fill(-1),vis=Array(n).fill(false);
+    vis[src]=true;dist[src]=0;const q=[src];
+    while(q.length){const u=q.shift();adj(u).forEach(v=>{if(!vis[v]){vis[v]=true;dist[v]=dist[u]+1;prev[v]=u;q.push(v);}});}
+    return prev;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    es.forEach(([a,b])=>{
+      const onP=pathEdges&&pathEdges.some(([pa,pb])=>(pa===a&&pb===b)||(pa===b&&pb===a));
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle=onP?'#22c55e':'#334155';ctx.lineWidth=onP?4:2;ctx.stroke();
+    });
+    ns.forEach((n,i)=>{
+      const isSel=(i===selA||i===selB);
+      const onP=pathEdges&&pathEdges.some(([a,b])=>a===i||b===i);
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=isSel?'#f59e0b':onP?'#22c55e':'#334155';ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(dist[i]>=0){ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='10px monospace';ctx.fillText('d='+dist[i],n.x,n.y-28);}
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width),my=(e.clientY-rect.top)*(320/rect.height);
+    let clicked=-1;
+    for(let i=0;i<ns.length;i++)if(Math.hypot(mx-ns[i].x,my-ns[i].y)<22){clicked=i;break;}
+    if(clicked<0)return;
+    pathEdges=null;dist=[];
+    if(selA<0){selA=clicked;}else if(selB<0&&clicked!==selA){selB=clicked;}else{selA=clicked;selB=-1;}
+    draw();
+    if(selA>=0&&selB<0)document.getElementById('s7Log').innerHTML='Source: <span style="color:#f59e0b;">'+ns[selA].id+'</span> — click destination';
+    else if(selA>=0&&selB>=0)document.getElementById('s7Log').innerHTML=ns[selA].id+' → '+ns[selB].id+' — click Find Shortest Path';
+  });
+
+  window.s7FindPath=function(){
+    if(selA<0||selB<0)return;
+    const prev=bfs(selA);
+    pathEdges=[];let c=selB;
+    while(c!==selA&&prev[c]>=0){pathEdges.push([prev[c],c]);c=prev[c];}
+    draw();
+    const names=[];c=selB;while(c>=0){names.unshift(ns[c].id);if(c===selA)break;c=prev[c];}
+    document.getElementById('s7Log').innerHTML='<span style="color:#22c55e;">Shortest: '+names.join(' → ')+' (distance '+dist[selB]+')</span> — follow parent pointers back!';
+  };
+  window.s7Reset=function(){selA=-1;selB=-1;pathEdges=null;dist=[];draw();
+    document.getElementById('s7Log').innerHTML='Click two nodes: source and destination. BFS finds the shortest path.';};
+
+  function init(){selA=-1;selB=-1;pathEdges=null;dist=[];draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s7').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: Computing Distances ==================== -->
+<div class="slide" id="s8">
+  <h2>Computing Distances</h2>
+  <p><code>dist[v] = dist[u] + 1</code> when discovering v from u</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS8" width="520" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s8Step()">Step</button>
+        <button class="btn btn-sm" onclick="s8Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s8Table" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.82em;overflow-x:auto;"></div>
+      <div id="s8Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;max-height:100px;overflow-y:auto;">
+        Watch the dist[] array evolve as BFS discovers vertices
+      </div>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Key Idea</h3>
+        <p>Distances are computed <strong>when discovered</strong> (enqueued), not when processed (dequeued). Each vertex&rsquo;s distance is set <strong>exactly once</strong> and never changes.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS8'),ctx=canvas.getContext('2d');
+  const ns=[{x:260,y:35,id:'A'},{x:120,y:110,id:'B'},{x:400,y:110,id:'C'},{x:60,y:210,id:'D'},{x:200,y:210,id:'E'},{x:330,y:210,id:'F'},{x:460,y:210,id:'G'},{x:260,y:265,id:'H'}];
+  const es=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,5],[3,7]];
+  const levelColors=['#f59e0b','#38bdf8','#22c55e','#a78bfa'];
+  let steps=[],stepIdx=0,timer=null;
+
+  function adj(u){const nb=[];es.forEach(([a,b])=>{if(a===u)nb.push(b);if(b===u)nb.push(a);});return nb.sort();}
+
+  function buildSteps(){
+    steps=[];
+    const vis=Array(ns.length).fill(false),dist=Array(ns.length).fill(-1),par=Array(ns.length).fill(-1);
+    vis[0]=true;dist[0]=0;
+    steps.push({vis:[...vis],dist:[...dist],par:[...par],queue:[0],msg:'dist[A] = 0'});
+    const q=[0];
+    while(q.length){
+      const u=q.shift();
+      adj(u).forEach(v=>{
+        if(!vis[v]){
+          vis[v]=true;dist[v]=dist[u]+1;par[v]=u;q.push(v);
+          steps.push({vis:[...vis],dist:[...dist],par:[...par],queue:[...q],discovered:v,from:u,
+            msg:'Discover '+ns[v].id+' from '+ns[u].id+': dist['+ns[v].id+'] = dist['+ns[u].id+'] + 1 = '+dist[v]});
+        }
+      });
+    }
+    steps.push({vis:[...vis],dist:[...dist],par:[...par],queue:[],msg:'BFS complete — all distances computed!'});
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,280);
+    const st=stepIdx<steps.length?steps[stepIdx]:steps[steps.length-1];
+    es.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);ctx.strokeStyle='#334155';ctx.lineWidth=2;ctx.stroke();});
+    // highlight discovered edge
+    if(st.discovered!==undefined&&st.from!==undefined){
+      const a=st.from,b=st.discovered;
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.stroke();
+    }
+    ns.forEach((n,i)=>{
+      const d=st.dist[i];
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=d>=0?levelColors[d%levelColors.length]:'#334155';ctx.fill();
+      ctx.strokeStyle=st.discovered===i?'#fbbf24':'rgba(255,255,255,0.2)';ctx.lineWidth=st.discovered===i?3:2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(d>=0){ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='bold 11px monospace';ctx.fillText('d='+d,n.x,n.y-30);}
+    });
+    // table
+    let tbl='<table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #475569;padding:4px 6px;background:#334155;color:#93c5fd;font-size:0.85em;"></th>';
+    ns.forEach(n=>{tbl+='<th style="border:1px solid #475569;padding:4px 6px;background:#334155;color:#93c5fd;font-size:0.85em;">'+n.id+'</th>';});
+    tbl+='</tr><tr><td style="border:1px solid #475569;padding:4px 6px;background:#1e293b;font-size:0.85em;"><strong>dist</strong></td>';
+    ns.forEach((_,i)=>{
+      const d=st.dist[i];const isNew=st.discovered===i;
+      tbl+='<td style="border:1px solid #475569;padding:4px 6px;background:'+(isNew?'rgba(245,158,11,0.2)':'#1e293b')+';font-size:0.85em;color:'+(d>=0?'#e2e8f0':'#64748b')+';">'+(d>=0?d:'∞')+'</td>';
+    });
+    tbl+='</tr></table>';
+    document.getElementById('s8Table').innerHTML=tbl;
+  }
+
+  window.s8Step=function(){if(stepIdx>=steps.length-1)return;stepIdx++;draw();document.getElementById('s8Log').innerHTML=steps[stepIdx].msg+'<br>'+document.getElementById('s8Log').innerHTML;};
+  window.s8Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s8Step();},700);};
+  window.s8Reset=function(){if(timer){clearInterval(timer);timer=null;}stepIdx=0;draw();document.getElementById('s8Log').innerHTML='Watch the dist[] array evolve as BFS discovers vertices';};
+
+  function init(){if(timer){clearInterval(timer);timer=null;}buildSteps();stepIdx=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: Reconstructing Path ==================== -->
+<div class="slide" id="s9">
+  <h2>Reconstructing the Shortest Path</h2>
+  <p>Follow the parent pointers back to the source</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS9" width="520" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div id="s9Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Click any node to trace parent pointers back to source A
+      </div>
+    </div>
+    <div>
+      <h3>Parent Array (source = A)</h3>
+      <table style="border-collapse:collapse;width:100%;font-size:0.88em;" id="s9Tbl">
+        <tr><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">Vertex</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">A</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">B</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">C</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">D</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">E</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">F</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">G</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">H</th></tr>
+        <tr><td style="border:1px solid #475569;padding:6px;background:#1e293b;"><strong>parent</strong></td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">—</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">A</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">A</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">B</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">B</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">C</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">C</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">D</td></tr>
+      </table>
+      <div class="code-block" style="margin-top:12px;">
+        <div class="code-content" style="font-size:0.82em;">
+          <span class="line">shortestPath(source, dest, parent):</span>
+          <span class="line">  path = []</span>
+          <span class="line">  current = dest</span>
+          <span class="line">  while current != null:</span>
+          <span class="line">    path.addFirst(current)</span>
+          <span class="line">    current = parent[current]</span>
+          <span class="line">  return path</span>
+        </div>
+      </div>
+      <div class="analogy" style="margin-top:10px;">
+        <h3>Analogy: Breadcrumb Trail</h3>
+        <p>Each vertex remembers who led it there. Follow the breadcrumbs back to find the shortest route to the source!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS9'),ctx=canvas.getContext('2d');
+  const ns=[{x:260,y:30,id:'A'},{x:120,y:110,id:'B'},{x:400,y:110,id:'C'},{x:60,y:210,id:'D'},{x:200,y:210,id:'E'},{x:330,y:210,id:'F'},{x:460,y:210,id:'G'},{x:130,y:290,id:'H'}];
+  const es=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7],[4,5]];
+  const parent=[-1,0,0,1,1,2,2,3]; // BFS from A
+  const dist=[0,1,1,2,2,2,2,3];
+  const levelColors=['#f59e0b','#38bdf8','#22c55e','#a78bfa'];
+  let pathNodes=null,timer=null,traceStep=0;
+
+  function draw(){
+    ctx.clearRect(0,0,520,310);
+    // tree edges (parent links)
+    ns.forEach((n,i)=>{
+      if(parent[i]>=0){
+        const p=ns[parent[i]];
+        const onPath=pathNodes&&pathNodes.includes(i)&&pathNodes.includes(parent[i]);
+        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(n.x,n.y);
+        ctx.strokeStyle=onPath?'#22c55e':'rgba(71,85,105,0.5)';ctx.lineWidth=onPath?4:2;ctx.stroke();
+        // arrow
+        if(onPath){
+          const angle=Math.atan2(p.y-n.y,p.x-n.x);
+          const mx=(p.x+n.x)/2,my=(p.y+n.y)/2;
+          ctx.beginPath();ctx.moveTo(mx,my);
+          ctx.lineTo(mx-10*Math.cos(angle-0.4),my-10*Math.sin(angle-0.4));
+          ctx.lineTo(mx-10*Math.cos(angle+0.4),my-10*Math.sin(angle+0.4));
+          ctx.closePath();ctx.fillStyle='#22c55e';ctx.fill();
+        }
+      }
+    });
+    // non-tree edges
+    es.forEach(([a,b])=>{
+      if(parent[b]!==a&&parent[a]!==b){
+        ctx.beginPath();ctx.setLineDash([5,4]);ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+        ctx.strokeStyle='rgba(71,85,105,0.3)';ctx.lineWidth=1;ctx.stroke();ctx.setLineDash([]);
+      }
+    });
+    ns.forEach((n,i)=>{
+      const onPath=pathNodes&&pathNodes.includes(i);
+      const isTraceHead=pathNodes&&traceStep>0&&i===pathNodes[pathNodes.length-traceStep];
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=isTraceHead?'#f59e0b':onPath?'#22c55e':levelColors[dist[i]];ctx.fill();
+      ctx.strokeStyle=onPath?'#4ade80':'rgba(255,255,255,0.2)';ctx.lineWidth=onPath?3:2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    if(timer){clearInterval(timer);timer=null;}
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width),my=(e.clientY-rect.top)*(310/rect.height);
+    let clicked=-1;
+    for(let i=0;i<ns.length;i++)if(Math.hypot(mx-ns[i].x,my-ns[i].y)<22){clicked=i;break;}
+    if(clicked<0)return;
+    // trace path
+    pathNodes=[];let c=clicked;
+    while(c>=0){pathNodes.push(c);c=parent[c];}
+    // animate trace
+    traceStep=0;
+    timer=setInterval(()=>{
+      traceStep++;draw();
+      if(traceStep>pathNodes.length){
+        clearInterval(timer);timer=null;
+        const names=pathNodes.slice().reverse().map(i=>ns[i].id);
+        document.getElementById('s9Log').innerHTML='<span style="color:#22c55e;">Path: '+names.join(' → ')+'</span> (distance '+dist[clicked]+') — traced parent pointers: '+
+          pathNodes.map(i=>ns[i].id).join(' ← ');
+      }
+    },500);
+  });
+
+  function init(){if(timer){clearInterval(timer);timer=null;}pathNodes=null;traceStep=0;draw();
+    document.getElementById('s9Log').innerHTML='Click any node to trace parent pointers back to source A';}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: BFS on Directed Graphs ==================== -->
+<div class="slide" id="s10">
+  <h2>BFS on Directed Graphs</h2>
+  <p>Same algorithm, but only follow <strong>outgoing</strong> edges</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS10" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;max-height:60px;overflow-y:auto;">
+        BFS from A — only follows outgoing arrows
+      </div>
+    </div>
+    <div>
+      <div id="s10Queue" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.82em;color:#94a3b8;margin-bottom:8px;">Queue: [ ]</div>
+      <div id="s10Table" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.8em;overflow-x:auto;margin-bottom:8px;"></div>
+      <div class="warning">
+        <h3>Direction Matters!</h3>
+        <p>Edge A→B does NOT mean you can go B→A. BFS only follows <strong>outgoing</strong> edges from the current vertex.</p>
+      </div>
+      <div class="key-idea" style="margin-top:8px;">
+        <h3>Key Idea</h3>
+        <p>In directed graphs, BFS might <strong>not reach all vertices</strong> from a single source. Unreachable vertices keep dist = ∞.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS10'),ctx=canvas.getContext('2d');
+  const ns=[{x:60,y:50,id:'A'},{x:220,y:50,id:'B'},{x:380,y:50,id:'C'},{x:60,y:170,id:'D'},{x:220,y:170,id:'E'},{x:380,y:170,id:'F'},{x:220,y:270,id:'G'}];
+  // directed edges: A→B, A→D, B→C, B→E, D→E, C→F, E→F, E→G
+  const dirEdges=[[0,1],[0,3],[1,2],[1,4],[3,4],[2,5],[4,5],[4,6]];
+  const levelColors=['#f59e0b','#38bdf8','#22c55e','#a78bfa'];
+  let steps=[],stepIdx=0,timer=null;
+
+  function outNeighbors(u){return dirEdges.filter(([a])=>a===u).map(([,b])=>b).sort();}
+
+  function drawArrow(x1,y1,x2,y2,color,lw){
+    const angle=Math.atan2(y2-y1,x2-x1),r=22;
+    const sx=x1+Math.cos(angle)*r,sy=y1+Math.sin(angle)*r;
+    const ex=x2-Math.cos(angle)*r,ey=y2-Math.sin(angle)*r;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ex,ey);
+    ctx.lineTo(ex-10*Math.cos(angle-0.35),ey-10*Math.sin(angle-0.35));
+    ctx.lineTo(ex-10*Math.cos(angle+0.35),ey-10*Math.sin(angle+0.35));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function buildSteps(){
+    steps=[];
+    const vis=Array(ns.length).fill(false),dist=Array(ns.length).fill(-1),par=Array(ns.length).fill(-1);
+    vis[0]=true;dist[0]=0;
+    steps.push({vis:[...vis],dist:[...dist],par:[...par],queue:[0],msg:'Enqueue source A, dist=0'});
+    const q=[0];
+    while(q.length){
+      const u=q.shift();
+      const nbs=outNeighbors(u);
+      const discovered=[];
+      nbs.forEach(v=>{if(!vis[v]){vis[v]=true;dist[v]=dist[u]+1;par[v]=u;q.push(v);discovered.push(v);}});
+      steps.push({vis:[...vis],dist:[...dist],par:[...par],queue:[...q],dequeued:u,discovered,
+        msg:'Dequeue '+ns[u].id+' → out-neighbors: '+nbs.map(v=>ns[v].id).join(',')+
+        (discovered.length?' → discover: '+discovered.map(v=>ns[v].id).join(','):' → none new')});
+    }
+    steps.push({vis:[...vis],dist:[...dist],par:[...par],queue:[],msg:'BFS complete!'});
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    const st=stepIdx<steps.length?steps[stepIdx]:steps[steps.length-1];
+    dirEdges.forEach(([a,b])=>{drawArrow(ns[a].x,ns[a].y,ns[b].x,ns[b].y,'#334155',2);});
+    if(st.discovered){st.discovered.forEach(v=>{if(st.dequeued!==undefined)drawArrow(ns[st.dequeued].x,ns[st.dequeued].y,ns[v].x,ns[v].y,'#f59e0b',3);});}
+    ns.forEach((n,i)=>{
+      const d=st.dist[i];
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=d>=0?levelColors[d%levelColors.length]:'#334155';ctx.fill();
+      ctx.strokeStyle=st.queue.includes(i)?'#fbbf24':'rgba(255,255,255,0.2)';ctx.lineWidth=st.queue.includes(i)?3:2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      if(d>=0){ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='10px monospace';ctx.fillText('d='+d,n.x,n.y-30);}
+    });
+    document.getElementById('s10Queue').innerHTML='Queue: [ '+st.queue.map(v=>'<span style="color:#f59e0b;">'+ns[v].id+'</span>').join(', ')+' ]';
+    let tbl='<table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #475569;padding:3px 5px;background:#334155;color:#93c5fd;font-size:0.8em;"></th>';
+    ns.forEach(n=>{tbl+='<th style="border:1px solid #475569;padding:3px 5px;background:#334155;color:#93c5fd;font-size:0.8em;">'+n.id+'</th>';});
+    tbl+='</tr><tr><td style="border:1px solid #475569;padding:3px 5px;background:#1e293b;font-size:0.8em;"><strong>dist</strong></td>';
+    ns.forEach((_,i)=>{const d=st.dist[i];tbl+='<td style="border:1px solid #475569;padding:3px 5px;background:#1e293b;font-size:0.8em;">'+(d>=0?d:'∞')+'</td>';});
+    tbl+='</tr><tr><td style="border:1px solid #475569;padding:3px 5px;background:#1e293b;font-size:0.8em;"><strong>par</strong></td>';
+    ns.forEach((_,i)=>{tbl+='<td style="border:1px solid #475569;padding:3px 5px;background:#1e293b;font-size:0.8em;">'+(st.par[i]>=0?ns[st.par[i]].id:'—')+'</td>';});
+    tbl+='</tr></table>';
+    document.getElementById('s10Table').innerHTML=tbl;
+  }
+
+  window.s10Step=function(){if(stepIdx>=steps.length-1)return;stepIdx++;draw();document.getElementById('s10Log').innerHTML=steps[stepIdx].msg+'<br>'+document.getElementById('s10Log').innerHTML;};
+  window.s10Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s10Step();},800);};
+  window.s10Reset=function(){if(timer){clearInterval(timer);timer=null;}stepIdx=0;draw();document.getElementById('s10Log').innerHTML='BFS from A — only follows outgoing arrows';};
+
+  function init(){if(timer){clearInterval(timer);timer=null;}buildSteps();stepIdx=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: Connected Components ==================== -->
+<div class="slide" id="s11">
+  <h2>BFS for Connected Components</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS11" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s11Step()">Find Next Component</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+      <div id="s11Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Each BFS call explores one entire connected component
+      </div>
+    </div>
+    <div>
+      <h3>Algorithm</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.82em;">
+          <span class="line">findComponents(graph):</span>
+          <span class="line">  components = 0</span>
+          <span class="line">  visited = empty set</span>
+          <span class="line">  for each vertex v:</span>
+          <span class="line">    if v not in visited:</span>
+          <span class="line">      components += 1</span>
+          <span class="line">      BFS(graph, v, visited)</span>
+          <span class="line">  return components</span>
+        </div>
+      </div>
+      <div class="analogy" style="margin-top:10px;">
+        <h3>Analogy: Islands</h3>
+        <p>Each component is an island. BFS explores one island completely. You need a new &ldquo;boat trip&rdquo; (new BFS) to reach each separate island.</p>
+      </div>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Key Idea</h3>
+        <p>A single BFS explores only its <strong>connected component</strong>. Loop through all vertices and start a new BFS for each unvisited one.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS11'),ctx=canvas.getContext('2d');
+  // 3 components
+  const ns=[
+    {x:70,y:60,id:'A'},{x:180,y:60,id:'B'},{x:70,y:160,id:'C'},{x:180,y:160,id:'D'},
+    {x:320,y:80,id:'E'},{x:430,y:80,id:'F'},{x:320,y:180,id:'G'},{x:430,y:180,id:'I'},
+    {x:250,y:280,id:'H'}
+  ];
+  const es=[[0,1],[0,2],[1,3],[2,3],[4,5],[4,6],[5,7],[6,7]];
+  const compColors=['#6366f1','#22c55e','#f59e0b'];
+  let visited=Array(ns.length).fill(false),compId=Array(ns.length).fill(-1),compCount=0;
+
+  function adj(u){const nb=[];es.forEach(([a,b])=>{if(a===u)nb.push(b);if(b===u)nb.push(a);});return nb;}
+
+  function bfsColor(src,cid){
+    const q=[src];visited[src]=true;compId[src]=cid;
+    while(q.length){const u=q.shift();adj(u).forEach(v=>{if(!visited[v]){visited[v]=true;compId[v]=cid;q.push(v);}});}
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    // component background circles
+    if(compCount>=1){ctx.beginPath();ctx.arc(125,110,100,0,Math.PI*2);ctx.fillStyle='rgba(99,102,241,0.08)';ctx.fill();}
+    if(compCount>=2){ctx.beginPath();ctx.arc(375,130,100,0,Math.PI*2);ctx.fillStyle='rgba(34,197,94,0.08)';ctx.fill();}
+    if(compCount>=3){ctx.beginPath();ctx.arc(250,280,40,0,Math.PI*2);ctx.fillStyle='rgba(245,158,11,0.08)';ctx.fill();}
+    es.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle=compId[a]>=0?compColors[compId[a]]:'#334155';ctx.lineWidth=2;ctx.stroke();
+    });
+    ns.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=compId[i]>=0?compColors[compId[i]]:'#334155';ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Components found: '+compCount,260,310);
+  }
+
+  window.s11Step=function(){
+    // find next unvisited
+    let src=-1;
+    for(let i=0;i<ns.length;i++){if(!visited[i]){src=i;break;}}
+    if(src<0){document.getElementById('s11Log').innerHTML='All vertices visited! Total: <strong style="color:#f59e0b;">'+compCount+' components</strong>';return;}
+    bfsColor(src,compCount);compCount++;draw();
+    const members=ns.filter((_,i)=>compId[i]===compCount-1).map(n=>n.id).join(', ');
+    document.getElementById('s11Log').innerHTML='BFS from '+ns[src].id+' → Component '+compCount+': {'+members+'}';
+  };
+  window.s11Reset=function(){visited=Array(ns.length).fill(false);compId=Array(ns.length).fill(-1);compCount=0;draw();
+    document.getElementById('s11Log').innerHTML='Each BFS call explores one entire connected component';};
+
+  function init(){visited=Array(ns.length).fill(false);compId=Array(ns.length).fill(-1);compCount=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 12: Time Complexity ==================== -->
+<div class="slide" id="s12">
+  <h2>Time Complexity: O(V + E)</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS12" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s12Step()">Step</button>
+        <button class="btn btn-sm" onclick="s12Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <h3>Why O(V + E)?</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.82em;">
+          <span class="line">while Q not empty:        // V times</span>
+          <span class="line">  u = Q.dequeue()         //   O(1)</span>
+          <span class="line">  for each neighbor of u:  //   deg(u)</span>
+          <span class="line">    if not visited:        //   O(1)</span>
+          <span class="line">      ...                  //   O(1)</span>
+          <span class="line"> </span>
+          <span class="line">Total inner loop: Σ deg(u) = 2|E|</span>
+          <span class="line">Total: V dequeues + O(E) checks</span>
+          <span class="line">     = O(V + E)</span>
+        </div>
+      </div>
+      <div id="s12Counter" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.85em;color:#94a3b8;margin-top:10px;">
+        Dequeues: 0 &nbsp; Neighbor checks: 0 &nbsp; Total: 0
+      </div>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Why V + E, not V &times; E?</h3>
+        <p>Each vertex dequeued <strong>once</strong>. Each edge checked <strong>once per endpoint</strong>. Work is <em>distributed</em>, not repeated.</p>
+      </div>
+      <table style="border-collapse:collapse;width:100%;font-size:0.88em;margin-top:10px;">
+        <tr><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">Representation</th><th style="border:1px solid #475569;padding:6px;background:#334155;color:#93c5fd;">BFS Time</th></tr>
+        <tr><td style="border:1px solid #475569;padding:6px;background:#1e293b;">Adjacency List</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;color:#22c55e;"><strong>O(V + E)</strong></td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px;background:#1e293b;">Adjacency Matrix</td><td style="border:1px solid #475569;padding:6px;background:#1e293b;">O(V<sup>2</sup>)</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS12'),ctx=canvas.getContext('2d');
+  const ns=[{x:260,y:35,id:'A'},{x:120,y:110,id:'B'},{x:400,y:110,id:'C'},{x:60,y:210,id:'D'},{x:200,y:210,id:'E'},{x:330,y:210,id:'F'},{x:460,y:210,id:'G'},{x:260,y:280,id:'H'}];
+  const es=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[4,5],[3,7]];
+  let steps=[],stepIdx=0,timer=null;
+
+  function adj(u){const nb=[];es.forEach(([a,b])=>{if(a===u)nb.push(b);if(b===u)nb.push(a);});return nb.sort();}
+
+  function buildSteps(){
+    steps=[];
+    const vis=Array(ns.length).fill(false);vis[0]=true;
+    const q=[0];let dequeues=0,checks=0;
+    steps.push({vis:[...vis],dequeues:0,checks:0,current:-1,checking:-1,msg:'Start'});
+    while(q.length){
+      const u=q.shift();dequeues++;
+      steps.push({vis:[...vis],dequeues,checks,current:u,checking:-1,msg:'Dequeue '+ns[u].id+' (dequeue #'+dequeues+')'});
+      const nbs=adj(u);
+      nbs.forEach(v=>{
+        checks++;
+        if(!vis[v]){vis[v]=true;q.push(v);}
+        steps.push({vis:[...vis],dequeues,checks,current:u,checking:v,msg:'Check neighbor '+ns[v].id+' of '+ns[u].id+' (check #'+checks+')'});
+      });
+    }
+    steps.push({vis:[...vis],dequeues,checks,current:-1,checking:-1,msg:'Done! '+dequeues+' dequeues + '+checks+' checks = '+(dequeues+checks)+' ops = O(V+E)'});
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    const st=stepIdx<steps.length?steps[stepIdx]:steps[steps.length-1];
+    es.forEach(([a,b])=>{
+      const isCheck=(st.current===a&&st.checking===b)||(st.current===b&&st.checking===a);
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle=isCheck?'#f59e0b':'#334155';ctx.lineWidth=isCheck?4:2;ctx.stroke();
+    });
+    ns.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=i===st.current?'#ef4444':i===st.checking?'#f59e0b':st.vis[i]?'#22c55e':'#334155';
+      ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    // counter bar at bottom
+    const barY=300;
+    const maxOps=ns.length+es.length*2;
+    const dW=(st.dequeues/maxOps)*480;
+    const cW=(st.checks/maxOps)*480;
+    ctx.fillStyle='#ef4444';ctx.fillRect(20,barY,dW,12);
+    ctx.fillStyle='#f59e0b';ctx.fillRect(20+dW,barY,cW,12);
+    ctx.strokeStyle='#475569';ctx.strokeRect(20,barY,480,12);
+    document.getElementById('s12Counter').innerHTML='<span style="color:#ef4444;">Dequeues: '+st.dequeues+'</span> &nbsp; <span style="color:#f59e0b;">Neighbor checks: '+st.checks+'</span> &nbsp; Total: '+(st.dequeues+st.checks);
+  }
+
+  window.s12Step=function(){if(stepIdx>=steps.length-1)return;stepIdx++;draw();};
+  window.s12Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s12Step();},300);};
+  window.s12Reset=function(){if(timer){clearInterval(timer);timer=null;}stepIdx=0;draw();};
+
+  function init(){if(timer){clearInterval(timer);timer=null;}buildSteps();stepIdx=0;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: Space Complexity ==================== -->
+<div class="slide" id="s13">
+  <h2>Space Complexity: O(V)</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>Space Breakdown</h3>
+      <table style="border-collapse:collapse;width:100%;font-size:0.9em;">
+        <tr><th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;">Structure</th><th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;">Space</th><th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;">Purpose</th></tr>
+        <tr><td style="border:1px solid #475569;padding:8px;background:#1e293b;">Queue</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(V)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">At most V vertices</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px;background:#1e293b;">visited[]</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(V)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">One bool per vertex</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px;background:#1e293b;">dist[]</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(V)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">One int per vertex</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px;background:#1e293b;">parent[]</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(V)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">One ptr per vertex</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px;background:rgba(59,130,246,0.15);"><strong>Total</strong></td><td style="border:1px solid #475569;padding:8px;background:rgba(59,130,246,0.15);"><strong>O(V)</strong></td><td style="border:1px solid #475569;padding:8px;background:rgba(59,130,246,0.15);"></td></tr>
+      </table>
+      <div class="warning" style="margin-top:12px;">
+        <h3>Worst Case Queue Size</h3>
+        <p>Star graph: center connects to all V-1 vertices. After dequeuing center, all V-1 neighbors are in the queue simultaneously!</p>
+      </div>
+    </div>
+    <div>
+      <h3>Queue Size Over Time</h3>
+      <canvas id="cS13" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s13RunTree()">Tree Graph</button>
+        <button class="btn btn-sm" onclick="s13RunStar()">Star Graph (worst)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS13'),ctx=canvas.getContext('2d');
+  let queueSizes=[],maxQ=0,timer=null;
+
+  function simulate(adjList){
+    queueSizes=[];
+    const n=adjList.length,vis=Array(n).fill(false);
+    vis[0]=true;const q=[0];
+    queueSizes.push(q.length);
+    while(q.length){
+      const u=q.shift();
+      adjList[u].forEach(v=>{if(!vis[v]){vis[v]=true;q.push(v);}});
+      queueSizes.push(q.length);
+    }
+    maxQ=Math.max(...queueSizes);
+  }
+
+  function drawChart(){
+    ctx.clearRect(0,0,520,300);
+    if(queueSizes.length===0){
+      ctx.fillStyle='#64748b';ctx.font='14px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Click a graph type to see queue size over time',260,150);
+      return;
+    }
+    const ox=50,oy=20,w=440,h=240;
+    // axes
+    ctx.strokeStyle='#475569';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox,oy+h);ctx.lineTo(ox+w,oy+h);ctx.stroke();
+    // y-axis labels
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='right';
+    for(let y=0;y<=maxQ;y++){
+      const py=oy+h-(y/maxQ)*h;
+      ctx.fillText(y+'',ox-8,py+4);
+      ctx.beginPath();ctx.moveTo(ox,py);ctx.lineTo(ox+w,py);ctx.strokeStyle='rgba(71,85,105,0.3)';ctx.stroke();
+    }
+    // bars
+    const barW=Math.min(30,w/queueSizes.length-2);
+    queueSizes.forEach((s,i)=>{
+      const bx=ox+10+i*(barW+2);
+      const bh=(s/maxQ)*h;
+      ctx.fillStyle=s===maxQ?'#ef4444':'#6366f1';
+      ctx.fillRect(bx,oy+h-bh,barW,bh);
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';
+      ctx.fillText(i+'',bx+barW/2,oy+h+12);
+    });
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Step',ox+w/2,oy+h+28);
+    ctx.save();ctx.translate(15,oy+h/2);ctx.rotate(-Math.PI/2);ctx.fillText('Queue size',0,0);ctx.restore();
+    ctx.fillStyle='#f59e0b';ctx.font='bold 12px sans-serif';ctx.textAlign='right';
+    ctx.fillText('Max queue: '+maxQ,ox+w,oy+h+28);
+  }
+
+  // tree: A-B, A-C, B-D, B-E, C-F, C-G
+  window.s13RunTree=function(){
+    simulate([[1,2],[0,3,4],[0,5,6],[1],[1],[2],[2]]);
+    let si=0;if(timer)clearInterval(timer);
+    const full=[...queueSizes];queueSizes=[];
+    timer=setInterval(()=>{
+      if(si>=full.length){clearInterval(timer);timer=null;return;}
+      queueSizes.push(full[si]);maxQ=Math.max(...queueSizes);drawChart();si++;
+    },400);
+  };
+  // star: center 0 connects to 1-6
+  window.s13RunStar=function(){
+    const adj=[[1,2,3,4,5,6]];for(let i=1;i<=6;i++)adj.push([0]);
+    simulate(adj);
+    let si=0;if(timer)clearInterval(timer);
+    const full=[...queueSizes];queueSizes=[];
+    timer=setInterval(()=>{
+      if(si>=full.length){clearInterval(timer);timer=null;return;}
+      queueSizes.push(full[si]);maxQ=Math.max(...queueSizes);drawChart();si++;
+    },400);
+  };
+  window.s13Reset=function(){if(timer){clearInterval(timer);timer=null;}queueSizes=[];drawChart();};
+
+  function init(){if(timer){clearInterval(timer);timer=null;}queueSizes=[];drawChart();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 14: Social Network Distance ==================== -->
+<div class="slide" id="s14">
+  <h2>Application: Social Network Distance</h2>
+  <p class="subtitle">"Six degrees of separation" — BFS finds the shortest friendship chain</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS14" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:0.5rem;">Click any person as <strong style="color:#f59e0b;">source</strong>, then click another as <strong style="color:#38bdf8;">target</strong> to find the shortest friendship chain.</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+      <div id="s14Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:140px;overflow-y:auto;color:#94a3b8;">Click a person to start...</div>
+
+      <div class="analogy" style="margin-top:0.75rem;">
+        <h3>Six Degrees of Separation</h3>
+        <p>Any two people on Earth are connected by at most 6 friendship links. Facebook's 2016 study found the average distance is only <strong>3.57</strong> among 1.59 billion users.</p>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Key Idea</h3>
+        <p>BFS naturally computes the "degree of separation" — it's the foundation for LinkedIn's "2nd connection" and Facebook's "mutual friends."</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS14');
+  const ctx = canvas.getContext('2d');
+  const names = ['Alice','Bob','Carol','Dave','Eve','Frank','Grace','Hank'];
+  const positions = [
+    {x:80,y:60},{x:220,y:60},{x:80,y:160},{x:220,y:160},
+    {x:360,y:60},{x:360,y:160},{x:80,y:280},{x:360,y:280}
+  ];
+  const edges = [[0,1],[0,2],[1,3],[1,4],[4,5],[2,6],[5,7],[6,7]];
+  const adj = Array.from({length:8},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+
+  let source = -1, target = -1, path = [];
+  const R = 28;
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    // edges
+    edges.forEach(([a,b])=>{
+      const onPath = path.length>1 && pathHasEdge(a,b);
+      ctx.beginPath();
+      ctx.moveTo(positions[a].x,positions[a].y);
+      ctx.lineTo(positions[b].x,positions[b].y);
+      ctx.strokeStyle = onPath ? '#22c55e' : '#475569';
+      ctx.lineWidth = onPath ? 3 : 1.5;
+      ctx.stroke();
+    });
+    // nodes
+    for(let i=0;i<8;i++){
+      const p = positions[i];
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,R,0,Math.PI*2);
+      let fill = '#334155';
+      if(i===source) fill='#f59e0b';
+      else if(i===target) fill='#38bdf8';
+      else if(path.includes(i)) fill='#22c55e';
+      ctx.fillStyle=fill;ctx.fill();
+      ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(names[i],p.x,p.y);
+    }
+  }
+
+  function pathHasEdge(a,b){
+    for(let i=0;i<path.length-1;i++){
+      if((path[i]===a&&path[i+1]===b)||(path[i]===b&&path[i+1]===a)) return true;
+    }
+    return false;
+  }
+
+  function bfs(s,t){
+    const dist=Array(8).fill(-1), parent=Array(8).fill(-1);
+    const queue=[s]; dist[s]=0;
+    while(queue.length){
+      const u=queue.shift();
+      if(u===t) break;
+      for(const v of adj[u]){
+        if(dist[v]===-1){dist[v]=dist[u]+1;parent[v]=u;queue.push(v);}
+      }
+    }
+    if(dist[t]===-1) return [];
+    const p=[];let c=t;while(c!==-1){p.unshift(c);c=parent[c];}
+    return p;
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const sx=520/rect.width, sy=370/rect.height;
+    const mx=(e.clientX-rect.left)*sx, my=(e.clientY-rect.top)*sy;
+    let clicked=-1;
+    for(let i=0;i<8;i++){
+      const dx=mx-positions[i].x, dy=my-positions[i].y;
+      if(dx*dx+dy*dy<=R*R){clicked=i;break;}
+    }
+    if(clicked===-1) return;
+    const log=document.getElementById('s14Log');
+    if(source===-1){
+      source=clicked;target=-1;path=[];
+      log.innerHTML='<span style="color:#f59e0b;">Source: '+names[source]+'</span> — now click a target person.';
+    } else if(target===-1 && clicked!==source){
+      target=clicked;
+      path=bfs(source,target);
+      const chain=path.map(i=>names[i]).join(' → ');
+      log.innerHTML='<span style="color:#22c55e;">Path ('+( path.length-1)+' hops): '+chain+'</span>';
+    }
+    draw();
+  });
+
+  window.s14Reset=function(){source=-1;target=-1;path=[];document.getElementById('s14Log').innerHTML='Click a person to start...';draw();};
+
+  function init(){s14Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 15: Web Crawling & Maze Solving ==================== -->
+<div class="slide" id="s15">
+  <h2>Applications: Web Crawling & Maze Solving</h2>
+  <p class="subtitle">BFS is everywhere</p>
+
+  <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+    <button class="btn btn-sm" onclick="s15Tab('maze')" id="s15TabMaze">Maze Solver</button>
+    <button class="btn btn-sm btn-secondary" onclick="s15Tab('web')" id="s15TabWeb">Web Crawl</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS15" width="520" height="350" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="s15Step()">Step</button>
+        <button class="btn btn-sm" onclick="s15Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+      <div id="s15Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:120px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div id="s15MazeInfo" class="key-idea" style="margin-top:0.5rem;">
+        <h3>Why BFS for Mazes?</h3>
+        <p>BFS explores cells level by level — the <strong>first</strong> time it reaches the exit is guaranteed to be the shortest path. Like flooding the maze with water from the start.</p>
+      </div>
+      <div id="s15WebInfo" class="key-idea" style="margin-top:0.5rem;display:none;">
+        <h3>Why BFS for Web Crawling?</h3>
+        <p>BFS finds pages <strong>close to the root</strong> first, which are usually the most important. DFS might get lost in deep, low-value chains of links.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+  let mode='maze', stepIdx=0, timer=null, steps=[];
+
+  // Maze: 0=path, 1=wall, 2=start, 3=end
+  const maze=[
+    [2,0,0,1,0,0,0,0],
+    [1,1,0,1,0,1,0,1],
+    [0,0,0,0,0,1,0,0],
+    [0,1,1,1,0,0,1,0],
+    [0,0,0,1,0,1,0,0],
+    [1,0,1,0,0,0,0,3]
+  ];
+  const MR=6,MC=8;
+  const startR=0,startC=0,endR=5,endC=7;
+
+  // Web crawl tree
+  const webNodes=[
+    {name:'example.com',x:260,y:30,level:0},
+    {name:'/about',x:100,y:100,level:1},{name:'/blog',x:260,y:100,level:1},{name:'/contact',x:420,y:100,level:1},
+    {name:'/blog/p1',x:180,y:180,level:2},{name:'/blog/p2',x:340,y:180,level:2},
+    {name:'/p1/comments',x:120,y:260,level:3},{name:'/p2/gallery',x:260,y:260,level:3},{name:'/about/team',x:420,y:260,level:3}
+  ];
+  const webEdges=[[0,1],[0,2],[0,3],[2,4],[2,5],[4,6],[5,7],[1,8]];
+
+  function buildMazeSteps(){
+    const visited=Array.from({length:MR},()=>Array(MC).fill(false));
+    const parent=Array.from({length:MR},()=>Array(MC).fill(null));
+    const queue=[[startR,startC]];visited[startR][startC]=true;
+    const stps=[{type:'init',visited:JSON.parse(JSON.stringify(visited)),path:[]}];
+    const dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+    let found=false;
+    while(queue.length&&!found){
+      const[r,c]=queue.shift();
+      stps.push({type:'dequeue',r,c,visited:JSON.parse(JSON.stringify(visited)),queue:queue.map(q=>[...q])});
+      for(const[dr,dc] of dirs){
+        const nr=r+dr,nc=c+dc;
+        if(nr>=0&&nr<MR&&nc>=0&&nc<MC&&!visited[nr][nc]&&maze[nr][nc]!==1){
+          visited[nr][nc]=true;parent[nr][nc]=[r,c];queue.push([nr,nc]);
+          if(nr===endR&&nc===endC){found=true;break;}
+        }
+      }
+      stps[stps.length-1].visited=JSON.parse(JSON.stringify(visited));
+    }
+    // trace path
+    const path=[];
+    if(found){let cr=endR,cc=endC;while(cr!==null){path.unshift([cr,cc]);const p=parent[cr][cc];if(!p)break;cr=p[0];cc=p[1];}}
+    stps.push({type:'done',visited:JSON.parse(JSON.stringify(visited)),path});
+    return stps;
+  }
+
+  function buildWebSteps(){
+    const stps=[{type:'init',discovered:new Set()}];
+    const queue=[0];const disc=new Set([0]);
+    stps.push({type:'discover',node:0,discovered:new Set(disc)});
+    while(queue.length){
+      const u=queue.shift();
+      stps.push({type:'visit',node:u,discovered:new Set(disc)});
+      for(const[a,b] of webEdges){
+        const v=(a===u)?b:(b===u?a:-1);
+        if(v>=0&&!disc.has(v)){disc.add(v);queue.push(v);stps.push({type:'discover',node:v,discovered:new Set(disc),edge:[u,v]});}
+      }
+    }
+    stps.push({type:'done',discovered:new Set(disc)});
+    return stps;
+  }
+
+  function drawMaze(vis,path,cur){
+    ctx.clearRect(0,0,520,350);
+    const cw=520/MC, ch=350/MR;
+    for(let r=0;r<MR;r++)for(let c=0;c<MC;c++){
+      let fill='#1e293b';
+      if(maze[r][c]===1) fill='#475569';
+      else if(r===startR&&c===startC) fill='#f59e0b';
+      else if(r===endR&&c===endC) fill='#22c55e';
+      else if(path&&path.some(p=>p[0]===r&&p[1]===c)) fill='#22c55e';
+      else if(vis&&vis[r]&&vis[r][c]) fill='rgba(99,102,241,0.4)';
+      if(cur&&cur[0]===r&&cur[1]===c) fill='#f59e0b';
+      ctx.fillStyle=fill;ctx.fillRect(c*cw,r*ch,cw-2,ch-2);
+      if(r===startR&&c===startC){ctx.fillStyle='#0f172a';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('S',c*cw+cw/2,r*ch+ch/2);}
+      if(r===endR&&c===endC){ctx.fillStyle='#0f172a';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('E',c*cw+cw/2,r*ch+ch/2);}
+    }
+  }
+
+  function drawWeb(discovered,visiting,edgeHL){
+    ctx.clearRect(0,0,520,350);
+    // edges
+    webEdges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(webNodes[a].x,webNodes[a].y);ctx.lineTo(webNodes[b].x,webNodes[b].y);
+      const hl=edgeHL&&((edgeHL[0]===a&&edgeHL[1]===b)||(edgeHL[0]===b&&edgeHL[1]===a));
+      ctx.strokeStyle=hl?'#22c55e':(discovered.has(a)&&discovered.has(b)?'#6366f1':'#334155');
+      ctx.lineWidth=hl?3:1.5;ctx.stroke();
+    });
+    // nodes
+    webNodes.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      let fill=discovered.has(i)?'#6366f1':'#334155';
+      if(i===visiting) fill='#f59e0b';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.name,n.x,n.y);
+    });
+  }
+
+  window.s15Tab=function(m){
+    mode=m;s15Reset();
+    document.getElementById('s15TabMaze').className=m==='maze'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s15TabWeb').className=m==='web'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s15MazeInfo').style.display=m==='maze'?'':'none';
+    document.getElementById('s15WebInfo').style.display=m==='web'?'':'none';
+  };
+
+  window.s15Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const log=document.getElementById('s15Log');
+    if(mode==='maze'){
+      if(s.type==='dequeue'){
+        drawMaze(s.visited,null,[s.r,s.c]);
+        log.innerHTML+='<div>Dequeue ('+s.r+','+s.c+') — explore neighbors</div>';
+      } else if(s.type==='done'){
+        drawMaze(s.visited,s.path,null);
+        log.innerHTML+='<div style="color:#22c55e;">Done! Shortest path: '+s.path.length+' cells</div>';
+      }
+    } else {
+      if(s.type==='visit'){
+        drawWeb(s.discovered,s.node,null);
+        log.innerHTML+='<div>Visit: '+webNodes[s.node].name+'</div>';
+      } else if(s.type==='discover'&&s.edge){
+        drawWeb(s.discovered,null,s.edge);
+        log.innerHTML+='<div style="color:#22c55e;">Discover: '+webNodes[s.node].name+'</div>';
+      } else if(s.type==='done'){
+        drawWeb(s.discovered,null,null);
+        log.innerHTML+='<div style="color:#22c55e;">Crawl complete! All pages discovered.</div>';
+      }
+    }
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.s15Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s15Step();},500);
+  };
+
+  window.s15Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;
+    steps=mode==='maze'?buildMazeSteps():buildWebSteps();
+    document.getElementById('s15Log').innerHTML='';
+    if(mode==='maze') drawMaze(null,null,null);
+    else drawWeb(new Set(),null,null);
+  };
+
+  function init(){mode='maze';s15Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE A: Predict BFS Order ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the BFS Order</h2>
+  <p class="subtitle">Given this graph and source A, what order does BFS visit vertices?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cCA" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="color:#94a3b8;font-size:0.8rem;margin-top:0.4rem;">Neighbors processed in alphabetical order. Source = A.</p>
+    </div>
+    <div>
+      <p style="color:#cbd5e1;margin-bottom:0.5rem;">Type the BFS visit order (comma-separated):</p>
+      <input type="text" id="sCAinput" placeholder="A, B, C, ..." style="width:90%;padding:0.5rem 0.7rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.9rem;">
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="sCACheck()">Check Answer</button>
+        <button class="btn btn-sm" onclick="sCAAuto()">Show BFS Step-by-Step</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCAReset()">Reset</button>
+      </div>
+      <div id="sCAResult" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+      <div id="sCALog" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:130px;overflow-y:auto;color:#94a3b8;margin-top:0.5rem;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cCA');
+  const ctx = canvas.getContext('2d');
+  // Graph: A-B, A-C, A-D, B-E, C-E, C-F, D-F, E-G, F-G
+  const labels=['A','B','C','D','E','F','G'];
+  const pos=[{x:260,y:40},{x:120,y:120},{x:260,y:120},{x:400,y:120},{x:160,y:220},{x:360,y:220},{x:260,y:300}];
+  const edges=[[0,1],[0,2],[0,3],[1,4],[2,4],[2,5],[3,5],[4,6],[5,6]];
+  const adj=Array.from({length:7},()=>[]);
+  edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+  adj.forEach(a=>a.sort()); // alphabetical
+  const correctOrder='A,B,C,D,E,F,G';
+  let visited=new Set(), stepIdx=0, timer=null, bfsSteps=[];
+
+  function buildSteps(){
+    const stps=[];const vis=new Set([0]);const q=[0];
+    stps.push({visit:0,queue:[...q],vis:new Set(vis)});
+    while(q.length){
+      const u=q.shift();
+      for(const v of adj[u]){
+        if(!vis.has(v)){vis.add(v);q.push(v);stps.push({visit:v,queue:[...q],vis:new Set(vis),edge:[u,v]});}
+      }
+    }
+    return stps;
+  }
+
+  function draw(vis,current,edgeHL){
+    ctx.clearRect(0,0,520,320);
+    edges.forEach(([a,b])=>{
+      const hl=edgeHL&&((edgeHL[0]===a&&edgeHL[1]===b)||(edgeHL[0]===b&&edgeHL[1]===a));
+      ctx.beginPath();ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      ctx.strokeStyle=hl?'#22c55e':'#475569';ctx.lineWidth=hl?3:1.5;ctx.stroke();
+    });
+    for(let i=0;i<7;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(vis&&vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+    }
+  }
+
+  window.sCACheck=function(){
+    const input=document.getElementById('sCAinput').value.replace(/\s/g,'').toUpperCase();
+    const res=document.getElementById('sCAResult');
+    if(input===correctOrder) res.innerHTML='<span style="color:#22c55e;">Correct! BFS visits: '+correctOrder+'</span>';
+    else res.innerHTML='<span style="color:#ef4444;">Not quite. Try tracing BFS from A with alphabetical neighbor ordering.</span>';
+  };
+
+  window.sCAAuto=function(){
+    if(timer) return;
+    sCAReset();
+    bfsSteps=buildSteps();
+    timer=setInterval(()=>{
+      if(stepIdx>=bfsSteps.length){clearInterval(timer);timer=null;return;}
+      const s=bfsSteps[stepIdx];
+      draw(s.vis,s.visit,s.edge||null);
+      const log=document.getElementById('sCALog');
+      log.innerHTML+='<div>Visit <span style="color:#f59e0b;">'+labels[s.visit]+'</span> — Queue: ['+s.queue.map(i=>labels[i]).join(', ')+']</div>';
+      log.scrollTop=log.scrollHeight;
+      stepIdx++;
+    },800);
+  };
+
+  window.sCAReset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;visited=new Set();
+    document.getElementById('sCALog').innerHTML='';
+    document.getElementById('sCAResult').innerHTML='';
+    draw(new Set(),-1,null);
+  };
+
+  function init(){sCAReset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCA').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE B: Fix the Bug ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <p class="subtitle">This BFS code has a subtle bug — can you find it?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line">BFS(graph, source):</div>
+          <div class="line">&nbsp;&nbsp;Q = new Queue()</div>
+          <div class="line">&nbsp;&nbsp;Q.enqueue(source)</div>
+          <div class="line">&nbsp;&nbsp;</div>
+          <div class="line">&nbsp;&nbsp;while Q is not empty:</div>
+          <div class="line" id="sCBbug" style="background:rgba(239,68,68,0.15);border-left:3px solid #ef4444;">&nbsp;&nbsp;&nbsp;&nbsp;u = Q.dequeue()</div>
+          <div class="line" id="sCBbug2" style="background:rgba(239,68,68,0.15);border-left:3px solid #ef4444;">&nbsp;&nbsp;&nbsp;&nbsp;visited[u] = true  // BUG!</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;for each neighbor v of u:</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if not visited[v]:</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Q.enqueue(v)</div>
+        </div>
+      </div>
+      <p style="color:#94a3b8;font-size:0.8rem;margin-top:0.5rem;">The <span style="color:#ef4444;">highlighted lines</span> mark visited when <strong>dequeuing</strong>. What goes wrong?</p>
+
+      <canvas id="cCB" width="520" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:0.5rem;"></canvas>
+    </div>
+    <div>
+      <p style="color:#cbd5e1;margin-bottom:0.5rem;">What's the problem with marking visited on dequeue?</p>
+      <select id="sCBsel" style="width:100%;padding:0.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85rem;">
+        <option value="">— Select the bug —</option>
+        <option value="a">It causes an infinite loop</option>
+        <option value="b">Vertices get enqueued multiple times (duplicates)</option>
+        <option value="c">It misses some vertices entirely</option>
+        <option value="d">The shortest path distances are wrong</option>
+      </select>
+      <button class="btn btn-sm" onclick="sCBCheck()" style="margin-top:0.5rem;">Check</button>
+      <div id="sCBResult" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+
+      <div id="sCBExplain" style="display:none;margin-top:0.5rem;">
+        <div class="warning">
+          <h3>The Fix</h3>
+          <p>Mark visited <strong>when enqueuing</strong>, not when dequeuing. Otherwise, a vertex can be added to the queue multiple times by different neighbors before it's dequeued.</p>
+        </div>
+        <div class="code-block" style="margin-top:0.5rem;">
+          <div class="code-content">
+            <div class="line" style="background:rgba(34,197,94,0.15);border-left:3px solid #22c55e;">&nbsp;&nbsp;visited[source] = true  // mark BEFORE enqueue</div>
+            <div class="line">&nbsp;&nbsp;Q.enqueue(source)</div>
+            <div class="line">&nbsp;&nbsp;while Q not empty:</div>
+            <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;u = Q.dequeue()</div>
+            <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;for each neighbor v of u:</div>
+            <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if not visited[v]:</div>
+            <div class="line" style="background:rgba(34,197,94,0.15);border-left:3px solid #22c55e;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;visited[v] = true  // mark NOW</div>
+            <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Q.enqueue(v)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cCB');
+  const ctx = canvas.getContext('2d');
+  // Show duplicate enqueue scenario: A-B, A-C, B-C
+  const nodes=[{x:100,y:100,l:'A'},{x:260,y:40,l:'B'},{x:420,y:100,l:'C'}];
+  const edges=[[0,1],[0,2],[1,2]];
+
+  function draw(){
+    ctx.clearRect(0,0,520,200);
+    // title
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+    ctx.fillText('Triangle graph: A—B, A—C, B—C',260,180);
+    ctx.fillText('C gets enqueued by BOTH A and B!',260,195);
+    // edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // nodes
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    // Arrow showing duplicate
+    ctx.fillStyle='#ef4444';ctx.font='bold 11px monospace';
+    ctx.fillText('Queue: [A] → [B,C] → [C,C] ← duplicate!',260,155);
+  }
+
+  window.sCBCheck=function(){
+    const v=document.getElementById('sCBsel').value;
+    const res=document.getElementById('sCBResult');
+    if(v==='b'){
+      res.innerHTML='<span style="color:#22c55e;">Correct! Vertices get enqueued multiple times, wasting work and potentially corrupting distances.</span>';
+      document.getElementById('sCBExplain').style.display='';
+    } else if(v) {
+      res.innerHTML='<span style="color:#ef4444;">Not quite. Think about what happens when two neighbors both try to enqueue the same unvisited vertex.</span>';
+    }
+  };
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCB').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE C: BFS vs DFS Scenarios ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: BFS or DFS?</h2>
+  <p class="subtitle">Pick the right algorithm for each scenario</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;border:2px solid #334155;" id="sCCq1box">
+      <p style="color:#cbd5e1;font-size:0.85rem;"><strong>1.</strong> Find the shortest route between two subway stations (unweighted edges).</p>
+      <select id="sCCq1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+        <option value="">Choose...</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="both">Either works equally</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;border:2px solid #334155;" id="sCCq2box">
+      <p style="color:#cbd5e1;font-size:0.85rem;"><strong>2.</strong> Detect if a dependency graph has a cycle (circular dependency).</p>
+      <select id="sCCq2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+        <option value="">Choose...</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="both">Either works equally</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;border:2px solid #334155;" id="sCCq3box">
+      <p style="color:#cbd5e1;font-size:0.85rem;"><strong>3.</strong> Crawl a website discovering all pages close to the homepage first.</p>
+      <select id="sCCq3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+        <option value="">Choose...</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="both">Either works equally</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;border:2px solid #334155;" id="sCCq4box">
+      <p style="color:#cbd5e1;font-size:0.85rem;"><strong>4.</strong> Generate a random maze by carving paths through a grid.</p>
+      <select id="sCCq4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;">
+        <option value="">Choose...</option><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="both">Either works equally</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+    <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+    <button class="btn btn-sm btn-secondary" onclick="sCCReset()">Reset</button>
+  </div>
+  <div id="sCCExplain" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;font-size:0.82rem;color:#cbd5e1;">
+    <strong style="color:#38bdf8;">Explanations:</strong><br>
+    <strong>1. BFS</strong> — BFS guarantees shortest path in unweighted graphs.<br>
+    <strong>2. DFS</strong> — DFS naturally detects back edges (cycles) during its stack-based exploration.<br>
+    <strong>3. BFS</strong> — BFS discovers pages level-by-level, so pages close to the root come first.<br>
+    <strong>4. DFS</strong> — DFS creates long winding corridors, making interesting mazes. BFS would carve outward uniformly.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={sCCq1:'bfs',sCCq2:'dfs',sCCq3:'bfs',sCCq4:'dfs'};
+
+  window.sCCCheck=function(){
+    let correct=0;
+    Object.entries(answers).forEach(([id,ans])=>{
+      const sel=document.getElementById(id);
+      const box=document.getElementById(id+'box');
+      if(sel.value===ans){correct++;box.style.borderColor='#22c55e';}
+      else if(sel.value) box.style.borderColor='#ef4444';
+      else box.style.borderColor='#f59e0b';
+    });
+    if(correct>=3) document.getElementById('sCCExplain').style.display='';
+  };
+
+  window.sCCReset=function(){
+    ['sCCq1','sCCq2','sCCq3','sCCq4'].forEach(id=>{
+      document.getElementById(id).value='';
+      document.getElementById(id+'box').style.borderColor='#334155';
+    });
+    document.getElementById('sCCExplain').style.display='none';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 16: Summary & Cheat Sheet ==================== -->
+<div class="slide" id="s16">
+  <h2>Summary & Cheat Sheet</h2>
+  <p class="subtitle">Everything you need to know about BFS</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS16" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Takeaways</h3>
+        <ul style="font-size:0.82rem;color:#cbd5e1;">
+          <li>BFS uses a <strong>queue</strong> (FIFO) to explore level by level</li>
+          <li>Finds <strong>shortest paths in unweighted graphs</strong></li>
+          <li>Mark visited <strong>when enqueuing</strong>, not dequeuing</li>
+          <li>BFS tree gives shortest paths via <strong>parent pointers</strong></li>
+          <li>Time: <strong>O(V + E)</strong> — linear in graph size</li>
+          <li>Space: <strong>O(V)</strong> — queue + visited + dist + parent</li>
+        </ul>
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Common Pitfalls</h3>
+        <ul style="font-size:0.82rem;color:#cbd5e1;">
+          <li>Forgetting to mark source as visited before the loop</li>
+          <li>Marking visited on dequeue → duplicates in queue</li>
+          <li>Using BFS on <strong>weighted</strong> graphs (use Dijkstra instead!)</li>
+        </ul>
+      </div>
+      <div style="margin-top:0.5rem;">
+        <h3 style="color:#38bdf8;">BFS vs DFS</h3>
+        <table style="width:100%;font-size:0.78rem;">
+          <tr><th>Use BFS When...</th><th>Use DFS When...</th></tr>
+          <tr><td>Shortest path (unweighted)</td><td>Topological sort</td></tr>
+          <tr><td>Level-order traversal</td><td>Cycle detection</td></tr>
+          <tr><td>Nearest neighbor search</td><td>Path existence</td></tr>
+          <tr><td>Web crawling (breadth)</td><td>Maze generation</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    // Title
+    ctx.fillStyle='#38bdf8';ctx.font='bold 16px monospace';ctx.textAlign='center';
+    ctx.fillText('BFS Pseudocode',260,25);
+
+    // Pseudocode
+    const lines=[
+      'BFS(graph, source):',
+      '  visited[source] = true',
+      '  dist[source] = 0',
+      '  Q.enqueue(source)',
+      '',
+      '  while Q is not empty:',
+      '    u = Q.dequeue()',
+      '    for each neighbor v of u:',
+      '      if not visited[v]:',
+      '        visited[v] = true',
+      '        dist[v] = dist[u] + 1',
+      '        parent[v] = u',
+      '        Q.enqueue(v)'
+    ];
+    const colors=['#f59e0b','#22c55e','#22c55e','#22c55e','','#a78bfa','#e2e8f0','#38bdf8','#cbd5e1','#22c55e','#22c55e','#22c55e','#22c55e'];
+    ctx.font='13px monospace';ctx.textAlign='left';
+    lines.forEach((l,i)=>{
+      ctx.fillStyle=colors[i]||'#e2e8f0';
+      ctx.fillText(l,30,55+i*20);
+    });
+
+    // Complexity table
+    ctx.fillStyle='#38bdf8';ctx.font='bold 14px monospace';ctx.textAlign='center';
+    ctx.fillText('Complexity',390,230);
+    const tbl=[['','Adj List','Adj Matrix'],['Time','O(V+E)','O(V²)'],['Space','O(V)','O(V)']];
+    ctx.font='12px monospace';
+    tbl.forEach((row,r)=>{
+      row.forEach((cell,c)=>{
+        const x=310+c*70, y=250+r*22;
+        ctx.fillStyle=r===0?'#94a3b8':(c===0?'#cbd5e1':'#e2e8f0');
+        if(r>0&&c===1) ctx.fillStyle='#22c55e';
+        ctx.textAlign='center';
+        ctx.fillText(cell,x,y);
+      });
+    });
+  }
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s16').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== QUIZ 1: Multi-Question Quiz ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Test Your BFS Knowledge</h2>
+  <p class="subtitle">3 questions — check your answers when ready</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;">
+      <p style="color:#38bdf8;font-weight:bold;font-size:0.85rem;">Q1: Time complexity of BFS with adjacency list?</p>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="a"> O(V)</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="b"> O(V + E)</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="c"> O(V²)</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="d"> O(E log V)</label>
+      <div id="sQ1f1" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;">
+      <p style="color:#38bdf8;font-weight:bold;font-size:0.85rem;">Q2: When should you mark a vertex as visited?</p>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="a"> When dequeuing it</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="b"> When enqueuing it</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="c"> After processing all neighbors</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="d"> It doesn't matter</label>
+      <div id="sQ1f2" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:1rem;">
+      <p style="color:#38bdf8;font-weight:bold;font-size:0.85rem;">Q3: BFS guarantees shortest path in...</p>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="a"> All graphs</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="b"> Weighted graphs only</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="c"> Unweighted graphs only</label>
+      <label style="display:block;color:#cbd5e1;font-size:0.82rem;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="d"> Directed graphs only</label>
+      <div id="sQ1f3" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;text-align:center;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-size:1rem;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={sQ1q1:'b',sQ1q2:'b',sQ1q3:'c'};
+  const feedback={
+    sQ1q1:{correct:'O(V + E) — each vertex dequeued once, each edge checked once.',wrong:'Each vertex is dequeued once (V) and each edge checked once (E). Total: O(V + E).'},
+    sQ1q2:{correct:'Mark when enqueuing prevents duplicate enqueues.',wrong:'Marking on dequeue lets the same vertex be enqueued multiple times.'},
+    sQ1q3:{correct:'BFS finds shortest path only in unweighted (or unit-weight) graphs.',wrong:'For weighted graphs, use Dijkstra\'s algorithm. BFS treats all edges as weight 1.'}
+  };
+
+  window.sQ1Check=function(){
+    let score=0;
+    Object.entries(answers).forEach(([name,ans])=>{
+      const sel=document.querySelector('input[name="'+name+'"]:checked');
+      const fb=document.getElementById(name.replace('q','f'));
+      if(!sel){fb.innerHTML='<span style="color:#f59e0b;">Please select an answer.</span>';return;}
+      if(sel.value===ans){score++;fb.innerHTML='<span style="color:#22c55e;">✓ '+feedback[name].correct+'</span>';}
+      else fb.innerHTML='<span style="color:#ef4444;">✗ '+feedback[name].wrong+'</span>';
+    });
+    document.getElementById('sQ1Score').innerHTML='<span style="color:'+(score===3?'#22c55e':'#f59e0b')+';">'+score+'/3</span>';
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ 2: Trace BFS on Directed Graph ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Trace: BFS on a Directed Graph</h2>
+  <p class="subtitle">Step through BFS on this directed graph starting from vertex A</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cQ2" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" onclick="sQ2Step()">Step</button>
+        <button class="btn btn-sm" onclick="sQ2Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ2Reset()">Reset</button>
+      </div>
+      <div id="sQ2Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div style="margin-top:0.5rem;">
+        <p style="color:#94a3b8;font-size:0.8rem;">Distance table:</p>
+        <div id="sQ2Table" style="display:flex;gap:2px;flex-wrap:wrap;font-family:monospace;font-size:0.8rem;"></div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Notice</h3>
+        <p style="font-size:0.82rem;">In directed graphs, BFS only follows <strong>outgoing</strong> edges. Some vertices may be unreachable from the source — their distance stays ∞.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cQ2');
+  const ctx = canvas.getContext('2d');
+  const labels=['A','B','C','D','E','F'];
+  const pos=[{x:100,y:60},{x:300,y:60},{x:500,y:60},{x:100,y:260},{x:300,y:260},{x:500,y:260}];
+  // Directed edges
+  const edges=[[0,1],[0,3],[1,2],[1,4],[3,4],[4,5],[2,5],[5,1]]; // F->B creates an interesting back edge
+  const adj=Array.from({length:6},()=>[]);
+  edges.forEach(([a,b])=>adj[a].push(b));
+  adj.forEach(a=>a.sort());
+
+  let stepIdx=0, timer=null, steps=[];
+  const dist=Array(6).fill(Infinity);
+
+  function buildSteps(){
+    const stps=[];
+    const vis=new Set([0]);const q=[0];const d=Array(6).fill(Infinity);d[0]=0;
+    stps.push({type:'enqueue',node:0,vis:new Set(vis),queue:[...q],dist:[...d]});
+    while(q.length){
+      const u=q.shift();
+      stps.push({type:'dequeue',node:u,vis:new Set(vis),queue:[...q],dist:[...d]});
+      for(const v of adj[u]){
+        if(!vis.has(v)){
+          vis.add(v);d[v]=d[u]+1;q.push(v);
+          stps.push({type:'discover',node:v,from:u,vis:new Set(vis),queue:[...q],dist:[...d]});
+        }
+      }
+    }
+    stps.push({type:'done',vis:new Set(vis),dist:[...d]});
+    return stps;
+  }
+
+  function drawArrow(x1,y1,x2,y2,color,width){
+    const R=22;
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/len,uy=dy/len;
+    const sx=x1+ux*R,sy=y1+uy*R,ex=x2-ux*(R+8),ey=y2-uy*(R+8);
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();
+    // arrowhead
+    const ax=x2-ux*R,ay=y2-uy*R;
+    const angle=Math.atan2(dy,dx);
+    ctx.beginPath();ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-12*Math.cos(angle-0.3),ay-12*Math.sin(angle-0.3));
+    ctx.lineTo(ax-12*Math.cos(angle+0.3),ay-12*Math.sin(angle+0.3));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function draw(vis,current,discoverEdge,dists){
+    ctx.clearRect(0,0,520,370);
+    // edges
+    edges.forEach(([a,b])=>{
+      const hl=discoverEdge&&discoverEdge[0]===a&&discoverEdge[1]===b;
+      drawArrow(pos[a].x,pos[a].y,pos[b].x,pos[b].y,hl?'#22c55e':'#475569',hl?3:1.5);
+    });
+    // nodes
+    for(let i=0;i<6;i++){
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      let fill='#334155';
+      if(i===current) fill='#f59e0b';
+      else if(vis&&vis.has(i)) fill='#6366f1';
+      ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],pos[i].x,pos[i].y);
+      // dist label
+      if(dists){
+        const d=dists[i]===Infinity?'∞':dists[i];
+        ctx.fillStyle='#94a3b8';ctx.font='11px monospace';
+        ctx.fillText('d='+d,pos[i].x,pos[i].y+35);
+      }
+    }
+  }
+
+  function updateTable(dists){
+    const el=document.getElementById('sQ2Table');
+    el.innerHTML=labels.map((l,i)=>{
+      const d=dists[i]===Infinity?'∞':dists[i];
+      const bg=dists[i]===Infinity?'#334155':'#6366f1';
+      return '<div style="background:'+bg+';padding:4px 8px;border-radius:4px;text-align:center;"><div style="color:#e2e8f0;font-weight:bold;">'+l+'</div><div style="color:#cbd5e1;">'+d+'</div></div>';
+    }).join('');
+  }
+
+  window.sQ2Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const log=document.getElementById('sQ2Log');
+    if(s.type==='enqueue'){
+      draw(s.vis,s.node,null,s.dist);
+      log.innerHTML+='<div>Enqueue <span style="color:#f59e0b;">'+labels[s.node]+'</span> (source)</div>';
+    } else if(s.type==='dequeue'){
+      draw(s.vis,s.node,null,s.dist);
+      log.innerHTML+='<div>Dequeue <span style="color:#f59e0b;">'+labels[s.node]+'</span> — explore outgoing edges</div>';
+    } else if(s.type==='discover'){
+      draw(s.vis,s.node,[s.from,s.node],s.dist);
+      log.innerHTML+='<div style="color:#22c55e;">Discover '+labels[s.node]+' via '+labels[s.from]+' (dist='+s.dist[s.node]+')</div>';
+    } else if(s.type==='done'){
+      draw(s.vis,-1,null,s.dist);
+      const unreachable=labels.filter((_,i)=>s.dist[i]===Infinity);
+      log.innerHTML+='<div style="color:#22c55e;">BFS complete!'+(unreachable.length?' Unreachable: '+unreachable.join(', '):'')+'</div>';
+    }
+    updateTable(s.dist);
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+
+  window.sQ2Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}sQ2Step();},800);
+  };
+
+  window.sQ2Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;steps=buildSteps();
+    document.getElementById('sQ2Log').innerHTML='';
+    const initDist=Array(6).fill(Infinity);
+    draw(new Set(),-1,null,initDist);
+    updateTable(initDist);
+  };
+
+  function init(){sQ2Reset();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('sQ2').classList.contains('active'))init();});
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== QUIZ 3: Predict Output ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Predict the Output</h2>
+  <p class="subtitle">What does this Java BFS code print?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="sQ3Code">
+          <div class="line">// Graph: 0→1, 0→2, 1→3, 2→3, 3→4</div>
+          <div class="line">Queue&lt;Integer&gt; q = new LinkedList&lt;&gt;();</div>
+          <div class="line">boolean[] visited = new boolean[5];</div>
+          <div class="line">int[] dist = new int[5];</div>
+          <div class="line">Arrays.fill(dist, -1);</div>
+          <div class="line">&nbsp;</div>
+          <div class="line">q.add(0); visited[0] = true; dist[0] = 0;</div>
+          <div class="line">&nbsp;</div>
+          <div class="line">while (!q.isEmpty()) {</div>
+          <div class="line">&nbsp;&nbsp;int u = q.poll();</div>
+          <div class="line">&nbsp;&nbsp;System.out.print(u + " ");</div>
+          <div class="line">&nbsp;&nbsp;for (int v : adj[u]) {</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;if (!visited[v]) {</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;visited[v] = true;</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dist[v] = dist[u] + 1;</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q.add(v);</div>
+          <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;}</div>
+          <div class="line">&nbsp;&nbsp;}</div>
+          <div class="line">}</div>
+          <div class="line">System.out.println();</div>
+          <div class="line">System.out.println(Arrays.toString(dist));</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p style="color:#cbd5e1;font-size:0.85rem;">What is printed on the <strong>first line</strong> (visit order)?</p>
+      <input type="text" id="sQ3a1" placeholder="e.g. 0 1 2 3 4" style="width:90%;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+
+      <p style="color:#cbd5e1;font-size:0.85rem;margin-top:0.5rem;">What is the <strong>dist array</strong> output?</p>
+      <input type="text" id="sQ3a2" placeholder="e.g. [0, 1, 1, 2, 3]" style="width:90%;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="sQ3Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ3Trace()">Show Trace</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ3Reset()">Reset</button>
+      </div>
+      <div id="sQ3Result" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+      <div id="sQ3Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:130px;overflow-y:auto;color:#94a3b8;margin-top:0.5rem;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const correctOrder='0 1 2 3 4';
+  const correctDist='[0, 1, 1, 2, 3]';
+
+  window.sQ3Check=function(){
+    const a1=document.getElementById('sQ3a1').value.trim();
+    const a2=document.getElementById('sQ3a2').value.trim().replace(/\s/g,'');
+    const res=document.getElementById('sQ3Result');
+    let msg='';
+    if(a1===correctOrder) msg+='<span style="color:#22c55e;">✓ Visit order correct!</span><br>';
+    else if(a1) msg+='<span style="color:#ef4444;">✗ Visit order: expected "'+correctOrder+'"</span><br>';
+    const normDist=correctDist.replace(/\s/g,'');
+    if(a2===normDist) msg+='<span style="color:#22c55e;">✓ Dist array correct!</span>';
+    else if(a2) msg+='<span style="color:#ef4444;">✗ Dist array: expected "'+correctDist+'"</span>';
+    res.innerHTML=msg;
+  };
+
+  let traceIdx=0, traceTimer=null;
+  const traceSteps=[
+    {line:6,msg:'Enqueue 0, visited[0]=true, dist[0]=0'},
+    {line:9,msg:'Dequeue 0, print "0 "'},
+    {line:11,msg:'Neighbor 1: not visited → enqueue, dist[1]=1'},
+    {line:11,msg:'Neighbor 2: not visited → enqueue, dist[2]=1'},
+    {line:9,msg:'Dequeue 1, print "1 "'},
+    {line:11,msg:'Neighbor 3: not visited → enqueue, dist[3]=2'},
+    {line:9,msg:'Dequeue 2, print "2 "'},
+    {line:11,msg:'Neighbor 3: already visited → skip'},
+    {line:9,msg:'Dequeue 3, print "3 "'},
+    {line:11,msg:'Neighbor 4: not visited → enqueue, dist[4]=3'},
+    {line:9,msg:'Dequeue 4, print "4 "'},
+    {line:20,msg:'Output: 0 1 2 3 4'},
+    {line:21,msg:'dist = [0, 1, 1, 2, 3]'}
+  ];
+
+  window.sQ3Trace=function(){
+    if(traceTimer) return;
+    sQ3Reset();
+    traceTimer=setInterval(()=>{
+      if(traceIdx>=traceSteps.length){clearInterval(traceTimer);traceTimer=null;return;}
+      const s=traceSteps[traceIdx];
+      // highlight line
+      const lines=document.querySelectorAll('#sQ3Code .line');
+      lines.forEach(l=>l.classList.remove('active'));
+      if(s.line<lines.length) lines[s.line].classList.add('active');
+      const log=document.getElementById('sQ3Log');
+      log.innerHTML+='<div>'+s.msg+'</div>';
+      log.scrollTop=log.scrollHeight;
+      traceIdx++;
+    },900);
+  };
+
+  window.sQ3Reset=function(){
+    if(traceTimer){clearInterval(traceTimer);traceTimer=null;}
+    traceIdx=0;
+    document.getElementById('sQ3Log').innerHTML='';
+    document.getElementById('sQ3Result').innerHTML='';
+    document.querySelectorAll('#sQ3Code .line').forEach(l=>l.classList.remove('active'));
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:100;">
+  <button id="prevBtn" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;" onclick="navigate(-1)">&#9664; Prev</button>
+  <button id="nextBtn" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;" onclick="navigate(1)">Next &#9654;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','sCA','sCB','sCC','s16','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

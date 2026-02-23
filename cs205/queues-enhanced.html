@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Queues - CS205 Data Structures (Enhanced)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.95em; line-height: 1.7; margin: 16px 0; overflow-x: auto; color: #e2e8f0; }
+.code-block .line { padding: 2px 8px; border-radius: 4px; transition: background 0.3s; }
+.code-block .line.active { background: rgba(59,130,246,0.25); border-left: 3px solid #3b82f6; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.controls input[type="number"], .controls input[type="text"], .controls select {
+  background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.controls input:focus, .controls select:focus { border-color: #3b82f6; }
+.btn { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; color: white; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+.btn:active { transform: translateY(0); }
+.btn-outline { background: transparent; border: 1px solid #475569; color: #e2e8f0; font-weight: 400; }
+.btn-outline:hover { background: #334155; box-shadow: none; transform: none; }
+.status { padding: 8px 16px; border-radius: 8px; font-size: 0.95em; }
+.status.success { background: rgba(16,185,129,0.15); color: #86efac; }
+.status.error { background: rgba(239,68,68,0.15); color: #fca5a5; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE s1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>Queues</h1>
+    <p class="subtitle">First In, First Out (FIFO)</p>
+    <canvas id="s1canvas" width="800" height="200" style="background:#1e293b; border-radius:12px; border:1px solid #334155; margin:20px auto; display:block;"></canvas>
+    <p style="color: #64748b;">CS205 Data Structures</p>
+    <p style="color: #64748b; font-size: 0.9em;">Arrow keys to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('s1canvas'); if(!c)return;
+  const ctx=c.getContext('2d');
+  let items=[], nextVal=65, frame=0;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4'];
+
+  function addItem(){
+    items.push({x:c.width+40, val:String.fromCharCode(nextVal), color:colors[nextVal%colors.length]});
+    nextVal++; if(nextVal>90) nextVal=65;
+  }
+  for(let i=0;i<6;i++){addItem(); items[i].x=120+i*110;}
+
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    // queue frame
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.strokeRect(80,50,640,100);
+    // labels
+    ctx.fillStyle='#86efac'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('FRONT',95,40); ctx.fillText('dequeue ←',60,100);
+    ctx.fillStyle='#f59e0b'; ctx.fillText('REAR',720,40); ctx.fillText('→ enqueue',750,100);
+    // items
+    for(let it of items){
+      if(it.x>80 && it.x<700){
+        ctx.fillStyle=it.color; ctx.globalAlpha=0.3;
+        ctx.fillRect(it.x-30,65,60,70); ctx.globalAlpha=1;
+        ctx.strokeStyle=it.color; ctx.strokeRect(it.x-30,65,60,70);
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 28px monospace'; ctx.textAlign='center';
+        ctx.fillText(it.val,it.x,108);
+      }
+    }
+    // move items
+    for(let it of items) it.x -= 0.5;
+    // remove exited items
+    items = items.filter(it=>it.x>0);
+    // add new items
+    frame++;
+    if(frame%220===0) addItem();
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s2: WHAT IS A QUEUE (Interactive) ==================== -->
+<div class="slide" id="s2">
+  <h2>What is a Queue?</h2>
+  <div class="two-col">
+    <div>
+      <p>A <strong>queue</strong> is a collection with <strong>First-In, First-Out (FIFO)</strong> access.</p>
+      <ul class="mt">
+        <li>Elements added at the <strong>rear</strong> (back)</li>
+        <li>Elements removed from the <strong>front</strong></li>
+        <li>No access to elements in the middle</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy: Coffee Shop Line</h3>
+        <p>First person in line is served first. New arrivals join the back. No cutting!</p>
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>FIFO = the element waiting the <strong>longest</strong> gets served first. Fair and orderly!</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Interactive Queue</h3>
+      <canvas id="s2canvas" width="400" height="220" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <input type="text" id="s2input" value="" maxlength="6" placeholder="Value" style="width:80px;">
+        <button class="btn" onclick="s2Enqueue()">Enqueue</button>
+        <button class="btn btn-outline" onclick="s2Dequeue()">Dequeue</button>
+        <button class="btn btn-outline" onclick="s2Front()">Front</button>
+      </div>
+      <div id="s2status" class="status" style="min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let queue=[], nextV=1;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4'];
+
+  function draw(){
+    const c=document.getElementById('s2canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=50, cellH=60, startX=20, y=80;
+    // frame
+    if(queue.length>0){
+      ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+      ctx.strokeRect(startX-5, y-5, queue.length*cellW+10, cellH+10);
+    }
+    for(let i=0;i<queue.length;i++){
+      const x=startX+i*cellW;
+      ctx.fillStyle=colors[i%colors.length]; ctx.globalAlpha=0.3;
+      ctx.fillRect(x,y,cellW-4,cellH); ctx.globalAlpha=1;
+      ctx.strokeStyle=colors[i%colors.length];
+      ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 18px monospace'; ctx.textAlign='center';
+      ctx.fillText(queue[i],x+cellW/2-2,y+cellH/2+6);
+    }
+    // labels
+    if(queue.length>0){
+      ctx.fillStyle='#86efac'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('FRONT',startX+cellW/2-2,y-12);
+      ctx.fillText('↓',startX+cellW/2-2,y-2);
+      if(queue.length>1){
+        ctx.fillStyle='#fbbf24';
+        const rx=startX+(queue.length-1)*cellW+cellW/2-2;
+        ctx.fillText('REAR',rx,y-12);
+        ctx.fillText('↓',rx,y-2);
+      }
+    }
+    // arrows
+    ctx.fillStyle='#86efac'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('← dequeue',startX-5,y+cellH+25);
+    ctx.fillStyle='#fbbf24'; ctx.textAlign='right';
+    const rr=startX+Math.max(queue.length,1)*cellW+30;
+    ctx.fillText('enqueue →',rr,y+cellH+25);
+    // size
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('size: '+queue.length,10,20);
+  }
+
+  window.s2Enqueue = function(){
+    if(queue.length>=7){document.getElementById('s2status').textContent='Queue full (demo limit 7)';document.getElementById('s2status').className='status error';return;}
+    let v=document.getElementById('s2input').value.trim();
+    if(!v){v=String(nextV);nextV++;}
+    queue.push(v);
+    document.getElementById('s2input').value='';
+    document.getElementById('s2status').textContent='Enqueued "'+v+'" at rear';
+    document.getElementById('s2status').className='status success';
+    draw();
+  };
+
+  window.s2Dequeue = function(){
+    if(queue.length===0){document.getElementById('s2status').textContent='Queue is empty!';document.getElementById('s2status').className='status error';return;}
+    const v=queue.shift();
+    document.getElementById('s2status').textContent='Dequeued "'+v+'" from front';
+    document.getElementById('s2status').className='status success';
+    draw();
+  };
+
+  window.s2Front = function(){
+    if(queue.length===0){document.getElementById('s2status').textContent='Queue is empty!';document.getElementById('s2status').className='status error';return;}
+    document.getElementById('s2status').textContent='Front: "'+queue[0]+'" (not removed)';
+    document.getElementById('s2status').className='status';
+    draw();
+  };
+
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s3: THE QUEUE ADT ==================== -->
+<div class="slide" id="s3">
+  <h2>The Queue ADT</h2>
+  <div class="two-col">
+    <div>
+      <h3>Core Operations</h3>
+      <table>
+        <tr><th>Operation</th><th>Description</th><th>Time</th></tr>
+        <tr><td><code>enqueue(e)</code></td><td>Insert at rear</td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>dequeue()</code></td><td>Remove & return front</td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>front()</code></td><td>Return front (no remove)</td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>isEmpty()</code></td><td>Is the queue empty?</td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>size()</code></td><td>Number of elements</td><td><span style="color:#86efac;">O(1)</span></td></tr>
+      </table>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>All core operations are <strong>O(1)</strong> — constant time regardless of queue size.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Java Interface</h3>
+      <div class="code-block" style="font-size:0.9em;"><div class="line"><span style="color:#c084fc;">public interface</span> <span style="color:#86efac;">Queue</span>&lt;E&gt; {</div><div class="line"></div><div class="line">    <span style="color:#64748b;">/** Insert element at the rear. */</span></div><div class="line">    <span style="color:#c084fc;">void</span> <span style="color:#86efac;">enqueue</span>(E element);</div><div class="line"></div><div class="line">    <span style="color:#64748b;">/** Remove and return front element. */</span></div><div class="line">    E <span style="color:#86efac;">dequeue</span>();</div><div class="line"></div><div class="line">    <span style="color:#64748b;">/** Return front without removing. */</span></div><div class="line">    E <span style="color:#86efac;">front</span>();</div><div class="line"></div><div class="line">    <span style="color:#c084fc;">int</span> <span style="color:#86efac;">size</span>();</div><div class="line">    <span style="color:#c084fc;">boolean</span> <span style="color:#86efac;">isEmpty</span>();</div><div class="line">}</div></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE s4: ENQUEUE & DEQUEUE (Interactive) ==================== -->
+<div class="slide" id="s4">
+  <h2>Enqueue & Dequeue</h2>
+  <p class="subtitle">Add at the rear, remove from the front — synced with code</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Enqueue Code</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="line" id="s4eL1"><span style="color:#c084fc;">public void</span> <span style="color:#86efac;">enqueue</span>(E element) {</div><div class="line" id="s4eL2">    <span style="color:#c084fc;">if</span> (size == data.length)</div><div class="line" id="s4eL3">        <span style="color:#c084fc;">throw</span> <span style="color:#c084fc;">new</span> IllegalStateException();</div><div class="line" id="s4eL4">    data[rear] = element;</div><div class="line" id="s4eL5">    rear = (rear + 1) % data.length;</div><div class="line" id="s4eL6">    size++;</div><div class="line" id="s4eL7">}</div></div>
+      <h3>Dequeue Code</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="line" id="s4dL1"><span style="color:#c084fc;">public</span> E <span style="color:#86efac;">dequeue</span>() {</div><div class="line" id="s4dL2">    <span style="color:#c084fc;">if</span> (isEmpty()) <span style="color:#c084fc;">throw</span> ...;</div><div class="line" id="s4dL3">    E result = data[front];</div><div class="line" id="s4dL4">    data[front] = <span style="color:#c084fc;">null</span>;</div><div class="line" id="s4dL5">    front = (front + 1) % data.length;</div><div class="line" id="s4dL6">    size--;</div><div class="line" id="s4dL7">    <span style="color:#c084fc;">return</span> result;</div><div class="line" id="s4dL8">}</div></div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Array Visualization</h3>
+      <canvas id="s4canvas" width="400" height="200" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s4Enq()">Enqueue</button>
+        <button class="btn btn-outline" onclick="s4Deq()">Dequeue</button>
+        <button class="btn btn-outline" onclick="s4Reset()">Reset</button>
+      </div>
+      <div id="s4status" class="status" style="min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const N=6;
+  let data=new Array(N).fill(null), front=0, rear=0, size=0, nextV=65;
+
+  function clearHL(){
+    for(let i=1;i<=7;i++){const e=document.getElementById('s4eL'+i);if(e)e.classList.remove('active');}
+    for(let i=1;i<=8;i++){const e=document.getElementById('s4dL'+i);if(e)e.classList.remove('active');}
+  }
+
+  function hl(ids){clearHL();ids.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('active');});}
+
+  function draw(){
+    const c=document.getElementById('s4canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=60,cellH=50,startX=20,y=80;
+    for(let i=0;i<N;i++){
+      const x=startX+i*cellW;
+      ctx.fillStyle=data[i]?'rgba(59,130,246,0.25)':'rgba(30,41,59,1)';
+      ctx.fillRect(x,y,cellW-4,cellH);
+      ctx.strokeStyle=i===front&&size>0?'#86efac':i===rear?'#fbbf24':'#475569';
+      ctx.lineWidth=i===front||i===rear?2:1;
+      ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(i,x+cellW/2-2,y-6);
+      if(data[i]){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 20px monospace';
+        ctx.fillText(data[i],x+cellW/2-2,y+cellH/2+7);
+      }
+    }
+    // front/rear labels
+    ctx.font='bold 12px sans-serif';
+    if(size>0){ctx.fillStyle='#86efac';ctx.fillText('front='+front,startX+front*cellW+cellW/2-2,y+cellH+18);}
+    ctx.fillStyle='#fbbf24';ctx.fillText('rear='+rear,startX+rear*cellW+cellW/2-2,y+cellH+34);
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('size='+size+'  capacity='+N,10,20);
+  }
+
+  window.s4Enq = function(){
+    if(size>=N){document.getElementById('s4status').textContent='Queue full!';document.getElementById('s4status').className='status error';hl(['s4eL2','s4eL3']);return;}
+    const v=String.fromCharCode(nextV); nextV++; if(nextV>90)nextV=65;
+    hl(['s4eL4']);
+    data[rear]=v;
+    setTimeout(()=>{hl(['s4eL5']);rear=(rear+1)%N;draw();
+      setTimeout(()=>{hl(['s4eL6']);size++;draw();
+        document.getElementById('s4status').textContent='Enqueued "'+v+'"';
+        document.getElementById('s4status').className='status success';
+      },400);
+    },400);
+    draw();
+  };
+
+  window.s4Deq = function(){
+    if(size===0){document.getElementById('s4status').textContent='Queue empty!';document.getElementById('s4status').className='status error';hl(['s4dL2']);return;}
+    const v=data[front];
+    hl(['s4dL3']);
+    setTimeout(()=>{hl(['s4dL4']);data[front]=null;draw();
+      setTimeout(()=>{hl(['s4dL5']);front=(front+1)%N;draw();
+        setTimeout(()=>{hl(['s4dL6','s4dL7']);size--;draw();
+          document.getElementById('s4status').textContent='Dequeued "'+v+'"';
+          document.getElementById('s4status').className='status success';
+        },400);
+      },400);
+    },400);
+    draw();
+  };
+
+  window.s4Reset = function(){
+    data=new Array(N).fill(null); front=0; rear=0; size=0; nextV=65;
+    clearHL(); document.getElementById('s4status').textContent='';draw();
+  };
+
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s5: STACK vs QUEUE ==================== -->
+<div class="slide" id="s5">
+  <h2>Stack vs Queue</h2>
+  <div class="two-col">
+    <div>
+      <h3 style="color: #f59e0b;">Stack — LIFO</h3>
+      <p><strong>Last In, First Out</strong></p>
+      <canvas id="s5stackC" width="200" height="220" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="s5Push()">Push</button>
+        <button class="btn btn-outline" onclick="s5Pop()">Pop</button>
+      </div>
+      <div id="s5stackStatus" class="status" style="min-height:20px;font-size:0.9em;"></div>
+      <table style="font-size:0.9em;">
+        <tr><th>Insert</th><td><code>push(e)</code></td></tr>
+        <tr><th>Remove</th><td><code>pop()</code></td></tr>
+        <tr><th>Peek</th><td><code>top()</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3 style="color: #3b82f6;">Queue — FIFO</h3>
+      <p><strong>First In, First Out</strong></p>
+      <canvas id="s5queueC" width="200" height="220" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="s5Enq()">Enqueue</button>
+        <button class="btn btn-outline" onclick="s5Deq()">Dequeue</button>
+      </div>
+      <div id="s5queueStatus" class="status" style="min-height:20px;font-size:0.9em;"></div>
+      <table style="font-size:0.9em;">
+        <tr><th>Insert</th><td><code>enqueue(e)</code></td></tr>
+        <tr><th>Remove</th><td><code>dequeue()</code></td></tr>
+        <tr><th>Peek</th><td><code>front()</code></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="key-idea mt">
+    <h3>Key Difference</h3>
+    <p>Both are <strong>restricted-access</strong>. Stack: insert & remove from <strong>same end</strong>. Queue: insert & remove from <strong>opposite ends</strong>.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let stk=[], que=[], sN=1, qN=1;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4'];
+
+  function drawStack(){
+    const c=document.getElementById('s5stackC'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const bx=50,by=200,bw=100,cellH=32;
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.strokeRect(bx,by-5*cellH,bw,5*cellH);
+    for(let i=0;i<stk.length&&i<5;i++){
+      const y=by-(i+1)*cellH;
+      ctx.fillStyle=colors[stk[i]%colors.length]; ctx.globalAlpha=0.3;
+      ctx.fillRect(bx+2,y+2,bw-4,cellH-4); ctx.globalAlpha=1;
+      ctx.strokeStyle=colors[stk[i]%colors.length];
+      ctx.strokeRect(bx+2,y+2,bw-4,cellH-4);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 16px monospace'; ctx.textAlign='center';
+      ctx.fillText(stk[i],bx+bw/2,y+cellH/2+6);
+    }
+    if(stk.length>0){ctx.fillStyle='#fbbf24';ctx.font='11px sans-serif';ctx.textAlign='left';ctx.fillText('← top',bx+bw+4,by-stk.length*cellH+cellH/2+4);}
+    ctx.fillStyle='#f59e0b';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('↕ same end',bx+bw/2,16);
+  }
+
+  function drawQueue(){
+    const c=document.getElementById('s5queueC'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=32,cellH=40,y=90,startX=10;
+    if(que.length>0){
+      ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+      ctx.strokeRect(startX-3,y-3,que.length*cellW+6,cellH+6);
+    }
+    for(let i=0;i<que.length;i++){
+      const x=startX+i*cellW;
+      ctx.fillStyle=colors[que[i]%colors.length]; ctx.globalAlpha=0.3;
+      ctx.fillRect(x,y,cellW-3,cellH); ctx.globalAlpha=1;
+      ctx.strokeStyle=colors[que[i]%colors.length];
+      ctx.strokeRect(x,y,cellW-3,cellH);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+      ctx.fillText(que[i],x+cellW/2-1,y+cellH/2+5);
+    }
+    if(que.length>0){
+      ctx.fillStyle='#86efac'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('front',startX+cellW/2-1,y-8);
+      ctx.fillStyle='#fbbf24';
+      ctx.fillText('rear',startX+(que.length-1)*cellW+cellW/2-1,y+cellH+14);
+    }
+    ctx.fillStyle='#3b82f6';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('opposite ends',c.width/2,16);
+  }
+
+  window.s5Push = function(){
+    if(stk.length>=5){document.getElementById('s5stackStatus').textContent='Full!';return;}
+    stk.push(sN++);
+    document.getElementById('s5stackStatus').textContent='Pushed '+stk[stk.length-1];
+    document.getElementById('s5stackStatus').className='status success';
+    drawStack();
+  };
+  window.s5Pop = function(){
+    if(stk.length===0){document.getElementById('s5stackStatus').textContent='Empty!';document.getElementById('s5stackStatus').className='status error';return;}
+    const v=stk.pop();
+    document.getElementById('s5stackStatus').textContent='Popped '+v+' (last in)';
+    document.getElementById('s5stackStatus').className='status success';
+    drawStack();
+  };
+  window.s5Enq = function(){
+    if(que.length>=5){document.getElementById('s5queueStatus').textContent='Full!';return;}
+    que.push(qN++);
+    document.getElementById('s5queueStatus').textContent='Enqueued '+que[que.length-1];
+    document.getElementById('s5queueStatus').className='status success';
+    drawQueue();
+  };
+  window.s5Deq = function(){
+    if(que.length===0){document.getElementById('s5queueStatus').textContent='Empty!';document.getElementById('s5queueStatus').className='status error';return;}
+    const v=que.shift();
+    document.getElementById('s5queueStatus').textContent='Dequeued '+v+' (first in)';
+    document.getElementById('s5queueStatus').className='status success';
+    drawQueue();
+  };
+
+  drawStack(); drawQueue();
+})();
+</script>
+
+<!-- ==================== SLIDE s6: NAIVE ARRAY PROBLEM ==================== -->
+<div class="slide" id="s6">
+  <h2>Array-Based Queue (Naive Approach)</h2>
+  <p class="subtitle">Why simple arrays fail for queues</p>
+  <div class="two-col mt">
+    <div>
+      <h3>The Problem: Dequeue Shifts O(n)</h3>
+      <p>If we dequeue from index 0, we must shift everything left.</p>
+      <div class="controls mt">
+        <button class="btn" onclick="s6Enq()">Enqueue</button>
+        <button class="btn btn-outline" onclick="s6Deq()">Dequeue (watch shift!)</button>
+        <button class="btn btn-outline" onclick="s6Reset()">Reset</button>
+      </div>
+      <div id="s6status" class="status" style="min-height:24px;"></div>
+      <div class="warning mt">
+        <h3>O(n) Dequeue!</h3>
+        <p>Every dequeue shifts <strong>all</strong> remaining elements one position left. For n elements, that's O(n) work per dequeue.</p>
+      </div>
+      <p class="mt">Solution: <strong>don't shift</strong> — just move the front pointer. But then we waste space... unless we <strong>wrap around</strong>!</p>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Array Visualization</h3>
+      <canvas id="s6canvas" width="400" height="280" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let arr=[], shifting=false, nextV=65;
+
+  function draw(shiftIdx){
+    const c=document.getElementById('s6canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=55,cellH=50,startX=20,y=100;
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Naive Array Queue',c.width/2,20);
+    for(let i=0;i<6;i++){
+      const x=startX+i*cellW;
+      ctx.fillStyle=i<arr.length?'rgba(59,130,246,0.25)':'rgba(30,41,59,1)';
+      ctx.fillRect(x,y,cellW-4,cellH);
+      ctx.strokeStyle=(shiftIdx!==undefined&&i>=1&&i<=shiftIdx)?'#f59e0b':'#475569';
+      ctx.lineWidth=(shiftIdx!==undefined&&i>=1&&i<=shiftIdx)?2:1;
+      ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+cellW/2-2,y-8);
+      if(i<arr.length){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 20px monospace';
+        ctx.fillText(arr[i],x+cellW/2-2,y+cellH/2+7);
+      }
+    }
+    // shift arrows
+    if(shiftIdx!==undefined){
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 14px sans-serif';
+      for(let i=1;i<=shiftIdx;i++){
+        const x=startX+i*cellW+cellW/2-2;
+        ctx.fillText('←',x-cellW/2,y+cellH+20);
+      }
+      ctx.fillText('shifting...',c.width/2,y+cellH+44);
+    }
+  }
+
+  window.s6Enq = function(){
+    if(shifting)return;
+    if(arr.length>=6){document.getElementById('s6status').textContent='Array full!';document.getElementById('s6status').className='status error';return;}
+    const v=String.fromCharCode(nextV); nextV++; if(nextV>90)nextV=65;
+    arr.push(v);
+    document.getElementById('s6status').textContent='Enqueued "'+v+'" — O(1)';
+    document.getElementById('s6status').className='status success';
+    draw();
+  };
+
+  window.s6Deq = function(){
+    if(shifting)return;
+    if(arr.length===0){document.getElementById('s6status').textContent='Empty!';document.getElementById('s6status').className='status error';return;}
+    const v=arr[0]; shifting=true;
+    document.getElementById('s6status').textContent='Dequeuing "'+v+'" — shifting '+(arr.length-1)+' elements... O(n)!';
+    document.getElementById('s6status').className='status error';
+    let step=1;
+    function animShift(){
+      if(step<arr.length){
+        draw(step);
+        arr[step-1]=arr[step];
+        step++;
+        setTimeout(animShift,350);
+      } else {
+        arr.pop();
+        shifting=false;
+        draw();
+        document.getElementById('s6status').textContent='Dequeued "'+v+'" — shifted '+(step-1)+' elements (O(n))';
+      }
+    }
+    animShift();
+  };
+
+  window.s6Reset = function(){
+    arr=[]; shifting=false; nextV=65;
+    document.getElementById('s6status').textContent='';
+    draw();
+  };
+
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s7: CIRCULAR ARRAY (Interactive Ring) ==================== -->
+<div class="slide" id="s7">
+  <h2>Circular Array Implementation</h2>
+  <p class="subtitle">Wrap around using modulo — no wasted space, no shifting!</p>
+  <div class="two-col mt">
+    <div>
+      <h3>The Magic Formula</h3>
+      <div class="code-block" style="font-size:0.95em;"><div class="line">Advance front: f = (f + 1) % N</div><div class="line">Advance rear:  r = (r + 1) % N</div></div>
+      <div class="key-idea">
+        <h3>Modulo Wraps Around</h3>
+        <p>If <code>N = 8</code> and <code>rear = 7</code>:<br>
+        <code>(7 + 1) % 8 = 0</code><br>
+        The index wraps back to the beginning! Array treated as a <strong>ring</strong>.</p>
+      </div>
+      <div class="controls mt">
+        <button class="btn" onclick="s7Enq()">Enqueue</button>
+        <button class="btn btn-outline" onclick="s7Deq()">Dequeue</button>
+        <button class="btn btn-outline" onclick="s7Reset()">Reset</button>
+      </div>
+      <div id="s7status" class="status" style="min-height:24px;"></div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Circular Ring View</h3>
+      <canvas id="s7canvas" width="400" height="380" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const N=8;
+  let data=new Array(N).fill(null), front=0, rear=0, size=0, nextV=65;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f43f5e','#84cc16'];
+
+  function draw(){
+    const c=document.getElementById('s7canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cx=200,cy=180,R=130,cellR=30;
+    // draw ring
+    for(let i=0;i<N;i++){
+      const angle = -Math.PI/2 + (2*Math.PI/N)*i;
+      const x=cx+R*Math.cos(angle), y=cy+R*Math.sin(angle);
+      // cell
+      ctx.beginPath(); ctx.arc(x,y,cellR,0,2*Math.PI);
+      if(data[i]!==null){
+        ctx.fillStyle=colors[i%colors.length]; ctx.globalAlpha=0.3; ctx.fill(); ctx.globalAlpha=1;
+        ctx.strokeStyle=colors[i%colors.length]; ctx.lineWidth=2; ctx.stroke();
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 18px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(data[i],x,y);
+      } else {
+        ctx.fillStyle='#1e293b'; ctx.fill();
+        ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.stroke();
+      }
+      // index label
+      ctx.fillStyle='#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      const lx=cx+(R+cellR+12)*Math.cos(angle), ly=cy+(R+cellR+12)*Math.sin(angle);
+      ctx.fillText(i,lx,ly);
+      // front/rear markers
+      if(i===front && size>0){
+        ctx.fillStyle='#86efac'; ctx.font='bold 12px sans-serif';
+        const fx=cx+(R-cellR-14)*Math.cos(angle), fy=cy+(R-cellR-14)*Math.sin(angle);
+        ctx.fillText('F',fx,fy);
+      }
+      if(i===rear){
+        ctx.fillStyle='#fbbf24'; ctx.font='bold 12px sans-serif';
+        const rx=cx+(R-cellR-14)*Math.cos(angle), ry=cy+(R-cellR-14)*Math.sin(angle);
+        ctx.fillText('R',rx,ry);
+      }
+    }
+    // info
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillText('front='+front+'  rear='+rear+'  size='+size+'/'+N,cx,cy+R+60);
+    ctx.fillStyle='#86efac'; ctx.font='12px sans-serif';
+    ctx.fillText('F = front',cx-60,cy+R+78);
+    ctx.fillStyle='#fbbf24';
+    ctx.fillText('R = rear (next insert)',cx+60,cy+R+78);
+  }
+
+  window.s7Enq = function(){
+    if(size>=N){document.getElementById('s7status').textContent='Queue full!';document.getElementById('s7status').className='status error';return;}
+    const v=String.fromCharCode(nextV); nextV++; if(nextV>90)nextV=65;
+    data[rear]=v;
+    const oldRear=rear;
+    rear=(rear+1)%N;
+    size++;
+    document.getElementById('s7status').textContent='Enqueued "'+v+'" at ['+oldRear+'], rear→'+rear;
+    document.getElementById('s7status').className='status success';
+    draw();
+  };
+
+  window.s7Deq = function(){
+    if(size===0){document.getElementById('s7status').textContent='Queue empty!';document.getElementById('s7status').className='status error';return;}
+    const v=data[front];
+    data[front]=null;
+    const oldF=front;
+    front=(front+1)%N;
+    size--;
+    document.getElementById('s7status').textContent='Dequeued "'+v+'" from ['+oldF+'], front→'+front;
+    document.getElementById('s7status').className='status success';
+    draw();
+  };
+
+  window.s7Reset = function(){
+    data=new Array(N).fill(null); front=0; rear=0; size=0; nextV=65;
+    document.getElementById('s7status').textContent='';
+    draw();
+  };
+
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s8: CIRCULAR STEP-BY-STEP TRACE ==================== -->
+<div class="slide" id="s8">
+  <h2>Circular Array: Step-by-Step Trace</h2>
+  <p class="subtitle">Trace operations on capacity N=5 — watch front & rear wrap around</p>
+  <div class="two-col mt">
+    <div>
+      <div id="s8trace" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:12px; font-family:monospace; font-size:0.85em; max-height:380px; overflow-y:auto; color:#cbd5e1; line-height:1.8;"></div>
+    </div>
+    <div>
+      <canvas id="s8canvas" width="400" height="260" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s8Step()">Next Step</button>
+        <button class="btn btn-outline" onclick="s8Auto()">Auto Play</button>
+        <button class="btn btn-outline" onclick="s8Reset()">Reset</button>
+      </div>
+      <div id="s8status" class="status" style="min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const N=5;
+  const ops=[
+    {op:'enqueue(A)',f:0,r:1,sz:1,data:['A',null,null,null,null]},
+    {op:'enqueue(B)',f:0,r:2,sz:2,data:['A','B',null,null,null]},
+    {op:'enqueue(C)',f:0,r:3,sz:3,data:['A','B','C',null,null]},
+    {op:'dequeue()→A',f:1,r:3,sz:2,data:[null,'B','C',null,null]},
+    {op:'dequeue()→B',f:2,r:3,sz:1,data:[null,null,'C',null,null]},
+    {op:'enqueue(D)',f:2,r:4,sz:2,data:[null,null,'C','D',null]},
+    {op:'enqueue(E)',f:2,r:0,sz:3,data:[null,null,'C','D','E'],note:'rear wraps: (4+1)%5=0'},
+    {op:'enqueue(F)',f:2,r:1,sz:4,data:['F',null,'C','D','E'],note:'rear at index 1'},
+    {op:'dequeue()→C',f:3,r:1,sz:3,data:['F',null,null,'D','E']},
+    {op:'dequeue()→D',f:4,r:1,sz:2,data:['F',null,null,null,'E']},
+    {op:'dequeue()→E',f:0,r:1,sz:1,data:['F',null,null,null,null],note:'front wraps: (4+1)%5=0'},
+  ];
+  let step=-1, running=false;
+
+  function draw(){
+    const c=document.getElementById('s8canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    if(step<0) return;
+    const s=ops[step];
+    const cellW=65,cellH=55,startX=25,y=100;
+    for(let i=0;i<N;i++){
+      const x=startX+i*cellW;
+      ctx.fillStyle=s.data[i]?'rgba(59,130,246,0.25)':'rgba(30,41,59,1)';
+      ctx.fillRect(x,y,cellW-4,cellH);
+      ctx.strokeStyle=i===s.f&&s.sz>0?'#86efac':i===s.r?'#fbbf24':'#475569';
+      ctx.lineWidth=i===s.f||i===s.r?3:1;
+      ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+cellW/2-2,y-10);
+      if(s.data[i]){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 22px monospace';
+        ctx.fillText(s.data[i],x+cellW/2-2,y+cellH/2+8);
+      }
+    }
+    // labels
+    ctx.font='bold 13px sans-serif';
+    if(s.sz>0){ctx.fillStyle='#86efac';ctx.fillText('front='+s.f,startX+s.f*cellW+cellW/2-2,y+cellH+20);}
+    ctx.fillStyle='#fbbf24';ctx.fillText('rear='+s.r,startX+s.r*cellW+cellW/2-2,y+cellH+38);
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('size='+s.sz+'  capacity='+N,c.width/2,30);
+    if(s.note){
+      ctx.fillStyle='#f0abfc'; ctx.font='bold 13px sans-serif';
+      ctx.fillText(s.note,c.width/2,y+cellH+58);
+    }
+  }
+
+  window.s8Step = function(){
+    step++;
+    if(step>=ops.length){step=ops.length-1;document.getElementById('s8status').textContent='Trace complete!';document.getElementById('s8status').className='status success';running=false;return;}
+    const s=ops[step];
+    const traceEl=document.getElementById('s8trace');
+    let html='<span style="color:#93c5fd;">'+s.op+'</span>';
+    html+='  <span style="color:#86efac;">f='+s.f+'</span> <span style="color:#fbbf24;">r='+s.r+'</span> sz='+s.sz;
+    html+='  ['+s.data.map(d=>d||' ').join(',')+']';
+    if(s.note) html+=' <span style="color:#f0abfc;">← '+s.note+'</span>';
+    traceEl.innerHTML+='<div>'+html+'</div>';
+    traceEl.scrollTop=traceEl.scrollHeight;
+    document.getElementById('s8status').textContent='Step '+(step+1)+'/'+ops.length+': '+s.op;
+    draw();
+  };
+
+  window.s8Auto = function(){
+    s8Reset(); running=true;
+    function go(){if(!running||step>=ops.length-1)return;s8Step();setTimeout(go,900);}
+    setTimeout(go,300);
+  };
+
+  window.s8Reset = function(){
+    step=-1; running=false;
+    document.getElementById('s8trace').innerHTML='';
+    document.getElementById('s8status').textContent='';
+    const c=document.getElementById('s8canvas'); if(c){const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);}
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s9: FULL vs EMPTY ==================== -->
+<div class="slide" id="s9">
+  <h2>Circular Array: Full vs Empty</h2>
+  <p class="subtitle">When <code>front == rear</code>, is it empty or full?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>The Ambiguity</h3>
+      <canvas id="s9canvas" width="400" height="250" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s9Toggle()">Toggle Empty ↔ Full</button>
+      </div>
+      <div id="s9label" style="text-align:center; font-size:1.2em; margin-top:8px; color:#fbbf24; font-weight:bold;">EMPTY: front == rear == 0</div>
+    </div>
+    <div>
+      <h3>Solution 1: Size Counter</h3>
+      <div class="code-block" style="font-size:0.9em;"><div class="line"><span style="color:#64748b;">// Maintain a separate size field</span></div><div class="line"><span style="color:#86efac;">isEmpty</span>(): <span style="color:#c084fc;">return</span> size == <span style="color:#f59e0b;">0</span></div><div class="line"><span style="color:#86efac;">isFull</span>():  <span style="color:#c084fc;">return</span> size == N</div><div class="line"><span style="color:#64748b;">// Cleanest approach!</span></div></div>
+      <h3>Solution 2: Waste One Slot</h3>
+      <div class="code-block" style="font-size:0.9em;"><div class="line"><span style="color:#64748b;">// Max capacity = N - 1</span></div><div class="line"><span style="color:#86efac;">isFull</span>(): <span style="color:#c084fc;">return</span> (rear+1) % N == front</div><div class="line"><span style="color:#64748b;">// One slot always empty</span></div></div>
+      <div class="warning">
+        <h3>Classic Bug</h3>
+        <p>Without either solution, you <strong>cannot</strong> distinguish full from empty. Both have <code>front == rear</code>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let showFull=false;
+  function draw(){
+    const c=document.getElementById('s9canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const N=5, cellW=65, cellH=50, startX=25, y=100;
+    for(let i=0;i<N;i++){
+      const x=startX+i*cellW;
+      const filled=showFull;
+      ctx.fillStyle=filled?'rgba(59,130,246,0.25)':'rgba(30,41,59,1)';
+      ctx.fillRect(x,y,cellW-4,cellH);
+      ctx.strokeStyle=i===0?'#f59e0b':'#475569'; ctx.lineWidth=i===0?3:1;
+      ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+cellW/2-2,y-8);
+      if(filled){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 20px monospace';
+        ctx.fillText(String.fromCharCode(65+i),x+cellW/2-2,y+cellH/2+7);
+      }
+    }
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('front = rear = 0',startX+cellW/2-2,y+cellH+24);
+    ctx.fillText('↑',startX+cellW/2-2,y+cellH+10);
+    // question mark
+    ctx.fillStyle='#f87171'; ctx.font='bold 30px sans-serif';
+    ctx.fillText('?',c.width/2,50);
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif';
+    ctx.fillText(showFull?'All slots filled — but front==rear!':'All slots empty — front==rear!',c.width/2,70);
+  }
+
+  window.s9Toggle = function(){
+    showFull=!showFull;
+    document.getElementById('s9label').textContent=showFull?'FULL: front == rear == 0 — same condition!':'EMPTY: front == rear == 0';
+    document.getElementById('s9label').style.color=showFull?'#f87171':'#fbbf24';
+    draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s10: LINKED-LIST IMPLEMENTATION ==================== -->
+<div class="slide" id="s10">
+  <h2>Linked-List-Based Queue</h2>
+  <p class="subtitle">Head for dequeue, tail for enqueue — both O(1)</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Enqueue (add at tail)</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="line" id="s10eL1"><span style="color:#c084fc;">public void</span> <span style="color:#86efac;">enqueue</span>(E element) {</div><div class="line" id="s10eL2">    Node newest = <span style="color:#c084fc;">new</span> Node(element);</div><div class="line" id="s10eL3">    <span style="color:#c084fc;">if</span> (isEmpty()) head = newest;</div><div class="line" id="s10eL4">    <span style="color:#c084fc;">else</span> tail.next = newest;</div><div class="line" id="s10eL5">    tail = newest;</div><div class="line" id="s10eL6">    size++;</div><div class="line" id="s10eL7">}</div></div>
+      <h3>Dequeue (remove from head)</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="line" id="s10dL1"><span style="color:#c084fc;">public</span> E <span style="color:#86efac;">dequeue</span>() {</div><div class="line" id="s10dL2">    E result = head.data;</div><div class="line" id="s10dL3">    head = head.next;</div><div class="line" id="s10dL4">    size--;</div><div class="line" id="s10dL5">    <span style="color:#c084fc;">if</span> (isEmpty()) tail = <span style="color:#c084fc;">null</span>;</div><div class="line" id="s10dL6">    <span style="color:#c084fc;">return</span> result;</div><div class="line" id="s10dL7">}</div></div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Node Diagram</h3>
+      <canvas id="s10canvas" width="400" height="220" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s10Enq()">Enqueue</button>
+        <button class="btn btn-outline" onclick="s10Deq()">Dequeue</button>
+        <button class="btn btn-outline" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10status" class="status" style="min-height:24px;"></div>
+      <div class="key-idea mt">
+        <h3>Why head AND tail?</h3>
+        <p><code>head</code> for O(1) dequeue. <code>tail</code> for O(1) enqueue. Without tail, enqueue traverses the whole list — O(n)!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let nodes=[], nextV=65;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4'];
+
+  function draw(){
+    const c=document.getElementById('s10canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    if(nodes.length===0){
+      ctx.fillStyle='#64748b'; ctx.font='16px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('Empty queue — head = tail = null',c.width/2,c.height/2);
+      return;
+    }
+    const nodeW=60, nodeH=40, gap=20, startX=15, y=90;
+    for(let i=0;i<nodes.length;i++){
+      const x=startX+i*(nodeW+gap);
+      const col=colors[i%colors.length];
+      // node box
+      ctx.fillStyle=col; ctx.globalAlpha=0.2;
+      ctx.fillRect(x,y,nodeW,nodeH); ctx.globalAlpha=1;
+      ctx.strokeStyle=col; ctx.lineWidth=2;
+      ctx.strokeRect(x,y,nodeW,nodeH);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 18px monospace'; ctx.textAlign='center';
+      ctx.fillText(nodes[i],x+nodeW/2,y+nodeH/2+6);
+      // arrow to next
+      if(i<nodes.length-1){
+        ctx.strokeStyle='#94a3b8'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(x+nodeW,y+nodeH/2); ctx.lineTo(x+nodeW+gap-4,y+nodeH/2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x+nodeW+gap-4,y+nodeH/2-5); ctx.lineTo(x+nodeW+gap-4,y+nodeH/2+5); ctx.lineTo(x+nodeW+gap+2,y+nodeH/2); ctx.fill();
+      } else {
+        // null
+        ctx.fillStyle='#64748b'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+        ctx.fillText('null',x+nodeW+5,y+nodeH/2+4);
+      }
+    }
+    // head label
+    ctx.fillStyle='#86efac'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('head',startX+nodeW/2,y-10);
+    ctx.fillText('(dequeue)',startX+nodeW/2,y-22);
+    // tail label
+    const tx=startX+(nodes.length-1)*(nodeW+gap)+nodeW/2;
+    ctx.fillStyle='#fbbf24';
+    ctx.fillText('tail',tx,y+nodeH+18);
+    ctx.fillText('(enqueue)',tx,y+nodeH+30);
+  }
+
+  window.s10Enq = function(){
+    if(nodes.length>=5){document.getElementById('s10status').textContent='Demo limit reached';document.getElementById('s10status').className='status error';return;}
+    const v=String.fromCharCode(nextV); nextV++; if(nextV>90)nextV=65;
+    nodes.push(v);
+    document.getElementById('s10status').textContent='Enqueued "'+v+'" at tail';
+    document.getElementById('s10status').className='status success';
+    draw();
+  };
+
+  window.s10Deq = function(){
+    if(nodes.length===0){document.getElementById('s10status').textContent='Empty!';document.getElementById('s10status').className='status error';return;}
+    const v=nodes.shift();
+    document.getElementById('s10status').textContent='Dequeued "'+v+'" from head';
+    document.getElementById('s10status').className='status success';
+    draw();
+  };
+
+  window.s10Reset = function(){
+    nodes=[]; nextV=65;
+    document.getElementById('s10status').textContent='';
+    draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s11: DEQUE (Interactive) ==================== -->
+<div class="slide" id="s11">
+  <h2>Deque (Double-Ended Queue)</h2>
+  <p class="subtitle">Pronounced "deck" — insert & remove at <strong>both</strong> ends</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Operations</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>Operation</th><th>Description</th></tr>
+        <tr><td><code>addFirst(e)</code></td><td>Insert at front</td></tr>
+        <tr><td><code>addLast(e)</code></td><td>Insert at rear</td></tr>
+        <tr><td><code>removeFirst()</code></td><td>Remove from front</td></tr>
+        <tr><td><code>removeLast()</code></td><td>Remove from rear</td></tr>
+      </table>
+      <div class="key-idea">
+        <h3>Deque Subsumes Both</h3>
+        <ul>
+          <li><strong>Stack</strong> = addFirst + removeFirst</li>
+          <li><strong>Queue</strong> = addLast + removeFirst</li>
+        </ul>
+      </div>
+      <p style="font-size:0.95em; color:#94a3b8;">Java: <code>ArrayDeque</code> and <code>LinkedList</code> both implement <code>Deque</code>.</p>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Interactive Deque</h3>
+      <canvas id="s11canvas" width="400" height="160" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <div class="controls mt">
+        <button class="btn" onclick="s11AddFirst()">addFirst</button>
+        <button class="btn" onclick="s11AddLast()">addLast</button>
+      </div>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="s11RemFirst()">removeFirst</button>
+        <button class="btn btn-outline" onclick="s11RemLast()">removeLast</button>
+        <button class="btn btn-outline" onclick="s11Reset()">Reset</button>
+      </div>
+      <div id="s11status" class="status" style="min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let deq=[], nextV=65;
+  const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f43f5e'];
+
+  function draw(){
+    const c=document.getElementById('s11canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellW=48, cellH=50, y=55, maxItems=7;
+    const startX=(c.width-deq.length*cellW)/2;
+    if(deq.length>0){
+      ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+      ctx.strokeRect(startX-5,y-5,deq.length*cellW+10,cellH+10);
+    }
+    for(let i=0;i<deq.length;i++){
+      const x=startX+i*cellW;
+      ctx.fillStyle=colors[deq[i].c%colors.length]; ctx.globalAlpha=0.3;
+      ctx.fillRect(x,y,cellW-3,cellH); ctx.globalAlpha=1;
+      ctx.strokeStyle=colors[deq[i].c%colors.length];
+      ctx.strokeRect(x,y,cellW-3,cellH);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 18px monospace'; ctx.textAlign='center';
+      ctx.fillText(deq[i].v,x+cellW/2-1,y+cellH/2+6);
+    }
+    // arrows
+    if(deq.length>0){
+      ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+      ctx.fillStyle='#86efac';
+      ctx.fillText('← removeFirst',startX+20,y-14);
+      ctx.fillText('addFirst →',startX+20,y+cellH+22);
+      ctx.fillStyle='#fbbf24';
+      const rx=startX+deq.length*cellW-20;
+      ctx.fillText('removeLast →',rx,y-14);
+      ctx.fillText('← addLast',rx,y+cellH+22);
+    }
+    ctx.fillStyle='#94a3b8'; ctx.font='13px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('size: '+deq.length,8,18);
+  }
+
+  function nv(){const v=String.fromCharCode(nextV); const c=nextV-65; nextV++; if(nextV>90)nextV=65; return {v,c};}
+
+  window.s11AddFirst = function(){
+    if(deq.length>=7){document.getElementById('s11status').textContent='Demo limit!';document.getElementById('s11status').className='status error';return;}
+    const item=nv(); deq.unshift(item);
+    document.getElementById('s11status').textContent='addFirst("'+item.v+'")';
+    document.getElementById('s11status').className='status success'; draw();
+  };
+  window.s11AddLast = function(){
+    if(deq.length>=7){document.getElementById('s11status').textContent='Demo limit!';document.getElementById('s11status').className='status error';return;}
+    const item=nv(); deq.push(item);
+    document.getElementById('s11status').textContent='addLast("'+item.v+'")';
+    document.getElementById('s11status').className='status success'; draw();
+  };
+  window.s11RemFirst = function(){
+    if(deq.length===0){document.getElementById('s11status').textContent='Empty!';document.getElementById('s11status').className='status error';return;}
+    const item=deq.shift();
+    document.getElementById('s11status').textContent='removeFirst() → "'+item.v+'"';
+    document.getElementById('s11status').className='status success'; draw();
+  };
+  window.s11RemLast = function(){
+    if(deq.length===0){document.getElementById('s11status').textContent='Empty!';document.getElementById('s11status').className='status error';return;}
+    const item=deq.pop();
+    document.getElementById('s11status').textContent='removeLast() → "'+item.v+'"';
+    document.getElementById('s11status').className='status success'; draw();
+  };
+  window.s11Reset = function(){
+    deq=[]; nextV=65;
+    document.getElementById('s11status').textContent=''; draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s12: PRINT QUEUE (Interactive Simulator) ==================== -->
+<div class="slide" id="s12">
+  <h2>Application: Print Job Queue</h2>
+  <p class="subtitle">A shared printer processes jobs fairly — FIFO</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Submit Print Jobs</h3>
+      <div class="controls">
+        <button class="btn" onclick="s12Submit('Alice','report.pdf')">Alice: report.pdf</button>
+        <button class="btn" onclick="s12Submit('Bob','slides.pptx')">Bob: slides.pptx</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="s12Submit('Carol','photo.png')">Carol: photo.png</button>
+        <button class="btn" onclick="s12Submit('Dave','essay.docx')">Dave: essay.docx</button>
+      </div>
+      <div class="controls mt">
+        <button class="btn btn-outline" onclick="s12Process()">Process Next Job</button>
+        <button class="btn btn-outline" onclick="s12Reset()">Reset</button>
+      </div>
+      <div id="s12status" class="status mt" style="min-height:24px;"></div>
+      <div class="key-idea mt">
+        <h3>Why a Queue?</h3>
+        <p><strong>Fairness</strong>: first come, first served. No starvation — every job eventually prints.</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Printer Queue</h3>
+      <canvas id="s12canvas" width="400" height="300" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let jobs=[], processed=[];
+  const jobColors={'Alice':'#3b82f6','Bob':'#f59e0b','Carol':'#ec4899','Dave':'#10b981'};
+
+  function draw(){
+    const c=document.getElementById('s12canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    // printer icon
+    ctx.fillStyle='#334155'; ctx.fillRect(10,20,80,50); ctx.strokeStyle='#64748b'; ctx.strokeRect(10,20,80,50);
+    ctx.fillStyle='#86efac'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('PRINTER',50,50);
+    // arrow from queue to printer
+    if(jobs.length>0){
+      ctx.strokeStyle='#86efac'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(100,45); ctx.lineTo(130,45); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(100,40); ctx.lineTo(100,50); ctx.lineTo(90,45); ctx.fill();
+    }
+    // queue
+    const startX=130, y=20, cellW=55, cellH=50;
+    ctx.fillStyle='#94a3b8'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('FRONT',startX+10,y-4);
+    if(jobs.length>1) ctx.fillText('REAR',startX+(jobs.length-1)*cellW+10,y-4);
+    for(let i=0;i<jobs.length;i++){
+      const x=startX+i*cellW;
+      const col=jobColors[jobs[i].user]||'#3b82f6';
+      ctx.fillStyle=col; ctx.globalAlpha=0.25;
+      ctx.fillRect(x,y,cellW-4,cellH); ctx.globalAlpha=1;
+      ctx.strokeStyle=col; ctx.lineWidth=i===0?2:1; ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText(jobs[i].user,x+cellW/2-2,y+18);
+      ctx.fillStyle='#94a3b8'; ctx.font='9px monospace';
+      ctx.fillText(jobs[i].file,x+cellW/2-2,y+36);
+    }
+    // processed log
+    ctx.fillStyle='#86efac'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('Processed:',10,110);
+    ctx.font='12px monospace';
+    for(let i=0;i<processed.length;i++){
+      ctx.fillStyle=jobColors[processed[i].user]||'#86efac';
+      ctx.fillText((i+1)+'. '+processed[i].user+': '+processed[i].file,15,130+i*20);
+    }
+  }
+
+  window.s12Submit = function(user,file){
+    if(jobs.length>=5){document.getElementById('s12status').textContent='Queue full (demo limit)';document.getElementById('s12status').className='status error';return;}
+    jobs.push({user,file});
+    document.getElementById('s12status').textContent=user+' submitted '+file;
+    document.getElementById('s12status').className='status success';
+    draw();
+  };
+
+  window.s12Process = function(){
+    if(jobs.length===0){document.getElementById('s12status').textContent='No jobs in queue!';document.getElementById('s12status').className='status error';return;}
+    const job=jobs.shift();
+    processed.push(job);
+    document.getElementById('s12status').textContent='Printing '+job.user+'\'s '+job.file+'...';
+    document.getElementById('s12status').className='status success';
+    draw();
+  };
+
+  window.s12Reset = function(){
+    jobs=[]; processed=[];
+    document.getElementById('s12status').textContent=''; draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s13: BFS (Interactive Tree Traversal) ==================== -->
+<div class="slide" id="s13">
+  <h2>Application: BFS (Breadth-First Search)</h2>
+  <p class="subtitle">A queue drives level-by-level traversal</p>
+  <div class="two-col mt">
+    <div>
+      <h3>BFS Algorithm</h3>
+      <div class="code-block" style="font-size:0.9em;"><div class="line" id="s13L1">queue.enqueue(start);</div><div class="line" id="s13L2"><span style="color:#c084fc;">while</span> (!queue.isEmpty()) {</div><div class="line" id="s13L3">    node = queue.dequeue();</div><div class="line" id="s13L4">    visit(node);</div><div class="line" id="s13L5">    <span style="color:#c084fc;">for</span> (child : node.children)</div><div class="line" id="s13L6">        queue.enqueue(child);</div><div class="line" id="s13L7">}</div></div>
+      <div class="controls mt">
+        <button class="btn" onclick="s13Step()">Step</button>
+        <button class="btn btn-outline" onclick="s13Auto()">Auto Play</button>
+        <button class="btn btn-outline" onclick="s13Reset()">Reset</button>
+      </div>
+      <div id="s13status" class="status" style="min-height:24px;"></div>
+      <div id="s13queue" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:8px 12px; margin-top:8px; font-family:monospace; font-size:0.9em; color:#93c5fd; min-height:30px;">Queue: []</div>
+      <div id="s13visited" style="font-family:monospace; font-size:0.9em; color:#86efac; margin-top:4px;">Visited: </div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Tree</h3>
+      <canvas id="s13canvas" width="400" height="300" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Tree: A->{B,C,D}, B->{E,F}, D->{G}
+  const tree={A:['B','C','D'],B:['E','F'],C:[],D:['G'],E:[],F:[],G:[]};
+  const pos={A:{x:200,y:40},B:{x:80,y:120},C:{x:200,y:120},D:{x:320,y:120},E:{x:40,y:220},F:{x:120,y:220},G:{x:320,y:220}};
+  const edges=[['A','B'],['A','C'],['A','D'],['B','E'],['B','F'],['D','G']];
+  let queue=[], visited=[], running=false;
+
+  function clearHL(){for(let i=1;i<=7;i++){const e=document.getElementById('s13L'+i);if(e)e.classList.remove('active');}}
+
+  function draw(){
+    const c=document.getElementById('s13canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    // edges
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    for(const [a,b] of edges){
+      ctx.beginPath(); ctx.moveTo(pos[a].x,pos[a].y+20); ctx.lineTo(pos[b].x,pos[b].y-20); ctx.stroke();
+    }
+    // nodes
+    const R=22;
+    for(const [name,p] of Object.entries(pos)){
+      const isVisited=visited.includes(name);
+      const inQueue=queue.includes(name);
+      ctx.beginPath(); ctx.arc(p.x,p.y,R,0,2*Math.PI);
+      if(isVisited){ctx.fillStyle='rgba(16,185,129,0.3)'; ctx.fill(); ctx.strokeStyle='#10b981'; ctx.lineWidth=3;}
+      else if(inQueue){ctx.fillStyle='rgba(59,130,246,0.3)'; ctx.fill(); ctx.strokeStyle='#3b82f6'; ctx.lineWidth=3;}
+      else{ctx.fillStyle='#1e293b'; ctx.fill(); ctx.strokeStyle='#475569'; ctx.lineWidth=2;}
+      ctx.stroke();
+      ctx.fillStyle=isVisited?'#86efac':inQueue?'#93c5fd':'#94a3b8';
+      ctx.font='bold 18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(name,p.x,p.y);
+    }
+    // legend
+    ctx.textBaseline='alphabetic';
+    ctx.fillStyle='#10b981'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('● Visited',10,290);
+    ctx.fillStyle='#3b82f6'; ctx.fillText('● In Queue',90,290);
+  }
+
+  function updateUI(){
+    document.getElementById('s13queue').textContent='Queue: ['+queue.join(', ')+']';
+    document.getElementById('s13visited').textContent='Visited: '+visited.join(' → ');
+  }
+
+  window.s13Step = function(){
+    if(queue.length===0 && visited.length===0){
+      // start
+      queue.push('A');
+      clearHL(); document.getElementById('s13L1').classList.add('active');
+      document.getElementById('s13status').textContent='Start: enqueue A';
+      updateUI(); draw(); return;
+    }
+    if(queue.length===0){
+      document.getElementById('s13status').textContent='BFS complete! Visit order: '+visited.join(' → ');
+      document.getElementById('s13status').className='status success';
+      running=false; return;
+    }
+    const node=queue.shift();
+    visited.push(node);
+    clearHL();
+    document.getElementById('s13L3').classList.add('active');
+    document.getElementById('s13L4').classList.add('active');
+    const children=tree[node]||[];
+    for(const ch of children) queue.push(ch);
+    if(children.length>0) document.getElementById('s13L6').classList.add('active');
+    document.getElementById('s13status').textContent='Dequeue '+node+', visit it'+(children.length>0?', enqueue children: '+children.join(','):'');
+    updateUI(); draw();
+  };
+
+  window.s13Auto = function(){
+    s13Reset(); running=true;
+    function go(){if(!running||queue.length===0&&visited.length>0){if(queue.length===0)s13Step();return;}
+      s13Step(); setTimeout(go,900);
+    }
+    setTimeout(go,300);
+  };
+
+  window.s13Reset = function(){
+    queue=[]; visited=[]; running=false; clearHL();
+    document.getElementById('s13status').textContent='';
+    document.getElementById('s13status').className='status';
+    updateUI(); draw();
+  };
+  draw(); updateUI();
+})();
+</script>
+
+<!-- ==================== SLIDE s14: HOT POTATO (Interactive Game) ==================== -->
+<div class="slide" id="s14">
+  <h2>Application: Hot Potato / Josephus Problem</h2>
+  <p class="subtitle">Pass the potato k times, eliminate the holder. Last one wins!</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Algorithm</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="line"><span style="color:#c084fc;">while</span> (queue.size() > 1) {</div><div class="line">    <span style="color:#c084fc;">for</span> (i = 1 to k)</div><div class="line">        queue.enqueue(queue.dequeue());</div><div class="line">    eliminated = queue.dequeue();</div><div class="line">}</div><div class="line"><span style="color:#c084fc;">return</span> queue.dequeue(); <span style="color:#64748b;">// winner</span></div></div>
+      <div class="controls mt">
+        <label style="color:#94a3b8; font-size:14px;">k =</label>
+        <input type="number" id="s14k" value="3" min="1" max="9" style="width:60px;">
+        <button class="btn" onclick="s14Step()">Next Elimination</button>
+      </div>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="s14Auto()">Auto Play</button>
+        <button class="btn btn-outline" onclick="s14Reset()">Reset</button>
+      </div>
+      <div id="s14status" class="status" style="min-height:24px;"></div>
+      <div id="s14log" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:8px 12px; margin-top:8px; font-family:monospace; font-size:0.85em; max-height:100px; overflow-y:auto; color:#cbd5e1;"></div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Players Circle</h3>
+      <canvas id="s14canvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const allPlayers=['Alice','Bob','Carol','Dave','Eve'];
+  const pColors={'Alice':'#3b82f6','Bob':'#f59e0b','Carol':'#ec4899','Dave':'#10b981','Eve':'#8b5cf6'};
+  let queue=[], eliminated=[], running=false;
+
+  function draw(){
+    const c=document.getElementById('s14canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cx=200,cy=150,R=110;
+    // draw all original positions
+    for(let i=0;i<allPlayers.length;i++){
+      const angle=-Math.PI/2+(2*Math.PI/allPlayers.length)*i;
+      const x=cx+R*Math.cos(angle), y=cy+R*Math.sin(angle);
+      const name=allPlayers[i];
+      const alive=queue.includes(name);
+      const out=eliminated.includes(name);
+      ctx.beginPath(); ctx.arc(x,y,28,0,2*Math.PI);
+      if(alive){
+        ctx.fillStyle=pColors[name]; ctx.globalAlpha=0.3; ctx.fill(); ctx.globalAlpha=1;
+        ctx.strokeStyle=pColors[name]; ctx.lineWidth=2; ctx.stroke();
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 13px sans-serif';
+      } else {
+        ctx.fillStyle='#1e293b'; ctx.fill();
+        ctx.strokeStyle='#334155'; ctx.lineWidth=1; ctx.stroke();
+        ctx.fillStyle='#475569'; ctx.font='13px sans-serif';
+      }
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(name,x,y);
+      if(out){
+        ctx.strokeStyle='#ef4444'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(x-20,y-20); ctx.lineTo(x+20,y+20); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x+20,y-20); ctx.lineTo(x-20,y+20); ctx.stroke();
+      }
+    }
+    // show front marker
+    if(queue.length>0){
+      ctx.fillStyle='#86efac'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+      ctx.fillText('Queue front: '+queue[0],cx,cy+R+50);
+    }
+    if(queue.length===1){
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 18px sans-serif';
+      ctx.fillText('WINNER: '+queue[0]+'!',cx,cy+R+70);
+    }
+  }
+
+  window.s14Step = function(){
+    if(queue.length===0) s14Reset();
+    if(queue.length<=1){
+      document.getElementById('s14status').textContent=queue.length===1?'Winner: '+queue[0]+'!':'Reset to play again';
+      document.getElementById('s14status').className='status success';
+      running=false; return;
+    }
+    const k=parseInt(document.getElementById('s14k').value)||3;
+    const log=document.getElementById('s14log');
+    let passes='';
+    for(let i=0;i<k;i++){
+      const p=queue.shift(); queue.push(p);
+      passes+=(i>0?'→':'')+p;
+    }
+    const out=queue.shift();
+    eliminated.push(out);
+    log.innerHTML+='<div>Pass '+k+'x ('+passes+') → <span style="color:#f87171;">'+out+' eliminated!</span></div>';
+    log.scrollTop=log.scrollHeight;
+    document.getElementById('s14status').textContent=out+' eliminated! ('+queue.length+' remaining)';
+    document.getElementById('s14status').className='status';
+    draw();
+    if(queue.length===1){
+      document.getElementById('s14status').textContent='Winner: '+queue[0]+'!';
+      document.getElementById('s14status').className='status success';
+      running=false;
+    }
+  };
+
+  window.s14Auto = function(){
+    s14Reset(); running=true;
+    function go(){if(!running||queue.length<=1)return; s14Step(); setTimeout(go,1200);}
+    setTimeout(go,400);
+  };
+
+  window.s14Reset = function(){
+    queue=[...allPlayers]; eliminated=[]; running=false;
+    document.getElementById('s14log').innerHTML='';
+    document.getElementById('s14status').textContent='';
+    draw();
+  };
+  s14Reset();
+})();
+</script>
+
+<!-- ==================== SLIDE s15: PRIORITY QUEUE PREVIEW ==================== -->
+<div class="slide" id="s15">
+  <h2>Priority Queue Preview</h2>
+  <p class="subtitle">What if some elements are more <strong>urgent</strong>?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Regular Queue (FIFO)</h3>
+      <canvas id="s15fifoC" width="380" height="100" style="background:#1e293b; border-radius:8px; border:1px solid #334155; width:100%;"></canvas>
+      <p style="font-size:0.95em; color:#94a3b8;">Arrival order determines service.</p>
+      <h3 class="mt">Priority Queue</h3>
+      <canvas id="s15pqC" width="380" height="100" style="background:#1e293b; border-radius:8px; border:1px solid #334155; width:100%;"></canvas>
+      <p style="font-size:0.95em; color:#94a3b8;">Priority determines service — NOT FIFO.</p>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>A <strong>Priority Queue</strong> is NOT a queue. The element with the <strong>highest priority</strong> (often minimum key) is removed first, regardless of arrival order.</p>
+      </div>
+      <h3>Real-World Examples</h3>
+      <ul>
+        <li><strong>Emergency Room</strong> — critical patients first</li>
+        <li><strong>OS Scheduling</strong> — high-priority processes preempt others</li>
+        <li><strong>Dijkstra's Algorithm</strong> — expand nearest unvisited node</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Regular queue = deli counter with numbered tickets.<br>Priority queue = ER triage: sickest patient goes first, even if they just walked in.</p>
+      </div>
+      <p style="color:#94a3b8;">Coming up: heaps — the efficient way to implement priority queues!</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // FIFO canvas
+  const c1=document.getElementById('s15fifoC');
+  if(c1){
+    const ctx=c1.getContext('2d');
+    const items=[{v:'low',c:'#64748b'},{v:'HIGH',c:'#ef4444'},{v:'med',c:'#f59e0b'},{v:'HIGH',c:'#ef4444'},{v:'low',c:'#64748b'}];
+    const cellW=65,cellH=45,y=28,sx=15;
+    for(let i=0;i<items.length;i++){
+      const x=sx+i*cellW;
+      ctx.fillStyle=items[i].c; ctx.globalAlpha=0.25; ctx.fillRect(x,y,cellW-4,cellH); ctx.globalAlpha=1;
+      ctx.strokeStyle=items[i].c; ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      ctx.fillText(items[i].v,x+cellW/2-2,y+cellH/2+5);
+    }
+    ctx.fillStyle='#86efac'; ctx.font='bold 11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('dequeue→"low"',sx,y-6);
+    ctx.fillStyle='#64748b'; ctx.textAlign='right'; ctx.fillText('(first in, regardless)',c1.width-10,y-6);
+  }
+  // PQ canvas
+  const c2=document.getElementById('s15pqC');
+  if(c2){
+    const ctx=c2.getContext('2d');
+    const items=[{v:'HIGH',c:'#ef4444'},{v:'HIGH',c:'#ef4444'},{v:'med',c:'#f59e0b'},{v:'low',c:'#64748b'},{v:'low',c:'#64748b'}];
+    const cellW=65,cellH=45,y=28,sx=15;
+    for(let i=0;i<items.length;i++){
+      const x=sx+i*cellW;
+      ctx.fillStyle=items[i].c; ctx.globalAlpha=0.25; ctx.fillRect(x,y,cellW-4,cellH); ctx.globalAlpha=1;
+      ctx.strokeStyle=items[i].c; ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      ctx.fillText(items[i].v,x+cellW/2-2,y+cellH/2+5);
+    }
+    ctx.fillStyle='#f87171'; ctx.font='bold 11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('removeMin→"HIGH"',sx,y-6);
+    ctx.fillStyle='#64748b'; ctx.textAlign='right'; ctx.fillText('(highest priority first)',c2.width-10,y-6);
+  }
+})();
+</script>
+
+<!-- ==================== SLIDE s16: COMMON PITFALLS ==================== -->
+<div class="slide" id="s16">
+  <h2>Common Pitfalls</h2>
+  <p class="subtitle">Mistakes to avoid when working with queues</p>
+  <div class="three-col mt">
+    <div>
+      <div class="warning">
+        <h3>1. Forgetting Wrap-Around</h3>
+        <p>Writing <code>rear++</code> instead of <code>rear = (rear+1) % N</code> → <code>ArrayIndexOutOfBounds</code>!</p>
+      </div>
+      <div class="code-block" style="font-size:0.82em;"><div class="line"><span style="color:#64748b;">// WRONG</span></div><div class="line">rear++;</div><div class="line"></div><div class="line"><span style="color:#64748b;">// CORRECT</span></div><div class="line">rear = (rear + 1) % data.length;</div></div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>2. Dequeuing When Empty</h3>
+        <p>Always check <code>isEmpty()</code> before <code>dequeue()</code>.</p>
+      </div>
+      <div class="code-block" style="font-size:0.82em;"><div class="line"><span style="color:#64748b;">// WRONG</span></div><div class="line">E item = queue.dequeue();</div><div class="line"></div><div class="line"><span style="color:#64748b;">// CORRECT</span></div><div class="line"><span style="color:#c084fc;">if</span> (!queue.isEmpty())</div><div class="line">    E item = queue.dequeue();</div></div>
+      <div class="warning mt">
+        <h3>3. Confusing Front & Rear</h3>
+        <p>Enqueue → <strong>rear</strong>. Dequeue → <strong>front</strong>. Mixing them up gives stack-like behavior.</p>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>4. Full vs Empty Confusion</h3>
+        <p>Without a <code>size</code> counter, <code>front==rear</code> is ambiguous. Always use a count or waste-one-slot.</p>
+      </div>
+      <div class="warning mt">
+        <h3>5. Forgetting to Null</h3>
+        <p>After dequeue, set <code>data[front] = null</code> to avoid memory leaks (loitering references prevent GC).</p>
+      </div>
+      <div class="code-block" style="font-size:0.82em;"><div class="line">E result = data[front];</div><div class="line">data[front] = <span style="color:#c084fc;">null</span>; <span style="color:#86efac;">// help GC!</span></div></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE s17: SUMMARY ==================== -->
+<div class="slide" id="s17">
+  <h2>Summary & Cheat Sheet</h2>
+  <div class="two-col mt">
+    <div>
+      <h3>Queue at a Glance</h3>
+      <table style="width:100%;">
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Access Policy</td><td>FIFO</td></tr>
+        <tr><td><code>enqueue</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>dequeue</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>front / peek</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+        <tr><td><code>isEmpty / size</code></td><td><span style="color:#86efac;">O(1)</span></td></tr>
+      </table>
+      <h3 class="mt">Implementations</h3>
+      <table style="width:100%; font-size:0.9em;">
+        <tr><th></th><th>Circular Array</th><th>Linked List</th></tr>
+        <tr><td>enqueue</td><td>O(1) amortized</td><td>O(1)</td></tr>
+        <tr><td>dequeue</td><td>O(1)</td><td>O(1)</td></tr>
+        <tr><td>Memory</td><td>Compact, cache-friendly</td><td>Pointer overhead</td></tr>
+        <tr><td>Resize</td><td>O(n) when full</td><td>Never needed</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Key Formulas (Circular Array)</h3>
+      <div class="code-block" style="font-size:0.9em;"><div class="line">Advance front:  f = (f + 1) % N</div><div class="line">Advance rear:   r = (r + 1) % N</div><div class="line">Is empty:       size == 0</div><div class="line">Is full:        size == N</div></div>
+      <h3>Queue Family</h3>
+      <canvas id="s17canvas" width="380" height="120" style="background:#1e293b; border-radius:8px; border:1px solid #334155; width:100%;"></canvas>
+      <h3 class="mt">Applications</h3>
+      <ul style="font-size:0.95em;">
+        <li><strong>BFS</strong> — level-order traversal</li>
+        <li><strong>Print spooling</strong> — fair job scheduling</li>
+        <li><strong>Hot Potato</strong> — circular elimination</li>
+        <li><strong>Buffering</strong> — producer-consumer</li>
+        <li><strong>OS scheduling</strong> — round-robin CPU</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('s17canvas'); if(!c)return;
+  const ctx=c.getContext('2d');
+  // Deque outer box
+  ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=2;
+  ctx.strokeRect(20,10,340,90);
+  ctx.fillStyle='#8b5cf6'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Deque (both ends)',190,26);
+  // Queue box
+  ctx.strokeStyle='#3b82f6'; ctx.lineWidth=2;
+  ctx.strokeRect(40,35,140,55);
+  ctx.fillStyle='#3b82f6'; ctx.font='12px sans-serif';
+  ctx.fillText('Queue (FIFO)',110,55);
+  ctx.fillStyle='#64748b'; ctx.font='10px sans-serif';
+  ctx.fillText('rear in, front out',110,72);
+  // Stack box
+  ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+  ctx.strokeRect(200,35,140,55);
+  ctx.fillStyle='#f59e0b'; ctx.font='12px sans-serif';
+  ctx.fillText('Stack (LIFO)',270,55);
+  ctx.fillStyle='#64748b'; ctx.font='10px sans-serif';
+  ctx.fillText('one end only',270,72);
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCA: Circular Array Trace ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A: Circular Array Trace</h2>
+  <p class="subtitle">Capacity N=4, starting with front=0, rear=0. After: enqueue(A), enqueue(B), dequeue(), enqueue(C), enqueue(D), enqueue(E) — what are front and rear?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Work it out:</h3>
+      <ol style="line-height:2.2;">
+        <li>enqueue(A): data[0]=A, rear=1, size=1</li>
+        <li>enqueue(B): data[1]=B, rear=2, size=2</li>
+        <li>dequeue()→A: front=1, size=1</li>
+        <li>enqueue(C): data[2]=C, rear=3, size=2</li>
+        <li>enqueue(D): data[3]=D, rear=<strong>?</strong>, size=3</li>
+        <li>enqueue(E): data[<strong>?</strong>]=E, rear=<strong>?</strong>, size=4</li>
+      </ol>
+      <div class="controls mt">
+        <button class="btn" onclick="sCACheck('A')" style="min-width:260px;text-align:left;">A) front=1, rear=1</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sCACheck('B')" style="min-width:260px;text-align:left;">B) front=1, rear=0</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sCACheck('C')" style="min-width:260px;text-align:left;">C) front=0, rear=1</button>
+      </div>
+      <div id="sCAstatus" class="status mt" style="min-height:50px;"></div>
+    </div>
+    <div>
+      <canvas id="sCAcanvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCACheck = function(ans){
+    const el=document.getElementById('sCAstatus');
+    if(ans==='A'){
+      el.innerHTML='<span style="color:#86efac;">Correct!</span> rear wraps: (3+1)%4=0 for D, then (0+1)%4=1 for E. front=1, rear=1. Queue is FULL (size=4). front==rear but full, not empty!';
+      el.className='status mt success';
+      sCAReveal();
+    } else if(ans==='B'){
+      el.innerHTML='<span style="color:#f87171;">Not quite.</span> After enqueue(D), rear=(3+1)%4=0. After enqueue(E), rear=(0+1)%4=? Think one more step.';
+      el.className='status mt error';
+    } else {
+      el.innerHTML='<span style="color:#f87171;">Not quite.</span> front only moves on dequeue. We dequeued once, so front=1. Trace the rear from there.';
+      el.className='status mt error';
+    }
+  };
+  function sCAReveal(){
+    const c=document.getElementById('sCAcanvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const N=4, cellW=80, cellH=55, sx=30, y=50;
+    const data=['E','B','C','D']; // after all ops: index 0=E, 1=B was dequeued so null... wait
+    // Actually: enq A→[A,_,_,_], enq B→[A,B,_,_], deq→[_,B,_,_] f=1, enq C→[_,B,C,_], enq D→[_,B,C,D] r=0 wrap, enq E→[E,B,C,D] r=1
+    // But B is still there? No, data[1]=B, but front=1. So data=[E, (old B), C, D], front=1
+    // Actually dequeue nulls it: [_, _, C, D] → then E at [0]
+    const finalData=['E',null,'C','D'];
+    const front=1, rear=1;
+    ctx.fillStyle='#94a3b8'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Final state: front=1, rear=1, size=4 (FULL!)',c.width/2,30);
+    for(let i=0;i<N;i++){
+      const x=sx+i*cellW;
+      const hasFR=(i===front);
+      ctx.fillStyle=finalData[i]?'rgba(59,130,246,0.25)':'rgba(30,41,59,1)';
+      ctx.fillRect(x,y,cellW-4,cellH);
+      ctx.strokeStyle=hasFR?'#f59e0b':'#475569'; ctx.lineWidth=hasFR?3:1;
+      ctx.strokeRect(x,y,cellW-4,cellH);
+      ctx.fillStyle='#64748b'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+cellW/2-2,y-8);
+      if(finalData[i]){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 24px monospace';
+        ctx.fillText(finalData[i],x+cellW/2-2,y+cellH/2+8);
+      }
+    }
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('front=rear=1',sx+1*cellW+cellW/2-2,y+cellH+20);
+    ctx.fillStyle='#f87171'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('Same as empty condition! Must use size counter.',c.width/2,y+cellH+50);
+    // step trace
+    const steps=['enq(A): [A,_,_,_] f=0 r=1','enq(B): [A,B,_,_] f=0 r=2',
+      'deq()→A: [_,B,_,_] f=1 r=2','enq(C): [_,B,C,_] f=1 r=3',
+      'enq(D): [_,B,C,D] f=1 r=0 ←wrap!','enq(E): [E,B,C,D] f=1 r=1 ←wrap!'];
+    ctx.font='12px monospace'; ctx.textAlign='left';
+    for(let i=0;i<steps.length;i++){
+      ctx.fillStyle=i===4||i===5?'#fbbf24':'#94a3b8';
+      ctx.fillText((i+1)+'. '+steps[i],20,y+cellH+80+i*20);
+    }
+  }
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCB: Fix the Dequeue Bug ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B: Fix the Bug</h2>
+  <p class="subtitle">This linked-list dequeue has a bug. Find it!</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Buggy Code</h3>
+      <div class="code-block" style="font-size:0.88em;"><div class="line" id="sCBL1"><span style="color:#c084fc;">public</span> E <span style="color:#86efac;">dequeue</span>() {</div><div class="line" id="sCBL2">    <span style="color:#c084fc;">if</span> (isEmpty())</div><div class="line" id="sCBL3">        <span style="color:#c084fc;">throw new</span> NoSuchElementException();</div><div class="line" id="sCBL4">    E result = head.data;</div><div class="line" id="sCBL5">    head = head.next;</div><div class="line" id="sCBL6">    size--;</div><div class="line" id="sCBL7">    <span style="color:#c084fc;">return</span> result;</div><div class="line" id="sCBL8">}</div></div>
+      <p class="mt">Bug: after dequeuing the <strong>last</strong> element, <code>tail</code> still points to the removed node. Next enqueue appends to a ghost!</p>
+      <h3 class="mt">What's missing?</h3>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sCBCheck('A')">A) Check if head==null after removal</button>
+      </div>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sCBCheck('B')">B) Set tail=null if now empty</button>
+      </div>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sCBCheck('C')">C) Set head=tail before removal</button>
+      </div>
+      <div id="sCBstatus" class="status mt" style="min-height:60px;"></div>
+    </div>
+    <div>
+      <div id="sCBfix" style="display:none;">
+        <h3>The Fix</h3>
+        <div class="code-block" style="font-size:0.88em;"><div class="line">E result = head.data;</div><div class="line">head = head.next;</div><div class="line">size--;</div><div class="line active"><span style="color:#86efac;">if (isEmpty()) tail = null;</span></div><div class="line">return result;</div></div>
+        <div class="analogy">
+          <h3>Why It Matters</h3>
+          <p>Without this, <code>tail</code> references a removed node. The next <code>enqueue</code> does <code>tail.next = newest</code> — but tail is garbage! The new node is lost.</p>
+        </div>
+      </div>
+      <div id="sCBhint" class="key-idea">
+        <h3>Think About It</h3>
+        <p>The code correctly advances <code>head</code> and decrements <code>size</code>. But what about <code>tail</code>? When does tail need updating during a dequeue?</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCBCheck = function(ans){
+    const el=document.getElementById('sCBstatus');
+    for(let i=1;i<=8;i++){const l=document.getElementById('sCBL'+i);if(l)l.classList.remove('active');}
+    if(ans==='B'){
+      el.innerHTML='<span style="color:#86efac;">Correct!</span> After removing the last element, tail still points to the old node. We need <code>if (isEmpty()) tail = null;</code> between lines 6 and 7.';
+      el.className='status mt success';
+      document.getElementById('sCBfix').style.display='block';
+      document.getElementById('sCBhint').style.display='none';
+      document.getElementById('sCBL6').classList.add('active');
+    } else if(ans==='A'){
+      el.innerHTML='<span style="color:#f87171;">Close!</span> Checking head==null is part of it, but the specific fix is what you <em>do</em> when that happens. What needs to be set to null?';
+      el.className='status mt error';
+    } else {
+      el.innerHTML='<span style="color:#f87171;">Not quite.</span> We never need to set head=tail before removal. Think about what happens to <code>tail</code> when the queue becomes empty.';
+      el.className='status mt error';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCC: FIFO vs LIFO Output ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: FIFO vs LIFO</h2>
+  <p class="subtitle">You enqueue 1, 2, 3, 4, 5 into a queue, then dequeue all. What's the output?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Operations:</h3>
+      <div class="code-block" style="font-size:0.9em;"><div class="line">queue.enqueue(1);</div><div class="line">queue.enqueue(2);</div><div class="line">queue.enqueue(3);</div><div class="line">queue.enqueue(4);</div><div class="line">queue.enqueue(5);</div><div class="line"><span style="color:#c084fc;">while</span> (!queue.isEmpty())</div><div class="line">    print(queue.dequeue());</div></div>
+      <div class="controls mt">
+        <button class="btn" onclick="sCCCheck('A')" style="min-width:250px;text-align:left;">A) 5 4 3 2 1</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sCCCheck('B')" style="min-width:250px;text-align:left;">B) 1 2 3 4 5</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sCCCheck('C')" style="min-width:250px;text-align:left;">C) 1 3 5 2 4</button>
+      </div>
+      <div id="sCCstatus" class="status mt" style="min-height:50px;"></div>
+    </div>
+    <div>
+      <div id="sCCreveal" style="display:none;">
+        <canvas id="sCCcanvas" width="400" height="300" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      </div>
+      <div class="key-idea" id="sCChint">
+        <h3>Think: FIFO</h3>
+        <p>First In, First Out. Which element was enqueued first? That one comes out first when you dequeue.</p>
+        <p class="mt"><strong>Bonus:</strong> If this were a <em>stack</em> instead, the output would be the <em>reverse</em>: 5, 4, 3, 2, 1 (LIFO).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCCCheck = function(ans){
+    const el=document.getElementById('sCCstatus');
+    if(ans==='B'){
+      el.innerHTML='<span style="color:#86efac;">Correct!</span> FIFO: elements come out in the same order they went in. 1 was first in, so 1 comes out first.';
+      el.className='status mt success';
+      document.getElementById('sCCreveal').style.display='block';
+      document.getElementById('sCChint').style.display='none';
+      sCCDraw();
+    } else if(ans==='A'){
+      el.innerHTML='<span style="color:#f87171;">That\'s LIFO (stack) order!</span> A queue uses FIFO — the first element enqueued is the first dequeued.';
+      el.className='status mt error';
+    } else {
+      el.innerHTML='<span style="color:#f87171;">Not quite.</span> A queue doesn\'t interleave. It\'s strictly First In, First Out.';
+      el.className='status mt error';
+    }
+  };
+  function sCCDraw(){
+    const c=document.getElementById('sCCcanvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.fillStyle='#94a3b8'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Queue vs Stack — same input, different output',c.width/2,20);
+    // Queue row
+    ctx.fillStyle='#3b82f6'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('Queue (FIFO):',10,60);
+    ctx.fillText('In:  1 → 2 → 3 → 4 → 5',10,80);
+    ctx.fillStyle='#86efac';
+    ctx.fillText('Out: 1 → 2 → 3 → 4 → 5',10,100);
+    // Stack row
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('Stack (LIFO):',10,140);
+    ctx.fillText('In:  1 → 2 → 3 → 4 → 5',10,160);
+    ctx.fillStyle='#fbbf24';
+    ctx.fillText('Out: 5 → 4 → 3 → 2 → 1',10,180);
+    // visual
+    const colors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981'];
+    // queue visual
+    ctx.fillStyle='#94a3b8'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Queue order preserved:',c.width/2,215);
+    for(let i=0;i<5;i++){
+      const x=60+i*65;
+      ctx.fillStyle=colors[i]; ctx.globalAlpha=0.3; ctx.fillRect(x,225,55,35); ctx.globalAlpha=1;
+      ctx.strokeStyle=colors[i]; ctx.strokeRect(x,225,55,35);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 18px monospace'; ctx.textAlign='center';
+      ctx.fillText(i+1,x+27,248);
+    }
+    ctx.fillStyle='#86efac'; ctx.font='bold 12px sans-serif';
+    ctx.fillText('→ out',60+5*65+10,248);
+  }
+})();
+</script>
+
+<!-- ==================== CHALLENGE sQ1: 3-Question Quiz ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Queue Fundamentals</h2>
+  <p class="subtitle">3 quick questions</p>
+  <div style="max-width:700px; margin:0 auto;">
+    <div class="key-idea" id="sQ1q1box">
+      <h3>Q1: What does FIFO stand for?</h3>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sQ1A(1,'A')">First Input, First Output</button>
+        <button class="btn btn-outline" onclick="sQ1A(1,'B')">First In, First Out</button>
+        <button class="btn btn-outline" onclick="sQ1A(1,'C')">First In, Last Out</button>
+      </div>
+      <div id="sQ1r1" class="status" style="min-height:20px;"></div>
+    </div>
+    <div class="key-idea mt">
+      <h3>Q2: In a circular array of size 8, if rear=7, what is rear after enqueue?</h3>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sQ1A(2,'A')">8</button>
+        <button class="btn btn-outline" onclick="sQ1A(2,'B')">0</button>
+        <button class="btn btn-outline" onclick="sQ1A(2,'C')">1</button>
+      </div>
+      <div id="sQ1r2" class="status" style="min-height:20px;"></div>
+    </div>
+    <div class="key-idea mt">
+      <h3>Q3: Which pointer does a linked-list queue need for O(1) enqueue?</h3>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sQ1A(3,'A')">head only</button>
+        <button class="btn btn-outline" onclick="sQ1A(3,'B')">tail only</button>
+        <button class="btn btn-outline" onclick="sQ1A(3,'C')">both head and tail</button>
+      </div>
+      <div id="sQ1r3" class="status" style="min-height:20px;"></div>
+    </div>
+    <div id="sQ1final" class="status mt" style="min-height:30px; text-align:center; font-size:1.2em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const ans={1:'B',2:'B',3:'C'};
+  const exp={
+    1:'FIFO = First In, First Out.',
+    2:'(7+1)%8 = 0. The rear wraps around to index 0.',
+    3:'tail for O(1) enqueue (append), head for O(1) dequeue (remove first). Need BOTH.'
+  };
+  let score=0, done={};
+  window.sQ1A = function(q,a){
+    if(done[q])return; done[q]=true;
+    const el=document.getElementById('sQ1r'+q);
+    if(a===ans[q]){score++;el.innerHTML='<span style="color:#86efac;">Correct!</span> '+exp[q];el.className='status success';}
+    else{el.innerHTML='<span style="color:#f87171;">Incorrect.</span> '+exp[q];el.className='status error';}
+    if(Object.keys(done).length===3){
+      const f=document.getElementById('sQ1final');
+      f.textContent='Score: '+score+'/3'+(score===3?' — Perfect!':score>=2?' — Great!':' — Review the slides!');
+      f.className='status mt '+(score>=2?'success':'error');
+    }
+  };
+})();
+</script>
+
+<!-- ==================== CHALLENGE sQ2: BFS Visit Order ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Challenge: BFS Visit Order</h2>
+  <p class="subtitle">What order does BFS visit this tree?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Tree:</h3>
+      <canvas id="sQ2tree" width="300" height="200" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <p class="mt">Starting from node <strong>1</strong>, children are visited left-to-right.</p>
+      <div class="controls mt">
+        <button class="btn" onclick="sQ2Check('A')" style="min-width:260px;text-align:left;">A) 1, 2, 3, 4, 5, 6, 7</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sQ2Check('B')" style="min-width:260px;text-align:left;">B) 1, 2, 4, 5, 3, 6, 7</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sQ2Check('C')" style="min-width:260px;text-align:left;">C) 4, 5, 2, 6, 7, 3, 1</button>
+      </div>
+      <div id="sQ2status" class="status mt" style="min-height:50px;"></div>
+    </div>
+    <div>
+      <div id="sQ2trace" style="display:none;">
+        <h3>BFS Trace</h3>
+        <div class="diagram small">Step  Dequeue  Enqueue Children  Queue
+────  ───────  ─────────────── ─────
+ 1    1        2, 3            [2, 3]
+ 2    2        4, 5            [3, 4, 5]
+ 3    3        6, 7            [4, 5, 6, 7]
+ 4    4        (none)          [5, 6, 7]
+ 5    5        (none)          [6, 7]
+ 6    6        (none)          [7]
+ 7    7        (none)          []
+
+Visit order: <span style="color:#86efac;">1, 2, 3, 4, 5, 6, 7</span>
+Level 0: 1
+Level 1: 2, 3
+Level 2: 4, 5, 6, 7</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // draw tree
+  const c=document.getElementById('sQ2tree'); if(!c)return;
+  const ctx=c.getContext('2d');
+  const nodes={1:{x:150,y:30},2:{x:75,y:90},3:{x:225,y:90},4:{x:37,y:160},5:{x:112,y:160},6:{x:187,y:160},7:{x:262,y:160}};
+  const edges=[[1,2],[1,3],[2,4],[2,5],[3,6],[3,7]];
+  ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+  for(const [a,b] of edges){ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y+15);ctx.lineTo(nodes[b].x,nodes[b].y-15);ctx.stroke();}
+  for(const [id,p] of Object.entries(nodes)){
+    ctx.beginPath();ctx.arc(p.x,p.y,18,0,2*Math.PI);
+    ctx.fillStyle='rgba(59,130,246,0.3)';ctx.fill();
+    ctx.strokeStyle='#3b82f6';ctx.stroke();
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(id,p.x,p.y);
+  }
+
+  window.sQ2Check = function(ans){
+    const el=document.getElementById('sQ2status');
+    if(ans==='A'){
+      el.innerHTML='<span style="color:#86efac;">Correct!</span> BFS visits level by level: 1 (level 0), then 2,3 (level 1), then 4,5,6,7 (level 2).';
+      el.className='status mt success';
+      document.getElementById('sQ2trace').style.display='block';
+    } else if(ans==='B'){
+      el.innerHTML='<span style="color:#f87171;">That\'s DFS (depth-first) order!</span> BFS uses a queue for level-by-level traversal, not a stack.';
+      el.className='status mt error';
+    } else {
+      el.innerHTML='<span style="color:#f87171;">That\'s bottom-up order.</span> BFS starts from the root and goes level by level downward.';
+      el.className='status mt error';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== CHALLENGE sQ3: Hot Potato Prediction ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Challenge: Predict the Winner</h2>
+  <p class="subtitle">Players: [A, B, C, D], k=2. Who wins?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Trace it yourself:</h3>
+      <p>Start: queue = [A, B, C, D]<br>Each round: pass k=2 times (dequeue+re-enqueue), then eliminate.</p>
+      <div class="controls mt">
+        <button class="btn" onclick="sQ3Check('A')" style="min-width:100px;">A wins</button>
+        <button class="btn" onclick="sQ3Check('B')" style="min-width:100px;">B wins</button>
+        <button class="btn" onclick="sQ3Check('C')" style="min-width:100px;">C wins</button>
+        <button class="btn" onclick="sQ3Check('D')" style="min-width:100px;">D wins</button>
+      </div>
+      <div id="sQ3status" class="status mt" style="min-height:50px;"></div>
+    </div>
+    <div>
+      <div id="sQ3trace" style="display:none;">
+        <h3>Full Trace</h3>
+        <div class="diagram small">Round 1: [A, B, C, D]
+  pass 1: A→back → [B, C, D, A]
+  pass 2: B→back → [C, D, A, B]
+  eliminate: <span style="color:#f87171;">C out!</span>  → [D, A, B]
+
+Round 2: [D, A, B]
+  pass 1: D→back → [A, B, D]
+  pass 2: A→back → [B, D, A]
+  eliminate: <span style="color:#f87171;">B out!</span>  → [D, A]
+
+Round 3: [D, A]
+  pass 1: D→back → [A, D]
+  pass 2: A→back → [D, A]
+  eliminate: <span style="color:#f87171;">D out!</span>  → [A]
+
+Winner: <span style="color:#86efac;">A!</span></div>
+      </div>
+      <div class="key-idea" id="sQ3hint">
+        <h3>Hint</h3>
+        <p>Dequeue+re-enqueue k times = rotate the queue k positions. Then the front person is eliminated. Trace carefully!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ3Check = function(ans){
+    const el=document.getElementById('sQ3status');
+    if(ans==='A'){
+      el.innerHTML='<span style="color:#86efac;">Correct!</span> C is eliminated first, then B, then D. A is the last one standing!';
+      el.className='status mt success';
+      document.getElementById('sQ3trace').style.display='block';
+      document.getElementById('sQ3hint').style.display='none';
+    } else {
+      el.innerHTML='<span style="color:#f87171;">Not quite.</span> Try tracing each round: rotate k=2 times, then eliminate the front. Start with [A,B,C,D].';
+      el.className='status mt error';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','s14','sCB','s15','s16','sCC','s17','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+
+  document.querySelectorAll('.slide-number').forEach(el => {
+    el.textContent = (idx + 1) + ' / ' + slideOrder.length;
+  });
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', function(e) {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); navigate(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); navigate(-1); }
+});
+
+showSlide(0);
+</script>
+
+</body>
+</html>

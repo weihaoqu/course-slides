@@ -1,0 +1,3156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graphs - Modeling Connections | CS205 Data Structures</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0}
+.slide{display:none;min-height:100vh;padding:40px 60px;position:relative}
+.slide.active{display:flex;flex-direction:column;justify-content:center}
+.slide-number{position:absolute;bottom:20px;right:40px;color:#64748b;font-size:14px}
+h1{font-size:2.8em;margin-bottom:20px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+h2{font-size:2em;margin-bottom:16px;color:#38bdf8}
+h3{font-size:1.4em;margin-bottom:12px;color:#a5b4fc}
+p,li{font-size:1.1em;line-height:1.7;color:#cbd5e1;margin-bottom:8px}
+.subtitle{font-size:1.3em;color:#94a3b8;margin-bottom:30px}
+ul{padding-left:24px}
+ul li{margin-bottom:8px}
+code{background:#1e293b;padding:2px 8px;border-radius:4px;font-family:monospace;color:#a5f3fc;font-size:0.95em}
+.key-idea{background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(139,92,246,0.15));border-left:4px solid #3b82f6;border-radius:0 12px 12px 0;padding:20px 24px;margin:16px 0}
+.key-idea h3{margin-bottom:8px}
+.warning{background:rgba(245,158,11,0.12);border-left:4px solid #f59e0b;border-radius:0 12px 12px 0;padding:20px 24px;margin:16px 0}
+.warning h3{color:#fbbf24}
+.analogy{background:rgba(16,185,129,0.12);border-left:4px solid #10b981;border-radius:0 12px 12px 0;padding:20px 24px;margin:16px 0}
+.analogy h3{color:#34d399}
+.btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:0.95em;transition:all 0.2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(99,102,241,0.4)}
+.btn-sm{padding:6px 14px;font-size:0.85em}
+.btn-secondary{background:#334155;border:1px solid #475569}
+.btn-secondary:hover{background:#475569}
+.code-block{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;margin:12px 0;overflow-x:auto}
+.code-content{font-family:monospace;font-size:0.85em;line-height:1.8}
+.line{display:block;padding:1px 8px;border-left:3px solid transparent;white-space:pre}
+.line.active{background:rgba(99,102,241,0.15);border-left-color:#6366f1}
+#progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:rgba(255,255,255,0.05);z-index:200}
+#progress{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa);width:0%;transition:width 0.3s}
+.fade-in{animation:fadeIn 0.4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide active" id="s1">
+  <div style="text-align:center;">
+    <h1>Graphs &mdash; Modeling Connections</h1>
+    <p class="subtitle">CS205 Data Structures</p>
+    <canvas id="cS1" width="600" height="350" style="width:100%;max-width:600px;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:20px;"></canvas>
+    <p style="color:#64748b;margin-top:16px;">Use arrow keys or buttons to navigate &bull; 26 slides</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS1'),ctx=canvas.getContext('2d');
+  const nodes=[
+    {id:'A',x:300,y:60},{id:'B',x:500,y:120},{id:'C',x:460,y:280},
+    {id:'D',x:140,y:280},{id:'E',x:100,y:120},{id:'F',x:300,y:180}
+  ];
+  const edges=[[0,1],[1,2],[2,3],[3,4],[4,0],[0,5],[1,5],[2,5],[3,5],[4,5]];
+  let animStep=0,timer=null;
+  const totalSteps=nodes.length+edges.length;
+
+  function draw(){
+    ctx.clearRect(0,0,600,350);
+    // draw edges that are revealed
+    for(let i=0;i<Math.max(0,animStep-nodes.length);i++){
+      if(i>=edges.length)break;
+      const[a,b]=edges[i];
+      const na=nodes[a],nb=nodes[b];
+      const prog=Math.min(1,(animStep-nodes.length-i));
+      ctx.beginPath();
+      ctx.moveTo(na.x,na.y);
+      ctx.lineTo(na.x+(nb.x-na.x)*prog,na.y+(nb.y-na.y)*prog);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    }
+    // draw nodes that are revealed
+    for(let i=0;i<Math.min(animStep,nodes.length);i++){
+      const n=nodes[i];
+      const scale=Math.min(1,(animStep-i));
+      ctx.save();ctx.translate(n.x,n.y);ctx.scale(scale,scale);
+      ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();
+      ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,0,0);
+      ctx.restore();
+    }
+    // label
+    if(animStep>=totalSteps){
+      ctx.fillStyle='#94a3b8';ctx.font='14px sans-serif';ctx.textAlign='center';
+      ctx.fillText('G = (V, E)    |V| = 6    |E| = 10',300,335);
+    }
+  }
+
+  function animate(){
+    if(timer)return;
+    animStep=0;
+    timer=setInterval(()=>{
+      animStep++;
+      draw();
+      if(animStep>=totalSteps+1){clearInterval(timer);timer=null;}
+    },250);
+  }
+
+  function init(){
+    animStep=0;if(timer){clearInterval(timer);timer=null;}
+    draw();
+    setTimeout(animate,400);
+  }
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s1').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: What is a Graph? ==================== -->
+<div class="slide" id="s2">
+  <h2>What is a Graph?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <p>A <strong style="color:#93c5fd;">graph G = (V, E)</strong> consists of:</p>
+      <ul>
+        <li><strong style="color:#a5f3fc;">V</strong> &mdash; a set of <em>vertices</em> (nodes)</li>
+        <li><strong style="color:#a5f3fc;">E</strong> &mdash; a set of <em>edges</em> (connections)</li>
+      </ul>
+      <p style="margin-top:12px;">Unlike trees, graphs have <strong>no root</strong>, no parent-child hierarchy, and can contain <strong>cycles</strong>.</p>
+      <div class="analogy">
+        <h3>Analogy: Social Network</h3>
+        <p>People are vertices. Friendships are edges. You can reach anyone through a chain of mutual friends &mdash; that&rsquo;s a <em>path</em>.</p>
+      </div>
+      <div style="margin-top:12px;">
+        <p style="font-size:0.9em;color:#94a3b8;"><strong>Try it:</strong> Click empty space to add vertices, click two vertices to connect them with an edge.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS2" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:crosshair;"></canvas>
+      <div id="s2Status" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.82rem;color:#94a3b8;margin-top:8px;">
+        |V| = 0 &nbsp; |E| = 0 &nbsp;&middot;&nbsp; Click to add vertices
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm btn-secondary" onclick="s2Reset()">Reset</button>
+        <button class="btn btn-sm" onclick="s2Sample()">Load Sample</button>
+      </div>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:12px;">
+    <h3>Key Idea</h3>
+    <p>Graphs are the most <strong>general</strong> data structure for modeling relationships. Trees, linked lists, and even arrays are all special cases of graphs!</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS2'),ctx=canvas.getContext('2d');
+  let verts=[],edgeList=[],selected=null;
+  const labels='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    // edges
+    edgeList.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(verts[a].x,verts[a].y);
+      ctx.lineTo(verts[b].x,verts[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    });
+    // nodes
+    verts.forEach((v,i)=>{
+      ctx.beginPath();ctx.arc(v.x,v.y,20,0,Math.PI*2);
+      ctx.fillStyle=i===selected?'#f59e0b':'#6366f1';ctx.fill();
+      ctx.strokeStyle=i===selected?'#fbbf24':'#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(v.label,v.x,v.y);
+    });
+    if(verts.length===0){
+      ctx.fillStyle='#64748b';ctx.font='15px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Click to add vertices',260,185);
+    }
+    document.getElementById('s2Status').innerHTML=
+      '|V| = '+verts.length+' &nbsp; |E| = '+edgeList.length+
+      (selected!==null?' &nbsp;&middot;&nbsp; Selected: '+verts[selected].label+' (click another to connect)':' &nbsp;&middot;&nbsp; Click to add vertices');
+  }
+
+  function dist(x1,y1,x2,y2){return Math.sqrt((x1-x2)**2+(y1-y2)**2);}
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const sx=520/rect.width;
+    const mx=((e.clientX-rect.left)*sx);
+    const my=((e.clientY-rect.top)*(370/rect.height));
+    // check if clicked on a node
+    let clicked=-1;
+    for(let i=0;i<verts.length;i++){
+      if(dist(mx,my,verts[i].x,verts[i].y)<22){clicked=i;break;}
+    }
+    if(clicked>=0){
+      if(selected===null){selected=clicked;}
+      else if(selected===clicked){selected=null;}
+      else{
+        // check if edge already exists
+        const exists=edgeList.some(([a,b])=>(a===selected&&b===clicked)||(a===clicked&&b===selected));
+        if(!exists&&edgeList.length<30)edgeList.push([selected,clicked]);
+        selected=null;
+      }
+    }else{
+      // add new vertex
+      if(verts.length<16){
+        verts.push({x:mx,y:my,label:labels[verts.length]||'?'});
+        selected=null;
+      }
+    }
+    draw();
+  });
+
+  window.s2Reset=function(){verts=[];edgeList=[];selected=null;draw();};
+  window.s2Sample=function(){
+    verts=[
+      {x:260,y:50,label:'A'},{x:420,y:120,label:'B'},{x:380,y:280,label:'C'},
+      {x:140,y:280,label:'D'},{x:100,y:120,label:'E'}
+    ];
+    edgeList=[[0,1],[0,2],[1,2],[1,3],[2,4],[3,4]];
+    selected=null;draw();
+  };
+
+  function init(){verts=[];edgeList=[];selected=null;draw();}
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s2').classList.contains('active'))draw();
+  });
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: Terminology ==================== -->
+<div class="slide" id="s3">
+  <h2>Graph Terminology</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS3" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div id="s3Info" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem 0.8rem;font-family:monospace;font-size:0.82rem;color:#94a3b8;margin-top:8px;min-height:40px;">
+        Click a node to explore its properties
+      </div>
+    </div>
+    <div>
+      <table style="border-collapse:collapse;width:100%;font-size:0.92em;">
+        <tr><th style="border:1px solid #475569;padding:8px 12px;background:#334155;color:#93c5fd;text-align:left;">Term</th><th style="border:1px solid #475569;padding:8px 12px;background:#334155;color:#93c5fd;text-align:left;">Definition</th></tr>
+        <tr id="s3r0"><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Adjacent</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">Two vertices connected by an edge</td></tr>
+        <tr id="s3r1"><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Incident</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">An edge is incident to its endpoints</td></tr>
+        <tr id="s3r2"><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Degree</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">Number of edges touching a vertex</td></tr>
+        <tr id="s3r3"><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Path</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">Sequence of vertices connected by edges</td></tr>
+        <tr id="s3r4"><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Cycle</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">A path that starts and ends at same vertex</td></tr>
+        <tr id="s3r5"><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Connected</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">Every vertex reachable from every other</td></tr>
+        <tr id="s3r6"><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Component</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">A maximal connected subgraph</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Idea</h3>
+        <p>The <strong>degree</strong> of a vertex is the most fundamental local property &mdash; it tells you how "connected" that vertex is.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS3'),ctx=canvas.getContext('2d');
+  const nodes=[
+    {id:'A',x:260,y:50},{id:'B',x:430,y:130},{id:'C',x:370,y:280},
+    {id:'D',x:150,y:280},{id:'E',x:90,y:130}
+  ];
+  const edges=[[0,1],[0,2],[1,2],[1,3],[2,4],[3,4]];
+  let sel=-1;
+
+  function neighbors(i){
+    const nb=[];
+    edges.forEach(([a,b])=>{if(a===i)nb.push(b);if(b===i)nb.push(a);});
+    return nb;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    // edges
+    edges.forEach(([a,b])=>{
+      const isInc=(sel>=0&&(a===sel||b===sel));
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle=isInc?'#f59e0b':'#475569';ctx.lineWidth=isInc?3:2;ctx.stroke();
+    });
+    // nodes
+    nodes.forEach((n,i)=>{
+      const isAdj=sel>=0&&neighbors(sel).includes(i);
+      const isSel=i===sel;
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isSel?'#f59e0b':isAdj?'#22c55e':'#6366f1';ctx.fill();
+      ctx.strokeStyle=isSel?'#fbbf24':isAdj?'#4ade80':'#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      // degree label
+      const deg=neighbors(i).length;
+      ctx.fillStyle='#94a3b8';ctx.font='11px monospace';
+      ctx.fillText('deg='+deg,n.x,n.y+34);
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(340/rect.height);
+    sel=-1;
+    for(let i=0;i<nodes.length;i++){
+      if(Math.hypot(mx-nodes[i].x,my-nodes[i].y)<24){sel=i;break;}
+    }
+    draw();
+    const info=document.getElementById('s3Info');
+    if(sel>=0){
+      const nb=neighbors(sel);
+      const nbNames=nb.map(j=>nodes[j].id).join(', ');
+      const incEdges=edges.filter(([a,b])=>a===sel||b===sel).map(([a,b])=>'('+nodes[a].id+','+nodes[b].id+')').join(', ');
+      info.innerHTML='<span style="color:#f59e0b;">'+nodes[sel].id+'</span>: degree = <strong>'+nb.length+'</strong> &nbsp;|&nbsp; adjacent to: <span style="color:#22c55e;">'+nbNames+'</span> &nbsp;|&nbsp; incident edges: '+incEdges;
+      // highlight table row for degree
+      for(let r=0;r<7;r++){
+        const row=document.getElementById('s3r'+r);
+        if(row)row.style.background=r===2?'rgba(99,102,241,0.2)':'';
+      }
+    }else{
+      info.innerHTML='Click a node to explore its properties';
+      for(let r=0;r<7;r++){const row=document.getElementById('s3r'+r);if(row)row.style.background='';}
+    }
+  });
+
+  function init(){sel=-1;draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s3').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: Directed vs Undirected ==================== -->
+<div class="slide" id="s4">
+  <h2>Directed vs Undirected Graphs</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>Undirected</h3>
+      <canvas id="cS4u" width="250" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="font-size:0.9em;margin-top:6px;"><strong>Examples:</strong> Facebook friendships, two-way roads, Ethernet</p>
+    </div>
+    <div>
+      <h3>Directed (Digraph)</h3>
+      <canvas id="cS4d" width="250" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="font-size:0.9em;margin-top:6px;"><strong>Examples:</strong> Twitter follows, one-way streets, hyperlinks</p>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-top:12px;justify-content:center;">
+    <button class="btn btn-sm" onclick="s4Toggle()">Toggle Direction</button>
+    <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+  </div>
+  <div id="s4Status" style="text-align:center;font-family:monospace;font-size:0.85em;color:#94a3b8;margin-top:8px;">
+    Left: edge(A,B) = edge(B,A) &nbsp;&nbsp; Right: edge(A,B) &ne; edge(B,A)
+  </div>
+  <div class="analogy" style="margin-top:12px;">
+    <h3>Analogy: Streets</h3>
+    <p><strong>Undirected</strong> = two-way street. <strong>Directed</strong> = one-way street. In directed graphs, we track <em>in-degree</em> (arrows in) and <em>out-degree</em> (arrows out) separately.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const cu=document.getElementById('cS4u'),ctxu=cu.getContext('2d');
+  const cd=document.getElementById('cS4d'),ctxd=cd.getContext('2d');
+  const ns=[{id:'A',x:125,y:35},{id:'B',x:215,y:110},{id:'C',x:125,y:185},{id:'D',x:35,y:110}];
+  const edgesU=[[0,1],[1,2],[2,3],[3,0]];
+  const edgesD=[[0,1],[1,2],[2,3],[3,0]]; // same topology, but directed
+  let showDir=false;
+
+  function drawArrow(ctx2,x1,y1,x2,y2){
+    const angle=Math.atan2(y2-y1,x2-x1);
+    const len=Math.hypot(x2-x1,y2-y1);
+    const r=20;
+    const ex=x1+Math.cos(angle)*(len-r);
+    const ey=y1+Math.sin(angle)*(len-r);
+    const sx=x1+Math.cos(angle)*r;
+    const sy=y1+Math.sin(angle)*r;
+    ctx2.beginPath();ctx2.moveTo(sx,sy);ctx2.lineTo(ex,ey);ctx2.stroke();
+    // arrowhead
+    ctx2.beginPath();
+    ctx2.moveTo(ex,ey);
+    ctx2.lineTo(ex-10*Math.cos(angle-0.4),ey-10*Math.sin(angle-0.4));
+    ctx2.lineTo(ex-10*Math.cos(angle+0.4),ey-10*Math.sin(angle+0.4));
+    ctx2.closePath();ctx2.fill();
+  }
+
+  function drawGraph(ctx2,w,h,directed){
+    ctx2.clearRect(0,0,w,h);
+    ctx2.strokeStyle='#475569';ctx2.lineWidth=2;ctx2.fillStyle='#475569';
+    edgesU.forEach(([a,b])=>{
+      if(directed){
+        drawArrow(ctx2,ns[a].x,ns[a].y,ns[b].x,ns[b].y);
+      }else{
+        ctx2.beginPath();ctx2.moveTo(ns[a].x,ns[a].y);ctx2.lineTo(ns[b].x,ns[b].y);ctx2.stroke();
+      }
+    });
+    ns.forEach((n)=>{
+      ctx2.beginPath();ctx2.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx2.fillStyle='#6366f1';ctx2.fill();
+      ctx2.strokeStyle='#818cf8';ctx2.lineWidth=2;ctx2.stroke();
+      ctx2.fillStyle='#fff';ctx2.font='bold 14px monospace';ctx2.textAlign='center';ctx2.textBaseline='middle';
+      ctx2.fillText(n.id,n.x,n.y);
+    });
+    // degree labels
+    if(directed){
+      ns.forEach((n,i)=>{
+        let inD=0,outD=0;
+        edgesD.forEach(([a,b])=>{if(b===i)inD++;if(a===i)outD++;});
+        ctx2.fillStyle='#94a3b8';ctx2.font='10px monospace';ctx2.textAlign='center';
+        ctx2.fillText('in:'+inD+' out:'+outD,n.x,n.y-30);
+      });
+    }else{
+      ns.forEach((n,i)=>{
+        let deg=0;
+        edgesU.forEach(([a,b])=>{if(a===i||b===i)deg++;});
+        ctx2.fillStyle='#94a3b8';ctx2.font='10px monospace';ctx2.textAlign='center';
+        ctx2.fillText('deg='+deg,n.x,n.y-30);
+      });
+    }
+  }
+
+  function render(){
+    drawGraph(ctxu,250,220,false);
+    drawGraph(ctxd,250,220,true);
+  }
+
+  window.s4Toggle=function(){
+    // swap an edge direction in directed graph
+    const idx=Math.floor(Math.random()*edgesD.length);
+    const [a,b]=edgesD[idx];
+    edgesD[idx]=[b,a];
+    render();
+    document.getElementById('s4Status').innerHTML='Flipped edge direction: ('+ns[a].id+','+ns[b].id+') &rarr; ('+ns[b].id+','+ns[a].id+') &mdash; notice in/out degrees changed!';
+  };
+  window.s4Reset=function(){
+    for(let i=0;i<edgesD.length;i++)edgesD[i]=[edgesU[i][0],edgesU[i][1]];
+    render();
+    document.getElementById('s4Status').innerHTML='Left: edge(A,B) = edge(B,A) &nbsp;&nbsp; Right: edge(A,B) &ne; edge(B,A)';
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s4').classList.contains('active'))render();
+  });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  render();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: Weighted vs Unweighted ==================== -->
+<div class="slide" id="s5">
+  <h2>Weighted vs Unweighted Graphs</h2>
+  <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS5" width="520" height="360" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s5FindPath()">Find Shortest Path</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+      <div id="s5Status" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.82rem;color:#94a3b8;margin-top:8px;">
+        Click two cities to select start &amp; end, then Find Shortest Path
+      </div>
+    </div>
+    <div>
+      <h3>City Distances</h3>
+      <p>Each edge carries a <strong>weight</strong> (distance in km). The shortest path minimizes <em>total weight</em>, not edge count.</p>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Idea</h3>
+        <p>Weights model <strong>real-world costs</strong>: distance, time, bandwidth, price. "Shortest path" = minimum total weight.</p>
+      </div>
+      <div class="warning" style="margin-top:12px;">
+        <h3>Unweighted = All Weight 1</h3>
+        <p>An unweighted graph is a weighted graph where every edge has weight 1. Shortest path = fewest edges.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS5'),ctx=canvas.getContext('2d');
+  const cities=[
+    {id:'NYC',x:260,y:50},{id:'Boston',x:430,y:50},{id:'Philly',x:180,y:170},
+    {id:'Hartford',x:430,y:170},{id:'DC',x:100,y:310},{id:'Baltimore',x:260,y:310}
+  ];
+  const roads=[
+    [0,1,350],[0,2,210],[0,3,200],[1,3,150],[2,4,220],[2,5,160],[4,5,65],[3,5,280]
+  ];
+  let selA=-1,selB=-1,pathEdges=null,pathCost=0;
+
+  function draw(){
+    ctx.clearRect(0,0,520,360);
+    // edges
+    roads.forEach(([a,b,w],ei)=>{
+      const onPath=pathEdges&&pathEdges.some(([pa,pb])=>(pa===a&&pb===b)||(pa===b&&pb===a));
+      ctx.beginPath();ctx.moveTo(cities[a].x,cities[a].y);ctx.lineTo(cities[b].x,cities[b].y);
+      ctx.strokeStyle=onPath?'#22c55e':'#475569';ctx.lineWidth=onPath?4:2;ctx.stroke();
+      // weight label
+      const mx=(cities[a].x+cities[b].x)/2, my=(cities[a].y+cities[b].y)/2;
+      ctx.fillStyle=onPath?'#4ade80':'#f59e0b';ctx.font='bold 12px monospace';ctx.textAlign='center';
+      const angle=Math.atan2(cities[b].y-cities[a].y,cities[b].x-cities[a].x);
+      const ox=-Math.sin(angle)*14, oy=Math.cos(angle)*14;
+      ctx.fillText(w+'km',mx+ox,my+oy);
+    });
+    // nodes
+    cities.forEach((c,i)=>{
+      const isSel=(i===selA||i===selB);
+      const onP=pathEdges&&pathEdges.some(([a,b])=>a===i||b===i);
+      ctx.beginPath();ctx.arc(c.x,c.y,22,0,Math.PI*2);
+      ctx.fillStyle=isSel?'#f59e0b':onP?'#22c55e':'#6366f1';ctx.fill();
+      ctx.strokeStyle=isSel?'#fbbf24':onP?'#4ade80':'#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(c.id,c.x,c.y);
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(360/rect.height);
+    let clicked=-1;
+    for(let i=0;i<cities.length;i++){
+      if(Math.hypot(mx-cities[i].x,my-cities[i].y)<24){clicked=i;break;}
+    }
+    if(clicked<0)return;
+    pathEdges=null;
+    if(selA<0){selA=clicked;}
+    else if(selB<0&&clicked!==selA){selB=clicked;}
+    else{selA=clicked;selB=-1;}
+    draw();
+    const st=document.getElementById('s5Status');
+    if(selA>=0&&selB<0)st.innerHTML='Start: <span style="color:#f59e0b;">'+cities[selA].id+'</span> &mdash; click another city for end';
+    else if(selA>=0&&selB>=0)st.innerHTML='Start: <span style="color:#f59e0b;">'+cities[selA].id+'</span> &rarr; End: <span style="color:#f59e0b;">'+cities[selB].id+'</span> &mdash; click Find Shortest Path';
+  });
+
+  // Dijkstra
+  window.s5FindPath=function(){
+    if(selA<0||selB<0)return;
+    const n=cities.length;
+    const dist=Array(n).fill(Infinity);
+    const prev=Array(n).fill(-1);
+    const visited=Array(n).fill(false);
+    dist[selA]=0;
+    for(let iter=0;iter<n;iter++){
+      let u=-1;
+      for(let v=0;v<n;v++)if(!visited[v]&&(u<0||dist[v]<dist[u]))u=v;
+      if(u<0||dist[u]===Infinity)break;
+      visited[u]=true;
+      roads.forEach(([a,b,w])=>{
+        if(a===u&&dist[u]+w<dist[b]){dist[b]=dist[u]+w;prev[b]=u;}
+        if(b===u&&dist[u]+w<dist[a]){dist[a]=dist[u]+w;prev[a]=u;}
+      });
+    }
+    // reconstruct
+    pathEdges=[];
+    let cur=selB;
+    while(cur!==selA&&prev[cur]>=0){
+      pathEdges.push([prev[cur],cur]);
+      cur=prev[cur];
+    }
+    pathCost=dist[selB];
+    draw();
+    const pathNames=[];cur=selB;
+    while(cur>=0){pathNames.unshift(cities[cur].id);if(cur===selA)break;cur=prev[cur];}
+    document.getElementById('s5Status').innerHTML='<span style="color:#22c55e;">Shortest path: '+pathNames.join(' &rarr; ')+' = '+pathCost+'km</span>';
+  };
+
+  window.s5Reset=function(){selA=-1;selB=-1;pathEdges=null;draw();
+    document.getElementById('s5Status').innerHTML='Click two cities to select start &amp; end, then Find Shortest Path';};
+
+  function init(){selA=-1;selB=-1;pathEdges=null;draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s5').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: Special Graphs ==================== -->
+<div class="slide" id="s6">
+  <h2>Special Graphs</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <!-- Complete Graph -->
+    <div style="background:rgba(0,0,0,0.15);border-radius:12px;padding:1rem;">
+      <h3 style="font-size:1.1em;">Complete Graph K<sub>n</sub></h3>
+      <canvas id="cS6a" width="240" height="170" style="width:100%;background:rgba(0,0,0,0.2);border-radius:8px;"></canvas>
+      <div style="display:flex;gap:0.4rem;margin-top:6px;align-items:center;">
+        <span style="font-size:0.85em;color:#94a3b8;">n =</span>
+        <button class="btn btn-sm" onclick="s6aSet(3)">3</button>
+        <button class="btn btn-sm" onclick="s6aSet(4)">4</button>
+        <button class="btn btn-sm" onclick="s6aSet(5)">5</button>
+        <button class="btn btn-sm" onclick="s6aSet(6)">6</button>
+        <span id="s6aInfo" style="font-size:0.8em;color:#94a3b8;margin-left:8px;">|E| = 6</span>
+      </div>
+    </div>
+    <!-- Bipartite -->
+    <div style="background:rgba(0,0,0,0.15);border-radius:12px;padding:1rem;">
+      <h3 style="font-size:1.1em;">Bipartite Graph</h3>
+      <canvas id="cS6b" width="240" height="170" style="width:100%;background:rgba(0,0,0,0.2);border-radius:8px;"></canvas>
+      <p style="font-size:0.82em;color:#94a3b8;margin-top:6px;">Vertices split into two sets. Edges only cross between sets — never within.</p>
+    </div>
+    <!-- DAG -->
+    <div style="background:rgba(0,0,0,0.15);border-radius:12px;padding:1rem;">
+      <h3 style="font-size:1.1em;">DAG (Directed Acyclic Graph)</h3>
+      <canvas id="cS6c" width="240" height="170" style="width:100%;background:rgba(0,0,0,0.2);border-radius:8px;"></canvas>
+      <p style="font-size:0.82em;color:#94a3b8;margin-top:6px;">Directed, no cycles. Used for dependencies (courses, build systems, scheduling).</p>
+    </div>
+    <!-- Tree -->
+    <div style="background:rgba(0,0,0,0.15);border-radius:12px;padding:1rem;">
+      <h3 style="font-size:1.1em;">Tree (as a Graph)</h3>
+      <canvas id="cS6d" width="240" height="170" style="width:100%;background:rgba(0,0,0,0.2);border-radius:8px;"></canvas>
+      <p style="font-size:0.82em;color:#94a3b8;margin-top:6px;">Connected + acyclic + undirected. |E| = |V| - 1. Exactly one path between any two nodes.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Complete graph
+  let kn=4;
+  function drawComplete(){
+    const c=document.getElementById('cS6a'),ctx=c.getContext('2d');
+    ctx.clearRect(0,0,240,170);
+    const nodes=[];
+    for(let i=0;i<kn;i++){
+      const angle=(-Math.PI/2)+i*(2*Math.PI/kn);
+      nodes.push({x:120+65*Math.cos(angle),y:85+60*Math.sin(angle)});
+    }
+    // edges
+    for(let i=0;i<kn;i++)for(let j=i+1;j<kn;j++){
+      ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    }
+    // nodes
+    nodes.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,16,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(String(i),n.x,n.y);
+    });
+    const e=kn*(kn-1)/2;
+    document.getElementById('s6aInfo').textContent='|E| = '+kn+'×'+(kn-1)+'/2 = '+e;
+  }
+  window.s6aSet=function(n){kn=n;drawComplete();};
+
+  // Bipartite
+  function drawBipartite(){
+    const c=document.getElementById('cS6b'),ctx=c.getContext('2d');
+    ctx.clearRect(0,0,240,170);
+    const L=[{x:50,y:35,id:'1'},{x:50,y:85,id:'2'},{x:50,y:135,id:'3'}];
+    const R=[{x:190,y:55,id:'A'},{x:190,y:115,id:'B'}];
+    const be=[[0,0],[0,1],[1,0],[2,1]];
+    be.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(L[a].x,L[a].y);ctx.lineTo(R[b].x,R[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // set labels
+    ctx.fillStyle='#38bdf8';ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Set L',50,165);ctx.fillText('Set R',190,165);
+    L.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,16,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    R.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,16,0,Math.PI*2);
+      ctx.fillStyle='#a78bfa';ctx.fill();ctx.strokeStyle='#c4b5fd';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+
+  // DAG
+  function drawDAG(){
+    const c=document.getElementById('cS6c'),ctx=c.getContext('2d');
+    ctx.clearRect(0,0,240,170);
+    const ns=[{x:40,y:40,id:'CS101'},{x:140,y:40,id:'CS201'},{x:40,y:130,id:'MATH'},{x:200,y:130,id:'CS301'}];
+    const de=[[0,1],[0,2],[1,3],[2,3]];
+    ctx.strokeStyle='#475569';ctx.fillStyle='#475569';ctx.lineWidth=1.5;
+    de.forEach(([a,b])=>{
+      const ax=ns[a].x,ay=ns[a].y,bx=ns[b].x,by=ns[b].y;
+      const angle=Math.atan2(by-ay,bx-ax);
+      const r=22;
+      const sx=ax+Math.cos(angle)*r,sy=ay+Math.sin(angle)*r;
+      const ex=bx-Math.cos(angle)*r,ey=by-Math.sin(angle)*r;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ex,ey);
+      ctx.lineTo(ex-8*Math.cos(angle-0.4),ey-8*Math.sin(angle-0.4));
+      ctx.lineTo(ex-8*Math.cos(angle+0.4),ey-8*Math.sin(angle+0.4));
+      ctx.closePath();ctx.fill();
+    });
+    ns.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+
+  // Tree
+  function drawTree(){
+    const c=document.getElementById('cS6d'),ctx=c.getContext('2d');
+    ctx.clearRect(0,0,240,170);
+    const ns=[{x:120,y:30},{x:60,y:85},{x:180,y:85},{x:30,y:140},{x:90,y:140},{x:150,y:140},{x:210,y:140}];
+    const te=[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]];
+    te.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    ns.forEach((n,i)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,14,0,Math.PI*2);
+      ctx.fillStyle='#22c55e';ctx.fill();ctx.strokeStyle='#4ade80';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(String.fromCharCode(65+i),n.x,n.y);
+    });
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText('|V|=7  |E|=6  |E|=|V|-1',120,165);
+  }
+
+  function init(){drawComplete();drawBipartite();drawDAG();drawTree();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s6').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: Graph ADT ==================== -->
+<div class="slide" id="s7">
+  <h2>Graph ADT (Abstract Data Type)</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS7" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:8px;">
+        <input type="text" id="s7vInput" placeholder="vertex (A-Z)" maxlength="1" style="width:80px;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s7AddV()">Add Vertex</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7RemoveV()">Remove Vertex</button>
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:6px;">
+        <input type="text" id="s7eInput" placeholder="e.g. A,B" maxlength="3" style="width:80px;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s7AddE()">Add Edge</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7RemoveE()">Remove Edge</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+      <div id="s7Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;max-height:70px;overflow-y:auto;">
+        Try: Add vertices A,B,C,D then edges A,B and B,C etc.
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:1.1em;">Query Operations</h3>
+      <table style="border-collapse:collapse;width:100%;font-size:0.85em;margin-bottom:10px;">
+        <tr><th style="border:1px solid #475569;padding:6px 10px;background:#334155;color:#93c5fd;text-align:left;">Method</th><th style="border:1px solid #475569;padding:6px 10px;background:#334155;color:#93c5fd;text-align:left;">Description</th></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>vertices()</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Return all vertices</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>edges()</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Return all edges</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>getEdge(u,v)</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Return edge from u to v</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>degree(v)</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Edges incident to v</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>adjacentVertices(v)</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Neighbors of v</td></tr>
+      </table>
+      <h3 style="font-size:1.1em;">Update Operations</h3>
+      <table style="border-collapse:collapse;width:100%;font-size:0.85em;">
+        <tr><th style="border:1px solid #475569;padding:6px 10px;background:#334155;color:#93c5fd;text-align:left;">Method</th><th style="border:1px solid #475569;padding:6px 10px;background:#334155;color:#93c5fd;text-align:left;">Description</th></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>insertVertex(x)</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Add vertex with element x</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>insertEdge(u,v,x)</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Add edge between u and v</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>removeVertex(v)</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Remove v and its edges</td></tr>
+        <tr><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;"><code>removeEdge(e)</code></td><td style="border:1px solid #475569;padding:6px 10px;background:#1e293b;">Remove edge e</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Key Idea</h3>
+        <p>The ADT tells us <strong>what</strong> a graph supports. The <em>representation</em> (matrix, list, edge list) determines <strong>how efficiently</strong> each runs.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS7'),ctx=canvas.getContext('2d');
+  let verts=[],edgeList=[];
+  // layout positions in a circle
+  function getPos(i,total){
+    const angle=(-Math.PI/2)+i*(2*Math.PI/Math.max(total,1));
+    return{x:260+120*Math.cos(angle),y:150+110*Math.sin(angle)};
+  }
+  function reposition(){
+    verts.forEach((v,i)=>{const p=getPos(i,verts.length);v.x=p.x;v.y=p.y;});
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    // edges
+    edgeList.forEach(([a,b])=>{
+      const va=verts.find(v=>v.id===a),vb=verts.find(v=>v.id===b);
+      if(!va||!vb)return;
+      ctx.beginPath();ctx.moveTo(va.x,va.y);ctx.lineTo(vb.x,vb.y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    });
+    // nodes
+    verts.forEach(v=>{
+      ctx.beginPath();ctx.arc(v.x,v.y,20,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(v.id,v.x,v.y);
+    });
+    if(verts.length===0){
+      ctx.fillStyle='#64748b';ctx.font='14px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Add vertices and edges using the controls below',260,150);
+    }
+    // V/E count
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='left';
+    ctx.fillText('|V| = '+verts.length+'   |E| = '+edgeList.length,10,290);
+  }
+
+  function log(msg){
+    const el=document.getElementById('s7Log');
+    el.innerHTML=msg+'<br>'+el.innerHTML;
+  }
+
+  window.s7AddV=function(){
+    const inp=document.getElementById('s7vInput');
+    const id=inp.value.toUpperCase().trim();
+    if(!id||id.length!==1||!/[A-Z]/.test(id)){log('Enter a single letter A-Z');return;}
+    if(verts.find(v=>v.id===id)){log('Vertex '+id+' already exists');return;}
+    verts.push({id:id,x:0,y:0});
+    reposition();
+    log('insertVertex('+id+') &rarr; |V|='+verts.length);
+    inp.value='';draw();
+  };
+  window.s7RemoveV=function(){
+    const inp=document.getElementById('s7vInput');
+    const id=inp.value.toUpperCase().trim();
+    const idx=verts.findIndex(v=>v.id===id);
+    if(idx<0){log('Vertex '+id+' not found');return;}
+    const removed=edgeList.filter(([a,b])=>a===id||b===id).length;
+    edgeList=edgeList.filter(([a,b])=>a!==id&&b!==id);
+    verts.splice(idx,1);reposition();
+    log('removeVertex('+id+') &rarr; removed '+removed+' edges too');
+    inp.value='';draw();
+  };
+  window.s7AddE=function(){
+    const inp=document.getElementById('s7eInput');
+    const parts=inp.value.toUpperCase().replace(/\s/g,'').split(',');
+    if(parts.length!==2){log('Enter two vertices like A,B');return;}
+    const [a,b]=parts;
+    if(!verts.find(v=>v.id===a)||!verts.find(v=>v.id===b)){log('Both vertices must exist');return;}
+    if(a===b){log('No self-loops allowed');return;}
+    if(edgeList.some(([ea,eb])=>(ea===a&&eb===b)||(ea===b&&eb===a))){log('Edge already exists');return;}
+    edgeList.push([a,b]);
+    log('insertEdge('+a+','+b+') &rarr; |E|='+edgeList.length);
+    inp.value='';draw();
+  };
+  window.s7RemoveE=function(){
+    const inp=document.getElementById('s7eInput');
+    const parts=inp.value.toUpperCase().replace(/\s/g,'').split(',');
+    if(parts.length!==2){log('Enter two vertices like A,B');return;}
+    const [a,b]=parts;
+    const idx=edgeList.findIndex(([ea,eb])=>(ea===a&&eb===b)||(ea===b&&eb===a));
+    if(idx<0){log('Edge ('+a+','+b+') not found');return;}
+    edgeList.splice(idx,1);
+    log('removeEdge('+a+','+b+') &rarr; |E|='+edgeList.length);
+    inp.value='';draw();
+  };
+  window.s7Reset=function(){
+    verts=[];edgeList=[];draw();
+    document.getElementById('s7Log').innerHTML='Try: Add vertices A,B,C,D then edges A,B and B,C etc.';
+  };
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s7').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: Adjacency Matrix ==================== -->
+<div class="slide" id="s8">
+  <h2>Representation 1: Adjacency Matrix</h2>
+  <p>A 2D array <code>A[V][V]</code> where <code>A[i][j] = 1</code> if edge from i to j exists.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS8" width="520" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s8AddEdge()">Add Random Edge</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8RemoveEdge()">Remove Random Edge</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+      <div id="s8Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;max-height:50px;overflow-y:auto;">
+        Click a cell in the matrix to toggle an edge. Graph updates in real-time.
+      </div>
+    </div>
+    <div>
+      <canvas id="cS8m" width="520" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:8px;">
+        <div class="key-idea" style="margin:0;padding:12px 14px;">
+          <h3 style="font-size:0.95em;">Space: O(V<sup>2</sup>)</h3>
+          <p style="font-size:0.82em;">Always V&times;V cells regardless of edge count</p>
+        </div>
+        <div class="warning" style="margin:0;padding:12px 14px;">
+          <h3 style="font-size:0.95em;">For Weighted Graphs</h3>
+          <p style="font-size:0.82em;">Store weight instead of 1, &infin; instead of 0</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const cg=document.getElementById('cS8'),ctxg=cg.getContext('2d');
+  const cm=document.getElementById('cS8m'),ctxm=cm.getContext('2d');
+  const V=4;
+  const labels=['0','1','2','3'];
+  const positions=[{x:130,y:60},{x:390,y:60},{x:390,y:220},{x:130,y:220}];
+  let matrix=[[0,1,1,0],[1,0,1,1],[1,1,0,1],[0,1,1,0]];
+  let hlCell=null; // [row,col] highlighted
+
+  function drawGraph(){
+    ctxg.clearRect(0,0,520,280);
+    // edges
+    for(let i=0;i<V;i++)for(let j=i+1;j<V;j++){
+      if(!matrix[i][j])continue;
+      const isHl=hlCell&&((hlCell[0]===i&&hlCell[1]===j)||(hlCell[0]===j&&hlCell[1]===i));
+      ctxg.beginPath();ctxg.moveTo(positions[i].x,positions[i].y);ctxg.lineTo(positions[j].x,positions[j].y);
+      ctxg.strokeStyle=isHl?'#f59e0b':'#475569';ctxg.lineWidth=isHl?4:2;ctxg.stroke();
+    }
+    // nodes
+    positions.forEach((p,i)=>{
+      ctxg.beginPath();ctxg.arc(p.x,p.y,22,0,Math.PI*2);
+      ctxg.fillStyle='#6366f1';ctxg.fill();ctxg.strokeStyle='#818cf8';ctxg.lineWidth=2;ctxg.stroke();
+      ctxg.fillStyle='#fff';ctxg.font='bold 16px monospace';ctxg.textAlign='center';ctxg.textBaseline='middle';
+      ctxg.fillText(labels[i],p.x,p.y);
+    });
+    // title
+    ctxg.fillStyle='#94a3b8';ctxg.font='13px sans-serif';ctxg.textAlign='center';
+    let eCount=0;for(let i=0;i<V;i++)for(let j=i+1;j<V;j++)if(matrix[i][j])eCount++;
+    ctxg.fillText('|V| = '+V+'   |E| = '+eCount,260,270);
+  }
+
+  function drawMatrix(){
+    ctxm.clearRect(0,0,520,280);
+    const ox=100,oy=30,cellW=70,cellH=50;
+    // header
+    ctxm.fillStyle='#38bdf8';ctxm.font='bold 14px monospace';ctxm.textAlign='center';ctxm.textBaseline='middle';
+    for(let j=0;j<V;j++)ctxm.fillText(labels[j],ox+j*cellW+cellW/2,oy+cellH/2-5);
+    // rows
+    for(let i=0;i<V;i++){
+      const ry=oy+cellH*(i+1);
+      ctxm.fillStyle='#38bdf8';ctxm.font='bold 14px monospace';ctxm.textAlign='center';
+      ctxm.fillText(labels[i],ox-30,ry+cellH/2);
+      for(let j=0;j<V;j++){
+        const rx=ox+j*cellW;
+        const isHl=hlCell&&hlCell[0]===i&&hlCell[1]===j;
+        const isMirror=hlCell&&hlCell[0]===j&&hlCell[1]===i;
+        ctxm.fillStyle=isHl?'rgba(245,158,11,0.3)':isMirror?'rgba(245,158,11,0.15)':matrix[i][j]?'rgba(99,102,241,0.2)':'rgba(0,0,0,0.15)';
+        ctxm.fillRect(rx,ry,cellW,cellH);
+        ctxm.strokeStyle='#334155';ctxm.lineWidth=1;ctxm.strokeRect(rx,ry,cellW,cellH);
+        ctxm.fillStyle=matrix[i][j]?'#22c55e':'#64748b';
+        ctxm.font='bold 16px monospace';ctxm.textAlign='center';ctxm.textBaseline='middle';
+        ctxm.fillText(matrix[i][j]?'1':'0',rx+cellW/2,ry+cellH/2);
+      }
+    }
+    // symmetry note
+    ctxm.fillStyle='#94a3b8';ctxm.font='12px sans-serif';ctxm.textAlign='center';
+    ctxm.fillText('Symmetric: A[i][j] == A[j][i]',260,268);
+  }
+
+  // click on matrix to toggle edge
+  cm.addEventListener('click',function(e){
+    const rect=cm.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(280/rect.height);
+    const ox=100,oy=30,cellW=70,cellH=50;
+    const col=Math.floor((mx-ox)/cellW);
+    const row=Math.floor((my-oy-cellH)/cellH);
+    if(row<0||row>=V||col<0||col>=V||row===col)return;
+    matrix[row][col]=matrix[row][col]?0:1;
+    matrix[col][row]=matrix[row][col]; // symmetric
+    hlCell=[row,col];
+    drawGraph();drawMatrix();
+    const act=matrix[row][col]?'Added':'Removed';
+    document.getElementById('s8Log').innerHTML=act+' edge ('+labels[row]+','+labels[col]+') &rarr; A['+row+']['+col+']='+matrix[row][col]+', A['+col+']['+row+']='+matrix[col][row];
+    setTimeout(()=>{hlCell=null;drawGraph();drawMatrix();},1200);
+  });
+
+  cm.addEventListener('mousemove',function(e){
+    const rect=cm.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(280/rect.height);
+    const ox=100,oy=30,cellW=70,cellH=50;
+    const col=Math.floor((mx-ox)/cellW);
+    const row=Math.floor((my-oy-cellH)/cellH);
+    if(row<0||row>=V||col<0||col>=V){hlCell=null;}
+    else{hlCell=[row,col];}
+    drawGraph();drawMatrix();
+  });
+  cm.addEventListener('mouseleave',function(){hlCell=null;drawGraph();drawMatrix();});
+
+  window.s8AddEdge=function(){
+    const empty=[];
+    for(let i=0;i<V;i++)for(let j=i+1;j<V;j++)if(!matrix[i][j])empty.push([i,j]);
+    if(!empty.length)return;
+    const [r,c]=empty[Math.floor(Math.random()*empty.length)];
+    matrix[r][c]=1;matrix[c][r]=1;
+    hlCell=[r,c];drawGraph();drawMatrix();
+    document.getElementById('s8Log').innerHTML='Added edge ('+labels[r]+','+labels[c]+') &rarr; set A['+r+']['+c+']=1, A['+c+']['+r+']=1  <span style="color:#22c55e;">O(1)</span>';
+    setTimeout(()=>{hlCell=null;drawGraph();drawMatrix();},1200);
+  };
+  window.s8RemoveEdge=function(){
+    const filled=[];
+    for(let i=0;i<V;i++)for(let j=i+1;j<V;j++)if(matrix[i][j])filled.push([i,j]);
+    if(!filled.length)return;
+    const [r,c]=filled[Math.floor(Math.random()*filled.length)];
+    matrix[r][c]=0;matrix[c][r]=0;
+    hlCell=[r,c];drawGraph();drawMatrix();
+    document.getElementById('s8Log').innerHTML='Removed edge ('+labels[r]+','+labels[c]+') &rarr; set A['+r+']['+c+']=0, A['+c+']['+r+']=0  <span style="color:#22c55e;">O(1)</span>';
+    setTimeout(()=>{hlCell=null;drawGraph();drawMatrix();},1200);
+  };
+  window.s8Reset=function(){
+    matrix=[[0,1,1,0],[1,0,1,1],[1,1,0,1],[0,1,1,0]];
+    hlCell=null;drawGraph();drawMatrix();
+    document.getElementById('s8Log').innerHTML='Click a cell in the matrix to toggle an edge. Graph updates in real-time.';
+  };
+
+  function init(){hlCell=null;drawGraph();drawMatrix();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s8').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: Adjacency Matrix Pros/Cons ==================== -->
+<div class="slide" id="s9">
+  <h2>Adjacency Matrix: Pros and Cons</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3 style="color:#34d399;">Advantages</h3>
+      <ul>
+        <li><strong>O(1) edge lookup</strong> &mdash; just check <code>A[i][j]</code></li>
+        <li><strong>O(1) edge insert/remove</strong> &mdash; just set <code>A[i][j]</code></li>
+        <li><strong>Simple to implement</strong> &mdash; just a 2D array</li>
+        <li><strong>Good for dense graphs</strong> where |E| &asymp; V<sup>2</sup></li>
+      </ul>
+      <h3 style="color:#f87171;margin-top:16px;">Disadvantages</h3>
+      <ul>
+        <li><strong>O(V<sup>2</sup>) space</strong> even if very few edges</li>
+        <li><strong>O(V) to find neighbors</strong> &mdash; must scan entire row</li>
+        <li><strong>O(V<sup>2</sup>) to add a vertex</strong> &mdash; must resize matrix</li>
+        <li><strong>Wasteful for sparse graphs</strong></li>
+      </ul>
+    </div>
+    <div>
+      <canvas id="cS9" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s9CheckEdge()">Check Edge (u,v) &mdash; O(1)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9FindNeighbors()">Find Neighbors &mdash; O(V)</button>
+      </div>
+      <div id="s9Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Watch the difference: O(1) lookup vs O(V) neighbor scan
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS9'),ctx=canvas.getContext('2d');
+  const V=5,labels=['0','1','2','3','4'];
+  const matrix=[[0,1,1,0,0],[1,0,1,1,0],[1,1,0,0,1],[0,1,0,0,1],[0,0,1,1,0]];
+  let hlCells=[],hlType='',timer=null,stepIdx=0;
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    const ox=80,oy=10,cw=55,ch=42;
+    // header
+    ctx.fillStyle='#38bdf8';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    for(let j=0;j<V;j++)ctx.fillText(labels[j],ox+j*cw+cw/2,oy+ch/2);
+    // rows
+    for(let i=0;i<V;i++){
+      const ry=oy+ch*(i+1);
+      ctx.fillStyle='#38bdf8';ctx.font='bold 13px monospace';ctx.textAlign='center';
+      ctx.fillText(labels[i],ox-25,ry+ch/2);
+      for(let j=0;j<V;j++){
+        const rx=ox+j*cw;
+        const isHl=hlCells.some(([r,c])=>r===i&&c===j);
+        ctx.fillStyle=isHl?(hlType==='check'?'rgba(34,197,94,0.3)':'rgba(245,158,11,0.3)'):matrix[i][j]?'rgba(99,102,241,0.15)':'rgba(0,0,0,0.15)';
+        ctx.fillRect(rx,ry,cw,ch);
+        ctx.strokeStyle='#334155';ctx.lineWidth=1;ctx.strokeRect(rx,ry,cw,ch);
+        ctx.fillStyle=matrix[i][j]?'#22c55e':'#64748b';
+        ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(matrix[i][j]?'1':'0',rx+cw/2,ry+ch/2);
+      }
+    }
+    // sparse visualization below
+    const by=oy+ch*(V+1)+20;
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='left';
+    let eCount=0;for(let i=0;i<V;i++)for(let j=i+1;j<V;j++)if(matrix[i][j])eCount++;
+    const totalCells=V*V;
+    const usedPct=((eCount*2)/totalCells*100).toFixed(0);
+    ctx.fillText('Matrix cells: '+totalCells+'    Non-zero: '+(eCount*2)+'    Utilization: '+usedPct+'%',ox,by);
+    // bar
+    ctx.fillStyle='#1e293b';ctx.fillRect(ox,by+15,V*cw,16);
+    ctx.fillStyle='rgba(99,102,241,0.5)';ctx.fillRect(ox,by+15,V*cw*(eCount*2/totalCells),16);
+    ctx.strokeStyle='#334155';ctx.strokeRect(ox,by+15,V*cw,16);
+    ctx.fillStyle='#e2e8f0';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText(usedPct+'% used — '+(100-parseInt(usedPct))+'% wasted',ox+V*cw/2,by+25);
+  }
+
+  window.s9CheckEdge=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    const u=Math.floor(Math.random()*V);
+    let v=Math.floor(Math.random()*V);
+    while(v===u)v=Math.floor(Math.random()*V);
+    hlCells=[[u,v]];hlType='check';draw();
+    const exists=matrix[u][v]?'YES':'NO';
+    document.getElementById('s9Log').innerHTML='Check A['+u+']['+v+'] = '+matrix[u][v]+' &rarr; Edge exists? <strong style="color:'+(matrix[u][v]?'#22c55e':'#ef4444')+';">'+exists+'</strong> &mdash; <span style="color:#22c55e;">O(1) instant!</span>';
+    setTimeout(()=>{hlCells=[];draw();},1500);
+  };
+
+  window.s9FindNeighbors=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    const u=Math.floor(Math.random()*V);
+    hlCells=[];hlType='scan';stepIdx=0;
+    const neighbors=[];
+    document.getElementById('s9Log').innerHTML='Scanning row '+u+' to find neighbors of vertex '+u+'...';
+    timer=setInterval(()=>{
+      if(stepIdx>=V){
+        clearInterval(timer);timer=null;
+        document.getElementById('s9Log').innerHTML='Neighbors of '+u+': ['+neighbors.join(', ')+'] &mdash; <span style="color:#f59e0b;">Had to scan all '+V+' columns: O(V)</span>';
+        return;
+      }
+      hlCells.push([u,stepIdx]);
+      if(matrix[u][stepIdx])neighbors.push(labels[stepIdx]);
+      draw();
+      stepIdx++;
+    },400);
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}hlCells=[];draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s9').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: Adjacency List ==================== -->
+<div class="slide" id="s10">
+  <h2>Representation 2: Adjacency List</h2>
+  <p>An array of lists. Each vertex stores a list of its <strong>neighbors</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS10g" width="520" height="240" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s10AddEdge()">Add Edge</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10RemoveEdge()">Remove Edge</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS10l" width="520" height="240" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s10Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Graph on left, adjacency list on right. Add/remove edges to see both update.
+      </div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:10px;">
+    <div class="key-idea" style="margin:0;padding:14px 16px;">
+      <h3>Space: O(V + E)</h3>
+      <p style="font-size:0.9em;">Each edge stored twice (once per endpoint). Much better than O(V<sup>2</sup>) for sparse graphs!</p>
+    </div>
+    <div class="analogy" style="margin:0;padding:14px 16px;">
+      <h3>Analogy: Contact Lists</h3>
+      <p style="font-size:0.9em;">Each person has their own phone contact list. You only store contacts you actually have, not a slot for everyone.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const cg=document.getElementById('cS10g'),ctxg=cg.getContext('2d');
+  const cl=document.getElementById('cS10l'),ctxl=cl.getContext('2d');
+  const V=4,labels=['0','1','2','3'];
+  const positions=[{x:130,y:50},{x:390,y:50},{x:390,y:190},{x:130,y:190}];
+  let adj=[[1,2],[0,2,3],[0,1,3],[1,2]]; // adjacency lists
+  let hlVertex=-1;
+
+  function drawGraph(){
+    ctxg.clearRect(0,0,520,240);
+    // edges (from adj list, avoid duplicates)
+    const drawn=new Set();
+    for(let i=0;i<V;i++){
+      adj[i].forEach(j=>{
+        const key=Math.min(i,j)+','+Math.max(i,j);
+        if(drawn.has(key))return;drawn.add(key);
+        const isHl=(hlVertex===i||hlVertex===j);
+        ctxg.beginPath();ctxg.moveTo(positions[i].x,positions[i].y);ctxg.lineTo(positions[j].x,positions[j].y);
+        ctxg.strokeStyle=isHl?'#f59e0b':'#475569';ctxg.lineWidth=isHl?3:2;ctxg.stroke();
+      });
+    }
+    positions.forEach((p,i)=>{
+      ctxg.beginPath();ctxg.arc(p.x,p.y,22,0,Math.PI*2);
+      ctxg.fillStyle=i===hlVertex?'#f59e0b':'#6366f1';ctxg.fill();
+      ctxg.strokeStyle=i===hlVertex?'#fbbf24':'#818cf8';ctxg.lineWidth=2;ctxg.stroke();
+      ctxg.fillStyle='#fff';ctxg.font='bold 16px monospace';ctxg.textAlign='center';ctxg.textBaseline='middle';
+      ctxg.fillText(labels[i],p.x,p.y);
+    });
+  }
+
+  function drawList(){
+    ctxl.clearRect(0,0,520,240);
+    const ox=20,oy=15,rowH=52,nodeW=50,nodeH=30;
+    for(let i=0;i<V;i++){
+      const ry=oy+i*rowH;
+      const isHl=(i===hlVertex);
+      // vertex label
+      ctxl.fillStyle=isHl?'#f59e0b':'#38bdf8';ctxl.font='bold 14px monospace';ctxl.textAlign='right';ctxl.textBaseline='middle';
+      ctxl.fillText(labels[i]+':',ox+25,ry+nodeH/2);
+      // linked list nodes
+      let cx=ox+40;
+      adj[i].forEach((nb,idx)=>{
+        const isNbHl=(hlVertex>=0&&nb===hlVertex);
+        ctxl.fillStyle=isNbHl?'rgba(245,158,11,0.25)':'#1e293b';
+        ctxl.fillRect(cx,ry,nodeW,nodeH);
+        ctxl.strokeStyle=isNbHl?'#f59e0b':'#475569';ctxl.lineWidth=1;ctxl.strokeRect(cx,ry,nodeW,nodeH);
+        ctxl.fillStyle=isNbHl?'#f59e0b':'#e2e8f0';ctxl.font='bold 13px monospace';ctxl.textAlign='center';ctxl.textBaseline='middle';
+        ctxl.fillText(labels[nb],cx+nodeW/2,ry+nodeH/2);
+        // arrow to next
+        if(idx<adj[i].length-1){
+          ctxl.beginPath();ctxl.moveTo(cx+nodeW,ry+nodeH/2);ctxl.lineTo(cx+nodeW+15,ry+nodeH/2);
+          ctxl.strokeStyle='#64748b';ctxl.lineWidth=1.5;ctxl.stroke();
+          ctxl.beginPath();ctxl.moveTo(cx+nodeW+15,ry+nodeH/2);
+          ctxl.lineTo(cx+nodeW+10,ry+nodeH/2-4);ctxl.lineTo(cx+nodeW+10,ry+nodeH/2+4);ctxl.closePath();
+          ctxl.fillStyle='#64748b';ctxl.fill();
+        }else{
+          // null
+          ctxl.fillStyle='#64748b';ctxl.font='11px monospace';ctxl.textAlign='left';
+          ctxl.fillText('null',cx+nodeW+8,ry+nodeH/2);
+        }
+        cx+=nodeW+20;
+      });
+      if(adj[i].length===0){
+        ctxl.fillStyle='#64748b';ctxl.font='11px monospace';ctxl.textAlign='left';
+        ctxl.fillText('null',ox+45,ry+nodeH/2);
+      }
+    }
+  }
+
+  cg.addEventListener('click',function(e){
+    const rect=cg.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(240/rect.height);
+    hlVertex=-1;
+    for(let i=0;i<V;i++){
+      if(Math.hypot(mx-positions[i].x,my-positions[i].y)<24){hlVertex=i;break;}
+    }
+    drawGraph();drawList();
+    if(hlVertex>=0){
+      document.getElementById('s10Log').innerHTML='Vertex '+labels[hlVertex]+': neighbors = ['+adj[hlVertex].map(j=>labels[j]).join(', ')+'] &mdash; degree = '+adj[hlVertex].length;
+    }
+  });
+
+  window.s10AddEdge=function(){
+    const empty=[];
+    for(let i=0;i<V;i++)for(let j=i+1;j<V;j++)if(!adj[i].includes(j))empty.push([i,j]);
+    if(!empty.length)return;
+    const [a,b]=empty[Math.floor(Math.random()*empty.length)];
+    adj[a].push(b);adj[b].push(a);
+    document.getElementById('s10Log').innerHTML='insertEdge('+labels[a]+','+labels[b]+') &rarr; prepend '+labels[b]+' to list['+a+'], '+labels[a]+' to list['+b+'] <span style="color:#22c55e;">O(1)</span>';
+    drawGraph();drawList();
+  };
+  window.s10RemoveEdge=function(){
+    const filled=[];
+    for(let i=0;i<V;i++)for(let j=i+1;j<V;j++)if(adj[i].includes(j))filled.push([i,j]);
+    if(!filled.length)return;
+    const [a,b]=filled[Math.floor(Math.random()*filled.length)];
+    adj[a]=adj[a].filter(x=>x!==b);adj[b]=adj[b].filter(x=>x!==a);
+    document.getElementById('s10Log').innerHTML='removeEdge('+labels[a]+','+labels[b]+') &rarr; scan list['+a+'] to find '+labels[b]+' <span style="color:#f59e0b;">O(deg('+labels[a]+'))</span>';
+    drawGraph();drawList();
+  };
+  window.s10Reset=function(){
+    adj=[[1,2],[0,2,3],[0,1,3],[1,2]];hlVertex=-1;drawGraph();drawList();
+    document.getElementById('s10Log').innerHTML='Graph on left, adjacency list on right. Add/remove edges to see both update.';
+  };
+
+  function init(){hlVertex=-1;drawGraph();drawList();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s10').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: Adjacency List Pros/Cons ==================== -->
+<div class="slide" id="s11">
+  <h2>Adjacency List: Pros and Cons</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3 style="color:#34d399;">Advantages</h3>
+      <ul>
+        <li><strong>O(V + E) space</strong> &mdash; proportional to actual size</li>
+        <li><strong>O(1) to add an edge</strong> &mdash; prepend to list</li>
+        <li><strong>O(deg(v)) to iterate neighbors</strong> &mdash; just walk the list</li>
+        <li><strong>O(1) to add a vertex</strong> &mdash; append to array</li>
+        <li><strong>Efficient for sparse graphs</strong></li>
+      </ul>
+      <h3 style="color:#f87171;margin-top:16px;">Disadvantages</h3>
+      <ul>
+        <li><strong>O(deg(v)) edge lookup</strong> &mdash; must search the list</li>
+        <li><strong>O(deg(v)) edge removal</strong> &mdash; must find it first</li>
+        <li><strong>No quick way</strong> to check if edge exists</li>
+      </ul>
+    </div>
+    <div>
+      <canvas id="cS11" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s11WalkNeighbors()">Walk Neighbors &mdash; O(deg)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11CheckEdge()">Check Edge &mdash; O(deg)</button>
+      </div>
+      <div id="s11Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Compare with matrix: neighbor iteration is faster here, but edge check is slower
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS11'),ctx=canvas.getContext('2d');
+  const V=5,labels=['0','1','2','3','4'];
+  const adj=[[1,2],[0,2,3],[0,1,3],[1,2,4],[3]];
+  let hlRow=-1,hlIdx=-1,timer=null,stepIdx=0;
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    const ox=20,oy=15,rowH=55,nodeW=55,nodeH=32;
+    for(let i=0;i<V;i++){
+      const ry=oy+i*rowH;
+      const isRow=(i===hlRow);
+      ctx.fillStyle=isRow?'#f59e0b':'#38bdf8';ctx.font='bold 14px monospace';ctx.textAlign='right';ctx.textBaseline='middle';
+      ctx.fillText(labels[i]+':',ox+25,ry+nodeH/2);
+      let cx=ox+40;
+      adj[i].forEach((nb,idx)=>{
+        const isHl=(isRow&&idx<=hlIdx);
+        const isCurrent=(isRow&&idx===hlIdx);
+        ctx.fillStyle=isCurrent?'rgba(245,158,11,0.35)':isHl?'rgba(34,197,94,0.2)':'#1e293b';
+        ctx.fillRect(cx,ry,nodeW,nodeH);
+        ctx.strokeStyle=isCurrent?'#f59e0b':isHl?'#22c55e':'#475569';ctx.lineWidth=isCurrent?2:1;
+        ctx.strokeRect(cx,ry,nodeW,nodeH);
+        ctx.fillStyle=isCurrent?'#f59e0b':'#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(labels[nb],cx+nodeW/2,ry+nodeH/2);
+        if(idx<adj[i].length-1){
+          ctx.beginPath();ctx.moveTo(cx+nodeW,ry+nodeH/2);ctx.lineTo(cx+nodeW+15,ry+nodeH/2);
+          ctx.strokeStyle='#64748b';ctx.lineWidth=1.5;ctx.stroke();
+          ctx.beginPath();ctx.moveTo(cx+nodeW+15,ry+nodeH/2);
+          ctx.lineTo(cx+nodeW+10,ry+nodeH/2-4);ctx.lineTo(cx+nodeW+10,ry+nodeH/2+4);ctx.closePath();
+          ctx.fillStyle='#64748b';ctx.fill();
+        }else{
+          ctx.fillStyle='#64748b';ctx.font='11px monospace';ctx.textAlign='left';
+          ctx.fillText('null',cx+nodeW+8,ry+nodeH/2);
+        }
+        cx+=nodeW+20;
+      });
+    }
+    // summary at bottom
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    let totalE=0;adj.forEach(a=>totalE+=a.length);
+    ctx.fillText('Total list entries: '+totalE+' (each edge stored twice)   Space: O(V+E) = O('+V+'+'+totalE/2+')',260,340);
+  }
+
+  window.s11WalkNeighbors=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    hlRow=Math.floor(Math.random()*V);hlIdx=-1;stepIdx=0;
+    const found=[];
+    document.getElementById('s11Log').innerHTML='Walking neighbors of vertex '+labels[hlRow]+'...';
+    timer=setInterval(()=>{
+      if(stepIdx>=adj[hlRow].length){
+        clearInterval(timer);timer=null;
+        document.getElementById('s11Log').innerHTML='Neighbors of '+labels[hlRow]+': ['+found.join(', ')+'] &mdash; <span style="color:#22c55e;">O(deg('+labels[hlRow]+')) = O('+adj[hlRow].length+') only!</span>';
+        return;
+      }
+      hlIdx=stepIdx;
+      found.push(labels[adj[hlRow][stepIdx]]);
+      draw();stepIdx++;
+    },500);
+  };
+
+  window.s11CheckEdge=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    hlRow=Math.floor(Math.random()*V);
+    let target=Math.floor(Math.random()*V);
+    while(target===hlRow)target=Math.floor(Math.random()*V);
+    hlIdx=-1;stepIdx=0;
+    const exists=adj[hlRow].includes(target);
+    document.getElementById('s11Log').innerHTML='Checking if edge ('+labels[hlRow]+','+labels[target]+') exists... scanning list['+labels[hlRow]+']';
+    timer=setInterval(()=>{
+      if(stepIdx>=adj[hlRow].length){
+        clearInterval(timer);timer=null;
+        document.getElementById('s11Log').innerHTML='Edge ('+labels[hlRow]+','+labels[target]+'): <strong style="color:#ef4444;">NOT FOUND</strong> after scanning '+adj[hlRow].length+' entries &mdash; <span style="color:#f59e0b;">O(deg) worst case</span>';
+        return;
+      }
+      hlIdx=stepIdx;draw();
+      if(adj[hlRow][stepIdx]===target){
+        clearInterval(timer);timer=null;
+        document.getElementById('s11Log').innerHTML='Edge ('+labels[hlRow]+','+labels[target]+'): <strong style="color:#22c55e;">FOUND</strong> at position '+(stepIdx+1)+' &mdash; <span style="color:#f59e0b;">O(deg) = scanned '+(stepIdx+1)+' entries</span>';
+        return;
+      }
+      stepIdx++;
+    },500);
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}hlRow=-1;hlIdx=-1;draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s11').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 12: Matrix vs List Comparison ==================== -->
+<div class="slide" id="s12">
+  <h2>Matrix vs List vs Edge List</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS12" width="520" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;justify-content:center;">
+        <button class="btn btn-sm" onclick="s12Show('matrix')" id="s12bM">Matrix</button>
+        <button class="btn btn-sm" onclick="s12Show('list')" id="s12bL">Adj List</button>
+        <button class="btn btn-sm" onclick="s12Show('edge')" id="s12bE">Edge List</button>
+      </div>
+    </div>
+    <div>
+      <table style="border-collapse:collapse;width:100%;font-size:0.88em;">
+        <tr>
+          <th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;"></th>
+          <th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;">Matrix</th>
+          <th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;">Adj List</th>
+          <th style="border:1px solid #475569;padding:8px;background:#334155;color:#93c5fd;">Edge List</th>
+        </tr>
+        <tr id="s12rSpace"><td style="border:1px solid #475569;padding:8px;background:#1e293b;"><strong>Space</strong></td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(V<sup>2</sup>)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;color:#34d399;">O(V+E)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;color:#34d399;">O(E)</td></tr>
+        <tr id="s12rCheck"><td style="border:1px solid #475569;padding:8px;background:#1e293b;"><strong>Check edge</strong></td><td style="border:1px solid #475569;padding:8px;background:#1e293b;color:#34d399;">O(1)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(deg)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(E)</td></tr>
+        <tr id="s12rAdd"><td style="border:1px solid #475569;padding:8px;background:#1e293b;"><strong>Add edge</strong></td><td style="border:1px solid #475569;padding:8px;background:#1e293b;color:#34d399;">O(1)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;color:#34d399;">O(1)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;color:#34d399;">O(1)</td></tr>
+        <tr id="s12rNeigh"><td style="border:1px solid #475569;padding:8px;background:#1e293b;"><strong>Neighbors</strong></td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(V)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;color:#34d399;">O(deg)</td><td style="border:1px solid #475569;padding:8px;background:#1e293b;">O(E)</td></tr>
+        <tr id="s12rBest"><td style="border:1px solid #475569;padding:8px;background:rgba(59,130,246,0.15);"><strong>Best for</strong></td><td style="border:1px solid #475569;padding:8px;background:rgba(59,130,246,0.15);">Dense</td><td style="border:1px solid #475569;padding:8px;background:rgba(59,130,246,0.15);">Sparse</td><td style="border:1px solid #475569;padding:8px;background:rgba(59,130,246,0.15);">Edge proc.</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="warning" style="margin-top:12px;">
+    <h3>Rule of Thumb</h3>
+    <p>|E| close to V<sup>2</sup> &rarr; <strong>matrix</strong>. |E| &laquo; V<sup>2</sup> &rarr; <strong>adjacency list</strong>. Just need to iterate all edges? &rarr; <strong>edge list</strong>. Most real-world graphs are sparse, so <strong>adjacency list is the default</strong>.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS12'),ctx=canvas.getContext('2d');
+  const V=4,labels=['0','1','2','3'];
+  const positions=[{x:100,y:45},{x:260,y:45},{x:260,y:175},{x:100,y:175}];
+  const edges=[[0,1],[0,2],[1,2],[1,3],[2,3]];
+  let mode='matrix';
+
+  function drawGraph(){
+    // draw graph on left portion
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(positions[a].x,positions[a].y);ctx.lineTo(positions[b].x,positions[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    });
+    positions.forEach((p,i)=>{
+      ctx.beginPath();ctx.arc(p.x,p.y,18,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],p.x,p.y);
+    });
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,220);
+    if(mode==='matrix'){
+      drawGraph();
+      // matrix on right
+      const ox=320,oy=15,cw=40,ch=35;
+      ctx.fillStyle='#38bdf8';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      for(let j=0;j<V;j++)ctx.fillText(labels[j],ox+j*cw+cw/2,oy+ch/2);
+      for(let i=0;i<V;i++){
+        ctx.fillText(labels[i],ox-15,oy+ch*(i+1)+ch/2);
+        for(let j=0;j<V;j++){
+          const rx=ox+j*cw,ry=oy+ch*(i+1);
+          const hasE=edges.some(([a,b])=>(a===i&&b===j)||(a===j&&b===i));
+          ctx.fillStyle=hasE?'rgba(99,102,241,0.2)':'rgba(0,0,0,0.15)';
+          ctx.fillRect(rx,ry,cw,ch);ctx.strokeStyle='#334155';ctx.lineWidth=1;ctx.strokeRect(rx,ry,cw,ch);
+          ctx.fillStyle=hasE?'#22c55e':'#64748b';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(hasE?'1':'0',rx+cw/2,ry+ch/2);
+        }
+      }
+      ctx.fillStyle='#f59e0b';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('16 cells for 5 edges',ox+V*cw/2,oy+ch*(V+1)+12);
+    }else if(mode==='list'){
+      drawGraph();
+      const ox=320,oy=20,rowH=45,nw=40,nh=25;
+      const adj=[];for(let i=0;i<V;i++)adj.push([]);
+      edges.forEach(([a,b])=>{adj[a].push(b);adj[b].push(a);});
+      for(let i=0;i<V;i++){
+        const ry=oy+i*rowH;
+        ctx.fillStyle='#38bdf8';ctx.font='bold 12px monospace';ctx.textAlign='right';ctx.textBaseline='middle';
+        ctx.fillText(labels[i]+':',ox,ry+nh/2);
+        let cx=ox+10;
+        adj[i].forEach((nb,idx)=>{
+          ctx.fillStyle='#1e293b';ctx.fillRect(cx,ry,nw,nh);
+          ctx.strokeStyle='#475569';ctx.lineWidth=1;ctx.strokeRect(cx,ry,nw,nh);
+          ctx.fillStyle='#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText(labels[nb],cx+nw/2,ry+nh/2);
+          if(idx<adj[i].length-1){
+            ctx.beginPath();ctx.moveTo(cx+nw,ry+nh/2);ctx.lineTo(cx+nw+8,ry+nh/2);
+            ctx.strokeStyle='#64748b';ctx.lineWidth=1;ctx.stroke();
+          }
+          cx+=nw+12;
+        });
+      }
+      ctx.fillStyle='#22c55e';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('10 entries for 5 edges',400,oy+V*rowH+5);
+    }else{
+      drawGraph();
+      const ox=330,oy=20,rw=110,rh=28;
+      ctx.fillStyle='#38bdf8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('u',ox+25,oy);ctx.fillText('v',ox+75,oy);
+      edges.forEach(([a,b],idx)=>{
+        const ry=oy+12+idx*rh;
+        ctx.fillStyle='#1e293b';ctx.fillRect(ox,ry,rw/2,rh);ctx.fillRect(ox+rw/2,ry,rw/2,rh);
+        ctx.strokeStyle='#475569';ctx.lineWidth=1;ctx.strokeRect(ox,ry,rw/2,rh);ctx.strokeRect(ox+rw/2,ry,rw/2,rh);
+        ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(labels[a],ox+rw/4,ry+rh/2);ctx.fillText(labels[b],ox+3*rw/4,ry+rh/2);
+      });
+      ctx.fillStyle='#a78bfa';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Just 5 entries — O(E)',ox+rw/2,oy+12+edges.length*rh+15);
+    }
+  }
+
+  window.s12Show=function(m){
+    mode=m;draw();
+    ['s12bM','s12bL','s12bE'].forEach(id=>{
+      document.getElementById(id).style.background=(id==='s12b'+(m==='matrix'?'M':m==='list'?'L':'E'))?'linear-gradient(135deg,#6366f1,#8b5cf6)':'#334155';
+    });
+  };
+
+  function init(){mode='matrix';draw();
+    document.getElementById('s12bM').style.background='linear-gradient(135deg,#6366f1,#8b5cf6)';
+    document.getElementById('s12bL').style.background='#334155';
+    document.getElementById('s12bE').style.background='#334155';
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s12').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: Edge List ==================== -->
+<div class="slide" id="s13">
+  <h2>Representation 3: Edge List</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <p>The simplest representation: just store a <strong>list of all edges</strong> as (u, v) pairs.</p>
+      <canvas id="cS13" width="520" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s13ScanNeighbors()">Find Neighbors &mdash; O(E)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13CheckEdge()">Check Edge &mdash; O(E)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      </div>
+      <div id="s13Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Edge lists are simple but slow for lookups — must scan all edges
+      </div>
+    </div>
+    <div>
+      <h3>Complexity</h3>
+      <table style="border-collapse:collapse;width:100%;font-size:0.92em;">
+        <tr><th style="border:1px solid #475569;padding:8px 12px;background:#334155;color:#93c5fd;">Operation</th><th style="border:1px solid #475569;padding:8px 12px;background:#334155;color:#93c5fd;">Cost</th></tr>
+        <tr><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Space</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">O(E)</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Check edge</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">O(E) &mdash; scan list</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Add edge</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;color:#34d399;">O(1) &mdash; append</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Remove edge</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">O(E) &mdash; find first</td></tr>
+        <tr><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;"><strong>Neighbors</strong></td><td style="border:1px solid #475569;padding:8px 12px;background:#1e293b;">O(E) &mdash; scan all</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>When to Use</h3>
+        <p>When you need to <strong>process all edges</strong> (e.g., Kruskal&rsquo;s MST), or graph is very simple with minimal overhead.</p>
+      </div>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Warning</h3>
+        <p>Edge lists are <strong>slow for lookups</strong>. Cannot quickly check if a specific edge exists or find a vertex&rsquo;s neighbors.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS13'),ctx=canvas.getContext('2d');
+  const labels=['0','1','2','3'];
+  const positions=[{x:100,y:50},{x:300,y:50},{x:300,y:180},{x:100,y:180}];
+  const edges=[[0,1],[0,2],[1,2],[1,3],[2,3]];
+  let hlIdx=-1,timer=null,stepIdx=0;
+
+  function draw(){
+    ctx.clearRect(0,0,520,280);
+    // graph
+    edges.forEach(([a,b],ei)=>{
+      const isHl=(ei===hlIdx);
+      ctx.beginPath();ctx.moveTo(positions[a].x,positions[a].y);ctx.lineTo(positions[b].x,positions[b].y);
+      ctx.strokeStyle=isHl?'#f59e0b':'#475569';ctx.lineWidth=isHl?4:2;ctx.stroke();
+    });
+    positions.forEach((p,i)=>{
+      ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],p.x,p.y);
+    });
+    // edge list table on right
+    const ox=380,oy=20,rw=55,rh=32;
+    ctx.fillStyle='#38bdf8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('u',ox+rw/2,oy);ctx.fillText('v',ox+rw+rw/2,oy);
+    edges.forEach(([a,b],idx)=>{
+      const ry=oy+15+idx*rh;
+      const isHl=(idx===hlIdx);
+      const isScanned=(hlIdx>=0&&idx<=hlIdx);
+      ctx.fillStyle=isHl?'rgba(245,158,11,0.3)':isScanned?'rgba(34,197,94,0.1)':'#1e293b';
+      ctx.fillRect(ox,ry,rw,rh);ctx.fillRect(ox+rw,ry,rw,rh);
+      ctx.strokeStyle=isHl?'#f59e0b':'#475569';ctx.lineWidth=isHl?2:1;
+      ctx.strokeRect(ox,ry,rw,rh);ctx.strokeRect(ox+rw,ry,rw,rh);
+      ctx.fillStyle=isHl?'#f59e0b':'#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[a],ox+rw/2,ry+rh/2);ctx.fillText(labels[b],ox+rw+rw/2,ry+rh/2);
+    });
+  }
+
+  window.s13ScanNeighbors=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    const v=Math.floor(Math.random()*4);
+    hlIdx=-1;stepIdx=0;
+    const found=[];
+    document.getElementById('s13Log').innerHTML='Finding neighbors of vertex '+labels[v]+' ... scanning all edges';
+    timer=setInterval(()=>{
+      if(stepIdx>=edges.length){
+        clearInterval(timer);timer=null;hlIdx=-1;draw();
+        document.getElementById('s13Log').innerHTML='Neighbors of '+labels[v]+': ['+found.join(', ')+'] &mdash; <span style="color:#ef4444;">Had to scan all '+edges.length+' edges: O(E)</span>';
+        return;
+      }
+      hlIdx=stepIdx;draw();
+      const [a,b]=edges[stepIdx];
+      if(a===v)found.push(labels[b]);
+      if(b===v)found.push(labels[a]);
+      stepIdx++;
+    },600);
+  };
+
+  window.s13CheckEdge=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    let u=Math.floor(Math.random()*4),v=Math.floor(Math.random()*4);
+    while(v===u)v=Math.floor(Math.random()*4);
+    hlIdx=-1;stepIdx=0;
+    document.getElementById('s13Log').innerHTML='Checking edge ('+labels[u]+','+labels[v]+') ... scanning edge list';
+    timer=setInterval(()=>{
+      if(stepIdx>=edges.length){
+        clearInterval(timer);timer=null;hlIdx=-1;draw();
+        document.getElementById('s13Log').innerHTML='Edge ('+labels[u]+','+labels[v]+'): <strong style="color:#ef4444;">NOT FOUND</strong> after scanning all '+edges.length+' edges &mdash; O(E)';
+        return;
+      }
+      hlIdx=stepIdx;draw();
+      const [a,b]=edges[stepIdx];
+      if((a===u&&b===v)||(a===v&&b===u)){
+        clearInterval(timer);timer=null;
+        document.getElementById('s13Log').innerHTML='Edge ('+labels[u]+','+labels[v]+'): <strong style="color:#22c55e;">FOUND</strong> at row '+(stepIdx+1)+' &mdash; scanned '+(stepIdx+1)+' of '+edges.length+' edges';
+        return;
+      }
+      stepIdx++;
+    },600);
+  };
+
+  window.s13Reset=function(){if(timer){clearInterval(timer);timer=null;}hlIdx=-1;draw();
+    document.getElementById('s13Log').innerHTML='Edge lists are simple but slow for lookups — must scan all edges';};
+
+  function init(){if(timer){clearInterval(timer);timer=null;}hlIdx=-1;draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s13').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 14: Graph Properties & Formulas ==================== -->
+<div class="slide" id="s14">
+  <h2>Graph Properties &amp; Formulas</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>Handshaking Lemma Explorer</h3>
+      <canvas id="cS14" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s14AddEdge()">Add Edge</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14RemoveEdge()">Remove Edge</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s14Stats" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;font-family:monospace;font-size:0.9em;line-height:2;">
+      </div>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Handshaking Lemma</h3>
+        <p><strong>&sum; deg(v) = 2 &times; |E|</strong><br>Each edge contributes 1 to the degree of each endpoint, so it&rsquo;s counted twice.</p>
+      </div>
+      <h3 style="margin-top:12px;">Maximum Edges Calculator</h3>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <span style="font-size:0.9em;">V =</span>
+        <input type="number" id="s14maxV" value="5" min="1" max="20" style="width:60px;padding:0.3rem 0.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s14CalcMax()">Calculate</button>
+      </div>
+      <div id="s14MaxResult" style="font-family:monospace;font-size:0.85em;color:#94a3b8;margin-top:8px;">
+        Undirected: V(V-1)/2 &nbsp;&nbsp; Directed: V(V-1)
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS14'),ctx=canvas.getContext('2d');
+  const V=5,labels=['A','B','C','D','E'];
+  const positions=[{x:260,y:40},{x:440,y:130},{x:370,y:270},{x:150,y:270},{x:80,y:130}];
+  let edges=[[0,1],[1,2],[2,3],[3,4],[0,2]];
+
+  function getDeg(v){return edges.filter(([a,b])=>a===v||b===v).length;}
+
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(positions[a].x,positions[a].y);ctx.lineTo(positions[b].x,positions[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    });
+    positions.forEach((p,i)=>{
+      const deg=getDeg(i);
+      ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],p.x,p.y);
+      // degree label
+      ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';
+      ctx.fillText('deg='+deg,p.x,p.y-34);
+    });
+    updateStats();
+  }
+
+  function updateStats(){
+    let sumDeg=0;
+    const degs=[];
+    for(let i=0;i<V;i++){const d=getDeg(i);degs.push(d);sumDeg+=d;}
+    const E=edges.length;
+    const html='<span style="color:#38bdf8;">Degrees:</span> '+labels.map((l,i)=>'deg('+l+')='+degs[i]).join(', ')+'<br>'+
+      '<span style="color:#f59e0b;">&sum; degrees = '+sumDeg+'</span><br>'+
+      '<span style="color:#22c55e;">2 &times; |E| = 2 &times; '+E+' = '+(2*E)+'</span><br>'+
+      (sumDeg===2*E?'<span style="color:#22c55e;">&check; Verified: &sum;deg = 2|E|</span>':'');
+    document.getElementById('s14Stats').innerHTML=html;
+  }
+
+  window.s14AddEdge=function(){
+    const empty=[];
+    for(let i=0;i<V;i++)for(let j=i+1;j<V;j++){
+      if(!edges.some(([a,b])=>(a===i&&b===j)||(a===j&&b===i)))empty.push([i,j]);
+    }
+    if(!empty.length)return;
+    edges.push(empty[Math.floor(Math.random()*empty.length)]);
+    draw();
+  };
+  window.s14RemoveEdge=function(){
+    if(!edges.length)return;
+    edges.splice(Math.floor(Math.random()*edges.length),1);
+    draw();
+  };
+  window.s14Reset=function(){
+    edges=[[0,1],[1,2],[2,3],[3,4],[0,2]];
+    draw();
+  };
+  window.s14CalcMax=function(){
+    const v=parseInt(document.getElementById('s14maxV').value)||5;
+    const undirected=v*(v-1)/2;
+    const directed=v*(v-1);
+    document.getElementById('s14MaxResult').innerHTML=
+      'V = '+v+'<br>Undirected max: '+v+'&times;'+(v-1)+'/2 = <strong style="color:#22c55e;">'+undirected+'</strong><br>'+
+      'Directed max: '+v+'&times;'+(v-1)+' = <strong style="color:#a78bfa;">'+directed+'</strong>';
+  };
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s14').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 15: Paths and Connectivity ==================== -->
+<div class="slide" id="s15">
+  <h2>Paths and Connectivity</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS15" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s15FindPath()">Find Path</button>
+        <button class="btn btn-sm" onclick="s15FindCycle()">Find Cycle</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Toggle()">Toggle Connected</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+      <div id="s15Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Click two nodes to select start &amp; end, then Find Path. Or click Find Cycle.
+      </div>
+    </div>
+    <div>
+      <h3>Types of Paths</h3>
+      <p><strong style="color:#38bdf8;">Path:</strong> Sequence of vertices connected by edges.</p>
+      <p><strong style="color:#38bdf8;">Simple Path:</strong> No vertex repeated.</p>
+      <p><strong style="color:#38bdf8;">Cycle:</strong> A path that returns to its start.</p>
+      <h3 style="margin-top:16px;">Connectivity</h3>
+      <p><strong style="color:#34d399;">Connected:</strong> Every vertex reachable from every other.</p>
+      <p><strong style="color:#ef4444;">Disconnected:</strong> Some vertices cannot reach others.</p>
+      <h3 style="margin-top:16px;">Strong Connectivity (Directed)</h3>
+      <p><strong style="color:#34d399;">Strongly connected:</strong> Can reach any vertex from any other following directed edges.</p>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Idea</h3>
+        <p>A <strong>connected component</strong> is a maximal set of vertices where every pair is connected by a path.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS15'),ctx=canvas.getContext('2d');
+  let connected=true;
+  const nodesC=[{x:80,y:60,id:'A'},{x:220,y:60,id:'B'},{x:360,y:60,id:'C'},{x:140,y:200,id:'D'},{x:300,y:200,id:'E'},{x:440,y:170,id:'F'}];
+  const edgesC=[[0,1],[1,2],[0,3],[1,4],[2,5],[3,4],[4,5]];
+  const nodesD=[{x:80,y:60,id:'A'},{x:220,y:60,id:'B'},{x:140,y:200,id:'C'},{x:360,y:80,id:'D'},{x:440,y:180,id:'E'},{x:360,y:260,id:'F'}];
+  const edgesD=[[0,1],[0,2],[1,2],[3,4],[4,5]];
+  let selA=-1,selB=-1,pathEdges=null,cycleEdges=null;
+
+  function nodes(){return connected?nodesC:nodesD;}
+  function edgs(){return connected?edgesC:edgesD;}
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    const ns=nodes(),es=edgs();
+    // component coloring for disconnected
+    if(!connected){
+      ctx.fillStyle='rgba(99,102,241,0.08)';
+      ctx.beginPath();ctx.arc(140,120,130,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(167,139,250,0.08)';
+      ctx.beginPath();ctx.arc(390,170,120,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#64748b';ctx.font='11px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Component 1',140,290);ctx.fillText('Component 2',390,310);
+    }
+    // edges
+    es.forEach(([a,b],ei)=>{
+      const onPath=pathEdges&&pathEdges.some(([pa,pb])=>(pa===a&&pb===b)||(pa===b&&pb===a));
+      const onCycle=cycleEdges&&cycleEdges.some(([ca,cb])=>(ca===a&&cb===b)||(ca===b&&cb===a));
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle=onPath?'#22c55e':onCycle?'#f472b6':'#475569';
+      ctx.lineWidth=onPath||onCycle?4:2;ctx.stroke();
+    });
+    // nodes
+    ns.forEach((n,i)=>{
+      const isSel=(i===selA||i===selB);
+      const onP=pathEdges&&pathEdges.some(([a,b])=>a===i||b===i);
+      const onC=cycleEdges&&cycleEdges.some(([a,b])=>a===i||b===i);
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isSel?'#f59e0b':onP?'#22c55e':onC?'#f472b6':'#6366f1';
+      ctx.fill();ctx.strokeStyle=isSel?'#fbbf24':onP?'#4ade80':onC?'#f9a8d4':'#818cf8';
+      ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    // status
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='left';
+    ctx.fillText(connected?'Connected graph — 1 component':'Disconnected — 2 components',10,330);
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width),my=(e.clientY-rect.top)*(340/rect.height);
+    const ns=nodes();let clicked=-1;
+    for(let i=0;i<ns.length;i++)if(Math.hypot(mx-ns[i].x,my-ns[i].y)<24){clicked=i;break;}
+    if(clicked<0)return;
+    pathEdges=null;cycleEdges=null;
+    if(selA<0){selA=clicked;}else if(selB<0&&clicked!==selA){selB=clicked;}else{selA=clicked;selB=-1;}
+    draw();
+    const ns2=nodes();
+    if(selA>=0&&selB<0)document.getElementById('s15Log').innerHTML='Start: <span style="color:#f59e0b;">'+ns2[selA].id+'</span> — click another for end';
+    else if(selA>=0&&selB>=0)document.getElementById('s15Log').innerHTML='<span style="color:#f59e0b;">'+ns2[selA].id+' → '+ns2[selB].id+'</span> — click Find Path';
+  });
+
+  // BFS path finder
+  function bfsPath(src,dst){
+    const ns=nodes(),es=edgs(),n=ns.length;
+    const visited=Array(n).fill(false),prev=Array(n).fill(-1);
+    visited[src]=true;const q=[src];
+    while(q.length){
+      const u=q.shift();
+      if(u===dst)break;
+      es.forEach(([a,b])=>{
+        if(a===u&&!visited[b]){visited[b]=true;prev[b]=u;q.push(b);}
+        if(b===u&&!visited[a]){visited[a]=true;prev[a]=u;q.push(a);}
+      });
+    }
+    if(!visited[dst])return null;
+    const path=[];let c=dst;
+    while(c!==src){path.unshift([prev[c],c]);c=prev[c];}
+    return path;
+  }
+
+  window.s15FindPath=function(){
+    if(selA<0||selB<0)return;
+    cycleEdges=null;
+    const ns=nodes();
+    pathEdges=bfsPath(selA,selB);
+    draw();
+    if(pathEdges){
+      const names=[ns[selA].id];pathEdges.forEach(([a,b])=>names.push(ns[b].id));
+      document.getElementById('s15Log').innerHTML='<span style="color:#22c55e;">Path: '+names.join(' → ')+' (length '+pathEdges.length+')</span> — simple path, no vertex repeated';
+    }else{
+      document.getElementById('s15Log').innerHTML='<span style="color:#ef4444;">No path exists!</span> '+ns[selA].id+' and '+ns[selB].id+' are in different components.';
+    }
+  };
+
+  window.s15FindCycle=function(){
+    pathEdges=null;selA=-1;selB=-1;
+    const es=edgs(),ns=nodes();
+    // find a cycle via DFS
+    const n=ns.length,visited=Array(n).fill(false),parent=Array(n).fill(-1);
+    let cycleStart=-1,cycleEnd=-1;
+    function dfs(u,p){
+      visited[u]=true;
+      for(const [a,b] of es){
+        let v=-1;
+        if(a===u)v=b;else if(b===u)v=a;else continue;
+        if(v===p)continue;
+        if(visited[v]){cycleStart=v;cycleEnd=u;return true;}
+        parent[v]=u;
+        if(dfs(v,u))return true;
+      }
+      return false;
+    }
+    for(let i=0;i<n;i++){if(!visited[i]&&dfs(i,-1))break;}
+    if(cycleStart>=0){
+      cycleEdges=[];
+      let c=cycleEnd;
+      while(c!==cycleStart){cycleEdges.push([parent[c],c]);c=parent[c];}
+      cycleEdges.push([cycleStart,cycleEnd]);
+      draw();
+      const names=[ns[cycleStart].id];
+      let cc=cycleEnd;const mid=[];
+      while(cc!==cycleStart){mid.unshift(ns[cc].id);cc=parent[cc];}
+      document.getElementById('s15Log').innerHTML='<span style="color:#f472b6;">Cycle: '+ns[cycleStart].id+' → '+mid.join(' → ')+' → '+ns[cycleStart].id+' (length '+cycleEdges.length+')</span>';
+    }else{
+      document.getElementById('s15Log').innerHTML='<span style="color:#94a3b8;">No cycles found — this graph is acyclic (a tree/forest).</span>';
+      draw();
+    }
+  };
+
+  window.s15Toggle=function(){
+    connected=!connected;selA=-1;selB=-1;pathEdges=null;cycleEdges=null;draw();
+    document.getElementById('s15Log').innerHTML=connected?'Now showing a connected graph':'Now showing a disconnected graph — 2 components. Try finding a path between them!';
+  };
+  window.s15Reset=function(){selA=-1;selB=-1;pathEdges=null;cycleEdges=null;draw();
+    document.getElementById('s15Log').innerHTML='Click two nodes to select start & end, then Find Path. Or click Find Cycle.';};
+
+  function init(){selA=-1;selB=-1;pathEdges=null;cycleEdges=null;draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s15').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: Social Networks ==================== -->
+<div class="slide" id="s16">
+  <h2>Application: Social Networks</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS16" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s16Separation()">Degrees of Separation</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+      </div>
+      <div id="s16Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;">
+        Click two people to find their degrees of separation
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Graph Metrics in Social Networks</h3>
+        <ul>
+          <li><strong>Degree</strong> = number of friends (popularity)</li>
+          <li><strong>Shortest path</strong> = degrees of separation</li>
+          <li><strong>Connected component</strong> = social circle</li>
+        </ul>
+      </div>
+      <div class="analogy" style="margin-top:10px;">
+        <h3>Six Degrees of Separation</h3>
+        <p>On Facebook, average separation is ~3.5. Any two people connected through a short chain of friends.</p>
+      </div>
+      <div class="analogy" style="margin-top:10px;">
+        <h3>Directed Social Networks</h3>
+        <p><strong>Twitter/Instagram</strong>: follow without being followed back = <em>directed graph</em>. In-degree = followers. Out-degree = following.</p>
+      </div>
+      <div id="s16Stats" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem 0.8rem;font-family:monospace;font-size:0.8em;color:#94a3b8;margin-top:10px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS16'),ctx=canvas.getContext('2d');
+  const people=[
+    {id:'Alice',x:100,y:60,c:'#6366f1'},{id:'Bob',x:260,y:40,c:'#a78bfa'},
+    {id:'Carol',x:420,y:80,c:'#f472b6'},{id:'Dave',x:450,y:220,c:'#22c55e'},
+    {id:'Eve',x:80,y:180,c:'#38bdf8'},{id:'Frank',x:260,y:170,c:'#f59e0b'},
+    {id:'Grace',x:360,y:300,c:'#ef4444'}
+  ];
+  const friends=[[0,1],[1,2],[1,5],[0,4],[2,3],[4,5],[5,6],[3,6],[1,4]];
+  let selA=-1,selB=-1,pathEdges=null;
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    friends.forEach(([a,b])=>{
+      const onP=pathEdges&&pathEdges.some(([pa,pb])=>(pa===a&&pb===b)||(pa===b&&pb===a));
+      ctx.beginPath();ctx.moveTo(people[a].x,people[a].y);ctx.lineTo(people[b].x,people[b].y);
+      ctx.strokeStyle=onP?'#22c55e':'#334155';ctx.lineWidth=onP?4:2;ctx.stroke();
+    });
+    people.forEach((p,i)=>{
+      const isSel=(i===selA||i===selB);
+      const onP=pathEdges&&pathEdges.some(([a,b])=>a===i||b===i);
+      const r=isSel?26:22;
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);
+      ctx.fillStyle=isSel?'#f59e0b':onP?'#22c55e':p.c;ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(p.id,p.x,p.y);
+      // degree
+      const deg=friends.filter(([a,b])=>a===i||b===i).length;
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+      ctx.fillText(deg+' friends',p.x,p.y+r+12);
+    });
+    // stats
+    const degs=people.map((_,i)=>friends.filter(([a,b])=>a===i||b===i).length);
+    const maxD=Math.max(...degs);const hub=people[degs.indexOf(maxD)].id;
+    document.getElementById('s16Stats').innerHTML='|V| = '+people.length+' people &nbsp; |E| = '+friends.length+' friendships &nbsp; Most connected: <strong style="color:#f59e0b;">'+hub+'</strong> ('+maxD+' friends)';
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width),my=(e.clientY-rect.top)*(340/rect.height);
+    let clicked=-1;
+    for(let i=0;i<people.length;i++)if(Math.hypot(mx-people[i].x,my-people[i].y)<26){clicked=i;break;}
+    if(clicked<0)return;
+    pathEdges=null;
+    if(selA<0){selA=clicked;}else if(selB<0&&clicked!==selA){selB=clicked;}else{selA=clicked;selB=-1;}
+    draw();
+    if(selA>=0&&selB<0)document.getElementById('s16Log').innerHTML='Selected: <span style="color:#f59e0b;">'+people[selA].id+'</span> — click another person';
+    else if(selA>=0&&selB>=0)document.getElementById('s16Log').innerHTML=people[selA].id+' & '+people[selB].id+' — click Degrees of Separation';
+  });
+
+  window.s16Separation=function(){
+    if(selA<0||selB<0)return;
+    // BFS
+    const n=people.length,visited=Array(n).fill(false),prev=Array(n).fill(-1);
+    visited[selA]=true;const q=[selA];
+    while(q.length){
+      const u=q.shift();if(u===selB)break;
+      friends.forEach(([a,b])=>{
+        if(a===u&&!visited[b]){visited[b]=true;prev[b]=u;q.push(b);}
+        if(b===u&&!visited[a]){visited[a]=true;prev[a]=u;q.push(a);}
+      });
+    }
+    pathEdges=[];let c=selB;
+    while(c!==selA&&prev[c]>=0){pathEdges.push([prev[c],c]);c=prev[c];}
+    draw();
+    const names=[people[selA].id];c=selB;const mid=[];
+    while(c!==selA){mid.unshift(people[c].id);c=prev[c];}
+    document.getElementById('s16Log').innerHTML='<span style="color:#22c55e;">'+people[selA].id+' → '+mid.join(' → ')+'</span> &mdash; <strong>'+pathEdges.length+' degree'+(pathEdges.length!==1?'s':'')+' of separation</strong>';
+  };
+  window.s16Reset=function(){selA=-1;selB=-1;pathEdges=null;draw();
+    document.getElementById('s16Log').innerHTML='Click two people to find their degrees of separation';};
+
+  function init(){selA=-1;selB=-1;pathEdges=null;draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s16').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: Challenge - Trace ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Graph Properties</h2>
+  <p>Given the graph below, answer the questions:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cCA" width="520" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="margin-bottom:12px;">
+        <p><strong>1.</strong> What is the degree of vertex C?</p>
+        <select id="sCAq1" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100px;">
+          <option value="">--</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p><strong>2.</strong> Is the graph connected?</p>
+        <select id="sCAq2" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100px;">
+          <option value="">--</option><option value="yes">Yes</option><option value="no">No</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p><strong>3.</strong> &sum; degrees = ?</p>
+        <select id="sCAq3" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100px;">
+          <option value="">--</option><option value="8">8</option><option value="10">10</option><option value="12">12</option><option value="14">14</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p><strong>4.</strong> Does the graph contain a cycle?</p>
+        <select id="sCAq4" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100px;">
+          <option value="">--</option><option value="yes">Yes</option><option value="no">No</option>
+        </select>
+      </div>
+      <button class="btn" onclick="sCACheck()">Check Answers</button>
+      <div id="sCAResult" style="margin-top:10px;font-size:0.9em;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCA'),ctx=canvas.getContext('2d');
+  // Graph: A-B, A-C, B-C, B-D, C-E, D-E, C-D
+  const ns=[{x:80,y:70,id:'A'},{x:260,y:40,id:'B'},{x:260,y:180,id:'C'},{x:440,y:70,id:'D'},{x:440,y:220,id:'E'}];
+  const es=[[0,1],[0,2],[1,2],[1,3],[2,4],[3,4],[2,3]];
+  // deg(A)=2, deg(B)=3, deg(C)=4, deg(D)=3, deg(E)=2 → sum=14, |E|=7, connected=yes, has cycles=yes
+
+  function draw(){
+    ctx.clearRect(0,0,520,280);
+    es.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    });
+    ns.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+    ctx.fillText('|V| = 5    |E| = 7',260,268);
+  }
+
+  // answers: deg(C)=4, connected=yes, sum=14, cycle=yes
+  window.sCACheck=function(){
+    const a1=document.getElementById('sCAq1').value;
+    const a2=document.getElementById('sCAq2').value;
+    const a3=document.getElementById('sCAq3').value;
+    const a4=document.getElementById('sCAq4').value;
+    let score=0;
+    const fb=[];
+    if(a1==='4'){score++;fb.push('<span style="color:#22c55e;">1. Correct!</span> deg(C)=4 (edges to A,B,D,E)');}
+    else fb.push('<span style="color:#ef4444;">1. Wrong.</span> deg(C)=4 — C connects to A, B, D, and E');
+    if(a2==='yes'){score++;fb.push('<span style="color:#22c55e;">2. Correct!</span> Every vertex is reachable from every other.');}
+    else fb.push('<span style="color:#ef4444;">2. Wrong.</span> The graph IS connected — every vertex is reachable.');
+    if(a3==='14'){score++;fb.push('<span style="color:#22c55e;">3. Correct!</span> 2+3+4+3+2=14 = 2×7 = 2|E| ✓');}
+    else fb.push('<span style="color:#ef4444;">3. Wrong.</span> Sum = 2+3+4+3+2 = 14 = 2×|E| = 2×7');
+    if(a4==='yes'){score++;fb.push('<span style="color:#22c55e;">4. Correct!</span> Multiple cycles: A-B-C-A, B-C-D-B, etc.');}
+    else fb.push('<span style="color:#ef4444;">4. Wrong.</span> Yes, cycles exist: A→B→C→A is one.');
+    document.getElementById('sCAResult').innerHTML='<strong>Score: '+score+'/4</strong><br>'+fb.join('<br>');
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sCA').classList.contains('active'))draw();
+  });
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 17: The Internet ==================== -->
+<div class="slide" id="s17">
+  <h2>Application: The Internet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:8px;">
+        <button class="btn btn-sm" onclick="s17Tab('net')" id="s17bNet">Network Topology</button>
+        <button class="btn btn-sm btn-secondary" onclick="s17Tab('web')" id="s17bWeb">World Wide Web</button>
+      </div>
+      <canvas id="cS17" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div id="s17info">
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS17'),ctx=canvas.getContext('2d');
+  let mode='net';
+
+  function drawArrow(x1,y1,x2,y2,color){
+    const angle=Math.atan2(y2-y1,x2-x1);
+    const r=25;
+    const sx=x1+Math.cos(angle)*r,sy=y1+Math.sin(angle)*r;
+    const ex=x2-Math.cos(angle)*r,ey=y2-Math.sin(angle)*r;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ex,ey);
+    ctx.lineTo(ex-10*Math.cos(angle-0.35),ey-10*Math.sin(angle-0.35));
+    ctx.lineTo(ex-10*Math.cos(angle+0.35),ey-10*Math.sin(angle+0.35));
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+
+  function drawNet(){
+    ctx.clearRect(0,0,520,320);
+    const ns=[{x:260,y:50,id:'Router A',c:'#f59e0b'},{x:80,y:160,id:'Host 1',c:'#6366f1'},{x:200,y:160,id:'Host 2',c:'#6366f1'},
+      {x:400,y:130,id:'Router B',c:'#f59e0b'},{x:340,y:250,id:'Host 3',c:'#6366f1'},{x:460,y:250,id:'Router C',c:'#f59e0b'},{x:460,y:320,id:'Host 4',c:'#6366f1'}];
+    const es=[[0,1,15],[0,2,10],[0,3,20],[3,4,5],[3,5,12],[5,6,3]];
+    // edges with weights (bandwidth)
+    es.forEach(([a,b,w])=>{
+      ctx.beginPath();ctx.moveTo(ns[a].x,ns[a].y);ctx.lineTo(ns[b].x,ns[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+      const mx=(ns[a].x+ns[b].x)/2,my=(ns[a].y+ns[b].y)/2;
+      ctx.fillStyle='#f59e0b';ctx.font='bold 10px monospace';ctx.textAlign='center';
+      ctx.fillText(w+'ms',mx+10,my-8);
+    });
+    ns.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=n.c;ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Undirected, Weighted (latency in ms)',260,18);
+  }
+
+  function drawWeb(){
+    ctx.clearRect(0,0,520,320);
+    const ns=[{x:100,y:60,id:'Page A'},{x:300,y:60,id:'Page B'},{x:100,y:200,id:'Page C'},{x:300,y:200,id:'Page D'},{x:200,y:300,id:'Page E'}];
+    const links=[[0,1],[0,2],[1,3],[3,2],[2,4]]; // directed
+    links.forEach(([a,b])=>drawArrow(ns[a].x,ns[a].y,ns[b].x,ns[b].y,'#475569'));
+    ns.forEach((n,i)=>{
+      const inDeg=links.filter(([a,b])=>b===i).length;
+      ctx.beginPath();ctx.arc(n.x,n.y,22+inDeg*3,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+      ctx.fillText('in:'+inDeg,n.x,n.y+30+inDeg*3);
+    });
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Directed, Unweighted — node size ∝ in-degree (PageRank idea)',260,18);
+  }
+
+  function render(){
+    if(mode==='net'){drawNet();}else{drawWeb();}
+    const info=document.getElementById('s17info');
+    if(mode==='net'){
+      info.innerHTML='<h3>Network Topology</h3><p>Vertices = routers/hosts. Edges = network links. Weights = latency/bandwidth.</p>'+
+        '<div class="key-idea"><h3>Key Idea</h3><p>Internet routing is a <strong>shortest-path problem</strong> on a weighted graph. OSPF uses Dijkstra\'s algorithm!</p></div>'+
+        '<div class="analogy" style="margin-top:10px;"><h3>Two Different Graphs</h3><p><strong>Physical Internet</strong>: undirected, weighted (bandwidth). <strong>World Wide Web</strong>: directed, unweighted (hyperlinks). Same system, two different graph models!</p></div>';
+    }else{
+      info.innerHTML='<h3>The World Wide Web</h3><p>Vertices = web pages. Edges = hyperlinks (<strong>directed!</strong>).</p>'+
+        '<div class="key-idea"><h3>PageRank Insight</h3><p>Google treats the web as a <strong>directed graph</strong>. More incoming links (higher in-degree) = more important page. Node sizes above reflect this.</p></div>'+
+        '<div class="warning" style="margin-top:10px;"><h3>Directed Matters!</h3><p>Page A links to Page B does NOT mean B links back to A. Direction matters for web crawling and ranking.</p></div>';
+    }
+  }
+
+  window.s17Tab=function(m){
+    mode=m;render();
+    document.getElementById('s17bNet').style.background=m==='net'?'linear-gradient(135deg,#6366f1,#8b5cf6)':'#334155';
+    document.getElementById('s17bWeb').style.background=m==='web'?'linear-gradient(135deg,#6366f1,#8b5cf6)':'#334155';
+  };
+
+  function init(){mode='net';render();
+    document.getElementById('s17bNet').style.background='linear-gradient(135deg,#6366f1,#8b5cf6)';
+    document.getElementById('s17bWeb').style.background='#334155';}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s17').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s17'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sCB: Fix the Bug ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <p>This code builds an adjacency matrix for an <strong>undirected</strong> graph, but has a bug:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <span class="line">void addEdge(int[][] matrix, int u, int v) {</span>
+          <span class="line active" id="sCBbug">    matrix[u][v] = 1;</span>
+          <span class="line">    // done!</span>
+          <span class="line">}</span>
+        </div>
+      </div>
+      <canvas id="cCB" width="520" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:10px;"></canvas>
+    </div>
+    <div>
+      <p><strong>What&rsquo;s the bug?</strong></p>
+      <select id="sCBans" style="padding:0.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.95em;">
+        <option value="">-- Select the bug --</option>
+        <option value="a">Should use matrix[v][u] instead of matrix[u][v]</option>
+        <option value="b">Missing matrix[v][u] = 1 for symmetry</option>
+        <option value="c">Should check if u == v first</option>
+        <option value="d">Should set to weight instead of 1</option>
+      </select>
+      <button class="btn" style="margin-top:12px;" onclick="sCBCheck()">Check Answer</button>
+      <div id="sCBResult" style="margin-top:12px;font-size:0.9em;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCB'),ctx=canvas.getContext('2d');
+  function draw(showBug){
+    ctx.clearRect(0,0,520,220);
+    const ox=20,oy=10,cw=50,ch=40;
+    const labels=['0','1','2'];
+    // show what happens: addEdge(matrix,0,1)
+    ctx.fillStyle='#38bdf8';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('After addEdge(matrix, 0, 1):',130,oy);
+    for(let j=0;j<3;j++)ctx.fillText(labels[j],ox+60+j*cw+cw/2,oy+20+ch/2);
+    for(let i=0;i<3;i++){
+      ctx.fillText(labels[i],ox+40,oy+20+ch*(i+1)+ch/2);
+      for(let j=0;j<3;j++){
+        const rx=ox+60+j*cw,ry=oy+20+ch*(i+1);
+        const val=(i===0&&j===1)?1:0;
+        const isBug=(i===0&&j===1);
+        const isMissing=(i===1&&j===0);
+        ctx.fillStyle=isBug?'rgba(34,197,94,0.2)':isMissing&&showBug?'rgba(239,68,68,0.2)':'rgba(0,0,0,0.15)';
+        ctx.fillRect(rx,ry,cw,ch);ctx.strokeStyle='#334155';ctx.lineWidth=1;ctx.strokeRect(rx,ry,cw,ch);
+        ctx.fillStyle=val?'#22c55e':isMissing&&showBug?'#ef4444':'#64748b';
+        ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(val?'1':'0',rx+cw/2,ry+ch/2);
+      }
+    }
+    // graph illustration
+    const gx=350;
+    ctx.beginPath();ctx.moveTo(gx,60);ctx.lineTo(gx+100,60);
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=3;ctx.stroke();
+    // arrow only one way
+    ctx.beginPath();ctx.moveTo(gx+100,60);ctx.lineTo(gx+90,55);ctx.lineTo(gx+90,65);ctx.closePath();ctx.fillStyle='#22c55e';ctx.fill();
+    if(showBug){
+      ctx.fillStyle='#ef4444';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Missing!',gx+50,110);
+      ctx.beginPath();ctx.moveTo(gx+100,90);ctx.lineTo(gx,90);
+      ctx.strokeStyle='#ef4444';ctx.lineWidth=2;ctx.setLineDash([5,5]);ctx.stroke();ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(gx,90);ctx.lineTo(gx+10,85);ctx.lineTo(gx+10,95);ctx.closePath();ctx.fillStyle='#ef4444';ctx.fill();
+    }
+    // nodes
+    [gx,gx+100].forEach((x,i)=>{
+      ctx.beginPath();ctx.arc(x,i===0?60:60,18,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],x,60);
+    });
+    if(showBug){
+      ctx.fillStyle='#ef4444';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+      ctx.fillText('BUG: Only set A[0][1]=1',gx-30,150);
+      ctx.fillStyle='#22c55e';ctx.font='bold 12px sans-serif';
+      ctx.fillText('FIX: Also set A[1][0]=1',gx-30,175);
+      ctx.fillText('(undirected = symmetric matrix)',gx-30,195);
+    }
+  }
+
+  window.sCBCheck=function(){
+    const ans=document.getElementById('sCBans').value;
+    const res=document.getElementById('sCBResult');
+    if(ans==='b'){
+      res.innerHTML='<span style="color:#22c55e;"><strong>Correct!</strong></span> For undirected graphs, the matrix must be symmetric. We need <code>matrix[v][u] = 1</code> too. The fixed code:<br><code>matrix[u][v] = 1; matrix[v][u] = 1;</code>';
+      draw(true);
+    }else if(ans){
+      res.innerHTML='<span style="color:#ef4444;">Not quite.</span> Think: what property must an adjacency matrix have for an <em>undirected</em> graph? The matrix must be <strong>symmetric</strong>.';
+      draw(false);
+    }
+  };
+
+  function init(){draw(false);}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sCB').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 18: Maps and Navigation ==================== -->
+<div class="slide" id="s18">
+  <h2>Application: Maps and Navigation</h2>
+  <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS18" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s18FindPath()">Find Shortest Route</button>
+        <button class="btn btn-sm" onclick="s18StepThrough()">Step Through</button>
+        <button class="btn btn-sm btn-secondary" onclick="s18Reset()">Reset</button>
+      </div>
+      <div id="s18Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem 0.8rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:8px;max-height:60px;overflow-y:auto;">
+        Click two locations to select start &amp; end
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Every time you use Google Maps, you run a <strong>shortest-path algorithm</strong> on a massive weighted graph with millions of vertices.</p>
+      </div>
+      <div id="s18Routes" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;margin-top:12px;font-family:monospace;font-size:0.82em;color:#94a3b8;min-height:120px;">
+        Select start and end to compare routes
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS18'),ctx=canvas.getContext('2d');
+  const locs=[
+    {x:120,y:60,id:'Home',c:'#22c55e'},{x:380,y:50,id:'Store',c:'#38bdf8'},
+    {x:80,y:200,id:'Park',c:'#a78bfa'},{x:300,y:170,id:'School',c:'#f59e0b'},
+    {x:450,y:200,id:'Library',c:'#f472b6'},{x:80,y:330,id:'Gym',c:'#ef4444'},{x:400,y:330,id:'Cafe',c:'#6366f1'}
+  ];
+  const roads=[[0,1,5],[0,2,3],[0,3,8],[1,4,2],[2,5,6],[3,4,4],[5,6,7],[4,6,3],[1,3,6]];
+  let selA=-1,selB=-1,pathEdges=null,stepData=null,timer=null;
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    roads.forEach(([a,b,w],ei)=>{
+      const onP=pathEdges&&pathEdges.some(([pa,pb])=>(pa===a&&pb===b)||(pa===b&&pb===a));
+      const isStep=stepData&&stepData.visited.has(a)&&stepData.visited.has(b)&&roads.some(([ra,rb])=>(ra===a&&rb===b)||(ra===b&&rb===a));
+      ctx.beginPath();ctx.moveTo(locs[a].x,locs[a].y);ctx.lineTo(locs[b].x,locs[b].y);
+      ctx.strokeStyle=onP?'#22c55e':isStep?'rgba(99,102,241,0.4)':'#334155';ctx.lineWidth=onP?4:2;ctx.stroke();
+      const mx=(locs[a].x+locs[b].x)/2,my=(locs[a].y+locs[b].y)/2;
+      const angle=Math.atan2(locs[b].y-locs[a].y,locs[b].x-locs[a].x);
+      ctx.fillStyle=onP?'#4ade80':'#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText(w+'mi',mx-Math.sin(angle)*14,my+Math.cos(angle)*14);
+    });
+    locs.forEach((l,i)=>{
+      const isSel=(i===selA||i===selB);
+      const onP=pathEdges&&pathEdges.some(([a,b])=>a===i||b===i);
+      const isVisited=stepData&&stepData.visited.has(i);
+      const isCurrent=stepData&&stepData.current===i;
+      ctx.beginPath();ctx.arc(l.x,l.y,22,0,Math.PI*2);
+      ctx.fillStyle=isCurrent?'#f59e0b':isSel?'#f59e0b':onP?'#22c55e':isVisited?'rgba(99,102,241,0.6)':l.c;
+      ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(l.id,l.x,l.y);
+      if(stepData&&stepData.dist[i]<Infinity){
+        ctx.fillStyle='#e2e8f0';ctx.font='bold 10px monospace';
+        ctx.fillText('d='+stepData.dist[i],l.x,l.y-30);
+      }
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width),my=(e.clientY-rect.top)*(370/rect.height);
+    let clicked=-1;
+    for(let i=0;i<locs.length;i++)if(Math.hypot(mx-locs[i].x,my-locs[i].y)<24){clicked=i;break;}
+    if(clicked<0)return;
+    pathEdges=null;stepData=null;if(timer){clearInterval(timer);timer=null;}
+    if(selA<0){selA=clicked;}else if(selB<0&&clicked!==selA){selB=clicked;}else{selA=clicked;selB=-1;}
+    draw();
+    if(selA>=0&&selB<0)document.getElementById('s18Log').innerHTML='Start: <span style="color:#f59e0b;">'+locs[selA].id+'</span>';
+    else if(selA>=0&&selB>=0)document.getElementById('s18Log').innerHTML=locs[selA].id+' → '+locs[selB].id+' — click Find Shortest Route';
+  });
+
+  function dijkstra(src){
+    const n=locs.length;
+    const dist=Array(n).fill(Infinity),prev=Array(n).fill(-1),visited=new Set();
+    dist[src]=0;
+    const steps=[];
+    for(let iter=0;iter<n;iter++){
+      let u=-1;
+      for(let v=0;v<n;v++)if(!visited.has(v)&&(u<0||dist[v]<dist[u]))u=v;
+      if(u<0||dist[u]===Infinity)break;
+      visited.add(u);
+      steps.push({current:u,dist:[...dist],visited:new Set(visited)});
+      roads.forEach(([a,b,w])=>{
+        if(a===u&&dist[u]+w<dist[b]){dist[b]=dist[u]+w;prev[b]=u;}
+        if(b===u&&dist[u]+w<dist[a]){dist[a]=dist[u]+w;prev[a]=u;}
+      });
+    }
+    return {dist,prev,steps};
+  }
+
+  function buildPath(prev,src,dst){
+    const pe=[];let c=dst;
+    while(c!==src&&prev[c]>=0){pe.push([prev[c],c]);c=prev[c];}
+    return pe;
+  }
+
+  window.s18FindPath=function(){
+    if(selA<0||selB<0)return;
+    if(timer){clearInterval(timer);timer=null;}stepData=null;
+    const {dist,prev}=dijkstra(selA);
+    pathEdges=buildPath(prev,selA,selB);
+    draw();
+    const names=[];let c=selB;while(c>=0){names.unshift(locs[c].id);if(c===selA)break;c=prev[c];}
+    document.getElementById('s18Log').innerHTML='<span style="color:#22c55e;">Shortest: '+names.join(' → ')+' = '+dist[selB]+' mi</span>';
+    // show all routes
+    const routeDiv=document.getElementById('s18Routes');
+    routeDiv.innerHTML='<strong style="color:#22c55e;">Optimal: '+names.join('→')+' = '+dist[selB]+' mi</strong><br>';
+  };
+
+  window.s18StepThrough=function(){
+    if(selA<0||selB<0)return;
+    if(timer){clearInterval(timer);timer=null;}
+    pathEdges=null;
+    const {dist,prev,steps}=dijkstra(selA);
+    let si=0;
+    document.getElementById('s18Log').innerHTML='Running Dijkstra from '+locs[selA].id+'...';
+    timer=setInterval(()=>{
+      if(si>=steps.length){
+        clearInterval(timer);timer=null;
+        pathEdges=buildPath(prev,selA,selB);
+        stepData=null;draw();
+        const names=[];let c=selB;while(c>=0){names.unshift(locs[c].id);if(c===selA)break;c=prev[c];}
+        document.getElementById('s18Log').innerHTML='<span style="color:#22c55e;">Done! '+names.join(' → ')+' = '+dist[selB]+' mi</span>';
+        return;
+      }
+      stepData=steps[si];draw();
+      document.getElementById('s18Log').innerHTML='Visit <strong style="color:#f59e0b;">'+locs[steps[si].current].id+'</strong> (dist='+steps[si].dist[steps[si].current]+') — update neighbors';
+      si++;
+    },900);
+  };
+
+  window.s18Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    selA=-1;selB=-1;pathEdges=null;stepData=null;draw();
+    document.getElementById('s18Log').innerHTML='Click two locations to select start & end';
+    document.getElementById('s18Routes').innerHTML='Select start and end to compare routes';
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}selA=-1;selB=-1;pathEdges=null;stepData=null;draw();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s18').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sCC: Pick Representation ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Pick the Representation</h2>
+  <p>For each scenario, choose the best graph representation:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.8rem;">
+    <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:1rem;" id="sCCbox0">
+      <p style="font-size:0.95em;"><strong>1.</strong> Social network with 1M users, avg 200 friends each. Need to quickly list a user&rsquo;s friends.</p>
+      <select id="sCCq0" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:6px;">
+        <option value="">-- Pick --</option><option value="matrix">Adjacency Matrix</option><option value="list">Adjacency List</option><option value="edge">Edge List</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:1rem;" id="sCCbox1">
+      <p style="font-size:0.95em;"><strong>2.</strong> Dense flight network (50 airports, most have direct flights). Need O(1) "is there a direct flight?" check.</p>
+      <select id="sCCq1" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:6px;">
+        <option value="">-- Pick --</option><option value="matrix">Adjacency Matrix</option><option value="list">Adjacency List</option><option value="edge">Edge List</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:1rem;" id="sCCbox2">
+      <p style="font-size:0.95em;"><strong>3.</strong> Building a Minimum Spanning Tree with Kruskal&rsquo;s algorithm (sort edges by weight, process one at a time).</p>
+      <select id="sCCq2" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:6px;">
+        <option value="">-- Pick --</option><option value="matrix">Adjacency Matrix</option><option value="list">Adjacency List</option><option value="edge">Edge List</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:1rem;" id="sCCbox3">
+      <p style="font-size:0.95em;"><strong>4.</strong> Web crawler visiting pages and following links. Need to efficiently iterate all outgoing links from current page.</p>
+      <select id="sCCq3" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:6px;">
+        <option value="">-- Pick --</option><option value="matrix">Adjacency Matrix</option><option value="list">Adjacency List</option><option value="edge">Edge List</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCResult" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;margin-top:10px;font-size:0.88em;display:none;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers=['list','matrix','edge','list'];
+  const explanations=[
+    'Adjacency List — sparse graph (200 out of 1M possible neighbors), need O(deg) neighbor iteration, and O(V+E) space is critical at this scale.',
+    'Adjacency Matrix — dense graph (50 airports is small), O(1) edge check is the key requirement.',
+    'Edge List — Kruskal\'s sorts and processes edges one by one. Edge list is the natural representation for edge-centric algorithms.',
+    'Adjacency List — web pages are sparse (few outgoing links per page), and we need efficient neighbor iteration for crawling.'
+  ];
+  window.sCCCheck=function(){
+    let score=0;
+    for(let i=0;i<4;i++){
+      const val=document.getElementById('sCCq'+i).value;
+      const box=document.getElementById('sCCbox'+i);
+      if(val===answers[i]){score++;box.style.borderLeft='4px solid #22c55e';}
+      else if(val){box.style.borderLeft='4px solid #ef4444';}
+    }
+    const res=document.getElementById('sCCResult');
+    res.style.display='block';
+    res.innerHTML='<strong>Score: '+score+'/4</strong><br><br>'+
+      explanations.map((e,i)=>'<strong>'+(i+1)+'.</strong> '+e).join('<br><br>');
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 19: Preview Graph Algorithms ==================== -->
+<div class="slide" id="s19">
+  <h2>Preview: Graph Algorithms</h2>
+  <p>Now that you understand graph structure, here&rsquo;s what&rsquo;s coming next:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>BFS (Breadth-First Search)</h3>
+      <canvas id="cS19bfs" width="250" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="font-size:0.85em;color:#94a3b8;margin-top:4px;">Explore level by level (like ripples). Uses a <strong>QUEUE</strong>. Finds shortest path in unweighted graphs.</p>
+      <h3 style="margin-top:12px;">Dijkstra&rsquo;s Shortest Path</h3>
+      <p style="font-size:0.85em;color:#94a3b8;">Find shortest weighted path from source to all others. Uses a <strong>priority queue</strong>.</p>
+    </div>
+    <div>
+      <h3>DFS (Depth-First Search)</h3>
+      <canvas id="cS19dfs" width="250" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="font-size:0.85em;color:#94a3b8;margin-top:4px;">Explore as deep as possible first. Uses a <strong>STACK</strong> (or recursion). Detects cycles, topological sort.</p>
+      <h3 style="margin-top:12px;">Topological Sort</h3>
+      <p style="font-size:0.85em;color:#94a3b8;">Order vertices so all edges point "forward." Only works on <strong>DAGs</strong>.</p>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:8px;">
+    <button class="btn btn-sm" onclick="s19Animate()">Animate Both</button>
+    <button class="btn btn-sm btn-secondary" onclick="s19Reset()">Reset</button>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const cb=document.getElementById('cS19bfs'),ctxb=cb.getContext('2d');
+  const cd=document.getElementById('cS19dfs'),ctxd=cd.getContext('2d');
+  const ns=[{x:125,y:25,id:'A'},{x:50,y:80,id:'B'},{x:200,y:80,id:'C'},{x:25,y:145,id:'D'},{x:100,y:145,id:'E'},{x:175,y:145,id:'F'}];
+  const es=[[0,1],[0,2],[1,3],[1,4],[2,5]];
+  // BFS order: A(0), B(1), C(1), D(2), E(2), F(2)
+  const bfsOrder=[0,1,2,3,4,5];
+  const bfsLevels=[0,1,1,2,2,2];
+  // DFS order: A, B, D, E, C, F
+  const dfsOrder=[0,1,3,4,2,5];
+  let bfsStep=0,dfsStep=0,timer=null;
+  const levelColors=['#6366f1','#38bdf8','#22c55e'];
+
+  function drawGraph(ctx2,w,h,visited,order,useLevels){
+    ctx2.clearRect(0,0,w,h);
+    es.forEach(([a,b])=>{
+      ctx2.beginPath();ctx2.moveTo(ns[a].x,ns[a].y);ctx2.lineTo(ns[b].x,ns[b].y);
+      ctx2.strokeStyle='#334155';ctx2.lineWidth=2;ctx2.stroke();
+    });
+    ns.forEach((n,i)=>{
+      const vIdx=visited.indexOf(i);
+      const isVisited=vIdx>=0;
+      ctx2.beginPath();ctx2.arc(n.x,n.y,18,0,Math.PI*2);
+      if(isVisited){
+        if(useLevels)ctx2.fillStyle=levelColors[bfsLevels[i]]||'#6366f1';
+        else ctx2.fillStyle='#6366f1';
+      }else{ctx2.fillStyle='#334155';}
+      ctx2.fill();ctx2.strokeStyle=isVisited?'#818cf8':'#475569';ctx2.lineWidth=2;ctx2.stroke();
+      ctx2.fillStyle='#fff';ctx2.font='bold 12px monospace';ctx2.textAlign='center';ctx2.textBaseline='middle';
+      ctx2.fillText(n.id,n.x,n.y);
+      if(isVisited){
+        ctx2.fillStyle='#f59e0b';ctx2.font='bold 10px monospace';
+        ctx2.fillText(''+(vIdx+1),n.x+22,n.y-12);
+      }
+    });
+  }
+
+  function render(){
+    const bfsVis=bfsOrder.slice(0,bfsStep);
+    const dfsVis=dfsOrder.slice(0,dfsStep);
+    drawGraph(ctxb,250,180,bfsVis,bfsOrder,true);
+    drawGraph(ctxd,250,180,dfsVis,dfsOrder,false);
+    // labels
+    ctxb.fillStyle='#38bdf8';ctxb.font='11px sans-serif';ctxb.textAlign='center';
+    ctxb.fillText('Level by level (Queue)',125,175);
+    ctxd.fillStyle='#a78bfa';ctxd.font='11px sans-serif';ctxd.textAlign='center';
+    ctxd.fillText('Go deep first (Stack)',125,175);
+  }
+
+  window.s19Animate=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    bfsStep=0;dfsStep=0;render();
+    timer=setInterval(()=>{
+      if(bfsStep<=6)bfsStep++;
+      if(dfsStep<=6)dfsStep++;
+      render();
+      if(bfsStep>6&&dfsStep>6){clearInterval(timer);timer=null;}
+    },700);
+  };
+  window.s19Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    bfsStep=0;dfsStep=0;render();
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}bfsStep=0;dfsStep=0;render();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s19').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('s19'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 20: Summary ==================== -->
+<div class="slide" id="s20">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS20" width="520" height="400" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <table style="border-collapse:collapse;width:100%;font-size:0.85em;">
+        <tr>
+          <th style="border:1px solid #475569;padding:7px;background:#334155;color:#93c5fd;"></th>
+          <th style="border:1px solid #475569;padding:7px;background:#334155;color:#93c5fd;">Matrix</th>
+          <th style="border:1px solid #475569;padding:7px;background:#334155;color:#93c5fd;">Adj List</th>
+          <th style="border:1px solid #475569;padding:7px;background:#334155;color:#93c5fd;">Edge List</th>
+        </tr>
+        <tr><td style="border:1px solid #475569;padding:7px;background:#1e293b;"><strong>Space</strong></td><td style="border:1px solid #475569;padding:7px;background:#1e293b;">O(V<sup>2</sup>)</td><td style="border:1px solid #475569;padding:7px;background:#1e293b;color:#34d399;">O(V+E)</td><td style="border:1px solid #475569;padding:7px;background:#1e293b;color:#34d399;">O(E)</td></tr>
+        <tr><td style="border:1px solid #475569;padding:7px;background:#1e293b;"><strong>Edge check</strong></td><td style="border:1px solid #475569;padding:7px;background:#1e293b;color:#34d399;">O(1)</td><td style="border:1px solid #475569;padding:7px;background:#1e293b;">O(deg)</td><td style="border:1px solid #475569;padding:7px;background:#1e293b;">O(E)</td></tr>
+        <tr><td style="border:1px solid #475569;padding:7px;background:#1e293b;"><strong>Add edge</strong></td><td style="border:1px solid #475569;padding:7px;background:#1e293b;color:#34d399;">O(1)</td><td style="border:1px solid #475569;padding:7px;background:#1e293b;color:#34d399;">O(1)</td><td style="border:1px solid #475569;padding:7px;background:#1e293b;color:#34d399;">O(1)</td></tr>
+        <tr><td style="border:1px solid #475569;padding:7px;background:#1e293b;"><strong>Neighbors</strong></td><td style="border:1px solid #475569;padding:7px;background:#1e293b;">O(V)</td><td style="border:1px solid #475569;padding:7px;background:#1e293b;color:#34d399;">O(deg)</td><td style="border:1px solid #475569;padding:7px;background:#1e293b;">O(E)</td></tr>
+        <tr><td style="border:1px solid #475569;padding:7px;background:rgba(59,130,246,0.15);"><strong>Best for</strong></td><td style="border:1px solid #475569;padding:7px;background:rgba(59,130,246,0.15);">Dense</td><td style="border:1px solid #475569;padding:7px;background:rgba(59,130,246,0.15);">Sparse (default)</td><td style="border:1px solid #475569;padding:7px;background:rgba(59,130,246,0.15);">Edge proc.</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Takeaway</h3>
+        <p>Graphs model <strong>connections</strong>. Choose representation by density &amp; operations needed. <strong>Adjacency list</strong> is the go-to default.</p>
+      </div>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Coming Up Next</h3>
+        <p>BFS, DFS, shortest paths, and topological sort &mdash; algorithms that unlock the true power of graphs.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS20'),ctx=canvas.getContext('2d');
+
+  function draw(){
+    ctx.clearRect(0,0,520,400);
+    // Title
+    ctx.fillStyle='#38bdf8';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Graph Essentials',260,25);
+
+    // G=(V,E) box
+    ctx.fillStyle='rgba(99,102,241,0.15)';
+    ctx.fillRect(20,40,480,50);ctx.strokeStyle='#6366f1';ctx.lineWidth=1;ctx.strokeRect(20,40,480,50);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';
+    ctx.fillText('G = (V, E)     Directed / Undirected     Weighted / Unweighted',260,68);
+
+    // Formulas
+    ctx.fillStyle='#a5b4fc';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+    ctx.fillText('Key Formulas:',30,115);
+    ctx.fillStyle='#e2e8f0';ctx.font='13px monospace';
+    ctx.fillText('Handshaking:     Σ deg(v) = 2|E|',40,140);
+    ctx.fillText('Max edges (und): V(V-1)/2',40,162);
+    ctx.fillText('Max edges (dir): V(V-1)',40,184);
+    ctx.fillText('Tree edges:      |E| = |V| - 1',40,206);
+
+    // Graph types
+    ctx.fillStyle='#a5b4fc';ctx.font='bold 13px sans-serif';
+    ctx.fillText('Special Graphs:',30,240);
+    const types=[
+      {name:'Complete',x:60,y:270,c:'#6366f1'},
+      {name:'Bipartite',x:170,y:270,c:'#a78bfa'},
+      {name:'DAG',x:280,y:270,c:'#f59e0b'},
+      {name:'Tree',x:390,y:270,c:'#22c55e'}
+    ];
+    types.forEach(t=>{
+      ctx.beginPath();ctx.arc(t.x,t.y,18,0,Math.PI*2);
+      ctx.fillStyle=t.c;ctx.fill();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(t.name,t.x,t.y);
+    });
+
+    // Applications
+    ctx.fillStyle='#a5b4fc';ctx.font='bold 13px sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    ctx.fillText('Applications:',30,315);
+    ctx.fillStyle='#cbd5e1';ctx.font='12px sans-serif';
+    const apps=['Social Networks','Internet/Web','Maps & Navigation','Dependencies (DAG)'];
+    apps.forEach((a,i)=>{
+      ctx.fillText('• '+a,40,338+i*20);
+    });
+  }
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s20').classList.contains('active'))draw();
+  });
+  obs.observe(document.getElementById('s20'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: Quiz ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Test Your Knowledge</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.95em;"><strong>Q1.</strong> A graph has 6 vertices. What&rsquo;s the max number of edges (undirected, no self-loops)?</p>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q1" value="12"> 12</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q1" value="15"> 15</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q1" value="30"> 30</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q1" value="36"> 36</label>
+    </div>
+    <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.95em;"><strong>Q2.</strong> A graph has 8 edges and Σdeg(v)=16. Using the handshaking lemma, this makes sense because:</p>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q2" value="a"> Each edge adds 1 to total degree</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q2" value="b"> Each edge adds 2 to total degree</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q2" value="c"> Degrees are always even</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q2" value="d"> Only works for connected graphs</label>
+    </div>
+    <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.95em;"><strong>Q3.</strong> You need O(1) edge lookup in a graph with 50 vertices and ~1000 edges. Best representation?</p>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q3" value="list"> Adjacency List</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q3" value="matrix"> Adjacency Matrix</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q3" value="edge"> Edge List</label>
+      <label style="display:block;margin:6px 0;font-size:0.9em;"><input type="radio" name="sQ1q3" value="hash"> Hash Map of edges</label>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:12px;font-size:1.1em;"></span>
+  </div>
+  <div id="sQ1Feedback" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:10px;font-size:0.85em;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ1Check=function(){
+    const a1=document.querySelector('input[name="sQ1q1"]:checked');
+    const a2=document.querySelector('input[name="sQ1q2"]:checked');
+    const a3=document.querySelector('input[name="sQ1q3"]:checked');
+    let score=0;const fb=[];
+    if(a1&&a1.value==='15'){score++;fb.push('<span style="color:#22c55e;">Q1: Correct!</span> 6×5/2 = 15');}
+    else fb.push('<span style="color:#ef4444;">Q1:</span> V(V-1)/2 = 6×5/2 = <strong>15</strong>');
+    if(a2&&a2.value==='b'){score++;fb.push('<span style="color:#22c55e;">Q2: Correct!</span> Each edge contributes 1 to each of its 2 endpoints = 2 per edge.');}
+    else fb.push('<span style="color:#ef4444;">Q2:</span> Each edge adds <strong>2</strong> to total degree (one per endpoint). So Σdeg = 2×|E|.');
+    if(a3&&a3.value==='matrix'){score++;fb.push('<span style="color:#22c55e;">Q3: Correct!</span> Matrix gives O(1) lookup. With V=50, only 2500 cells — very affordable.');}
+    else fb.push('<span style="color:#ef4444;">Q3:</span> <strong>Adjacency Matrix</strong> — O(1) lookup, and V=50 means only 2500 cells (acceptable).');
+    document.getElementById('sQ1Score').innerHTML='<strong>'+score+'/3</strong>';
+    document.getElementById('sQ1Feedback').innerHTML=fb.map(f=>'<div style="background:rgba(0,0,0,0.15);border-radius:8px;padding:0.6rem;">'+f+'</div>').join('');
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: Build Adjacency List ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Trace: Build an Adjacency List</h2>
+  <p>Given edges: <strong>(A,B), (B,C), (A,C), (C,D), (D,A)</strong> — build the adjacency list step by step.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cSQ2" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="sQ2Step()">Add Next Edge</button>
+        <button class="btn btn-sm" onclick="sQ2Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ2Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="sQ2Log" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;font-family:monospace;font-size:0.82em;color:#94a3b8;min-height:200px;max-height:300px;overflow-y:auto;">
+        Click "Add Next Edge" to process edges one by one
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cSQ2'),ctx=canvas.getContext('2d');
+  const labels=['A','B','C','D'];
+  const positions=[{x:130,y:60},{x:390,y:60},{x:390,y:250},{x:130,y:250}];
+  const edgesToAdd=[[0,1],[1,2],[0,2],[2,3],[3,0]];
+  let adj=[[],[],[],[]];
+  let addedEdges=[];
+  let stepIdx=0,timer=null;
+
+  function drawGraph(){
+    ctx.clearRect(0,0,520,320);
+    // added edges
+    addedEdges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(positions[a].x,positions[a].y);ctx.lineTo(positions[b].x,positions[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    });
+    // highlight latest edge
+    if(addedEdges.length>0){
+      const [la,lb]=addedEdges[addedEdges.length-1];
+      ctx.beginPath();ctx.moveTo(positions[la].x,positions[la].y);ctx.lineTo(positions[lb].x,positions[lb].y);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.stroke();
+    }
+    // nodes
+    positions.forEach((p,i)=>{
+      ctx.beginPath();ctx.arc(p.x,p.y,22,0,Math.PI*2);
+      ctx.fillStyle='#6366f1';ctx.fill();ctx.strokeStyle='#818cf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],p.x,p.y);
+    });
+    // adjacency list display below graph
+    const oy=290;
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='left';
+    labels.forEach((l,i)=>{
+      const nbStr=adj[i].map(j=>labels[j]).join(' → ');
+      ctx.fillText(l+': '+(nbStr||'(empty)'),20+i*130,oy+20);
+    });
+  }
+
+  function updateLog(){
+    const log=document.getElementById('sQ2Log');
+    let html='';
+    for(let i=0;i<stepIdx;i++){
+      const [a,b]=edgesToAdd[i];
+      html+='<div style="margin-bottom:6px;'+(i===stepIdx-1?'color:#f59e0b;':'')+'">'+
+        'Edge ('+labels[a]+','+labels[b]+') → append '+labels[b]+' to list['+labels[a]+'], append '+labels[a]+' to list['+labels[b]+']</div>';
+    }
+    if(stepIdx>=edgesToAdd.length){
+      html+='<br><strong style="color:#22c55e;">Done! Final adjacency list:</strong><br>';
+      labels.forEach((l,i)=>{
+        html+=l+': ['+adj[i].map(j=>labels[j]).join(', ')+']<br>';
+      });
+    }
+    log.innerHTML=html||'Click "Add Next Edge" to process edges one by one';
+  }
+
+  window.sQ2Step=function(){
+    if(stepIdx>=edgesToAdd.length)return;
+    const [a,b]=edgesToAdd[stepIdx];
+    adj[a].push(b);adj[b].push(a);
+    addedEdges.push([a,b]);
+    stepIdx++;
+    drawGraph();updateLog();
+  };
+  window.sQ2Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{
+      if(stepIdx>=edgesToAdd.length){clearInterval(timer);timer=null;return;}
+      sQ2Step();
+    },900);
+  };
+  window.sQ2Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    adj=[[],[],[],[]];addedEdges=[];stepIdx=0;
+    drawGraph();updateLog();
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}adj=[[],[],[],[]];addedEdges=[];stepIdx=0;drawGraph();updateLog();}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sQ2').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: Predict Output ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Predict: What Does This Code Print?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <span class="line" id="sQ3L0">int[][] adj = new int[4][4]; // vertices 0-3</span>
+          <span class="line" id="sQ3L1">adj[0][1]=1; adj[1][0]=1; // edge 0-1</span>
+          <span class="line" id="sQ3L2">adj[0][2]=1; adj[2][0]=1; // edge 0-2</span>
+          <span class="line" id="sQ3L3">adj[1][3]=1; adj[3][1]=1; // edge 1-3</span>
+          <span class="line" id="sQ3L4">adj[2][3]=1; adj[3][2]=1; // edge 2-3</span>
+          <span class="line" id="sQ3L5"> </span>
+          <span class="line" id="sQ3L6">int count = 0;</span>
+          <span class="line" id="sQ3L7">for (int i = 0; i < 4; i++)</span>
+          <span class="line" id="sQ3L8">  for (int j = 0; j < 4; j++)</span>
+          <span class="line" id="sQ3L9">    if (adj[i][j] == 1) count++;</span>
+          <span class="line" id="sQ3L10"> </span>
+          <span class="line" id="sQ3L11">System.out.println(count);</span>
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:0.95em;">What value is printed?</p>
+      <div style="display:flex;gap:0.5rem;align-items:center;margin-top:6px;">
+        <input type="text" id="sQ3ans" placeholder="?" style="width:60px;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:1.1em;text-align:center;">
+        <button class="btn btn-sm" onclick="sQ3Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ3Trace()">Show Trace</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ3Reset()">Reset</button>
+      </div>
+      <div id="sQ3Result" style="margin-top:10px;font-size:0.9em;"></div>
+    </div>
+    <div>
+      <canvas id="cSQ3" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cSQ3'),ctx=canvas.getContext('2d');
+  const matrix=[[0,1,1,0],[1,0,0,1],[1,0,0,1],[0,1,1,0]];
+  let hlCell=null,traceStep=-1,timer=null;
+  // trace: iterate all i,j, count 1s → answer is 8 (4 edges × 2 for symmetry)
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    const ox=100,oy=30,cw=65,ch=50;
+    ctx.fillStyle='#38bdf8';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    for(let j=0;j<4;j++)ctx.fillText(j+'',ox+j*cw+cw/2,oy+ch/2);
+    let count=0,scannedTo=-1;
+    if(traceStep>=0)scannedTo=traceStep;
+    let cellIdx=0;
+    for(let i=0;i<4;i++){
+      const ry=oy+ch*(i+1);
+      ctx.fillStyle='#38bdf8';ctx.font='bold 14px monospace';ctx.textAlign='center';
+      ctx.fillText(i+'',ox-30,ry+ch/2);
+      for(let j=0;j<4;j++){
+        const rx=ox+j*cw;
+        const isScanned=(traceStep>=0&&cellIdx<=scannedTo);
+        const isCurrent=(traceStep>=0&&cellIdx===scannedTo);
+        if(isScanned&&matrix[i][j])count++;
+        ctx.fillStyle=isCurrent?(matrix[i][j]?'rgba(34,197,94,0.4)':'rgba(239,68,68,0.15)'):isScanned?'rgba(99,102,241,0.1)':matrix[i][j]?'rgba(99,102,241,0.2)':'rgba(0,0,0,0.15)';
+        ctx.fillRect(rx,ry,cw,ch);
+        ctx.strokeStyle=isCurrent?'#f59e0b':'#334155';ctx.lineWidth=isCurrent?2:1;ctx.strokeRect(rx,ry,cw,ch);
+        ctx.fillStyle=matrix[i][j]?'#22c55e':'#64748b';
+        ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(matrix[i][j]+'',rx+cw/2,ry+ch/2);
+        cellIdx++;
+      }
+    }
+    // count display
+    ctx.fillStyle='#f59e0b';ctx.font='bold 18px monospace';ctx.textAlign='center';
+    if(traceStep>=0)ctx.fillText('count = '+count,260,oy+ch*5+20);
+    // explanation
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('4 edges × 2 (symmetric) = 8 ones in the matrix',260,oy+ch*5+50);
+  }
+
+  window.sQ3Check=function(){
+    const ans=document.getElementById('sQ3ans').value.trim();
+    const res=document.getElementById('sQ3Result');
+    if(ans==='8'){
+      res.innerHTML='<span style="color:#22c55e;"><strong>Correct!</strong></span> 4 edges, each stored twice (symmetric matrix) → 8 ones → count = 8.';
+    }else if(ans){
+      res.innerHTML='<span style="color:#ef4444;">Not quite.</span> Hint: the matrix is symmetric. Each undirected edge appears <em>twice</em> in the matrix (A[i][j] and A[j][i]).';
+    }
+  };
+
+  window.sQ3Trace=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    traceStep=-1;
+    const lines=document.querySelectorAll('[id^="sQ3L"]');
+    lines.forEach(l=>l.classList.remove('active'));
+    let step=0;
+    timer=setInterval(()=>{
+      if(step>15){
+        clearInterval(timer);timer=null;
+        document.getElementById('sQ3L11').classList.add('active');
+        document.getElementById('sQ3Result').innerHTML='<span style="color:#22c55e;">Output: <strong>8</strong></span> — each edge counted twice because A[i][j]=A[j][i]';
+        return;
+      }
+      traceStep=step;draw();
+      const i=Math.floor(step/4),j=step%4;
+      lines.forEach(l=>l.classList.remove('active'));
+      document.getElementById('sQ3L9').classList.add('active');
+      step++;
+    },300);
+  };
+
+  window.sQ3Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    traceStep=-1;draw();
+    document.querySelectorAll('[id^="sQ3L"]').forEach(l=>l.classList.remove('active'));
+    document.getElementById('sQ3Result').innerHTML='';
+    document.getElementById('sQ3ans').value='';
+  };
+
+  function init(){if(timer){clearInterval(timer);timer=null;}traceStep=-1;draw();
+    document.querySelectorAll('[id^="sQ3L"]').forEach(l=>l.classList.remove('active'));}
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sQ3').classList.contains('active'))init();
+  });
+  obs.observe(document.getElementById('sQ3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:100;">
+  <button id="prevBtn" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;" onclick="navigate(-1)">&#9664; Prev</button>
+  <button id="nextBtn" style="background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;" onclick="navigate(1)">Next &#9654;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','s16','sCA','s17','sCB','s18','sCC','s19','s20','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

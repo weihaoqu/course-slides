@@ -1,0 +1,3187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hash Tables - CS205 Data Structures [Enhanced]</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.05); z-index: 200; }
+#progress { height: 100%; width: 0; background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa); transition: width 0.3s; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.3em; margin-bottom: 10px; color: #a5b4fc; }
+p, li { font-size: 1.1em; line-height: 1.7; color: #cbd5e1; margin-bottom: 8px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 24px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', monospace; color: #a5f3fc; font-size: 0.95em; }
+table { border-collapse: collapse; margin: 12px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 8px 14px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(99,102,241,0.2); }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.12)); border-left: 4px solid #6366f1; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.key-idea h3 { color: #818cf8; margin-bottom: 6px; }
+.warning { background: rgba(245,158,11,0.1); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.warning h3 { color: #fbbf24; margin-bottom: 6px; }
+.analogy { background: rgba(16,185,129,0.1); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.analogy h3 { color: #34d399; margin-bottom: 6px; }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 0; margin: 10px 0; overflow: hidden; }
+.code-content { padding: 16px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em; line-height: 1.7; }
+.line { padding: 1px 8px; border-left: 3px solid transparent; }
+.line.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; }
+.btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+.btn-sm { padding: 5px 14px; font-size: 0.82em; }
+.btn-secondary { background: #334155; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 20px; }
+ul li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: TITLE -->
+<!-- ============================================================ -->
+<div class="slide active" id="s1">
+  <div class="center" style="text-align:center;">
+    <h1>Hash Tables</h1>
+    <p class="subtitle">O(1) Average Lookup</p>
+    <canvas id="cS1" width="600" height="240" style="margin:1rem auto;display:block;background:rgba(0,0,0,0.2);border-radius:16px;max-width:100%;"></canvas>
+    <p style="color:#64748b;font-size:0.95em;">CS205 Data Structures &middot; Use arrow keys to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS1'), ctx=canvas.getContext('2d');
+  let frame=0, timer;
+  const keys=['"alice"','"bob"','"carlos"'];
+  const vals=['95','87','72'];
+  const indices=[3,7,0];
+  const colors=['#6366f1','#a78bfa','#f59e0b'];
+
+  function draw(){
+    ctx.clearRect(0,0,600,240);
+    const active=frame%3;
+    // Pipeline
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('KEY',80,20); ctx.fillText('HASH FUNCTION',250,20); ctx.fillText('INDEX',400,20); ctx.fillText('VALUE',530,20);
+
+    // Key box
+    ctx.fillStyle='rgba(99,102,241,0.2)'; ctx.strokeStyle=colors[active]; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(20,30,120,40,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=colors[active]; ctx.font='bold 15px monospace'; ctx.textAlign='center';
+    ctx.fillText(keys[active],80,55);
+
+    // Arrow 1
+    ctx.strokeStyle=colors[active]; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(145,50); ctx.lineTo(170,50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(167,45); ctx.lineTo(175,50); ctx.lineTo(167,55); ctx.fill();
+
+    // Hash function box
+    ctx.fillStyle='rgba(30,41,59,0.8)'; ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(180,30,140,40,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#e2e8f0'; ctx.font='bold 13px monospace';
+    ctx.fillText('hashCode() % N',250,55);
+
+    // Arrow 2
+    ctx.strokeStyle=colors[active]; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(325,50); ctx.lineTo(360,50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(357,45); ctx.lineTo(365,50); ctx.lineTo(357,55); ctx.fill();
+
+    // Index box
+    ctx.fillStyle='rgba(34,197,94,0.2)'; ctx.strokeStyle='#22c55e'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(370,30,60,40,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#22c55e'; ctx.font='bold 18px monospace';
+    ctx.fillText(indices[active],400,56);
+
+    // Arrow 3
+    ctx.strokeStyle='#22c55e'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(435,50); ctx.lineTo(475,50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(472,45); ctx.lineTo(480,50); ctx.lineTo(472,55); ctx.fill();
+
+    // Value box
+    ctx.fillStyle='rgba(245,158,11,0.2)'; ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(485,30,80,40,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 18px monospace';
+    ctx.fillText(vals[active],525,56);
+
+    // Bucket array
+    const bx=100, by=100, bw=50, bh=30;
+    for(let i=0;i<10;i++){
+      const x=bx+i*(bw+4);
+      const isActive=i===indices[active];
+      ctx.fillStyle=isActive?'rgba(99,102,241,0.3)':'rgba(30,41,59,0.5)';
+      ctx.strokeStyle=isActive?colors[active]:'#475569'; ctx.lineWidth=isActive?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x,by,bw,bh,4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=isActive?'#fff':'#64748b'; ctx.font=(isActive?'bold ':'')+' 11px monospace'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+bw/2,by+20);
+    }
+
+    // Operations
+    const ops=['put('+keys[active]+', '+vals[active]+')  →  O(1)','get('+keys[active]+')  →  '+vals[active]+'  O(1)','remove('+keys[active]+')  →  O(1)'];
+    ctx.fillStyle='#38bdf8'; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+    ctx.fillText(ops[frame%3],300,175);
+
+    frame++;
+  }
+
+  function init(){ frame=0; if(timer) clearInterval(timer); timer=setInterval(draw,1200); draw(); }
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s1').classList.contains('active')) init();
+    else { clearInterval(timer); timer=null; }
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: THE PROBLEM -->
+<!-- ============================================================ -->
+<div class="slide" id="s2">
+  <h2>The Problem: Fast Key-Value Access</h2>
+  <p>We want <strong>O(1)</strong> for get, put, and remove. Arrays give O(1) by index — but what if keys are strings?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS2" width="420" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <table style="width:100%;font-size:0.85rem;">
+        <tr><th>Structure</th><th>get</th><th>put</th></tr>
+        <tr><td>Unsorted Array</td><td>O(n)</td><td>O(1)</td></tr>
+        <tr><td>Sorted Array</td><td>O(log n)</td><td>O(n)</td></tr>
+        <tr><td>Linked List</td><td>O(n)</td><td>O(1)</td></tr>
+        <tr><td>BST (balanced)</td><td>O(log n)</td><td>O(log n)</td></tr>
+        <tr class="highlight"><td><strong>Hash Table</strong></td><td><strong>O(1)*</strong></td><td><strong>O(1)*</strong></td></tr>
+      </table>
+      <p style="font-size:0.8rem;color:#94a3b8;">* average case</p>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Key Idea</h3>
+        <p>Convert <em>any</em> key into an array index using a <strong>hash function</strong>, then store the value at that index. Direct access — no searching!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS2'), ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,250);
+    // Array access
+    ctx.fillStyle='#38bdf8'; ctx.font='bold 13px system-ui'; ctx.textAlign='left';
+    ctx.fillText('Array: O(1) by integer index',15,20);
+    ctx.fillStyle='#94a3b8'; ctx.font='13px monospace';
+    ctx.fillText('arr[3] = "hello"    // O(1)',15,42);
+
+    // Divider
+    ctx.strokeStyle='#334155'; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(15,60); ctx.lineTo(405,60); ctx.stroke(); ctx.setLineDash([]);
+
+    // But strings?
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 13px system-ui'; ctx.textAlign='left';
+    ctx.fillText('But what about string keys?',15,82);
+    ctx.fillStyle='#e2e8f0'; ctx.font='13px monospace';
+    ctx.fillText('map["alice"]  = 95    // ???',15,104);
+    ctx.fillText('map["bob"]    = 87    // ???',15,122);
+
+    // Solution arrow
+    ctx.strokeStyle='#334155'; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(15,142); ctx.lineTo(405,142); ctx.stroke(); ctx.setLineDash([]);
+
+    // Hash function solution
+    ctx.fillStyle='#22c55e'; ctx.font='bold 13px system-ui';
+    ctx.fillText('Solution: Hash function converts key → index',15,164);
+
+    // Mini pipeline
+    const steps=[{label:'"alice"',x:30,c:'#6366f1'},{label:'→ hash()',x:130,c:'#94a3b8'},{label:'→ 97429158',x:220,c:'#a78bfa'},{label:'→ % 11',x:320,c:'#94a3b8'},{label:'→ 3',x:375,c:'#22c55e'}];
+    steps.forEach(s=>{
+      ctx.fillStyle=s.c; ctx.font='bold 12px monospace'; ctx.textAlign='left';
+      ctx.fillText(s.label,s.x,190);
+    });
+
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Step 1: Hash Code (key → big integer)    Step 2: Compression (mod N → index)',210,220);
+  }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s2').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: HASH FUNCTION PIPELINE -->
+<!-- ============================================================ -->
+<div class="slide" id="s3">
+  <h2>The Hash Function Pipeline</h2>
+  <p class="subtitle">Two steps: hash code → compression → array index</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS3" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <input type="text" id="s3input" placeholder="type a key" value="alice" style="flex:1;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <input type="number" id="s3n" value="11" min="2" max="31" style="width:55px;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s3Hash()">Hash</button>
+      </div>
+      <div id="s3Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Coat Check Analogy</h3>
+        <p>You hand your coat (key-value pair) to the attendant. They give you a <strong>ticket number</strong> (the hash). When you return, they go <em>directly</em> to the right hook — no searching through all coats.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>Two-Step Pipeline</h3>
+        <p><strong>Step 1 — Hash Code:</strong> Turn the key into a (large) integer.<br>
+        <strong>Step 2 — Compression:</strong> Squeeze that integer into range [0, N-1] using mod N.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS3'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s3Status');
+
+  function polyHash(s){
+    let h=0;
+    for(let i=0;i<s.length;i++) h=h*31+s.charCodeAt(i);
+    return h>>>0; // unsigned
+  }
+
+  function drawPipeline(key,N,hashCode,index){
+    ctx.clearRect(0,0,420,260);
+    const stages=[
+      {label:'Key',val:'"'+key+'"',x:30,w:100,color:'#6366f1'},
+      {label:'Hash Code',val:hashCode.toString(),x:155,w:110,color:'#a78bfa'},
+      {label:'% '+N,val:'',x:285,w:50,color:'#94a3b8'},
+      {label:'Index',val:index.toString(),x:355,w:55,color:'#22c55e'}
+    ];
+
+    const y=40;
+    stages.forEach((s,i)=>{
+      ctx.fillStyle='rgba(30,41,59,0.8)'; ctx.strokeStyle=s.color; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(s.x,y,s.w,50,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#94a3b8'; ctx.font='10px system-ui'; ctx.textAlign='center';
+      ctx.fillText(s.label,s.x+s.w/2,y-6);
+      ctx.fillStyle=s.color; ctx.font='bold '+(s.val.length>10?'11':'14')+'px monospace';
+      ctx.fillText(s.val,s.x+s.w/2,y+30);
+
+      if(i<stages.length-1){
+        const ax=s.x+s.w+5, nx=stages[i+1].x-5;
+        ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(ax,y+25); ctx.lineTo(nx,y+25); ctx.stroke();
+        ctx.fillStyle='#475569';
+        ctx.beginPath(); ctx.moveTo(nx-5,y+20); ctx.lineTo(nx,y+25); ctx.lineTo(nx-5,y+30); ctx.fill();
+      }
+    });
+
+    // Bucket array
+    const bx=20, by=130, bw=35, bh=28;
+    for(let i=0;i<Math.min(N,11);i++){
+      const x=bx+i*(bw+3);
+      const isTarget=i===index;
+      ctx.fillStyle=isTarget?'rgba(34,197,94,0.3)':'rgba(30,41,59,0.5)';
+      ctx.strokeStyle=isTarget?'#22c55e':'#475569'; ctx.lineWidth=isTarget?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x,by,bw,bh,4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=isTarget?'#22c55e':'#64748b'; ctx.font=(isTarget?'bold ':'')+' 10px monospace'; ctx.textAlign='center';
+      ctx.fillText(i,x+bw/2,by+18);
+      if(isTarget){
+        ctx.fillStyle='#22c55e'; ctx.font='bold 10px system-ui';
+        ctx.fillText('▲',x+bw/2,by+bh+14);
+      }
+    }
+    if(N>11){ ctx.fillStyle='#64748b'; ctx.font='11px system-ui'; ctx.textAlign='left'; ctx.fillText('... ('+N+' buckets total)',bx+11*(bw+3),by+18); }
+
+    // Computation detail
+    ctx.fillStyle='#94a3b8'; ctx.font='12px monospace'; ctx.textAlign='left';
+    ctx.fillText('hashCode("'+key+'") = '+hashCode,20,210);
+    ctx.fillText(hashCode+' mod '+N+' = '+index,20,230);
+  }
+
+  window.s3Hash=function(){
+    const key=document.getElementById('s3input').value.trim();
+    const N=parseInt(document.getElementById('s3n').value)||11;
+    if(!key){ status.textContent='Enter a key.'; return; }
+    const hc=polyHash(key);
+    const idx=hc%N;
+    drawPipeline(key,N,hc,idx);
+    status.innerHTML='<span style="color:#22c55e">"'+key+'" → hashCode '+hc+' → index '+idx+' (mod '+N+')</span>';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s3').classList.contains('active')) s3Hash(); });
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  s3Hash();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: HASH FUNCTION REQUIREMENTS -->
+<!-- ============================================================ -->
+<div class="slide" id="s4">
+  <h2>Hash Function Requirements</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Three Requirements</h3>
+      <ul style="font-size:0.95rem;line-height:1.8;">
+        <li><strong>Deterministic</strong> — same key always → same hash. <code>h("alice") = 42</code> now and forever.</li>
+        <li><strong>Uniform Distribution</strong> — spread keys evenly across indices. Avoid clustering.</li>
+        <li><strong>Fast to Compute</strong> — a slow hash defeats the O(1) purpose.</li>
+      </ul>
+
+      <div class="warning" style="margin-top:0.8rem;">
+        <h3>Bad Hash = Linked List</h3>
+        <p>A hash function mapping everything to index 0 turns the table into a linked list — O(n) for everything!</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#a78bfa;margin-bottom:0.5rem;">Compression Methods</h3>
+      <div class="key-idea">
+        <h3>Division Method (Modulo)</h3>
+        <p><code>index = hashCode % N</code></p>
+        <p style="font-size:0.9rem;">Simple, fast. Works best when N is <strong>prime</strong>.</p>
+      </div>
+      <div class="key-idea">
+        <h3>MAD Method (Multiply-Add-Divide)</h3>
+        <p><code>index = ((a·h(k) + b) mod p) mod N</code></p>
+        <p style="font-size:0.9rem;">Where p is prime > N, a > 0. Better distribution — "scrambles" the hash code before compressing.</p>
+      </div>
+
+      <canvas id="cS4" width="380" height="100" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;margin-top:0.5rem;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS4'), ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,380,100);
+    // Good vs bad distribution
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Good hash (uniform)',95,14); ctx.fillText('Bad hash (clustered)',285,14);
+
+    // Good
+    const goodCounts=[2,1,2,1,2,1,2,1];
+    goodCounts.forEach((c,i)=>{
+      const x=10+i*22; const h=c*18;
+      ctx.fillStyle='#22c55e'; ctx.fillRect(x,80-h,18,h);
+      ctx.fillStyle='#64748b'; ctx.font='9px monospace'; ctx.textAlign='center'; ctx.fillText(i,x+9,94);
+    });
+
+    // Bad
+    const badCounts=[8,2,1,0,0,0,1,0];
+    badCounts.forEach((c,i)=>{
+      const x=200+i*22; const h=c*9;
+      ctx.fillStyle=c>3?'#ef4444':'#f59e0b'; ctx.fillRect(x,80-h,18,h);
+      ctx.fillStyle='#64748b'; ctx.font='9px monospace'; ctx.textAlign='center'; ctx.fillText(i,x+9,94);
+    });
+  }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s4').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: HASH CODES FOR TYPES -->
+<!-- ============================================================ -->
+<div class="slide" id="s5">
+  <h2>Hash Codes for Different Types</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Strings: Polynomial Hash</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">h(s) = s[0]·x^(n-1) + s[1]·x^(n-2)</div>
+<div class="line">       + ... + s[n-1]·x^0</div>
+<div class="line"></div>
+<div class="line">// Java uses x = 31</div>
+<div class="line">h("abc") = 'a'·31² + 'b'·31 + 'c'</div>
+<div class="line">         = 97·961 + 98·31 + 99</div>
+<div class="line">         = 96354</div>
+<div class="line"></div>
+<div class="line">// Horner's method (efficient):</div>
+<div class="line">((97 * 31 + 98) * 31 + 99)</div>
+      </div></div>
+
+      <div style="margin-top:0.5rem;">
+        <label style="font-size:0.85rem;color:#cbd5e1;">Try it: </label>
+        <input type="text" id="s5input" value="abc" style="width:100px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s5Compute()">Compute</button>
+        <div id="s5result" style="font-size:0.82rem;color:#94a3b8;margin-top:0.3rem;min-height:1.5em;"></div>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#a78bfa;margin-bottom:0.5rem;">Why Polynomial Hashing?</h3>
+      <ul style="font-size:0.9rem;">
+        <li>Uses <strong>position</strong> of characters, not just content</li>
+        <li><code>"abc"</code> and <code>"cba"</code> get different hashes</li>
+        <li>Java's <code>String.hashCode()</code> uses x = 31</li>
+      </ul>
+
+      <h3 style="color:#f59e0b;margin-top:0.8rem;margin-bottom:0.5rem;">Objects: Combine Field Hashes</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">class Student {</div>
+<div class="line">  String name; int id;</div>
+<div class="line">  int hashCode() {</div>
+<div class="line">    int h = 17;</div>
+<div class="line">    h = 31*h + name.hashCode();</div>
+<div class="line">    h = 31*h + id;</div>
+<div class="line">    return h;</div>
+<div class="line">  }</div>
+<div class="line">}</div>
+      </div></div>
+
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>equals() ↔ hashCode() Contract</h3>
+        <p>If <code>a.equals(b)</code> is true, then <code>a.hashCode() == b.hashCode()</code> must be true. The reverse is not required (collisions are OK).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  window.s5Compute=function(){
+    const s=document.getElementById('s5input').value;
+    if(!s){ document.getElementById('s5result').textContent='Enter a string.'; return; }
+    let h=0, steps=[];
+    for(let i=0;i<s.length;i++){
+      const c=s.charCodeAt(i);
+      h=h*31+c;
+      steps.push("'"+s[i]+"'("+c+")");
+    }
+    h=h>>>0;
+    document.getElementById('s5result').innerHTML='<span style="color:#22c55e">h("'+s+'") = '+h+'</span><br><span style="font-size:0.78rem;">chars: '+steps.join(' → ')+'</span>';
+  };
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: COMPRESSION FUNCTIONS -->
+<!-- ============================================================ -->
+<div class="slide" id="s6">
+  <h2>Compression Functions in Detail</h2>
+  <p class="subtitle">Interactive — try different hash codes and table sizes</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Simple Modulo: h(k) mod N</h3>
+      <canvas id="cS6" width="420" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">
+        <label style="font-size:0.82rem;color:#cbd5e1;">Hash codes:</label>
+        <input type="text" id="s6codes" value="96354,42,10007,555" style="flex:1;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+        <label style="font-size:0.82rem;color:#cbd5e1;">N:</label>
+        <input type="number" id="s6n" value="7" min="2" max="20" style="width:45px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s6Compute()">Compute</button>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Why N Should Be Prime</h3>
+        <p>If N=10 and keys are multiples of 5: {5,10,15,20,25,...} all map to indices {0,5} — only 2 of 10 buckets used! A prime N minimizes such patterns.</p>
+      </div>
+
+      <div class="key-idea">
+        <h3>MAD Method</h3>
+        <p><code>((a·h(k) + b) mod p) mod N</code></p>
+        <p style="font-size:0.9rem;">The multiply-add step "scrambles" hash codes before compression, producing better distribution.</p>
+      </div>
+
+      <div id="s6log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.75rem;margin-top:0.5rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS6'), ctx=canvas.getContext('2d');
+  const log=document.getElementById('s6log');
+  const colors=['#6366f1','#a78bfa','#f59e0b','#22c55e','#38bdf8','#f472b6','#ef4444'];
+
+  window.s6Compute=function(){
+    const codes=document.getElementById('s6codes').value.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+    const N=parseInt(document.getElementById('s6n').value)||7;
+    ctx.clearRect(0,0,420,200);
+    log.innerHTML='';
+
+    // Draw buckets
+    const bw=Math.min(50,(400)/N); const bx=(420-N*bw)/2; const by=100;
+    const buckets=new Array(N).fill(0);
+    const results=[];
+
+    codes.forEach((hc,i)=>{
+      const idx=((hc%N)+N)%N;
+      buckets[idx]++;
+      results.push({hc,idx,color:colors[i%colors.length]});
+      log.innerHTML+='<div>'+hc+' mod '+N+' = <span style="color:'+colors[i%colors.length]+'">'+idx+'</span>'+(buckets[idx]>1?' <span style="color:#ef4444">← collision!</span>':'')+'</div>';
+    });
+
+    // Bars
+    const maxCount=Math.max(...buckets,1);
+    for(let i=0;i<N;i++){
+      const x=bx+i*bw;
+      const h=buckets[i]>0?(buckets[i]/maxCount)*70:0;
+      ctx.fillStyle=buckets[i]>1?'rgba(239,68,68,0.4)':buckets[i]===1?'rgba(99,102,241,0.3)':'rgba(30,41,59,0.5)';
+      ctx.strokeStyle=buckets[i]>1?'#ef4444':buckets[i]===1?'#6366f1':'#475569';
+      ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(x+2,by-h,bw-4,h+30,4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=buckets[i]>0?'#fff':'#64748b'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText(buckets[i]>0?buckets[i]:'',x+bw/2,by-h+15);
+      ctx.fillStyle='#64748b'; ctx.font='10px monospace';
+      ctx.fillText('['+i+']',x+bw/2,by+42);
+    }
+
+    // Labels for each entry
+    results.forEach((r,i)=>{
+      const x=bx+r.idx*bw+bw/2;
+      ctx.fillStyle=r.color; ctx.font='bold 10px monospace'; ctx.textAlign='center';
+      ctx.fillText(r.hc,20+i*100,20);
+      ctx.fillText('→['+r.idx+']',20+i*100,34);
+    });
+
+    const collisions=buckets.filter(b=>b>1).length;
+    ctx.fillStyle=collisions>0?'#f59e0b':'#22c55e'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText(collisions>0?collisions+' collision(s)!':'No collisions!',210,185);
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s6').classList.contains('active')) s6Compute(); });
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  s6Compute();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: COLLISIONS -->
+<!-- ============================================================ -->
+<div class="slide" id="s7">
+  <h2>Collisions Are Inevitable</h2>
+  <p>A <strong>collision</strong> occurs when two different keys map to the same index.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS7" width="420" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Pigeonhole Principle</h3>
+        <p>If you have more keys than array slots, <em>at least</em> two keys must share a slot. Even with fewer keys, collisions are very likely (Birthday Paradox: 23 people → 50% chance two share a birthday).</p>
+      </div>
+
+      <h3 style="color:#f59e0b;margin-top:0.8rem;">Two Main Solutions</h3>
+      <div style="display:flex;gap:1rem;margin-top:0.5rem;">
+        <div style="flex:1;background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:10px;padding:0.8rem;">
+          <p style="font-size:0.9rem;"><strong>1. Separate Chaining</strong></p>
+          <p style="font-size:0.82rem;color:#94a3b8;">Store a linked list at each bucket</p>
+        </div>
+        <div style="flex:1;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:10px;padding:0.8rem;">
+          <p style="font-size:0.9rem;"><strong>2. Open Addressing</strong></p>
+          <p style="font-size:0.82rem;color:#94a3b8;">Find another open slot in the array</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS7'), ctx=canvas.getContext('2d');
+  let frame=0, timer;
+
+  function draw(){
+    ctx.clearRect(0,0,420,220);
+    const bw=50, by=80;
+    // Buckets
+    for(let i=0;i<7;i++){
+      const x=20+i*(bw+8);
+      ctx.fillStyle=i===3?'rgba(239,68,68,0.3)':'rgba(30,41,59,0.5)';
+      ctx.strokeStyle=i===3?'#ef4444':'#475569'; ctx.lineWidth=i===3?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x,by,bw,40,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=i===3?'#fff':'#64748b'; ctx.font='11px monospace'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+bw/2,by+25);
+    }
+
+    // Two keys pointing to index 3
+    const x3=20+3*(bw+8)+bw/2;
+    const pulse=Math.sin(frame*0.15)*5;
+
+    // Alice arrow
+    ctx.fillStyle='#6366f1'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+    ctx.fillText('"alice"',x3-40,30);
+    ctx.strokeStyle='#6366f1'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x3-40,35); ctx.lineTo(x3,by-5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x3-4,by-10); ctx.lineTo(x3,by-2); ctx.lineTo(x3+4,by-10); ctx.fill();
+
+    // Dave arrow
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 13px monospace';
+    ctx.fillText('"dave"',x3+50,30);
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x3+50,35); ctx.lineTo(x3,by-5); ctx.stroke();
+
+    // COLLISION label
+    ctx.fillStyle='#ef4444'; ctx.font='bold '+(14+pulse)+'px system-ui';
+    ctx.fillText('COLLISION!',x3,by+70+pulse);
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui';
+    ctx.fillText('Both keys want slot 3',x3,by+90);
+
+    frame++;
+  }
+
+  function init(){ frame=0; if(timer) clearInterval(timer); timer=setInterval(draw,80); draw(); }
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s7').classList.contains('active')) init();
+    else { clearInterval(timer); timer=null; }
+  });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: Separate Chaining -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s8">
+  <h2>Collision Handling 1: Separate Chaining</h2>
+  <p>Each bucket holds a <strong>linked list</strong> of all entries that hash to that index.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS8" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <input type="number" id="s8input" placeholder="key" style="width:70px;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s8Insert()">Insert</button>
+        <button class="btn btn-sm" onclick="s8Search()">Search</button>
+        <button class="btn btn-sm" onclick="s8Remove()">Remove</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+      <div id="s8Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:90px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Operations</h3>
+      <ul style="font-size:0.88rem;color:#cbd5e1;line-height:1.7;">
+        <li><strong>put(k,v)</strong>: hash k → index i, prepend to list at bucket[i]</li>
+        <li><strong>get(k)</strong>: hash k → index i, search list at bucket[i]</li>
+        <li><strong>remove(k)</strong>: hash k → index i, remove from list at bucket[i]</li>
+      </ul>
+      <div class="key-idea" style="margin-top:1rem;">
+        <h3>Key Idea</h3>
+        <p>The array itself never "fills up." Each bucket can hold unlimited entries. The tradeoff: long chains degrade to O(n) search within that chain.</p>
+      </div>
+      <div class="warning" style="margin-top:0.75rem;">
+        <h3>Load Factor</h3>
+        <p>α = n/N can exceed 1.0 with chaining. Rehash when α > 0.75.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+  const N = 7;
+  let buckets = []; // each bucket is an array of numbers
+
+  function init(){
+    buckets = Array.from({length:N}, ()=>[]);
+    draw();
+  }
+
+  function hash(k){ return ((k % N) + N) % N; }
+
+  function draw(highlightBucket, highlightKey, highlightColor){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const bw = 52, bh = 44, startX = 20, startY = 30;
+    // draw bucket array
+    for(let i=0;i<N;i++){
+      const y = startY + i*bh;
+      const isHL = (i === highlightBucket);
+      ctx.fillStyle = isHL ? 'rgba(99,102,241,0.25)' : 'rgba(30,41,59,0.8)';
+      ctx.strokeStyle = isHL ? '#818cf8' : '#475569';
+      ctx.lineWidth = isHL ? 2 : 1;
+      ctx.beginPath(); ctx.roundRect(startX, y, bw, bh-4, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(i, startX + bw/2, y + bh/2 + 1);
+    }
+    // draw chains
+    for(let i=0;i<N;i++){
+      const y = startY + i*bh;
+      const chain = buckets[i];
+      let cx = startX + bw + 20;
+      for(let j=0;j<chain.length;j++){
+        const nw = 56, nh = 32;
+        const isHLNode = (i === highlightBucket && chain[j] === highlightKey);
+        ctx.fillStyle = isHLNode ? (highlightColor||'#f59e0b') : '#6366f1';
+        ctx.strokeStyle = isHLNode ? '#fbbf24' : '#818cf8';
+        ctx.lineWidth = isHLNode ? 2.5 : 1.5;
+        ctx.beginPath(); ctx.roundRect(cx, y + (bh-4-nh)/2, nw, nh, 6); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(chain[j], cx + nw/2, y + bh/2 + 1);
+        // arrow
+        if(j < chain.length-1){
+          ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(cx+nw, y+bh/2-2); ctx.lineTo(cx+nw+14, y+bh/2-2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cx+nw+10, y+bh/2-6); ctx.lineTo(cx+nw+14, y+bh/2-2); ctx.lineTo(cx+nw+10, y+bh/2+2); ctx.fill();
+        } else {
+          // null
+          ctx.fillStyle = '#64748b'; ctx.font = '11px monospace';
+          ctx.fillText('null', cx+nw+18, y+bh/2+1);
+        }
+        cx += nw + 20;
+      }
+      if(chain.length === 0){
+        ctx.fillStyle = '#64748b'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+        ctx.fillText('null', startX + bw + 14, y + bh/2 + 1);
+      }
+      // arrow from bucket to chain
+      ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(startX+bw, y+bh/2-2); ctx.lineTo(startX+bw+10, y+bh/2-2); ctx.stroke();
+    }
+    // title
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('Separate Chaining (N='+N+', n='+buckets.reduce((s,b)=>s+b.length,0)+')', startX, 20);
+    const alpha = (buckets.reduce((s,b)=>s+b.length,0)/N).toFixed(2);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace';
+    ctx.fillText('α = '+alpha, startX+300, 20);
+  }
+
+  function log(msg){ document.getElementById('s8Log').innerHTML += '<div>'+msg+'</div>'; document.getElementById('s8Log').scrollTop = 9999; }
+
+  window.s8Insert = function(){
+    const val = parseInt(document.getElementById('s8input').value);
+    if(isNaN(val)) return;
+    const idx = hash(val);
+    buckets[idx].unshift(val);
+    log('insert('+val+'): h('+val+') = '+val+' mod '+N+' = '+idx+' → prepend to bucket['+idx+']');
+    draw(idx, val, '#22c55e');
+    document.getElementById('s8input').value = '';
+  };
+  window.s8Search = function(){
+    const val = parseInt(document.getElementById('s8input').value);
+    if(isNaN(val)) return;
+    const idx = hash(val);
+    const found = buckets[idx].includes(val);
+    log('get('+val+'): bucket['+idx+'] → '+(found?'<span style="color:#22c55e">FOUND</span>':'<span style="color:#ef4444">NOT FOUND</span>'));
+    draw(idx, val, found?'#22c55e':'#ef4444');
+  };
+  window.s8Remove = function(){
+    const val = parseInt(document.getElementById('s8input').value);
+    if(isNaN(val)) return;
+    const idx = hash(val);
+    const pos = buckets[idx].indexOf(val);
+    if(pos >= 0){
+      buckets[idx].splice(pos,1);
+      log('remove('+val+'): bucket['+idx+'] → <span style="color:#f59e0b">REMOVED</span>');
+    } else {
+      log('remove('+val+'): bucket['+idx+'] → <span style="color:#ef4444">NOT FOUND</span>');
+    }
+    draw(idx, val, pos>=0?'#f59e0b':'#ef4444');
+  };
+  window.s8Reset = function(){ document.getElementById('s8Log').innerHTML=''; init(); };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s8').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: Separate Chaining Step-by-Step -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s9">
+  <h2>Separate Chaining: Step-by-Step</h2>
+  <p>N = 7, h(k) = k mod 7. Insert: <strong style="color:#f59e0b;">10, 22, 31, 4, 15</strong></p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS9" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s9Step()">Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.82rem;">
+        <div class="code-content">
+          <div class="line" id="s9L1">function put(k):</div>
+          <div class="line" id="s9L2">  idx = h(k) = k mod 7</div>
+          <div class="line" id="s9L3">  bucket[idx].prepend(k)</div>
+        </div>
+      </div>
+      <div id="s9Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:180px;overflow-y:auto;margin-top:0.75rem;color:#94a3b8;"></div>
+      <div id="s9Status" style="margin-top:0.75rem;padding:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;font-size:0.85rem;color:#cbd5e1;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  const N = 7;
+  const keys = [10,22,31,4,15];
+  let buckets, stepIdx, timer;
+
+  function init(){
+    buckets = Array.from({length:N},()=>[]);
+    stepIdx = 0; if(timer) clearInterval(timer); timer=null;
+    document.getElementById('s9Log').innerHTML='';
+    document.getElementById('s9Status').innerHTML='Insert: <strong>10, 22, 31, 4, 15</strong> — press Step';
+    ['s9L1','s9L2','s9L3'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    draw(-1,-1);
+  }
+
+  function draw(hlBucket, hlKey){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const bw=48,bh=42,sx=16,sy=20;
+    for(let i=0;i<N;i++){
+      const y=sy+i*bh;
+      ctx.fillStyle=(i===hlBucket)?'rgba(99,102,241,0.25)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=(i===hlBucket)?'#818cf8':'#475569'; ctx.lineWidth=(i===hlBucket)?2:1;
+      ctx.beginPath();ctx.roundRect(sx,y,bw,bh-4,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#94a3b8';ctx.font='bold 13px monospace';ctx.textAlign='center';
+      ctx.fillText(i,sx+bw/2,y+bh/2+1);
+      // chain
+      let cx=sx+bw+16;
+      for(let j=0;j<buckets[i].length;j++){
+        const nw=50,nh=28,v=buckets[i][j];
+        const isNew=(i===hlBucket&&v===hlKey);
+        ctx.fillStyle=isNew?'#22c55e':'#6366f1';
+        ctx.strokeStyle=isNew?'#4ade80':'#818cf8';
+        ctx.lineWidth=isNew?2.5:1.5;
+        ctx.beginPath();ctx.roundRect(cx,y+(bh-4-nh)/2,nw,nh,5);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';
+        ctx.fillText(v,cx+nw/2,y+bh/2);
+        if(j<buckets[i].length-1){
+          ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;
+          ctx.beginPath();ctx.moveTo(cx+nw,y+bh/2-2);ctx.lineTo(cx+nw+10,y+bh/2-2);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(cx+nw+7,y+bh/2-5);ctx.lineTo(cx+nw+10,y+bh/2-2);ctx.lineTo(cx+nw+7,y+bh/2+1);ctx.fill();
+        } else {
+          ctx.fillStyle='#64748b';ctx.font='10px monospace';
+          ctx.fillText('∅',cx+nw+12,y+bh/2);
+        }
+        cx+=nw+16;
+      }
+      if(buckets[i].length===0){
+        ctx.fillStyle='#64748b';ctx.font='10px monospace';ctx.textAlign='left';
+        ctx.fillText('∅',sx+bw+12,y+bh/2);
+      }
+      ctx.strokeStyle='#64748b';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(sx+bw,y+bh/2-2);ctx.lineTo(sx+bw+8,y+bh/2-2);ctx.stroke();
+    }
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    const n=buckets.reduce((s,b)=>s+b.length,0);
+    ctx.fillText('n='+n+', α='+(n/N).toFixed(2),sx,14);
+  }
+
+  function log(msg){document.getElementById('s9Log').innerHTML+='<div>'+msg+'</div>';document.getElementById('s9Log').scrollTop=9999;}
+
+  window.s9Step = function(){
+    if(stepIdx >= keys.length){
+      document.getElementById('s9Status').innerHTML='<span style="color:#22c55e">✓ All 5 keys inserted!</span>';
+      return;
+    }
+    const k = keys[stepIdx];
+    const idx = k % N;
+    // highlight code
+    ['s9L1','s9L2','s9L3'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    document.getElementById('s9L1').classList.add('active');
+    setTimeout(()=>{
+      document.getElementById('s9L1').classList.remove('active');
+      document.getElementById('s9L2').classList.add('active');
+      log('Step '+(stepIdx+1)+': insert('+k+') → h('+k+') = '+k+' mod '+N+' = '+idx);
+      setTimeout(()=>{
+        document.getElementById('s9L2').classList.remove('active');
+        document.getElementById('s9L3').classList.add('active');
+        const collision = buckets[idx].length > 0;
+        buckets[idx].unshift(k);
+        if(collision) log('  → Collision at bucket['+idx+']! Prepend to chain.');
+        else log('  → Bucket['+idx+'] empty. Insert.');
+        draw(idx, k);
+        stepIdx++;
+        if(stepIdx >= keys.length) document.getElementById('s9Status').innerHTML='<span style="color:#22c55e">✓ All 5 keys inserted! Chains at buckets 1 and 3.</span>';
+        else document.getElementById('s9Status').innerHTML='Next: insert('+keys[stepIdx]+')';
+      },350);
+    },350);
+  };
+  window.s9Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{
+      if(stepIdx>=keys.length){clearInterval(timer);timer=null;return;}
+      s9Step();
+    },1200);
+  };
+  window.s9Reset = function(){ init(); };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s9').classList.contains('active')) init();
+    else{if(timer)clearInterval(timer);timer=null;}
+  });
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: Linear Probing -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s10">
+  <h2>Collision Handling 2: Linear Probing</h2>
+  <p>All entries live <strong>directly in the array</strong>. If the target slot is taken, try the <strong>next</strong> slot.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS10" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <input type="number" id="s10input" placeholder="key" style="width:70px;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s10Insert()">Insert</button>
+        <button class="btn btn-sm" onclick="s10Search()">Search</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.82rem;">
+        <div class="code-content">
+          <div class="line">probe(k, i) = (h(k) + i) mod N</div>
+          <div class="line">i = 0, 1, 2, 3, ...</div>
+        </div>
+      </div>
+      <div class="warning" style="margin-top:1rem;">
+        <h3>Primary Clustering</h3>
+        <p>Occupied slots form long <strong>contiguous runs</strong>. New keys hashing anywhere in the cluster must probe to its end, making it even longer.</p>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <h3>Key Idea</h3>
+        <p>Simple and cache-friendly, but clustering degrades performance as the table fills. Keep α ≤ 0.5 for best results.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+  const N = 11;
+  let table, probeTrail;
+
+  function init(){
+    table = new Array(N).fill(null);
+    probeTrail = [];
+    draw();
+  }
+
+  function hash(k){ return ((k % N) + N) % N; }
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sw=42,sh=50,sx=10,sy=80;
+    // cluster detection
+    const clusters = [];
+    let cstart=-1;
+    for(let i=0;i<=N;i++){
+      if(i<N && table[i]!==null){
+        if(cstart<0) cstart=i;
+      } else {
+        if(cstart>=0 && (i-cstart)>=2){
+          clusters.push([cstart,i-1]);
+        }
+        cstart=-1;
+      }
+    }
+    // draw cluster backgrounds
+    for(const[a,b] of clusters){
+      ctx.fillStyle='rgba(239,68,68,0.08)';
+      ctx.beginPath();ctx.roundRect(sx+a*sw-3,sy-6,(b-a+1)*sw+6,sh+12,8);ctx.fill();
+      ctx.strokeStyle='rgba(239,68,68,0.3)';ctx.lineWidth=1;ctx.stroke();
+      ctx.fillStyle='#ef4444';ctx.font='10px monospace';ctx.textAlign='center';
+      ctx.fillText('cluster',sx+(a+b+1)*sw/2,sy+sh+18);
+    }
+    // draw slots
+    for(let i=0;i<N;i++){
+      const x=sx+i*sw;
+      const isProbed=probeTrail.includes(i);
+      const isLast=probeTrail.length>0&&probeTrail[probeTrail.length-1]===i;
+      ctx.fillStyle=isLast?'rgba(34,197,94,0.3)':isProbed?'rgba(245,158,11,0.2)':
+        table[i]!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isLast?'#22c55e':isProbed?'#f59e0b':table[i]!==null?'#818cf8':'#475569';
+      ctx.lineWidth=isLast||isProbed?2:1;
+      ctx.beginPath();ctx.roundRect(x,sy,sw-2,sh,6);ctx.fill();ctx.stroke();
+      // value
+      ctx.fillStyle=table[i]!==null?'#e2e8f0':'#475569';
+      ctx.font=table[i]!==null?'bold 14px monospace':'12px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(table[i]!==null?table[i]:'—',x+sw/2-1,sy+sh/2+5);
+      // index
+      ctx.fillStyle='#64748b';ctx.font='11px monospace';
+      ctx.fillText(i,x+sw/2-1,sy+sh+14);
+    }
+    // probe arrows
+    if(probeTrail.length>1){
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+      for(let i=0;i<probeTrail.length-1;i++){
+        const x1=sx+probeTrail[i]*sw+sw/2-1;
+        const x2=sx+probeTrail[i+1]*sw+sw/2-1;
+        ctx.beginPath();
+        if(probeTrail[i+1]>probeTrail[i]){
+          ctx.moveTo(x1,sy-10);ctx.lineTo(x2,sy-10);
+        } else {
+          // wrap around
+          ctx.moveTo(x1,sy-18);ctx.lineTo(sx+N*sw-5,sy-18);
+          ctx.moveTo(sx+5,sy-18);ctx.lineTo(x2,sy-18);
+        }
+        ctx.stroke();
+        // arrowhead
+        ctx.beginPath();ctx.moveTo(x2-4,sy-14);ctx.lineTo(x2,sy-10);ctx.lineTo(x2-4,sy-6);
+        ctx.fillStyle='#f59e0b';ctx.fill();
+      }
+    }
+    // header
+    const n=table.filter(v=>v!==null).length;
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Linear Probing (N='+N+', n='+n+', α='+(n/N).toFixed(2)+')',sx,20);
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';
+    ctx.fillText('probe(k,i) = (h(k) + i) mod '+N,sx,38);
+  }
+
+  function log(msg){document.getElementById('s10Log').innerHTML+='<div>'+msg+'</div>';document.getElementById('s10Log').scrollTop=9999;}
+
+  window.s10Insert = function(){
+    const val=parseInt(document.getElementById('s10input').value);
+    if(isNaN(val)) return;
+    const n=table.filter(v=>v!==null).length;
+    if(n>=N){log('<span style="color:#ef4444">Table full!</span>');return;}
+    const h=hash(val); probeTrail=[h];
+    let idx=h, probes=0;
+    while(table[idx]!==null){
+      probes++;idx=(h+probes)%N;probeTrail.push(idx);
+    }
+    table[idx]=val;
+    log('insert('+val+'): h='+h+(probes>0?' → '+probes+' probe(s) → slot '+idx:' → slot '+idx));
+    draw();
+    document.getElementById('s10input').value='';
+    setTimeout(()=>{probeTrail=[];draw();},2000);
+  };
+  window.s10Search = function(){
+    const val=parseInt(document.getElementById('s10input').value);
+    if(isNaN(val)) return;
+    const h=hash(val); probeTrail=[h];
+    let idx=h,probes=0;
+    while(table[idx]!==null && table[idx]!==val){
+      probes++;idx=(h+probes)%N;probeTrail.push(idx);
+      if(probes>=N) break;
+    }
+    const found=table[idx]===val;
+    log('search('+val+'): '+(probes+1)+' probe(s) → '+(found?'<span style="color:#22c55e">FOUND at slot '+idx+'</span>':'<span style="color:#ef4444">NOT FOUND</span>'));
+    draw();
+    setTimeout(()=>{probeTrail=[];draw();},2000);
+  };
+  window.s10Reset = function(){document.getElementById('s10Log').innerHTML='';probeTrail=[];init();};
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s10').classList.contains('active')){probeTrail=[];init();}
+  });
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: Linear Probing Step-by-Step -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s11">
+  <h2>Linear Probing: Step-by-Step</h2>
+  <p>N = 7, h(k) = k mod 7. Insert: <strong style="color:#f59e0b;">10, 22, 31, 4, 15</strong></p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS11" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.82rem;">
+        <div class="code-content">
+          <div class="line" id="s11L1">idx = h(k) = k mod 7</div>
+          <div class="line" id="s11L2">while table[idx] occupied:</div>
+          <div class="line" id="s11L3">  idx = (idx + 1) mod 7</div>
+          <div class="line" id="s11L4">table[idx] = k</div>
+        </div>
+      </div>
+      <div id="s11Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:150px;overflow-y:auto;margin-top:0.75rem;color:#94a3b8;"></div>
+      <div id="s11Status" style="margin-top:0.75rem;padding:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;font-size:0.85rem;color:#cbd5e1;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS11');
+  const ctx=canvas.getContext('2d');
+  const N=7, keys=[10,22,31,4,15];
+  let table, stepIdx, timer, probeHL;
+
+  function init(){
+    table=new Array(N).fill(null); stepIdx=0;
+    if(timer)clearInterval(timer);timer=null; probeHL=[];
+    document.getElementById('s11Log').innerHTML='';
+    document.getElementById('s11Status').innerHTML='Insert: <strong>10, 22, 31, 4, 15</strong>';
+    ['s11L1','s11L2','s11L3','s11L4'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    draw();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sw=60,sh=60,sx=25,sy=100;
+    // cluster highlight
+    let cstart=-1;
+    for(let i=0;i<=N;i++){
+      if(i<N&&table[i]!==null){if(cstart<0)cstart=i;}
+      else{if(cstart>=0&&(i-cstart)>=2){
+        ctx.fillStyle='rgba(239,68,68,0.08)';
+        ctx.beginPath();ctx.roundRect(sx+cstart*sw-3,sy-4,(i-cstart)*sw+6,sh+8,6);ctx.fill();
+        ctx.strokeStyle='rgba(239,68,68,0.25)';ctx.lineWidth=1;ctx.stroke();
+      }cstart=-1;}
+    }
+    for(let i=0;i<N;i++){
+      const x=sx+i*sw;
+      const isProbe=probeHL.includes(i);
+      const isInserted=probeHL.length>0&&probeHL[probeHL.length-1]===i&&table[i]!==null;
+      ctx.fillStyle=isInserted?'rgba(34,197,94,0.3)':isProbe?'rgba(245,158,11,0.25)':table[i]!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isInserted?'#22c55e':isProbe?'#f59e0b':table[i]!==null?'#818cf8':'#475569';
+      ctx.lineWidth=(isInserted||isProbe)?2.5:1;
+      ctx.beginPath();ctx.roundRect(x,sy,sw-4,sh,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle=table[i]!==null?'#e2e8f0':'#475569';
+      ctx.font=table[i]!==null?'bold 16px monospace':'13px monospace';ctx.textAlign='center';
+      ctx.fillText(table[i]!==null?table[i]:'—',x+sw/2-2,sy+sh/2+6);
+      ctx.fillStyle='#64748b';ctx.font='12px monospace';
+      ctx.fillText(i,x+sw/2-2,sy+sh+18);
+    }
+    // probe arrows
+    if(probeHL.length>1){
+      for(let i=0;i<probeHL.length-1;i++){
+        const x1=sx+probeHL[i]*sw+sw/2-2, x2=sx+probeHL[i+1]*sw+sw/2-2;
+        ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(x1,sy-12);ctx.lineTo(x2,sy-12);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x2-4,sy-16);ctx.lineTo(x2,sy-12);ctx.lineTo(x2-4,sy-8);
+        ctx.fillStyle='#f59e0b';ctx.fill();
+      }
+    }
+    const n=table.filter(v=>v!==null).length;
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='left';
+    ctx.fillText('Linear Probing  N='+N+'  n='+n+'  α='+(n/N).toFixed(2),sx,28);
+  }
+
+  function log(msg){document.getElementById('s11Log').innerHTML+='<div>'+msg+'</div>';document.getElementById('s11Log').scrollTop=9999;}
+  function hlLine(id){['s11L1','s11L2','s11L3','s11L4'].forEach(x=>document.getElementById(x).classList.remove('active'));if(id)document.getElementById(id).classList.add('active');}
+
+  window.s11Step = function(){
+    if(stepIdx>=keys.length){document.getElementById('s11Status').innerHTML='<span style="color:#22c55e">✓ Done! Notice cluster at slots 2–5.</span>';return;}
+    const k=keys[stepIdx], h=k%N;
+    probeHL=[h]; hlLine('s11L1');
+    log('Step '+(stepIdx+1)+': insert('+k+') → h('+k+')='+k+' mod '+N+'='+h);
+    draw();
+    let idx=h, probes=0;
+    function probe(){
+      if(table[idx]===null){
+        hlLine('s11L4');
+        table[idx]=k; draw();
+        log('  → placed at slot '+idx+(probes>0?' after '+probes+' probe(s)':''));
+        stepIdx++;
+        if(stepIdx>=keys.length) document.getElementById('s11Status').innerHTML='<span style="color:#22c55e">✓ Done! Cluster at slots 2–5.</span>';
+        else document.getElementById('s11Status').innerHTML='Next: insert('+keys[stepIdx]+')';
+        setTimeout(()=>{probeHL=[];draw();},1200);
+        return;
+      }
+      hlLine('s11L2');
+      log('  → slot '+idx+' occupied ('+table[idx]+')');
+      setTimeout(()=>{
+        hlLine('s11L3'); probes++; idx=(h+probes)%N; probeHL.push(idx); draw();
+        log('  → probe to slot '+idx);
+        setTimeout(probe,500);
+      },400);
+    }
+    setTimeout(probe,400);
+  };
+  window.s11Auto = function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=keys.length){clearInterval(timer);timer=null;return;}s11Step();},2500);
+  };
+  window.s11Reset = function(){init();};
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s11').classList.contains('active')) init();
+    else{if(timer)clearInterval(timer);timer=null;}
+  });
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: Quadratic Probing -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s12">
+  <h2>Open Addressing: Quadratic Probing</h2>
+  <p>Probe at increasing <strong>squared</strong> offsets to break up clusters.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS12" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <input type="number" id="s12input" placeholder="key" style="width:70px;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s12Insert()">Insert</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+        <span style="font-size:0.78rem;color:#94a3b8;align-self:center;">N = 11 (prime)</span>
+      </div>
+      <div id="s12Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.82rem;">
+        <div class="code-content">
+          <div class="line">probe(k, i) = (h(k) + i²) mod N</div>
+          <div class="line">i = 0, 1, 2, 3, ...</div>
+          <div class="line"> </div>
+          <div class="line">Offsets: +0, +1, +4, +9, +16, +25…</div>
+        </div>
+      </div>
+      <div class="key-idea" style="margin-top:1rem;">
+        <h3>Key Idea</h3>
+        <p>Quadratic probing <strong>jumps farther</strong> each time, breaking primary clusters. But keys with the same hash still follow the same probe sequence (<strong>secondary clustering</strong>).</p>
+      </div>
+      <div class="warning" style="margin-top:0.75rem;">
+        <h3>Warning</h3>
+        <p>May <strong>not visit all slots</strong>. Guaranteed to work when N is prime and table is less than half full.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS12');
+  const ctx=canvas.getContext('2d');
+  const N=11;
+  let table, probeTrail;
+
+  function init(){
+    table=new Array(N).fill(null); probeTrail=[]; draw();
+  }
+  function hash(k){return ((k%N)+N)%N;}
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sw=42,sh=52,sx=8,sy=90;
+    for(let i=0;i<N;i++){
+      const x=sx+i*sw;
+      const isP=probeTrail.includes(i);
+      const isLast=probeTrail.length>0&&probeTrail[probeTrail.length-1]===i;
+      ctx.fillStyle=isLast?'rgba(34,197,94,0.3)':isP?'rgba(245,158,11,0.2)':table[i]!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isLast?'#22c55e':isP?'#f59e0b':table[i]!==null?'#818cf8':'#475569';
+      ctx.lineWidth=(isLast||isP)?2:1;
+      ctx.beginPath();ctx.roundRect(x,sy,sw-2,sh,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle=table[i]!==null?'#e2e8f0':'#475569';
+      ctx.font=table[i]!==null?'bold 13px monospace':'11px monospace';ctx.textAlign='center';
+      ctx.fillText(table[i]!==null?table[i]:'—',x+sw/2-1,sy+sh/2+4);
+      ctx.fillStyle='#64748b';ctx.font='10px monospace';
+      ctx.fillText(i,x+sw/2-1,sy+sh+14);
+    }
+    // probe path with curved arrows showing jumps
+    if(probeTrail.length>1){
+      for(let i=0;i<probeTrail.length-1;i++){
+        const x1=sx+probeTrail[i]*sw+sw/2-1, x2=sx+probeTrail[i+1]*sw+sw/2-1;
+        const arcH = 12 + i*6; // bigger arcs for later probes
+        ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;
+        ctx.beginPath();
+        ctx.moveTo(x1,sy-6);
+        const mx=(x1+x2)/2;
+        ctx.quadraticCurveTo(mx,sy-6-arcH,x2,sy-6);
+        ctx.stroke();
+        // label: +i²
+        ctx.fillStyle='#f59e0b';ctx.font='10px monospace';ctx.textAlign='center';
+        ctx.fillText('+'+(i+1)+'²='+(((i+1)*(i+1))),mx,sy-8-arcH);
+      }
+    }
+    const n=table.filter(v=>v!==null).length;
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Quadratic Probing  N='+N+'  n='+n+'  α='+(n/N).toFixed(2),sx,20);
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';
+    ctx.fillText('probe(k,i) = (h(k) + i²) mod '+N,sx,36);
+  }
+
+  function log(msg){document.getElementById('s12Log').innerHTML+='<div>'+msg+'</div>';document.getElementById('s12Log').scrollTop=9999;}
+
+  window.s12Insert = function(){
+    const val=parseInt(document.getElementById('s12input').value);
+    if(isNaN(val))return;
+    const n=table.filter(v=>v!==null).length;
+    if(n>=N){log('<span style="color:#ef4444">Table full!</span>');return;}
+    const h=hash(val); probeTrail=[h];
+    let i=0, idx=h;
+    while(table[idx]!==null){
+      i++; idx=(h+i*i)%N; probeTrail.push(idx);
+      if(i>=N){log('<span style="color:#ef4444">No slot found!</span>');probeTrail=[];draw();return;}
+    }
+    table[idx]=val;
+    const seq=probeTrail.map((p,j)=>j===0?'h='+p:'+'+j+'²='+p).join(' → ');
+    log('insert('+val+'): '+seq);
+    draw();
+    document.getElementById('s12input').value='';
+    setTimeout(()=>{probeTrail=[];draw();},2500);
+  };
+  window.s12Reset = function(){document.getElementById('s12Log').innerHTML='';probeTrail=[];init();};
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s12').classList.contains('active')){probeTrail=[];init();}
+  });
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: Double Hashing -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s13">
+  <h2>Open Addressing: Double Hashing</h2>
+  <p>A <strong>second hash function</strong> determines the step size — each key gets a <strong>unique probe sequence</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS13" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <input type="number" id="s13input" placeholder="key" style="width:70px;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s13Insert()">Insert</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+        <span style="font-size:0.78rem;color:#94a3b8;align-self:center;">N=11, q=7</span>
+      </div>
+      <div id="s13Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.82rem;">
+        <div class="code-content">
+          <div class="line">probe(k,i) = (h1(k) + i·h2(k)) mod N</div>
+          <div class="line"> </div>
+          <div class="line">h1(k) = k mod N</div>
+          <div class="line">h2(k) = q - (k mod q)</div>
+          <div class="line">where q is prime &lt; N</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <h3 style="color:#38bdf8;font-size:0.9rem;margin-bottom:0.5rem;">Probing Comparison</h3>
+        <table style="font-size:0.82rem;width:100%;">
+          <tr><th>Method</th><th>Primary</th><th>Secondary</th></tr>
+          <tr><td>Linear</td><td style="color:#ef4444;">✗ Yes</td><td style="color:#ef4444;">✗ Yes</td></tr>
+          <tr><td>Quadratic</td><td style="color:#22c55e;">✓ No</td><td style="color:#ef4444;">✗ Yes</td></tr>
+          <tr style="background:rgba(34,197,94,0.1);"><td><strong>Double Hash</strong></td><td style="color:#22c55e;">✓ No</td><td style="color:#22c55e;">✓ No</td></tr>
+        </table>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <h3>Key Idea</h3>
+        <p>Keys 20 & 31 both hash to index 9, but step sizes differ (1 vs 4) — completely different probe paths!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS13');
+  const ctx=canvas.getContext('2d');
+  const N=11, q=7;
+  let table, probeTrail, lastStep;
+
+  function init(){
+    table=new Array(N).fill(null); probeTrail=[]; lastStep=0; draw();
+  }
+  function h1(k){return ((k%N)+N)%N;}
+  function h2(k){return q - ((k%q+q)%q); }
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sw=42,sh=52,sx=8,sy=100;
+    for(let i=0;i<N;i++){
+      const x=sx+i*sw;
+      const isP=probeTrail.includes(i);
+      const isLast=probeTrail.length>0&&probeTrail[probeTrail.length-1]===i;
+      ctx.fillStyle=isLast?'rgba(34,197,94,0.3)':isP?'rgba(245,158,11,0.2)':table[i]!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isLast?'#22c55e':isP?'#f59e0b':table[i]!==null?'#818cf8':'#475569';
+      ctx.lineWidth=(isLast||isP)?2:1;
+      ctx.beginPath();ctx.roundRect(x,sy,sw-2,sh,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle=table[i]!==null?'#e2e8f0':'#475569';
+      ctx.font=table[i]!==null?'bold 13px monospace':'11px monospace';ctx.textAlign='center';
+      ctx.fillText(table[i]!==null?table[i]:'—',x+sw/2-1,sy+sh/2+4);
+      ctx.fillStyle='#64748b';ctx.font='10px monospace';
+      ctx.fillText(i,x+sw/2-1,sy+sh+14);
+    }
+    // probe arrows with step label
+    if(probeTrail.length>1){
+      for(let i=0;i<probeTrail.length-1;i++){
+        const x1=sx+probeTrail[i]*sw+sw/2-1, x2=sx+probeTrail[i+1]*sw+sw/2-1;
+        const arcH=16+i*4;
+        ctx.strokeStyle='#a78bfa';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(x1,sy-6);
+        const midX = probeTrail[i+1]>probeTrail[i] ? (x1+x2)/2 : (x1+canvas.width/2);
+        ctx.quadraticCurveTo(midX,sy-6-arcH,x2,sy-6);
+        ctx.stroke();
+        ctx.fillStyle='#a78bfa';ctx.font='10px monospace';ctx.textAlign='center';
+        ctx.fillText('+'+lastStep,midX,sy-10-arcH);
+      }
+    }
+    const n=table.filter(v=>v!==null).length;
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Double Hashing  N='+N+', q='+q+'  n='+n+'  α='+(n/N).toFixed(2),sx,22);
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';
+    ctx.fillText('h1(k) = k mod '+N+',  h2(k) = '+q+' - (k mod '+q+')',sx,40);
+  }
+
+  function log(msg){document.getElementById('s13Log').innerHTML+='<div>'+msg+'</div>';document.getElementById('s13Log').scrollTop=9999;}
+
+  window.s13Insert = function(){
+    const val=parseInt(document.getElementById('s13input').value);
+    if(isNaN(val))return;
+    const n=table.filter(v=>v!==null).length;
+    if(n>=N){log('<span style="color:#ef4444">Table full!</span>');return;}
+    const start=h1(val), step=h2(val);
+    lastStep=step; probeTrail=[start];
+    let idx=start, i=0;
+    while(table[idx]!==null){
+      i++; idx=(start+i*step)%N; probeTrail.push(idx);
+      if(i>=N){log('<span style="color:#ef4444">No slot found!</span>');probeTrail=[];draw();return;}
+    }
+    table[idx]=val;
+    log('insert('+val+'): h1='+start+', h2='+step+' → '+(i>0?i+' probe(s) → ':'')+'slot '+idx);
+    draw();
+    document.getElementById('s13input').value='';
+    setTimeout(()=>{probeTrail=[];draw();},2500);
+  };
+  window.s13Reset = function(){document.getElementById('s13Log').innerHTML='';probeTrail=[];init();};
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s13').classList.contains('active')){probeTrail=[];init();}
+  });
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: Deletion / Tombstones -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s14">
+  <h2>Deletion in Open Addressing: Tombstones</h2>
+  <p>You <strong>cannot simply empty</strong> a slot — it breaks the probe chain for other keys!</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS14" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <input type="number" id="s14input" placeholder="key" style="width:70px;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s14Insert()">Insert</button>
+        <button class="btn btn-sm" onclick="s14Search()">Search</button>
+        <button class="btn btn-sm" style="background:linear-gradient(135deg,#ef4444,#dc2626);" onclick="s14Delete()">Delete</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+      <div id="s14Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Tombstone (DEL) Marker</h3>
+        <p>A DELETED marker means: <em>"a key was here; keep probing."</em></p>
+        <ul style="font-size:0.85rem;margin-top:0.4rem;">
+          <li><strong>Search</strong>: treat DEL as occupied → keep probing</li>
+          <li><strong>Insert</strong>: treat DEL as empty → reuse the slot</li>
+        </ul>
+      </div>
+      <div class="warning" style="margin-top:0.75rem;">
+        <h3>The Problem</h3>
+        <p>Naively emptying a slot creates a "gap" that stops probe chains short, making existing keys unfindable.</p>
+      </div>
+      <div class="analogy" style="margin-top:0.75rem;">
+        <h3>Try It!</h3>
+        <p>Insert 10, 31 (both hash to 3). Delete 10. Search for 31 — the tombstone keeps the chain alive!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS14');
+  const ctx=canvas.getContext('2d');
+  const N=7, DEL='DEL';
+  let table, probeTrail;
+
+  function init(){
+    table=new Array(N).fill(null); probeTrail=[]; draw();
+  }
+  function hash(k){return ((k%N)+N)%N;}
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sw=62,sh=60,sx=15,sy=100;
+    for(let i=0;i<N;i++){
+      const x=sx+i*sw;
+      const v=table[i];
+      const isDel=(v===DEL);
+      const isP=probeTrail.includes(i);
+      const isLast=probeTrail.length>0&&probeTrail[probeTrail.length-1]===i;
+      ctx.fillStyle=isDel?'rgba(245,158,11,0.15)':isLast?'rgba(34,197,94,0.3)':isP?'rgba(245,158,11,0.2)':v!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isDel?'#f59e0b':isLast?'#22c55e':isP?'#f59e0b':v!==null?'#818cf8':'#475569';
+      ctx.lineWidth=(isLast||isP||isDel)?2:1;
+      ctx.beginPath();ctx.roundRect(x,sy,sw-4,sh,8);ctx.fill();ctx.stroke();
+      // value
+      if(isDel){
+        ctx.fillStyle='#f59e0b';ctx.font='bold 13px monospace';ctx.textAlign='center';
+        ctx.fillText('DEL',x+sw/2-2,sy+sh/2+5);
+        // tombstone icon
+        ctx.fillStyle='#f59e0b';ctx.font='18px serif';
+        ctx.fillText('†',x+sw/2-2,sy+16);
+      } else {
+        ctx.fillStyle=v!==null?'#e2e8f0':'#475569';
+        ctx.font=v!==null?'bold 16px monospace':'13px monospace';ctx.textAlign='center';
+        ctx.fillText(v!==null?v:'—',x+sw/2-2,sy+sh/2+5);
+      }
+      // index
+      ctx.fillStyle='#64748b';ctx.font='12px monospace';ctx.textAlign='center';
+      ctx.fillText(i,x+sw/2-2,sy+sh+18);
+    }
+    // probe trail arrows
+    if(probeTrail.length>1){
+      for(let i=0;i<probeTrail.length-1;i++){
+        const x1=sx+probeTrail[i]*sw+sw/2-2, x2=sx+probeTrail[i+1]*sw+sw/2-2;
+        ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(x1,sy-10);ctx.lineTo(x2,sy-10);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x2-4,sy-14);ctx.lineTo(x2,sy-10);ctx.lineTo(x2-4,sy-6);
+        ctx.fillStyle='#f59e0b';ctx.fill();
+        // label why skipping
+        const v=table[probeTrail[i]];
+        if(v===DEL){
+          ctx.fillStyle='#f59e0b';ctx.font='9px monospace';ctx.textAlign='center';
+          ctx.fillText('DEL→skip',(x1+x2)/2,sy-18);
+        } else if(v!==null){
+          ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';
+          ctx.fillText('occupied',(x1+x2)/2,sy-18);
+        }
+      }
+    }
+    // title
+    const n=table.filter(v=>v!==null&&v!==DEL).length;
+    const dels=table.filter(v=>v===DEL).length;
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Linear Probing + Tombstones  N='+N,sx,22);
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';
+    ctx.fillText('n='+n+', tombstones='+dels+', α='+(n/N).toFixed(2),sx,40);
+    // legend
+    ctx.fillStyle='#f59e0b';ctx.font='11px monospace';ctx.textAlign='right';
+    ctx.fillText('† = tombstone (DEL)',canvas.width-15,22);
+  }
+
+  function log(msg){document.getElementById('s14Log').innerHTML+='<div>'+msg+'</div>';document.getElementById('s14Log').scrollTop=9999;}
+
+  window.s14Insert = function(){
+    const val=parseInt(document.getElementById('s14input').value);
+    if(isNaN(val))return;
+    const h=hash(val); probeTrail=[h];
+    let idx=h, probes=0;
+    while(table[idx]!==null && table[idx]!==DEL){
+      probes++;idx=(h+probes)%N;probeTrail.push(idx);
+      if(probes>=N){log('<span style="color:#ef4444">Table full!</span>');probeTrail=[];draw();return;}
+    }
+    const reused=(table[idx]===DEL);
+    table[idx]=val;
+    log('insert('+val+'): h='+h+(probes>0?' → '+probes+' probe(s)':'')+' → slot '+idx+(reused?' <span style="color:#f59e0b">(reused tombstone)</span>':''));
+    draw(); document.getElementById('s14input').value='';
+    setTimeout(()=>{probeTrail=[];draw();},2000);
+  };
+  window.s14Search = function(){
+    const val=parseInt(document.getElementById('s14input').value);
+    if(isNaN(val))return;
+    const h=hash(val); probeTrail=[h];
+    let idx=h,probes=0;
+    while(table[idx]!==null){
+      if(table[idx]===val){
+        log('search('+val+'): '+(probes+1)+' probe(s) → <span style="color:#22c55e">FOUND at slot '+idx+'</span>');
+        draw();setTimeout(()=>{probeTrail=[];draw();},2000);return;
+      }
+      probes++;idx=(h+probes)%N;probeTrail.push(idx);
+      if(probes>=N) break;
+    }
+    log('search('+val+'): '+(probes+1)+' probe(s) → <span style="color:#ef4444">NOT FOUND</span>');
+    draw();setTimeout(()=>{probeTrail=[];draw();},2000);
+  };
+  window.s14Delete = function(){
+    const val=parseInt(document.getElementById('s14input').value);
+    if(isNaN(val))return;
+    const h=hash(val); probeTrail=[h];
+    let idx=h,probes=0;
+    while(table[idx]!==null){
+      if(table[idx]===val){
+        table[idx]=DEL;
+        log('delete('+val+'): slot '+idx+' → <span style="color:#f59e0b">marked DEL (tombstone)</span>');
+        draw();setTimeout(()=>{probeTrail=[];draw();},2000);
+        document.getElementById('s14input').value='';return;
+      }
+      probes++;idx=(h+probes)%N;probeTrail.push(idx);
+      if(probes>=N) break;
+    }
+    log('delete('+val+'): <span style="color:#ef4444">NOT FOUND</span>');
+    draw();setTimeout(()=>{probeTrail=[];draw();},2000);
+  };
+  window.s14Reset = function(){document.getElementById('s14Log').innerHTML='';probeTrail=[];init();};
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s14').classList.contains('active')){probeTrail=[];init();}
+  });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: Load Factor -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s15">
+  <h2>Load Factor & Performance</h2>
+  <p>The <strong>load factor</strong> α = n/N controls how full the table is — and how fast it runs.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS15" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <label style="font-size:0.82rem;color:#94a3b8;align-self:center;">α =</label>
+        <input type="range" id="s15slider" min="5" max="95" value="50" style="flex:1;" oninput="s15Update()">
+        <span id="s15alpha" style="font-family:monospace;color:#f59e0b;font-size:0.9rem;min-width:40px;">0.50</span>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea" style="font-size:1.05em;">
+        <h3>Definition</h3>
+        <p style="font-size:1.2em;text-align:center;margin:8px 0;"><strong>α = n / N</strong></p>
+        <p>n = entries stored, N = table size</p>
+      </div>
+      <h3 style="color:#38bdf8;margin-top:1rem;font-size:0.9rem;">Expected Probes (Linear Probing)</h3>
+      <table style="font-size:0.82rem;width:100%;">
+        <tr><th>α</th><th>Successful</th><th>Unsuccessful</th></tr>
+        <tr><td>0.25</td><td>1.17</td><td>1.39</td></tr>
+        <tr><td>0.50</td><td>1.50</td><td>2.50</td></tr>
+        <tr><td>0.75</td><td>2.50</td><td>8.50</td></tr>
+        <tr style="background:rgba(239,68,68,0.15);"><td>0.90</td><td>5.50</td><td style="color:#ef4444;font-weight:bold;">50.50</td></tr>
+      </table>
+      <div class="warning" style="margin-top:0.75rem;">
+        <h3>Rehash Thresholds</h3>
+        <ul style="font-size:0.85rem;">
+          <li><strong>Chaining:</strong> rehash when α > 0.75</li>
+          <li><strong>Open addressing:</strong> rehash when α > 0.5</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS15');
+  const ctx=canvas.getContext('2d');
+
+  function draw(alpha){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const px=60,py=30,pw=420,ph=300;
+    // grid
+    ctx.strokeStyle='#1e293b';ctx.lineWidth=1;
+    for(let i=0;i<=5;i++){
+      const y=py+ph-i*(ph/5);
+      ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(px+pw,y);ctx.stroke();
+      ctx.fillStyle='#64748b';ctx.font='10px monospace';ctx.textAlign='right';
+      ctx.fillText((i*10),px-6,y+4);
+    }
+    // axes
+    ctx.strokeStyle='#475569';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py+ph);ctx.lineTo(px+pw,py+ph);ctx.stroke();
+    // labels
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText('Load Factor (α)',px+pw/2,py+ph+28);
+    ctx.save();ctx.translate(16,py+ph/2);ctx.rotate(-Math.PI/2);
+    ctx.fillText('Expected Probes',0,0);ctx.restore();
+    // x-axis ticks
+    for(let a=0;a<=1;a+=0.25){
+      const x=px+a*pw;
+      ctx.fillStyle='#64748b';ctx.font='10px monospace';ctx.textAlign='center';
+      ctx.fillText(a.toFixed(2),x,py+ph+14);
+    }
+    // unsuccessful search curve (linear probing): 0.5*(1+1/(1-α)²)
+    ctx.strokeStyle='#ef4444';ctx.lineWidth=2.5;ctx.beginPath();
+    for(let i=0;i<=200;i++){
+      const a=i/200*0.95;
+      const probes=0.5*(1+1/Math.pow(1-a,2));
+      const x=px+a/0.95*pw*0.95;
+      const y=py+ph-Math.min(probes,50)/50*ph;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // successful search curve: 0.5*(1+1/(1-α))
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2.5;ctx.beginPath();
+    for(let i=0;i<=200;i++){
+      const a=i/200*0.95;
+      const probes=0.5*(1+1/(1-a));
+      const x=px+a/0.95*pw*0.95;
+      const y=py+ph-Math.min(probes,50)/50*ph;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // current alpha marker
+    const ax=px+alpha*pw*0.95/0.95;
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(ax,py);ctx.lineTo(ax,py+ph);ctx.stroke();
+    ctx.setLineDash([]);
+    // probe values at current alpha
+    const unsuc=0.5*(1+1/Math.pow(1-alpha,2));
+    const suc=0.5*(1+1/(1-alpha));
+    const uy=py+ph-Math.min(unsuc,50)/50*ph;
+    const sy=py+ph-Math.min(suc,50)/50*ph;
+    // dots
+    ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(ax,uy,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#22c55e';ctx.beginPath();ctx.arc(ax,sy,5,0,Math.PI*2);ctx.fill();
+    // value labels
+    ctx.font='bold 11px monospace';ctx.textAlign='left';
+    ctx.fillStyle='#ef4444';ctx.fillText(unsuc<100?unsuc.toFixed(1):'∞',ax+8,uy+4);
+    ctx.fillStyle='#22c55e';ctx.fillText(suc.toFixed(1),ax+8,sy+4);
+    // legend
+    ctx.fillStyle='#ef4444';ctx.fillRect(px+pw-140,py+8,14,3);
+    ctx.fillStyle='#e2e8f0';ctx.font='10px monospace';ctx.textAlign='left';
+    ctx.fillText('Unsuccessful',px+pw-122,py+12);
+    ctx.fillStyle='#22c55e';ctx.fillRect(px+pw-140,py+22,14,3);
+    ctx.fillStyle='#e2e8f0';ctx.fillText('Successful',px+pw-122,py+26);
+    // title
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Linear Probing: Probes vs Load Factor',px,py-10);
+  }
+
+  window.s15Update = function(){
+    const v=parseInt(document.getElementById('s15slider').value)/100;
+    document.getElementById('s15alpha').textContent=v.toFixed(2);
+    draw(v);
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s15').classList.contains('active')){
+      const v=parseInt(document.getElementById('s15slider').value)/100;
+      draw(v);
+    }
+  });
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  draw(0.5);
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: Rehashing -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s16">
+  <h2>Rehashing</h2>
+  <p>When α exceeds the threshold, <strong>grow the table and reinsert everything</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS16" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s16Step()">Step</button>
+        <button class="btn btn-sm" onclick="s16Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+      </div>
+      <div id="s16Status" style="margin-top:0.5rem;padding:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;font-size:0.82rem;color:#cbd5e1;text-align:center;"></div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Rehashing costs <strong>O(n)</strong> for that one operation, but happens rarely. <strong>Amortized cost</strong> per insert remains O(1) — same idea as dynamic array doubling.</p>
+      </div>
+      <div class="warning" style="margin-top:0.75rem;">
+        <h3>Warning</h3>
+        <p>You must <strong>recompute all indices</strong> because N changed. Old indices are no longer valid. You cannot just copy entries to the same slots!</p>
+      </div>
+      <div id="s16Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:100px;overflow-y:auto;margin-top:0.75rem;color:#94a3b8;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS16');
+  const ctx=canvas.getContext('2d');
+  // Demo: N=7 table with 5 entries, rehash to N=17
+  const oldN=7, newN=17;
+  const entries=[10,22,31,4,15];
+  let oldTable, newTable, stepIdx, timer, phase; // phase: 'fill','rehash'
+
+  function init(){
+    oldTable=new Array(oldN).fill(null);
+    newTable=new Array(newN).fill(null);
+    stepIdx=0; phase='fill';
+    if(timer)clearInterval(timer);timer=null;
+    document.getElementById('s16Log').innerHTML='';
+    document.getElementById('s16Status').innerHTML='Filling old table (N='+oldN+')…';
+    draw();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // old table (top)
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='left';
+    const oldN_count=oldTable.filter(v=>v!==null).length;
+    ctx.fillText('Old Table (N='+oldN+', n='+oldN_count+', α='+(oldN_count/oldN).toFixed(2)+')',10,20);
+    const sw1=60,sh1=40,sx1=15,sy1=30;
+    for(let i=0;i<oldN;i++){
+      const x=sx1+i*sw1;
+      ctx.fillStyle=oldTable[i]!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=oldTable[i]!==null?'#818cf8':'#475569';ctx.lineWidth=1;
+      ctx.beginPath();ctx.roundRect(x,sy1,sw1-4,sh1,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle=oldTable[i]!==null?'#e2e8f0':'#475569';
+      ctx.font=oldTable[i]!==null?'bold 13px monospace':'11px monospace';ctx.textAlign='center';
+      ctx.fillText(oldTable[i]!==null?oldTable[i]:'—',x+sw1/2-2,sy1+sh1/2+4);
+      ctx.fillStyle='#64748b';ctx.font='10px monospace';
+      ctx.fillText(i,x+sw1/2-2,sy1+sh1+12);
+    }
+    // rehash arrow
+    if(phase==='rehash'){
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(canvas.width/2,sy1+sh1+22);ctx.lineTo(canvas.width/2,sy1+sh1+50);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(canvas.width/2-6,sy1+sh1+44);ctx.lineTo(canvas.width/2,sy1+sh1+50);ctx.lineTo(canvas.width/2+6,sy1+sh1+44);ctx.fill();
+      ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText('REHASH! (α > 0.5)',canvas.width/2,sy1+sh1+38);
+    }
+    // new table (bottom) - only show during rehash
+    if(phase==='rehash'){
+      const newN_count=newTable.filter(v=>v!==null).length;
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='left';
+      ctx.fillText('New Table (N='+newN+', n='+newN_count+', α='+(newN_count/newN).toFixed(2)+')',10,sy1+sh1+65);
+      const sw2=28,sh2=36,sx2=6,sy2=sy1+sh1+75;
+      for(let i=0;i<newN;i++){
+        const x=sx2+i*sw2;
+        const isNew=newTable[i]!==null;
+        ctx.fillStyle=isNew?'rgba(34,197,94,0.2)':'rgba(30,41,59,0.8)';
+        ctx.strokeStyle=isNew?'#22c55e':'#475569';ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(x,sy2,sw2-2,sh2,4);ctx.fill();ctx.stroke();
+        ctx.fillStyle=isNew?'#e2e8f0':'#475569';
+        ctx.font=isNew?'bold 10px monospace':'9px monospace';ctx.textAlign='center';
+        ctx.fillText(isNew?newTable[i]:'—',x+sw2/2-1,sy2+sh2/2+3);
+        ctx.fillStyle='#64748b';ctx.font='8px monospace';
+        ctx.fillText(i,x+sw2/2-1,sy2+sh2+10);
+      }
+    }
+  }
+
+  function log(msg){document.getElementById('s16Log').innerHTML+='<div>'+msg+'</div>';document.getElementById('s16Log').scrollTop=9999;}
+
+  window.s16Step = function(){
+    if(phase==='fill'){
+      if(stepIdx>=entries.length){
+        phase='rehash'; stepIdx=0;
+        document.getElementById('s16Status').innerHTML='<span style="color:#f59e0b">α = '+(entries.length/oldN).toFixed(2)+' > 0.5 → REHASH to N='+newN+'!</span>';
+        log('α = '+(entries.length/oldN).toFixed(2)+' exceeds threshold → rehash!');
+        log('New table size: 2×'+oldN+'+1 = '+(2*oldN+1)+' → next prime = '+newN);
+        draw(); return;
+      }
+      const k=entries[stepIdx], idx=k%oldN;
+      let slot=idx;
+      while(oldTable[slot]!==null) slot=(slot+1)%oldN;
+      oldTable[slot]=k;
+      log('insert('+k+'): '+k+' mod '+oldN+' = '+idx+(slot!==idx?' → probe to '+slot:''));
+      stepIdx++;
+      if(stepIdx>=entries.length) document.getElementById('s16Status').innerHTML='Table full enough — ready to rehash!';
+      else document.getElementById('s16Status').innerHTML='Inserting '+entries[stepIdx]+' next…';
+      draw();
+    } else {
+      if(stepIdx>=entries.length){
+        document.getElementById('s16Status').innerHTML='<span style="color:#22c55e">✓ Rehash complete! α = '+(entries.length/newN).toFixed(2)+'</span>';
+        return;
+      }
+      const k=entries[stepIdx], newIdx=k%newN;
+      newTable[newIdx]=k;
+      log('rehash('+k+'): '+k+' mod '+newN+' = '+newIdx);
+      stepIdx++;
+      if(stepIdx>=entries.length) document.getElementById('s16Status').innerHTML='<span style="color:#22c55e">✓ Rehash complete! α = '+(entries.length/newN).toFixed(2)+'</span>';
+      else document.getElementById('s16Status').innerHTML='Re-inserting '+entries[stepIdx]+'…';
+      draw();
+    }
+  };
+  window.s16Auto = function(){
+    if(timer)return;
+    timer=setInterval(()=>{
+      if(phase==='rehash'&&stepIdx>=entries.length){clearInterval(timer);timer=null;return;}
+      if(phase==='fill'&&stepIdx>=entries.length){s16Step();setTimeout(()=>{},500);}
+      else s16Step();
+      if(phase==='rehash'&&stepIdx>=entries.length){clearInterval(timer);timer=null;}
+    },900);
+  };
+  window.s16Reset = function(){init();};
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s16').classList.contains('active')) init();
+    else{if(timer)clearInterval(timer);timer=null;}
+  });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 17: Time Complexity -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s17">
+  <h2>Time Complexity Analysis</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS17" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s17Toggle('best')" id="s17BestBtn">Best Case</button>
+        <button class="btn btn-sm btn-secondary" onclick="s17Toggle('worst')" id="s17WorstBtn">Worst Case</button>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#22c55e;font-size:0.9rem;">Average Case (good hash, low α)</h3>
+      <table style="font-size:0.82rem;width:100%;margin-bottom:0.75rem;">
+        <tr><th>Op</th><th>Chaining</th><th>Open Addr.</th></tr>
+        <tr><td>put</td><td style="color:#22c55e;">O(1)</td><td style="color:#22c55e;">O(1)</td></tr>
+        <tr><td>get</td><td style="color:#22c55e;">O(1)</td><td style="color:#22c55e;">O(1)</td></tr>
+        <tr><td>remove</td><td style="color:#22c55e;">O(1)</td><td style="color:#22c55e;">O(1)</td></tr>
+      </table>
+      <h3 style="color:#ef4444;font-size:0.9rem;">Worst Case (all collide)</h3>
+      <table style="font-size:0.82rem;width:100%;margin-bottom:0.75rem;">
+        <tr><th>Op</th><th>Chaining</th><th>Open Addr.</th></tr>
+        <tr><td>put</td><td style="color:#ef4444;">O(n)</td><td style="color:#ef4444;">O(n)</td></tr>
+        <tr><td>get</td><td style="color:#ef4444;">O(n)</td><td style="color:#ef4444;">O(n)</td></tr>
+        <tr><td>remove</td><td style="color:#ef4444;">O(n)</td><td style="color:#ef4444;">O(n)</td></tr>
+      </table>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>A good hash function assigns students to exam rooms <em>evenly</em>. A bad one puts everyone in Room 1 and leaves Rooms 2–10 empty.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS17');
+  const ctx=canvas.getContext('2d');
+  let mode='best';
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const N=6,bw=52,bh=44,sx=20,sy=50;
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='left';
+    ctx.fillText(mode==='best'?'BEST CASE: Uniform Distribution':'WORST CASE: All Hash to Index 0',sx,30);
+
+    if(mode==='best'){
+      const vals=['A','B','C','D','E','F'];
+      for(let i=0;i<N;i++){
+        const y=sy+i*bh;
+        ctx.fillStyle='rgba(34,197,94,0.15)';ctx.strokeStyle='#22c55e';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.roundRect(sx,y,bw,bh-4,6);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='bold 13px monospace';ctx.textAlign='center';
+        ctx.fillText(i,sx+bw/2,y+bh/2);
+        // one node each
+        const nx=sx+bw+20,nw=50,nh=28;
+        ctx.fillStyle='#6366f1';ctx.strokeStyle='#818cf8';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.roundRect(nx,y+(bh-4-nh)/2,nw,nh,5);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#fff';ctx.font='bold 13px monospace';
+        ctx.fillText(vals[i],nx+nw/2,y+bh/2);
+        // arrow + null
+        ctx.strokeStyle='#64748b';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(sx+bw,y+bh/2-2);ctx.lineTo(nx-4,y+bh/2-2);ctx.stroke();
+        ctx.fillStyle='#64748b';ctx.font='10px monospace';
+        ctx.fillText('∅',nx+nw+12,y+bh/2);
+      }
+      ctx.fillStyle='#22c55e';ctx.font='bold 14px monospace';ctx.textAlign='center';
+      ctx.fillText('Every chain has length ~1',canvas.width/2,sy+N*bh+20);
+      ctx.fillText('get/put: O(1)',canvas.width/2,sy+N*bh+40);
+    } else {
+      const vals=['A','B','C','D','E','F'];
+      for(let i=0;i<N;i++){
+        const y=sy+i*bh;
+        ctx.fillStyle=i===0?'rgba(239,68,68,0.15)':'rgba(30,41,59,0.8)';
+        ctx.strokeStyle=i===0?'#ef4444':'#475569';ctx.lineWidth=i===0?2:1;
+        ctx.beginPath();ctx.roundRect(sx,y,bw,bh-4,6);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='bold 13px monospace';ctx.textAlign='center';
+        ctx.fillText(i,sx+bw/2,y+bh/2);
+        ctx.strokeStyle='#64748b';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(sx+bw,y+bh/2-2);ctx.lineTo(sx+bw+12,y+bh/2-2);ctx.stroke();
+        if(i===0){
+          // long chain
+          let cx=sx+bw+16;
+          for(let j=0;j<vals.length;j++){
+            const nw=40,nh=26;
+            ctx.fillStyle='#6366f1';ctx.strokeStyle='#818cf8';ctx.lineWidth=1.5;
+            ctx.beginPath();ctx.roundRect(cx,y+(bh-4-nh)/2,nw,nh,5);ctx.fill();ctx.stroke();
+            ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';
+            ctx.fillText(vals[j],cx+nw/2,y+bh/2);
+            if(j<vals.length-1){
+              ctx.strokeStyle='#94a3b8';ctx.lineWidth=1;
+              ctx.beginPath();ctx.moveTo(cx+nw,y+bh/2-2);ctx.lineTo(cx+nw+8,y+bh/2-2);ctx.stroke();
+            } else {
+              ctx.fillStyle='#64748b';ctx.font='9px monospace';
+              ctx.fillText('∅',cx+nw+10,y+bh/2);
+            }
+            cx+=nw+12;
+          }
+        } else {
+          ctx.fillStyle='#64748b';ctx.font='10px monospace';ctx.textAlign='left';
+          ctx.fillText('∅',sx+bw+14,y+bh/2);
+        }
+      }
+      ctx.fillStyle='#ef4444';ctx.font='bold 14px monospace';ctx.textAlign='center';
+      ctx.fillText('One chain has ALL n entries',canvas.width/2,sy+N*bh+20);
+      ctx.fillText('get/put: O(n) — it\'s a linked list!',canvas.width/2,sy+N*bh+40);
+    }
+  }
+
+  window.s17Toggle = function(m){
+    mode=m;
+    document.getElementById('s17BestBtn').className=m==='best'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s17WorstBtn').className=m==='worst'?'btn btn-sm':'btn btn-sm btn-secondary';
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s17').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s17'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE A: Trace 7 Operations -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="sCA">
+  <h2>Challenge: Trace Hash Table Operations</h2>
+  <p>Linear probing, N = 7, h(k) = k mod 7. Trace these operations and fill in the final table:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.75rem;font-family:monospace;font-size:0.88rem;color:#cbd5e1;line-height:1.8;">
+        1. insert(14) &nbsp; <span style="color:#64748b;">// 14 mod 7 = ?</span><br>
+        2. insert(21) &nbsp; <span style="color:#64748b;">// 21 mod 7 = ?</span><br>
+        3. insert(7) &nbsp;&nbsp; <span style="color:#64748b;">// 7 mod 7 = ?</span><br>
+        4. insert(3) &nbsp;&nbsp; <span style="color:#64748b;">// collision?</span><br>
+        5. insert(10) &nbsp; <span style="color:#64748b;">// collision?</span><br>
+        6. delete(21)<br>
+        7. search(10) &nbsp; <span style="color:#64748b;">// found?</span>
+      </div>
+      <div style="margin-top:1rem;">
+        <h3 style="color:#38bdf8;font-size:0.85rem;margin-bottom:0.5rem;">Your Answer — Final Table State:</h3>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">
+          <input type="text" id="sCAi0" placeholder="0" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;">
+          <input type="text" id="sCAi1" placeholder="1" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;">
+          <input type="text" id="sCAi2" placeholder="2" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;">
+          <input type="text" id="sCAi3" placeholder="3" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;">
+          <input type="text" id="sCAi4" placeholder="4" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;">
+          <input type="text" id="sCAi5" placeholder="5" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;">
+          <input type="text" id="sCAi6" placeholder="6" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;">
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+          <button class="btn btn-sm" onclick="sCACheck()">Check Answer</button>
+          <button class="btn btn-sm btn-secondary" onclick="sCAReveal()">Step Through</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cCA" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="sCALog" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:80px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCA');
+  const ctx=canvas.getContext('2d');
+  const N=7;
+  // answer: after insert 14(→0),21(→0→1),7(→0→1→2),3(→3),10(→3→4), delete 21(→DEL at 1), search 10
+  // final: [14,DEL,7,3,10,—,—]
+  const correct=['14','DEL','7','3','10','',''];
+  let table, stepIdx, timer;
+  const ops=[
+    {op:'insert',k:14},{op:'insert',k:21},{op:'insert',k:7},
+    {op:'insert',k:3},{op:'insert',k:10},{op:'delete',k:21},{op:'search',k:10}
+  ];
+
+  function init(){
+    table=new Array(N).fill(null); stepIdx=0;
+    if(timer)clearInterval(timer);timer=null;
+    document.getElementById('sCALog').innerHTML='';
+    draw();
+  }
+
+  function draw(hl,hlColor){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sw=62,sh=60,sx=15,sy=60;
+    for(let i=0;i<N;i++){
+      const x=sx+i*sw;
+      const v=table[i], isDel=(v==='DEL');
+      ctx.fillStyle=(i===hl)?((hlColor||'rgba(245,158,11,0.3)')):(isDel?'rgba(245,158,11,0.1)':v!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)');
+      ctx.strokeStyle=(i===hl)?('#f59e0b'):(isDel?'#f59e0b':v!==null?'#818cf8':'#475569');
+      ctx.lineWidth=(i===hl)?2.5:1;
+      ctx.beginPath();ctx.roundRect(x,sy,sw-4,sh,8);ctx.fill();ctx.stroke();
+      if(isDel){ctx.fillStyle='#f59e0b';ctx.font='bold 12px monospace';}
+      else{ctx.fillStyle=v!==null?'#e2e8f0':'#475569';ctx.font=v!==null?'bold 15px monospace':'12px monospace';}
+      ctx.textAlign='center';
+      ctx.fillText(v!==null?v:'—',x+sw/2-2,sy+sh/2+5);
+      ctx.fillStyle='#64748b';ctx.font='11px monospace';
+      ctx.fillText(i,x+sw/2-2,sy+sh+16);
+    }
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Step '+stepIdx+'/'+ops.length,sx,30);
+    const n=table.filter(v=>v!==null&&v!=='DEL').length;
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';
+    ctx.fillText('n='+n+', α='+(n/N).toFixed(2),sx+150,30);
+  }
+
+  function log(msg){document.getElementById('sCALog').innerHTML+='<div>'+msg+'</div>';document.getElementById('sCALog').scrollTop=9999;}
+
+  window.sCACheck = function(){
+    let score=0;
+    for(let i=0;i<N;i++){
+      const v=document.getElementById('sCAi'+i).value.trim().toUpperCase();
+      const exp=correct[i].toUpperCase();
+      const match=(v===exp||(v===''&&exp===''));
+      document.getElementById('sCAi'+i).style.borderColor=match?'#22c55e':'#ef4444';
+      if(match) score++;
+    }
+    log(score===N?'<span style="color:#22c55e">✓ Perfect! All correct!</span>':'<span style="color:#f59e0b">'+score+'/'+N+' correct. Try again!</span>');
+  };
+
+  window.sCAReveal = function(){
+    if(stepIdx>=ops.length){log('<span style="color:#22c55e">✓ All operations complete!</span>');return;}
+    const op=ops[stepIdx];
+    const h=op.k%N;
+    if(op.op==='insert'){
+      let idx=h,probes=0;
+      while(table[idx]!==null&&table[idx]!=='DEL'){probes++;idx=(h+probes)%N;}
+      table[idx]=op.k;
+      log((stepIdx+1)+'. insert('+op.k+'): h='+h+(probes>0?' → probe to '+idx:'')+' → placed');
+      draw(idx,'rgba(34,197,94,0.3)');
+    } else if(op.op==='delete'){
+      let idx=h,probes=0;
+      while(table[idx]!==null&&table[idx]!==op.k){probes++;idx=(h+probes)%N;}
+      if(table[idx]===op.k){table[idx]='DEL';log((stepIdx+1)+'. delete('+op.k+'): slot '+idx+' → DEL');}
+      draw(idx);
+    } else {
+      let idx=h,probes=0;
+      while(table[idx]!==null&&table[idx]!==op.k){probes++;idx=(h+probes)%N;}
+      const found=table[idx]===op.k;
+      log((stepIdx+1)+'. search('+op.k+'): '+(probes+1)+' probe(s) → '+(found?'FOUND at '+idx:'NOT FOUND'));
+      draw(idx,found?'rgba(34,197,94,0.3)':'rgba(239,68,68,0.3)');
+    }
+    stepIdx++;
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sCA').classList.contains('active')) init();
+    else{if(timer)clearInterval(timer);timer=null;}
+  });
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 18: Java's HashMap Internals -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s18">
+  <h2>Java's HashMap Internals</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS18" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s18Toggle('list')" id="s18ListBtn">Short Chain (List)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s18Toggle('tree')" id="s18TreeBtn">Long Chain (Tree)</button>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#38bdf8;font-size:0.9rem;">Key Details</h3>
+      <ul style="font-size:0.82rem;color:#cbd5e1;line-height:1.8;">
+        <li><strong>Initial capacity:</strong> 16 (always power of 2)</li>
+        <li><strong>Load factor:</strong> 0.75 by default</li>
+        <li><strong>Rehash:</strong> double when entries > capacity × 0.75</li>
+        <li><strong>Chain < 8:</strong> linked list — O(n) within chain</li>
+        <li><strong>Chain ≥ 8:</strong> <span style="color:#f59e0b;">Red-Black Tree</span> — O(log n)</li>
+        <li><strong>Untreeify:</strong> back to list when chain < 6</li>
+        <li><strong>Index:</strong> <code>(n-1) & hash</code> (bitwise AND = fast mod)</li>
+      </ul>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <h3>Key Idea</h3>
+        <p>Java 8+ treeifies long chains, guaranteeing <strong>O(log n) worst case</strong> per bucket — protection against hash-flooding attacks.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS18');
+  const ctx=canvas.getContext('2d');
+  let mode='list';
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const buckets=16, bw=28, bh=18, sx=10, sy=40;
+    // title
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('HashMap<String, Integer>  capacity=16, α=0.75',sx,22);
+    // draw bucket array vertically (simplified, show 8 buckets)
+    const shown=8;
+    for(let i=0;i<shown;i++){
+      const y=sy+i*bh+i*4;
+      ctx.fillStyle='rgba(30,41,59,0.8)';ctx.strokeStyle='#475569';ctx.lineWidth=1;
+      ctx.beginPath();ctx.roundRect(sx,y,bw,bh,3);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='center';
+      ctx.fillText(i,sx+bw/2,y+bh/2+3);
+    }
+    // dots
+    ctx.fillStyle='#64748b';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText('⋮',sx+bw/2,sy+shown*(bh+4)+10);
+
+    if(mode==='list'){
+      // short chains from buckets 1 and 3
+      const chains=[[1,['K1:V1','K2:V2']],[3,['K3:V3']],[5,['K4:V4','K5:V5','K6:V6']]];
+      for(const[bi,chain] of chains){
+        const y=sy+bi*(bh+4);
+        let cx=sx+bw+10;
+        ctx.strokeStyle='#64748b';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(sx+bw,y+bh/2);ctx.lineTo(cx,y+bh/2);ctx.stroke();
+        for(let j=0;j<chain.length;j++){
+          const nw=58,nh=16;
+          ctx.fillStyle='#6366f1';ctx.strokeStyle='#818cf8';ctx.lineWidth=1;
+          ctx.beginPath();ctx.roundRect(cx,y+(bh-nh)/2,nw,nh,3);ctx.fill();ctx.stroke();
+          ctx.fillStyle='#fff';ctx.font='9px monospace';ctx.textAlign='center';
+          ctx.fillText(chain[j],cx+nw/2,y+bh/2+3);
+          if(j<chain.length-1){
+            ctx.strokeStyle='#94a3b8';ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(cx+nw,y+bh/2);ctx.lineTo(cx+nw+6,y+bh/2);ctx.stroke();
+          }
+          cx+=nw+8;
+        }
+      }
+      // label
+      ctx.fillStyle='#22c55e';ctx.font='bold 11px monospace';ctx.textAlign='left';
+      ctx.fillText('Chain length < 8 → LinkedList',sx,sy+shown*(bh+4)+30);
+      ctx.fillText('Search within chain: O(chain length)',sx,sy+shown*(bh+4)+46);
+    } else {
+      // one bucket with long chain → tree
+      const y=sy+1*(bh+4);
+      ctx.strokeStyle='#64748b';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(sx+bw,y+bh/2);ctx.lineTo(sx+bw+10,y+bh/2);ctx.stroke();
+      // "≥8 entries" label
+      ctx.fillStyle='#f59e0b';ctx.font='bold 10px monospace';ctx.textAlign='left';
+      ctx.fillText('≥ 8 entries → TREEIFY!',sx+bw+14,y+bh/2+3);
+      // draw red-black tree below
+      const treeX=200, treeY=80, levelGap=50, vals=['M','G','T','D','J','P','W','B'];
+      for(let i=0;i<vals.length;i++){
+        const lv=Math.floor(Math.log2(i+1));
+        const posInLv=i-Math.pow(2,lv)+1;
+        const spacing=300/Math.pow(2,lv);
+        const x=treeX+spacing/2+posInLv*spacing;
+        const ny=treeY+lv*levelGap;
+        // edges to children
+        if(i>0){
+          const pi=Math.floor((i-1)/2);
+          const plv=Math.floor(Math.log2(pi+1));
+          const pPos=pi-Math.pow(2,plv)+1;
+          const pSpacing=300/Math.pow(2,plv);
+          const px=treeX+pSpacing/2+pPos*pSpacing;
+          const py2=treeY+plv*levelGap;
+          ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+          ctx.beginPath();ctx.moveTo(px,py2+14);ctx.lineTo(x,ny-14);ctx.stroke();
+        }
+      }
+      for(let i=0;i<vals.length;i++){
+        const lv=Math.floor(Math.log2(i+1));
+        const posInLv=i-Math.pow(2,lv)+1;
+        const spacing=300/Math.pow(2,lv);
+        const x=treeX+spacing/2+posInLv*spacing;
+        const ny=treeY+lv*levelGap;
+        const isRed=[3,5].includes(i); // D and P are red
+        ctx.fillStyle=isRed?'#ef4444':'#334155';
+        ctx.strokeStyle=isRed?'#f87171':'#818cf8';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.arc(x,ny,14,0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#fff';ctx.font='bold 10px monospace';ctx.textAlign='center';
+        ctx.fillText(vals[i],x,ny+4);
+      }
+      ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='left';
+      ctx.fillText('Chain ≥ 8 → Red-Black Tree',sx,sy+shown*(bh+4)+30);
+      ctx.fillText('Search within bucket: O(log n)',sx,sy+shown*(bh+4)+46);
+      // legend
+      ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(sx+8,sy+shown*(bh+4)+62,5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#e2e8f0';ctx.font='10px monospace';
+      ctx.fillText('Red node',sx+18,sy+shown*(bh+4)+66);
+      ctx.fillStyle='#334155';ctx.beginPath();ctx.arc(sx+100,sy+shown*(bh+4)+62,5,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#818cf8';ctx.lineWidth=1;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.fillText('Black node',sx+110,sy+shown*(bh+4)+66);
+    }
+  }
+
+  window.s18Toggle = function(m){
+    mode=m;
+    document.getElementById('s18ListBtn').className=m==='list'?'btn btn-sm':'btn btn-sm btn-secondary';
+    document.getElementById('s18TreeBtn').className=m==='tree'?'btn btn-sm':'btn btn-sm btn-secondary';
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s18').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE B: Fix the Bug -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <p>This linear probing search has a bug. Can you spot it?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block" style="font-size:0.82rem;">
+        <div class="code-content">
+          <div class="line">boolean search(int key) {</div>
+          <div class="line">  int idx = key % N;</div>
+          <div class="line" style="background:rgba(239,68,68,0.15);border-left:3px solid #ef4444;">  while (table[idx] != null) {</div>
+          <div class="line">    if (table[idx] == key)</div>
+          <div class="line">      return true;</div>
+          <div class="line">    idx = (idx + 1) % N;</div>
+          <div class="line">  }</div>
+          <div class="line">  return false;</div>
+          <div class="line">}</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:0.85rem;">What's the bug?</label>
+        <select id="sCBsel" style="display:block;width:100%;margin-top:0.4rem;padding:0.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85rem;">
+          <option value="">Select your answer…</option>
+          <option value="a">A. key % N can be negative for negative keys</option>
+          <option value="b">B. Doesn't handle tombstones (DEL markers)</option>
+          <option value="c">C. Missing bounds check — infinite loop if table is full</option>
+          <option value="d">D. Should use == for objects, not primitives</option>
+        </select>
+        <button class="btn btn-sm" style="margin-top:0.75rem;" onclick="sCBCheck()">Check Answer</button>
+        <div id="sCBResult" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cCB" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCB');
+  const ctx=canvas.getContext('2d');
+
+  function draw(showBug){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(!showBug){
+      ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';
+      ctx.fillText('Select your answer and click Check',canvas.width/2,canvas.height/2);
+      return;
+    }
+    // show the tombstone scenario
+    const N=7,sw=62,sh=50,sx=15,sy=40;
+    const table=[null,null,null,10,'DEL',31,null];
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Scenario: insert(10→3), insert(31→3→4→5), delete(10→DEL)',sx,24);
+    for(let i=0;i<N;i++){
+      const x=sx+i*sw;
+      const v=table[i], isDel=(v==='DEL');
+      ctx.fillStyle=isDel?'rgba(245,158,11,0.15)':v!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isDel?'#f59e0b':v!==null?'#818cf8':'#475569';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(x,sy,sw-4,sh,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle=isDel?'#f59e0b':v!==null?'#e2e8f0':'#475569';
+      ctx.font=v!==null?'bold 14px monospace':'12px monospace';ctx.textAlign='center';
+      ctx.fillText(v!==null?v:'—',x+sw/2-2,sy+sh/2+5);
+      ctx.fillStyle='#64748b';ctx.font='11px monospace';
+      ctx.fillText(i,x+sw/2-2,sy+sh+14);
+    }
+    // search(31) trace with bug
+    ctx.fillStyle='#ef4444';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Buggy search(31):',sx,sy+sh+40);
+    ctx.fillStyle='#cbd5e1';ctx.font='12px monospace';
+    ctx.fillText('h(31) = 31 mod 7 = 3 → table[3]=10 ≠ 31',sx,sy+sh+58);
+    ctx.fillText('idx=4 → table[4]=DEL → null? YES (bug treats DEL as null!)',sx,sy+sh+76);
+    ctx.fillStyle='#ef4444';ctx.font='bold 12px monospace';
+    ctx.fillText('→ returns false — WRONG! 31 is at slot 5!',sx,sy+sh+98);
+    // correct behavior
+    ctx.fillStyle='#22c55e';ctx.font='bold 12px monospace';
+    ctx.fillText('Correct search(31):',sx,sy+sh+126);
+    ctx.fillStyle='#cbd5e1';ctx.font='12px monospace';
+    ctx.fillText('h(31)=3 → 10≠31 → idx=4 → DEL (skip!) → idx=5 → 31 FOUND!',sx,sy+sh+144);
+    // fix
+    ctx.fillStyle='#a78bfa';ctx.font='bold 12px monospace';
+    ctx.fillText('Fix: while (table[idx] != null || table[idx] == DEL)',sx,sy+sh+172);
+    ctx.fillText('Or check: if (table[idx] != DEL && table[idx] == key)',sx,sy+sh+190);
+  }
+
+  window.sCBCheck = function(){
+    const sel=document.getElementById('sCBsel').value;
+    const res=document.getElementById('sCBResult');
+    if(!sel){res.innerHTML='<span style="color:#f59e0b;">Please select an answer.</span>';return;}
+    if(sel==='b'){
+      res.innerHTML='<span style="color:#22c55e;">✓ Correct!</span> The null check stops at tombstones (DEL), breaking the probe chain.';
+      draw(true);
+    } else {
+      const explanations={
+        a:'Negative keys are a valid concern but not the primary bug here with tombstones.',
+        c:'An infinite loop is possible, but the main bug is the tombstone handling.',
+        d:'This code uses int primitives, so == is correct.'
+      };
+      res.innerHTML='<span style="color:#ef4444;">✗ Not quite.</span> '+explanations[sel];
+      draw(false);
+    }
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sCB').classList.contains('active')) draw(false);
+  });
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+  draw(false);
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 19: Applications -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s19">
+  <h2>Real-World Applications</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS19" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s19Show('spell')" id="s19B1">Spell Checker</button>
+        <button class="btn btn-sm btn-secondary" onclick="s19Show('cache')" id="s19B2">Caching</button>
+        <button class="btn btn-sm btn-secondary" onclick="s19Show('db')" id="s19B3">Database</button>
+        <button class="btn btn-sm btn-secondary" onclick="s19Show('count')" id="s19B4">Counting</button>
+      </div>
+    </div>
+    <div>
+      <div id="s19Desc" style="font-size:0.88rem;color:#cbd5e1;line-height:1.7;"></div>
+      <h3 style="color:#38bdf8;margin-top:1rem;font-size:0.9rem;">More Uses</h3>
+      <ul style="font-size:0.82rem;color:#cbd5e1;line-height:1.7;">
+        <li><strong>Compilers:</strong> symbol tables (name → type, scope)</li>
+        <li><strong>Networking:</strong> routing tables, DNS caches</li>
+        <li><strong>Deduplication:</strong> detect duplicate files by content hash</li>
+        <li><strong>Blockchain:</strong> transaction verification via hash chains</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS19');
+  const ctx=canvas.getContext('2d');
+  let mode='spell';
+  const btns=['s19B1','s19B2','s19B3','s19B4'];
+  const modes=['spell','cache','db','count'];
+  const descs={
+    spell:'<strong>Spell Checker</strong> — A HashSet stores the entire dictionary. When you type a word, <code>dict.contains(word)</code> does an O(1) lookup. Even checking an entire document is fast!',
+    cache:'<strong>HTTP Caching</strong> — A HashMap maps URL → Response. On each request, check the cache first: HIT → return cached response. MISS → fetch from server, store in cache.',
+    db:'<strong>Database Indexing</strong> — A hash index on a column enables direct lookup: <code>SELECT * WHERE id=42</code> hashes to the bucket immediately — no full table scan needed.',
+    count:'<strong>Word Frequency</strong> — Count word occurrences: for each word, <code>map.put(word, map.getOrDefault(word,0)+1)</code>. O(1) per word, O(n) total.'
+  };
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    document.getElementById('s19Desc').innerHTML=descs[mode];
+    if(mode==='spell'){
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+      ctx.fillText('HashSet<String> dictionary',15,25);
+      // bucket array with words
+      const words=[['apple','ant'],['banana'],['cherry','cat','cream'],[],['date','dog'],['elder'],[],['fig']];
+      const sx=15,sy=40,bw=30,bh=22;
+      for(let i=0;i<words.length;i++){
+        const y=sy+i*(bh+6);
+        ctx.fillStyle='rgba(30,41,59,0.8)';ctx.strokeStyle='#475569';ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(sx,y,bw,bh,3);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='center';
+        ctx.fillText(i,sx+bw/2,y+bh/2+3);
+        let cx=sx+bw+8;
+        for(const w of words[i]){
+          const nw=ctx.measureText(w).width+16;
+          ctx.fillStyle='#6366f1';ctx.strokeStyle='#818cf8';ctx.lineWidth=1;
+          ctx.beginPath();ctx.roundRect(cx,y+1,nw>50?nw:50,bh-2,3);ctx.fill();ctx.stroke();
+          ctx.fillStyle='#fff';ctx.font='9px monospace';ctx.textAlign='center';
+          ctx.fillText(w,cx+(nw>50?nw:50)/2,y+bh/2+3);
+          cx+=(nw>50?nw:50)+6;
+        }
+      }
+      // search demo
+      ctx.fillStyle='#f59e0b';ctx.font='bold 12px monospace';ctx.textAlign='left';
+      ctx.fillText('User types: "banan"',15,sy+8*(bh+6)+15);
+      ctx.fillStyle='#cbd5e1';ctx.font='11px monospace';
+      ctx.fillText('hash("banan") → bucket 1 → not found',15,sy+8*(bh+6)+33);
+      ctx.fillStyle='#ef4444';ctx.font='bold 11px monospace';
+      ctx.fillText('→ RED UNDERLINE!  (O(1) per word)',15,sy+8*(bh+6)+51);
+    } else if(mode==='cache'){
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+      ctx.fillText('HashMap<URL, Response> cache',15,25);
+      const entries=[['/api/users','[{id:1,name:"Alice"},...]'],['/api/products','[{id:42,price:9.99}]'],['/images/logo.png','<binary data>']];
+      const sx=15,sy=50;
+      for(let i=0;i<entries.length;i++){
+        const y=sy+i*60;
+        // key
+        ctx.fillStyle='#6366f1';ctx.strokeStyle='#818cf8';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.roundRect(sx,y,160,28,5);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#fff';ctx.font='10px monospace';ctx.textAlign='center';
+        ctx.fillText(entries[i][0],sx+80,y+18);
+        // arrow
+        ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(sx+160,y+14);ctx.lineTo(sx+180,y+14);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.beginPath();ctx.moveTo(sx+176,y+10);ctx.lineTo(sx+180,y+14);ctx.lineTo(sx+176,y+18);ctx.fill();
+        // value
+        ctx.fillStyle='rgba(34,197,94,0.15)';ctx.strokeStyle='#22c55e';ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(sx+184,y,310,28,5);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#22c55e';ctx.font='9px monospace';ctx.textAlign='left';
+        ctx.fillText(entries[i][1],sx+192,y+18);
+      }
+      // request flow
+      ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='left';
+      ctx.fillText('GET /api/users',sx,sy+200);
+      ctx.fillStyle='#22c55e';ctx.fillText('→ CACHE HIT → return instantly!',sx+130,sy+200);
+      ctx.fillStyle='#f59e0b';ctx.fillText('GET /api/orders',sx,sy+224);
+      ctx.fillStyle='#ef4444';ctx.fillText('→ CACHE MISS → fetch, store, return',sx+130,sy+224);
+    } else if(mode==='db'){
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+      ctx.fillText('Hash Index on "id" column',15,25);
+      // table
+      const rows=[['1','Alice','A'],['2','Bob','B'],['3','Carlos','A'],['4','Diana','C']];
+      const cols=['id','name','grade'];
+      const sx=15,sy=50,cw=[40,80,60],rh=24;
+      // header
+      for(let c=0;c<3;c++){
+        const x=sx+cols.slice(0,c).reduce((s,_,i)=>s+cw[i],0);
+        ctx.fillStyle='#334155';ctx.strokeStyle='#475569';ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(x,sy,cw[c],rh,c===0?[4,0,0,4]:c===2?[0,4,4,0]:[0,0,0,0]);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#38bdf8';ctx.font='bold 10px monospace';ctx.textAlign='center';
+        ctx.fillText(cols[c],x+cw[c]/2,sy+rh/2+3);
+      }
+      for(let r=0;r<rows.length;r++){
+        for(let c=0;c<3;c++){
+          const x=sx+cols.slice(0,c).reduce((s,_,i)=>s+cw[i],0);
+          const y=sy+rh+r*rh;
+          ctx.fillStyle='rgba(30,41,59,0.6)';ctx.strokeStyle='#475569';ctx.lineWidth=1;
+          ctx.beginPath();ctx.rect(x,y,cw[c],rh);ctx.fill();ctx.stroke();
+          ctx.fillStyle='#e2e8f0';ctx.font='10px monospace';ctx.textAlign='center';
+          ctx.fillText(rows[r][c],x+cw[c]/2,y+rh/2+3);
+        }
+      }
+      // hash index arrows
+      ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='left';
+      ctx.fillText('SELECT * WHERE id = 2',sx,sy+rh*5+30);
+      ctx.fillStyle='#22c55e';ctx.font='11px monospace';
+      ctx.fillText('→ hash(2) → direct lookup → O(1)!',sx,sy+rh*5+50);
+      ctx.fillStyle='#94a3b8';
+      ctx.fillText('No full table scan needed.',sx,sy+rh*5+68);
+    } else {
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+      ctx.fillText('Word Frequency Counter',15,25);
+      const text='the cat sat on the mat the cat';
+      const words=text.split(' ');
+      const freq={};words.forEach(w=>freq[w]=(freq[w]||0)+1);
+      // bar chart
+      const entries=Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+      const sx=30,sy=60,bw=80,bh=30,gap=8;
+      const maxC=Math.max(...entries.map(e=>e[1]));
+      for(let i=0;i<entries.length;i++){
+        const y=sy+i*(bh+gap);
+        const w=entries[i][1]/maxC*350;
+        ctx.fillStyle='rgba(99,102,241,0.3)';ctx.strokeStyle='#818cf8';ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(sx+bw+10,y,w,bh,4);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='right';
+        ctx.fillText(entries[i][0],sx+bw,y+bh/2+4);
+        ctx.fillStyle='#f59e0b';ctx.font='bold 14px monospace';ctx.textAlign='left';
+        ctx.fillText(entries[i][1],sx+bw+w+8,y+bh/2+5);
+      }
+      ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='left';
+      ctx.fillText('Text: "'+text+'"',sx,sy+entries.length*(bh+gap)+20);
+      ctx.fillText('map.put(word, map.getOrDefault(word,0)+1)',sx,sy+entries.length*(bh+gap)+38);
+    }
+  }
+
+  window.s19Show = function(m){
+    mode=m;
+    btns.forEach((b,i)=>{
+      document.getElementById(b).className=modes[i]===m?'btn btn-sm':'btn btn-sm btn-secondary';
+    });
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s19').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s19'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE C: Pick the Right Strategy -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="sCC">
+  <h2>Challenge: Pick the Right Strategy</h2>
+  <p>For each scenario, choose the best collision handling approach.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sCCq1box">
+      <h3 style="color:#38bdf8;font-size:0.85rem;">1. Memory-constrained embedded system</h3>
+      <p style="font-size:0.82rem;color:#94a3b8;">Limited RAM, cache-friendly access is crucial.</p>
+      <select id="sCCq1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;margin-top:0.4rem;">
+        <option value="">Choose…</option>
+        <option value="chain">Separate Chaining</option>
+        <option value="linear">Linear Probing</option>
+        <option value="double">Double Hashing</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sCCq2box">
+      <h3 style="color:#38bdf8;font-size:0.85rem;">2. Web server handling frequent deletions</h3>
+      <p style="font-size:0.82rem;color:#94a3b8;">Session cache where entries expire/get removed often.</p>
+      <select id="sCCq2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;margin-top:0.4rem;">
+        <option value="">Choose…</option>
+        <option value="chain">Separate Chaining</option>
+        <option value="linear">Linear Probing</option>
+        <option value="double">Double Hashing</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sCCq3box">
+      <h3 style="color:#38bdf8;font-size:0.85rem;">3. Database with unpredictable key patterns</h3>
+      <p style="font-size:0.82rem;color:#94a3b8;">Keys may cluster; must avoid both primary & secondary clustering.</p>
+      <select id="sCCq3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;margin-top:0.4rem;">
+        <option value="">Choose…</option>
+        <option value="chain">Separate Chaining</option>
+        <option value="linear">Linear Probing</option>
+        <option value="double">Double Hashing</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sCCq4box">
+      <h3 style="color:#38bdf8;font-size:0.85rem;">4. Hash table that may have α > 1.0</h3>
+      <p style="font-size:0.82rem;color:#94a3b8;">More entries than buckets is acceptable.</p>
+      <select id="sCCq4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;margin-top:0.4rem;">
+        <option value="">Choose…</option>
+        <option value="chain">Separate Chaining</option>
+        <option value="linear">Linear Probing</option>
+        <option value="double">Double Hashing</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+    <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCExplain" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#cbd5e1;line-height:1.7;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={sCCq1:'linear',sCCq2:'chain',sCCq3:'double',sCCq4:'chain'};
+  const explanations={
+    sCCq1:'<strong>Linear Probing</strong> — No extra pointers (saves memory), and sequential access is cache-friendly.',
+    sCCq2:'<strong>Separate Chaining</strong> — Deletions are simple (just remove the node). No tombstones needed!',
+    sCCq3:'<strong>Double Hashing</strong> — Unique probe sequences per key eliminate both primary and secondary clustering.',
+    sCCq4:'<strong>Separate Chaining</strong> — Only chaining allows α > 1.0 since buckets hold linked lists. Open addressing requires α < 1.'
+  };
+
+  window.sCCCheck = function(){
+    let score=0,total=4;
+    for(const[id,ans] of Object.entries(answers)){
+      const sel=document.getElementById(id).value;
+      const box=document.getElementById(id+'box');
+      if(sel===ans){box.style.borderLeft='3px solid #22c55e';score++;}
+      else if(sel){box.style.borderLeft='3px solid #ef4444';}
+      else{box.style.borderLeft='3px solid #f59e0b';}
+    }
+    const el=document.getElementById('sCCExplain');
+    el.style.display='block';
+    el.innerHTML='<strong>Score: '+score+'/'+total+'</strong><br><br>'+Object.values(explanations).join('<br><br>');
+  };
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 20: Summary -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="s20">
+  <h2>Summary & Cheat Sheet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS20" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>5 Things to Remember</h3>
+        <ol style="padding-left:18px;font-size:0.85rem;line-height:1.8;">
+          <li><strong>Hash function</strong>: deterministic, uniform, fast</li>
+          <li><strong>Collisions</strong>: inevitable (pigeonhole) — must handle them</li>
+          <li><strong>Load factor</strong> α = n/N — rehash before too high</li>
+          <li><strong>Tombstones</strong>: needed for deletion in open addressing</li>
+          <li><strong>Average O(1)</strong> for all ops — best for unsorted data</li>
+        </ol>
+      </div>
+      <div class="analogy" style="margin-top:0.75rem;">
+        <h3>Final Analogy</h3>
+        <p style="font-size:0.85rem;">A hash table is a <strong>filing cabinet</strong>. The hash function labels which drawer to open. When two files share a drawer (collision), stack them (chaining) or find the next empty drawer (open addressing). When it's too full, buy a bigger cabinet and refile everything (rehash).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS20');
+  const ctx=canvas.getContext('2d');
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sx=15,sy=15;
+    // Pipeline
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='left';
+    ctx.fillText('HASH TABLE AT A GLANCE',sx,sy+14);
+    // pipeline boxes
+    const boxes=[{t:'key',c:'#6366f1'},{t:'hash()',c:'#f59e0b'},{t:'index',c:'#22c55e'},{t:'bucket',c:'#a78bfa'},{t:'value',c:'#f472b6'}];
+    let bx=sx;
+    for(let i=0;i<boxes.length;i++){
+      const bw=80,bh=30,y=sy+28;
+      ctx.fillStyle=boxes[i].c+'33';ctx.strokeStyle=boxes[i].c;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(bx,y,bw,bh,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle=boxes[i].c;ctx.font='bold 12px monospace';ctx.textAlign='center';
+      ctx.fillText(boxes[i].t,bx+bw/2,y+bh/2+4);
+      if(i<boxes.length-1){
+        ctx.strokeStyle='#94a3b8';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(bx+bw,y+bh/2);ctx.lineTo(bx+bw+15,y+bh/2);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.beginPath();ctx.moveTo(bx+bw+11,y+bh/2-3);ctx.lineTo(bx+bw+15,y+bh/2);ctx.lineTo(bx+bw+11,y+bh/2+3);ctx.fill();
+      }
+      bx+=bw+18;
+    }
+    // Complexity
+    ctx.fillStyle='#22c55e';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Average: O(1) get / put / remove',sx,sy+85);
+    ctx.fillStyle='#ef4444';
+    ctx.fillText('Worst:   O(n) if all keys collide',sx,sy+103);
+    // Collision comparison table
+    const ty=sy+125;
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';
+    ctx.fillText('COLLISION STRATEGIES',sx,ty);
+    const cols=[['','Chaining','Open Addr.'],['Storage','Lists per bucket','In the array'],['α','Can be > 1','Must be < 1'],['Delete','Simple remove','Tombstones'],['Memory','Extra pointers','Better cache'],['Clustering','N/A','Linear: yes']];
+    for(let r=0;r<cols.length;r++){
+      const y=ty+8+r*26;
+      for(let c=0;c<3;c++){
+        const x=sx+c*168;
+        ctx.fillStyle=r===0?'#38bdf8':(c===0?'#94a3b8':'#cbd5e1');
+        ctx.font=r===0?'bold 11px monospace':'11px monospace';
+        ctx.textAlign=c===0?'left':'center';
+        ctx.fillText(cols[r][c],c===0?x:x+84,y+18);
+      }
+      if(r>0){
+        ctx.strokeStyle='#1e293b';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(sx,y+24);ctx.lineTo(sx+490,y+24);ctx.stroke();
+      }
+    }
+    // Probing variants
+    const py=ty+8+cols.length*26+10;
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('OPEN ADDRESSING VARIANTS',sx,py);
+    const probes=[['Linear','h+i','Primary+Secondary'],['Quadratic','h+i²','Secondary only'],['Double Hash','h1+i·h2','None!']];
+    for(let i=0;i<probes.length;i++){
+      const x=sx+i*170,y=py+12;
+      const colors=['#ef4444','#f59e0b','#22c55e'];
+      ctx.fillStyle=colors[i]+'22';ctx.strokeStyle=colors[i];ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(x,y,155,50,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle=colors[i];ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText(probes[i][0],x+78,y+16);
+      ctx.fillStyle='#e2e8f0';ctx.font='11px monospace';
+      ctx.fillText(probes[i][1],x+78,y+32);
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+      ctx.fillText('Clustering: '+probes[i][2],x+78,y+46);
+    }
+  }
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s20').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s20'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 1: Multi-Question Quiz -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="sQ1">
+  <h2>Quiz: Hash Table Fundamentals</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="color:#38bdf8;font-size:0.85rem;">Q1: Time Complexity</h3>
+      <p style="font-size:0.82rem;color:#94a3b8;">What is the <strong>average</strong> time for get() in a well-designed hash table?</p>
+      <div style="margin-top:0.5rem;">
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q1" value="a"> O(n)</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q1" value="b"> O(log n)</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q1" value="c"> O(1)</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q1" value="d"> O(n log n)</label>
+      </div>
+      <div id="sQ1f1" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="color:#38bdf8;font-size:0.85rem;">Q2: Load Factor</h3>
+      <p style="font-size:0.82rem;color:#94a3b8;">A hash table has 12 entries and 16 buckets. What is α?</p>
+      <div style="margin-top:0.5rem;">
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q2" value="a"> 0.50</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q2" value="b"> 0.75</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q2" value="c"> 1.33</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q2" value="d"> 12</label>
+      </div>
+      <div id="sQ1f2" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="color:#38bdf8;font-size:0.85rem;">Q3: Tombstones</h3>
+      <p style="font-size:0.82rem;color:#94a3b8;">Why can't you simply empty a slot when deleting in open addressing?</p>
+      <div style="margin-top:0.5rem;">
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q3" value="a"> It wastes memory</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q3" value="b"> It breaks probe chains</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q3" value="c"> Java doesn't allow it</label>
+        <label style="display:block;padding:0.3rem;cursor:pointer;font-size:0.82rem;color:#cbd5e1;"><input type="radio" name="sQ1q3" value="d"> The hash function changes</label>
+      </div>
+      <div id="sQ1f3" style="font-size:0.78rem;margin-top:0.3rem;"></div>
+    </div>
+  </div>
+  <div style="margin-top:1rem;text-align:center;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-size:1rem;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={sQ1q1:'c',sQ1q2:'b',sQ1q3:'b'};
+  const feedback={
+    sQ1q1:{c:'✓ O(1) average with a good hash function.',wrong:'✗ With a good hash function, average is O(1).'},
+    sQ1q2:{b:'✓ α = 12/16 = 0.75.',wrong:'✗ α = n/N = 12/16 = 0.75.'},
+    sQ1q3:{b:'✓ An empty slot stops probe chains, making other keys unfindable.',wrong:'✗ Emptying a slot breaks the probe chain for keys that probed past it.'}
+  };
+  window.sQ1Check = function(){
+    let score=0;
+    for(const[name,ans] of Object.entries(answers)){
+      const sel=document.querySelector('input[name="'+name+'"]:checked');
+      const fb=document.getElementById(name.replace('q','f'));
+      if(sel&&sel.value===ans){
+        fb.innerHTML='<span style="color:#22c55e;">'+feedback[name][ans]+'</span>';score++;
+      } else {
+        fb.innerHTML='<span style="color:#ef4444;">'+feedback[name].wrong+'</span>';
+      }
+    }
+    document.getElementById('sQ1Score').innerHTML=score===3?'<span style="color:#22c55e;">★ '+score+'/3 Perfect!</span>':'<span style="color:#f59e0b;">'+score+'/3</span>';
+  };
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 2: Trace Exercise -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="sQ2">
+  <h2>Quiz: Predict the Probe Sequence</h2>
+  <p>Quadratic probing, N = 11. Table has keys at slots: [1]=22, [3]=36, [4]=47, [5]=58.</p>
+  <p>Where does <strong>insert(69)</strong> land? (h(69) = 69 mod 11 = <strong>3</strong>)</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cQ2" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="margin-top:0.75rem;">
+        <label style="color:#94a3b8;font-size:0.85rem;">Your answer — final slot:</label>
+        <input type="number" id="sQ2ans" placeholder="?" style="width:60px;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-left:0.5rem;">
+        <button class="btn btn-sm" onclick="sQ2Check()" style="margin-left:0.5rem;">Check</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ2Trace()" style="margin-left:0.5rem;">Show Trace</button>
+      </div>
+      <div id="sQ2Result" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+    </div>
+    <div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.75rem;font-family:monospace;font-size:0.82rem;color:#94a3b8;line-height:1.8;">
+        <div>Probe formula: (h(k) + i²) mod 11</div>
+        <div style="margin-top:0.5rem;" id="sQ2trace">
+          i=0: (3 + 0) mod 11 = <strong>3</strong> → ?<br>
+          i=1: (3 + 1) mod 11 = <strong>4</strong> → ?<br>
+          i=2: (3 + 4) mod 11 = <strong>7</strong> → ?<br>
+          i=3: (3 + 9) mod 11 = <strong>1</strong> → ?
+        </div>
+      </div>
+      <div id="sQ2explain" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#cbd5e1;line-height:1.7;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cQ2');
+  const ctx=canvas.getContext('2d');
+  const N=11;
+  const table=[null,22,null,36,47,58,null,null,null,null,null];
+  let probeHL=[];
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sw=42,sh=52,sx=8,sy=80;
+    for(let i=0;i<N;i++){
+      const x=sx+i*sw;
+      const isP=probeHL.includes(i);
+      const isLast=probeHL.length>0&&probeHL[probeHL.length-1]===i;
+      ctx.fillStyle=isLast?'rgba(34,197,94,0.3)':isP?'rgba(245,158,11,0.2)':table[i]!==null?'rgba(99,102,241,0.2)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isLast?'#22c55e':isP?'#f59e0b':table[i]!==null?'#818cf8':'#475569';
+      ctx.lineWidth=(isLast||isP)?2.5:1;
+      ctx.beginPath();ctx.roundRect(x,sy,sw-2,sh,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle=table[i]!==null?'#e2e8f0':'#475569';
+      ctx.font=table[i]!==null?'bold 13px monospace':'11px monospace';ctx.textAlign='center';
+      ctx.fillText(table[i]!==null?table[i]:'—',x+sw/2-1,sy+sh/2+4);
+      ctx.fillStyle='#64748b';ctx.font='10px monospace';
+      ctx.fillText(i,x+sw/2-1,sy+sh+14);
+    }
+    if(probeHL.length>1){
+      for(let i=0;i<probeHL.length-1;i++){
+        const x1=sx+probeHL[i]*sw+sw/2-1,x2=sx+probeHL[i+1]*sw+sw/2-1;
+        const arcH=14+i*8;
+        ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(x1,sy-6);
+        ctx.quadraticCurveTo((x1+x2)/2,sy-6-arcH,x2,sy-6);ctx.stroke();
+        ctx.fillStyle='#f59e0b';ctx.font='10px monospace';ctx.textAlign='center';
+        ctx.fillText('+'+(i+1)+'²='+(i+1)*(i+1),(x1+x2)/2,sy-10-arcH);
+      }
+    }
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Quadratic Probing: insert(69), h(69)=3',sx,20);
+  }
+
+  window.sQ2Check = function(){
+    const ans=parseInt(document.getElementById('sQ2ans').value);
+    const res=document.getElementById('sQ2Result');
+    if(ans===7){
+      res.innerHTML='<span style="color:#22c55e;">✓ Correct! Slot 7 is the first empty slot in the probe sequence.</span>';
+      probeHL=[3,4,7]; draw();
+    } else {
+      res.innerHTML='<span style="color:#ef4444;">✗ Not quite. Trace through the quadratic probe sequence from h=3.</span>';
+    }
+  };
+  window.sQ2Trace = function(){
+    probeHL=[3,4,7];
+    draw();
+    document.getElementById('sQ2trace').innerHTML=
+      'i=0: (3 + 0) mod 11 = <strong>3</strong> → <span style="color:#ef4444;">occupied (36)</span><br>'+
+      'i=1: (3 + 1) mod 11 = <strong>4</strong> → <span style="color:#ef4444;">occupied (47)</span><br>'+
+      'i=2: (3 + 4) mod 11 = <strong>7</strong> → <span style="color:#22c55e;">EMPTY → insert here!</span>';
+    document.getElementById('sQ2explain').style.display='block';
+    document.getElementById('sQ2explain').innerHTML='Slots 3, 4 are occupied. The quadratic jump +4 lands on slot 7, which is empty. Note: slot 5 (58) was skipped because quadratic probing jumps +1, +4, +9… not +1, +2, +3.';
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sQ2').classList.contains('active')){probeHL=[];draw();}
+  });
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 3: Predict Output -->
+<!-- ============================================================ -->
+<div class="slide fade-in" id="sQ3">
+  <h2>Quiz: Predict the Output</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block" style="font-size:0.82rem;">
+        <div class="code-content">
+          <div class="line" id="sQ3L1">HashMap&lt;String,Integer&gt; map = new HashMap&lt;&gt;();</div>
+          <div class="line" id="sQ3L2">map.put("alice", 90);</div>
+          <div class="line" id="sQ3L3">map.put("bob", 85);</div>
+          <div class="line" id="sQ3L4">map.put("alice", 95);  // what happens?</div>
+          <div class="line" id="sQ3L5">System.out.println(map.get("alice"));</div>
+          <div class="line" id="sQ3L6">System.out.println(map.size());</div>
+          <div class="line" id="sQ3L7">System.out.println(map.containsValue(90));</div>
+          <div class="line" id="sQ3L8">map.remove("bob");</div>
+          <div class="line" id="sQ3L9">System.out.println(map.get("bob"));</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <h3 style="color:#38bdf8;font-size:0.85rem;">Your Predictions:</h3>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0.4rem 0.75rem;align-items:center;margin-top:0.5rem;">
+          <span style="font-size:0.82rem;color:#94a3b8;">Line 5 output:</span>
+          <input type="text" id="sQ3a1" placeholder="?" style="padding:0.3rem 0.5rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:0.85rem;">
+          <span style="font-size:0.82rem;color:#94a3b8;">Line 6 output:</span>
+          <input type="text" id="sQ3a2" placeholder="?" style="padding:0.3rem 0.5rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:0.85rem;">
+          <span style="font-size:0.82rem;color:#94a3b8;">Line 7 output:</span>
+          <input type="text" id="sQ3a3" placeholder="?" style="padding:0.3rem 0.5rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:0.85rem;">
+          <span style="font-size:0.82rem;color:#94a3b8;">Line 9 output:</span>
+          <input type="text" id="sQ3a4" placeholder="?" style="padding:0.3rem 0.5rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:0.85rem;">
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+          <button class="btn btn-sm" onclick="sQ3Check()">Check</button>
+          <button class="btn btn-sm btn-secondary" onclick="sQ3Trace()">Show Trace</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cQ3" width="520" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="sQ3Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:120px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cQ3');
+  const ctx=canvas.getContext('2d');
+  const answers=['95','2','false','null'];
+  let map={}, traceStep=0;
+
+  function init(){
+    map={}; traceStep=0;
+    document.getElementById('sQ3Log').innerHTML='';
+    ['sQ3L1','sQ3L2','sQ3L3','sQ3L4','sQ3L5','sQ3L6','sQ3L7','sQ3L8','sQ3L9'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    drawMap();
+  }
+
+  function drawMap(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('HashMap State:',15,25);
+    const entries=Object.entries(map);
+    if(entries.length===0){
+      ctx.fillStyle='#64748b';ctx.font='12px monospace';
+      ctx.fillText('(empty)',15,55);return;
+    }
+    for(let i=0;i<entries.length;i++){
+      const y=45+i*45;
+      // key
+      ctx.fillStyle='#6366f1';ctx.strokeStyle='#818cf8';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(15,y,120,32,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';
+      ctx.fillText('"'+entries[i][0]+'"',75,y+20);
+      // arrow
+      ctx.strokeStyle='#94a3b8';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(135,y+16);ctx.lineTo(160,y+16);ctx.stroke();
+      ctx.fillStyle='#94a3b8';ctx.beginPath();ctx.moveTo(156,y+12);ctx.lineTo(160,y+16);ctx.lineTo(156,y+20);ctx.fill();
+      // value
+      ctx.fillStyle='rgba(34,197,94,0.2)';ctx.strokeStyle='#22c55e';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(165,y,60,32,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#22c55e';ctx.font='bold 14px monospace';ctx.textAlign='center';
+      ctx.fillText(entries[i][1],195,y+20);
+    }
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='left';
+    ctx.fillText('size = '+entries.length,15,45+entries.length*45+20);
+  }
+
+  function log(msg){document.getElementById('sQ3Log').innerHTML+='<div>'+msg+'</div>';document.getElementById('sQ3Log').scrollTop=9999;}
+  function hlLine(id){['sQ3L1','sQ3L2','sQ3L3','sQ3L4','sQ3L5','sQ3L6','sQ3L7','sQ3L8','sQ3L9'].forEach(x=>document.getElementById(x).classList.remove('active'));if(id)document.getElementById(id).classList.add('active');}
+
+  window.sQ3Check = function(){
+    const inputs=[document.getElementById('sQ3a1').value.trim(),document.getElementById('sQ3a2').value.trim(),document.getElementById('sQ3a3').value.trim(),document.getElementById('sQ3a4').value.trim()];
+    let score=0;
+    const ids=['sQ3a1','sQ3a2','sQ3a3','sQ3a4'];
+    for(let i=0;i<4;i++){
+      const correct=inputs[i].toLowerCase()===answers[i].toLowerCase();
+      document.getElementById(ids[i]).style.borderColor=correct?'#22c55e':'#ef4444';
+      if(correct) score++;
+    }
+    log(score===4?'<span style="color:#22c55e">✓ All correct!</span>':'<span style="color:#f59e0b">'+score+'/4 correct</span>');
+  };
+
+  window.sQ3Trace = function(){
+    const steps=[
+      {line:'sQ3L1',fn:()=>{map={};log('Create empty HashMap');}},
+      {line:'sQ3L2',fn:()=>{map.alice=90;log('put("alice",90) → map = {alice:90}');}},
+      {line:'sQ3L3',fn:()=>{map.bob=85;log('put("bob",85) → map = {alice:90, bob:85}');}},
+      {line:'sQ3L4',fn:()=>{map.alice=95;log('put("alice",95) → <span style="color:#f59e0b">OVERWRITES</span> old value 90');}},
+      {line:'sQ3L5',fn:()=>{log('get("alice") → <span style="color:#22c55e">95</span> (updated value)');}},
+      {line:'sQ3L6',fn:()=>{log('size() → <span style="color:#22c55e">2</span> (put with existing key doesn\'t increase size)');}},
+      {line:'sQ3L7',fn:()=>{log('containsValue(90) → <span style="color:#22c55e">false</span> (90 was overwritten by 95!)');}},
+      {line:'sQ3L8',fn:()=>{delete map.bob;log('remove("bob") → bob removed');}},
+      {line:'sQ3L9',fn:()=>{log('get("bob") → <span style="color:#22c55e">null</span> (key not found)');}}
+    ];
+    if(traceStep>=steps.length){log('<span style="color:#22c55e">✓ Trace complete!</span>');return;}
+    const s=steps[traceStep];
+    hlLine(s.line);s.fn();drawMap();traceStep++;
+  };
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sQ3').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('sQ3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','s16','s17','sCA','s18','sCB','s19','sCC','s20','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+
+</body>
+</html>

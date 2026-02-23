@@ -1,0 +1,2547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maps (Dictionaries) - CS205 Data Structures [Enhanced]</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.05); z-index: 200; }
+#progress { height: 100%; width: 0; background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa); transition: width 0.3s; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.3em; margin-bottom: 10px; color: #a5b4fc; }
+p, li { font-size: 1.1em; line-height: 1.7; color: #cbd5e1; margin-bottom: 8px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 24px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 16px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', monospace; color: #a5f3fc; font-size: 0.95em; }
+table { border-collapse: collapse; margin: 12px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 8px 14px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(99,102,241,0.2); }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.12)); border-left: 4px solid #6366f1; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.key-idea h3 { color: #818cf8; margin-bottom: 6px; }
+.warning { background: rgba(245,158,11,0.1); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.warning h3 { color: #fbbf24; margin-bottom: 6px; }
+.analogy { background: rgba(16,185,129,0.1); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.analogy h3 { color: #34d399; margin-bottom: 6px; }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 0; margin: 10px 0; overflow: hidden; }
+.code-content { padding: 16px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em; line-height: 1.7; }
+.line { padding: 1px 8px; border-left: 3px solid transparent; }
+.line.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; }
+.btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+.btn-sm { padding: 5px 14px; font-size: 0.82em; }
+.btn-secondary { background: #334155; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 20px; }
+ul li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: TITLE -->
+<!-- ============================================================ -->
+<div class="slide active" id="s1">
+  <div class="center">
+    <h1>Maps — Key-Value Storage</h1>
+    <p class="subtitle">CS205 Data Structures</p>
+    <canvas id="cS1" width="600" height="280" style="margin:1rem auto;display:block;background:rgba(0,0,0,0.2);border-radius:16px;max-width:100%;"></canvas>
+    <p style="color:#64748b;font-size:0.95em;">Use arrow keys or buttons to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS1'), ctx=canvas.getContext('2d');
+  const entries=[
+    {key:'"apple"', val:'3', color:'#ef4444'},
+    {key:'"banana"', val:'7', color:'#f59e0b'},
+    {key:'"cherry"', val:'2', color:'#22c55e'},
+    {key:'"date"', val:'5', color:'#6366f1'}
+  ];
+  let anim=0, timer;
+
+  function draw(){
+    ctx.clearRect(0,0,600,280);
+    const x0=60, y0=40, rowH=48, keyW=150, valW=100, gap=30;
+
+    // Header
+    ctx.fillStyle='#64748b'; ctx.font='bold 13px system-ui'; ctx.textAlign='center';
+    ctx.fillText('KEY',x0+keyW/2,y0-8); ctx.fillText('VALUE',x0+keyW+gap+valW/2,y0-8);
+
+    // Entries
+    entries.forEach((e,i)=>{
+      const y=y0+i*rowH;
+      const alpha=i<=anim?1:0.15;
+
+      // Key box
+      ctx.fillStyle=`rgba(30,41,59,${alpha})`; ctx.strokeStyle=e.color;
+      ctx.lineWidth=2; ctx.beginPath();
+      ctx.roundRect(x0,y,keyW,38,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=i<=anim?'#e2e8f0':'rgba(226,232,240,0.15)';
+      ctx.font='bold 15px monospace'; ctx.textAlign='center';
+      ctx.fillText(e.key,x0+keyW/2,y+24);
+
+      // Arrow
+      const ax=x0+keyW+5, ay=y+19;
+      ctx.strokeStyle=i<=anim?e.color:'rgba(100,116,139,0.15)';
+      ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ax+gap-10,ay); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax+gap-10,ay-5); ctx.lineTo(ax+gap,ay); ctx.lineTo(ax+gap-10,ay+5); ctx.fill();
+
+      // Value box
+      ctx.fillStyle=`rgba(30,41,59,${alpha})`;
+      ctx.strokeStyle=i<=anim?e.color:'rgba(100,116,139,0.15)';
+      ctx.lineWidth=2; ctx.beginPath();
+      ctx.roundRect(x0+keyW+gap,y,valW,38,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=i<=anim?'#fff':'rgba(255,255,255,0.15)';
+      ctx.font='bold 18px monospace'; ctx.textAlign='center';
+      ctx.fillText(e.val,x0+keyW+gap+valW/2,y+25);
+    });
+
+    // Animated get() call
+    const getY=y0+entries.length*rowH+20;
+    ctx.fillStyle='#38bdf8'; ctx.font='bold 16px monospace'; ctx.textAlign='left';
+    const queries=['get("banana")  →  7','put("fig", 4)  →  adds entry','remove("apple")  →  3','containsKey("date")  →  true'];
+    const qi=Math.floor(anim/2)%queries.length;
+    ctx.fillText(queries[qi],x0,getY+15);
+  }
+
+  function animate(){
+    anim++; if(anim>7) anim=0;
+    draw();
+  }
+
+  function init(){
+    anim=0; draw();
+    if(timer) clearInterval(timer);
+    timer=setInterval(animate,800);
+  }
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s1').classList.contains('active')) init();
+    else { clearInterval(timer); timer=null; }
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: WHAT IS A MAP? -->
+<!-- ============================================================ -->
+<div class="slide" id="s2">
+  <h2>What is a Map?</h2>
+  <p>A <strong>map</strong> (dictionary / associative array) stores <strong>(key, value)</strong> pairs. Each key maps to exactly one value. Keys must be unique.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS2" width="420" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="margin-top:0.5rem;">
+        <label style="font-size:0.85rem;color:#cbd5e1;">Try a lookup: </label>
+        <select id="s2sel" onchange="s2Lookup()" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85rem;">
+          <option value="">Choose a key...</option>
+          <option value="cat">cat</option>
+          <option value="dog">dog</option>
+          <option value="fish">fish</option>
+          <option value="bird">bird</option>
+          <option value="snake">snake (not in map)</option>
+        </select>
+        <span id="s2result" style="margin-left:0.5rem;font-size:0.9rem;"></span>
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Real-World Analogies</h3>
+        <ul style="font-size:0.9rem;">
+          <li><strong>Dictionary:</strong> word → definition</li>
+          <li><strong>Phone book:</strong> name → phone number</li>
+          <li><strong>Student ID:</strong> ID → student record</li>
+          <li><strong>DNS:</strong> domain name → IP address</li>
+        </ul>
+      </div>
+      <div class="key-idea">
+        <h3>Core Insight</h3>
+        <p>A map is about <strong>lookup by key</strong>. You don't ask "what's at position 3?" — you ask "what is the value for key <code>"banana"</code>?"</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS2'), ctx=canvas.getContext('2d');
+  const data={cat:5, dog:3, fish:8, bird:2};
+  const keys=Object.keys(data);
+  let highlightIdx=-1;
+
+  function draw(){
+    ctx.clearRect(0,0,420,250);
+    const x0=30, y0=20, rowH=48, keyW=130, valW=80, gap=40;
+    ctx.fillStyle='#64748b'; ctx.font='bold 12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('KEY (unique)',x0+keyW/2,y0); ctx.fillText('VALUE',x0+keyW+gap+valW/2,y0);
+
+    keys.forEach((k,i)=>{
+      const y=y0+12+i*rowH;
+      const hl=i===highlightIdx;
+      // key box
+      ctx.fillStyle=hl?'rgba(99,102,241,0.3)':'#1e293b';
+      ctx.strokeStyle=hl?'#6366f1':'#475569'; ctx.lineWidth=hl?2.5:1.5;
+      ctx.beginPath(); ctx.roundRect(x0,y,keyW,36,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=hl?'#fff':'#e2e8f0'; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+k+'"',x0+keyW/2,y+23);
+      // arrow
+      ctx.strokeStyle=hl?'#6366f1':'#475569'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(x0+keyW+5,y+18); ctx.lineTo(x0+keyW+gap-8,y+18); ctx.stroke();
+      ctx.fillStyle=hl?'#6366f1':'#475569';
+      ctx.beginPath(); ctx.moveTo(x0+keyW+gap-8,y+13); ctx.lineTo(x0+keyW+gap,y+18); ctx.lineTo(x0+keyW+gap-8,y+23); ctx.fill();
+      // value box
+      ctx.fillStyle=hl?'rgba(34,197,94,0.3)':'#1e293b';
+      ctx.strokeStyle=hl?'#22c55e':'#475569'; ctx.lineWidth=hl?2.5:1.5;
+      ctx.beginPath(); ctx.roundRect(x0+keyW+gap,y,valW,36,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=hl?'#22c55e':'#e2e8f0'; ctx.font='bold 16px monospace'; ctx.textAlign='center';
+      ctx.fillText(data[k],x0+keyW+gap+valW/2,y+24);
+    });
+
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Keys are UNIQUE — values CAN repeat',210,240);
+  }
+
+  window.s2Lookup=function(){
+    const sel=document.getElementById('s2sel').value;
+    const res=document.getElementById('s2result');
+    if(!sel){ highlightIdx=-1; res.textContent=''; draw(); return; }
+    const realKey=sel.split(' ')[0];
+    const idx=keys.indexOf(realKey);
+    if(idx>=0){
+      highlightIdx=idx;
+      res.innerHTML='<span style="color:#22c55e">→ '+data[realKey]+'</span>';
+    } else {
+      highlightIdx=-1;
+      res.innerHTML='<span style="color:#ef4444">→ null (not found)</span>';
+    }
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s2').classList.contains('active')){ highlightIdx=-1; document.getElementById('s2sel').value=''; document.getElementById('s2result').textContent=''; draw(); }});
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: THE MAP ADT -->
+<!-- ============================================================ -->
+<div class="slide" id="s3">
+  <h2>The Map ADT</h2>
+  <p>The abstract interface any map implementation must support:</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#38bdf8;margin-bottom:0.5rem;">Core Operations</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s3L1">V  get(K key)</div>
+<div class="line" id="s3L2">   // value for key, or null</div>
+<div class="line" id="s3L3"></div>
+<div class="line" id="s3L4">V  put(K key, V value)</div>
+<div class="line" id="s3L5">   // insert or update; returns old value</div>
+<div class="line" id="s3L6"></div>
+<div class="line" id="s3L7">V  remove(K key)</div>
+<div class="line" id="s3L8">   // remove entry; returns old value</div>
+<div class="line" id="s3L9"></div>
+<div class="line" id="s3L10">boolean containsKey(K key)</div>
+<div class="line" id="s3L11">int     size()</div>
+<div class="line" id="s3L12">boolean isEmpty()</div>
+      </div></div>
+
+      <h3 style="color:#a78bfa;margin-top:0.8rem;margin-bottom:0.5rem;">Collection Views</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">Set&lt;K&gt;           keySet()</div>
+<div class="line">Collection&lt;V&gt;    values()</div>
+<div class="line">Set&lt;Entry&lt;K,V&gt;&gt; entrySet()</div>
+      </div></div>
+    </div>
+    <div>
+      <h3 style="color:#f59e0b;margin-bottom:0.5rem;">Interactive Trace</h3>
+      <canvas id="cS3" width="380" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s3Op('put','apple',3)">put("apple",3)</button>
+        <button class="btn btn-sm" onclick="s3Op('put','banana',7)">put("banana",7)</button>
+        <button class="btn btn-sm" onclick="s3Op('put','apple',9)">put("apple",9)</button>
+        <button class="btn btn-sm" onclick="s3Op('get','banana')">get("banana")</button>
+        <button class="btn btn-sm" onclick="s3Op('remove','apple')">remove("apple")</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+      <div id="s3Status" style="margin-top:0.4rem;font-size:0.85rem;color:#94a3b8;min-height:1.5em;"></div>
+
+      <div class="warning" style="margin-top:0.8rem;">
+        <h3>Keys Must Be Unique</h3>
+        <p><code>put("apple",5)</code> then <code>put("apple",9)</code> → only one "apple" entry with value 9. The old value 5 is replaced.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS3'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s3Status');
+  let map={};
+
+  function draw(hl){
+    ctx.clearRect(0,0,380,200);
+    const keys=Object.keys(map);
+    if(keys.length===0){ ctx.fillStyle='#64748b'; ctx.font='14px system-ui'; ctx.textAlign='center'; ctx.fillText('Empty map — try put()',190,100); return; }
+    const rowH=32; const y0=10; const kw=120; const vw=60; const x0=40; const gap=30;
+    ctx.fillStyle='#64748b'; ctx.font='bold 11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('KEY',x0+kw/2,y0+6); ctx.fillText('VALUE',x0+kw+gap+vw/2,y0+6);
+    keys.forEach((k,i)=>{
+      const y=y0+14+i*rowH;
+      const isHl=(k===hl);
+      ctx.fillStyle=isHl?'rgba(99,102,241,0.25)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isHl?'#6366f1':'#475569'; ctx.lineWidth=isHl?2:1;
+      ctx.beginPath(); ctx.roundRect(x0,y,kw,26,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=isHl?'#fff':'#e2e8f0'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+k+'"',x0+kw/2,y+17);
+      // arrow
+      ctx.strokeStyle=isHl?'#6366f1':'#475569'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x0+kw+4,y+13); ctx.lineTo(x0+kw+gap-6,y+13); ctx.stroke();
+      ctx.fillStyle=isHl?'#6366f1':'#475569';
+      ctx.beginPath(); ctx.moveTo(x0+kw+gap-6,y+9); ctx.lineTo(x0+kw+gap,y+13); ctx.lineTo(x0+kw+gap-6,y+17); ctx.fill();
+      // value
+      ctx.fillStyle=isHl?'rgba(34,197,94,0.25)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isHl?'#22c55e':'#475569'; ctx.lineWidth=isHl?2:1;
+      ctx.beginPath(); ctx.roundRect(x0+kw+gap,y,vw,26,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=isHl?'#22c55e':'#e2e8f0'; ctx.font='bold 13px monospace';
+      ctx.fillText(map[k],x0+kw+gap+vw/2,y+18);
+    });
+    ctx.fillStyle='#64748b'; ctx.font='11px system-ui'; ctx.textAlign='right';
+    ctx.fillText('size: '+keys.length,370,195);
+  }
+
+  window.s3Op=function(op,key,val){
+    if(op==='put'){
+      const old=map.hasOwnProperty(key)?map[key]:null;
+      map[key]=val;
+      if(old!==null) status.innerHTML='<span style="color:#f59e0b">put("'+key+'",'+val+') → updated, old value: '+old+'</span>';
+      else status.innerHTML='<span style="color:#22c55e">put("'+key+'",'+val+') → inserted (returned null)</span>';
+      draw(key);
+    } else if(op==='get'){
+      if(map.hasOwnProperty(key)){
+        status.innerHTML='<span style="color:#22c55e">get("'+key+'") → '+map[key]+'</span>';
+        draw(key);
+      } else {
+        status.innerHTML='<span style="color:#ef4444">get("'+key+'") → null (not found)</span>';
+        draw();
+      }
+    } else if(op==='remove'){
+      if(map.hasOwnProperty(key)){
+        const old=map[key]; delete map[key];
+        status.innerHTML='<span style="color:#f59e0b">remove("'+key+'") → '+old+'</span>';
+        draw();
+      } else {
+        status.innerHTML='<span style="color:#ef4444">remove("'+key+'") → null (not found)</span>';
+        draw();
+      }
+    }
+  };
+  window.s3Reset=function(){ map={}; status.textContent='Map cleared.'; draw(); };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s3').classList.contains('active')){ map={}; status.textContent=''; draw(); }});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: MAP vs SET vs LIST -->
+<!-- ============================================================ -->
+<div class="slide" id="s4">
+  <h2>Map vs Set vs List</h2>
+  <p>Three fundamental collection types — each organizes data differently.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS4" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <table style="width:100%;font-size:0.85rem;">
+        <tr><th>Feature</th><th>List</th><th>Set</th><th>Map</th></tr>
+        <tr><td>Access by</td><td>Index</td><td>Membership</td><td>Key</td></tr>
+        <tr><td>Duplicates</td><td>Allowed</td><td>No</td><td>Keys unique</td></tr>
+        <tr><td>Order</td><td>Yes</td><td>Depends</td><td>Depends</td></tr>
+        <tr class="highlight"><td>Use when</td><td>Ordered seq.</td><td>Uniqueness</td><td>Key lookup</td></tr>
+      </table>
+
+      <div style="margin-top:1rem;">
+        <p style="font-size:0.9rem;margin-bottom:0.5rem;">Which would you use?</p>
+        <div style="display:flex;flex-direction:column;gap:0.4rem;">
+          <button class="btn btn-sm btn-secondary" onclick="s4Show('list')" style="text-align:left;">📋 Store a playlist of songs in order</button>
+          <button class="btn btn-sm btn-secondary" onclick="s4Show('set')" style="text-align:left;">🔒 Track unique visitor IPs</button>
+          <button class="btn btn-sm btn-secondary" onclick="s4Show('map')" style="text-align:left;">📖 Student ID → GPA lookup</button>
+        </div>
+        <div id="s4result" style="margin-top:0.4rem;font-size:0.85rem;min-height:1.2em;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy" style="margin-top:0.8rem;">
+    <h3>Quick Decision Guide</h3>
+    <p>Need to find items <strong>by position</strong>? → <strong>List</strong>. Need to check <strong>membership</strong>? → <strong>Set</strong>. Need to look up <strong>value by key</strong>? → <strong>Map</strong>.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS4'), ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,440,300);
+
+    // LIST
+    ctx.fillStyle='#38bdf8'; ctx.font='bold 14px system-ui'; ctx.textAlign='left';
+    ctx.fillText('LIST (ordered by index)',20,25);
+    const listVals=['a','b','c','d','e'];
+    listVals.forEach((v,i)=>{
+      const x=20+i*60;
+      ctx.fillStyle='rgba(56,189,248,0.15)'; ctx.strokeStyle='#38bdf8'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(x,35,52,40,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#64748b'; ctx.font='10px monospace'; ctx.textAlign='center';
+      ctx.fillText(i,x+26,50);
+      ctx.fillStyle='#38bdf8'; ctx.font='bold 16px monospace';
+      ctx.fillText('"'+v+'"',x+26,68);
+    });
+    ctx.fillStyle='#94a3b8'; ctx.font='12px monospace'; ctx.textAlign='left';
+    ctx.fillText('list.get(2) → "c"',330,60);
+
+    // SET
+    ctx.fillStyle='#a78bfa'; ctx.font='bold 14px system-ui';
+    ctx.fillText('SET (unique, no index)',20,110);
+    ctx.fillStyle='rgba(167,139,250,0.15)'; ctx.strokeStyle='#a78bfa'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(20,120,300,45,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#a78bfa'; ctx.font='bold 15px monospace'; ctx.textAlign='center';
+    ctx.fillText('{ "a",  "b",  "c",  "d",  "e" }',170,148);
+    ctx.fillStyle='#94a3b8'; ctx.font='12px monospace'; ctx.textAlign='left';
+    ctx.fillText('set.contains("c") → true',330,148);
+
+    // MAP
+    ctx.fillStyle='#22c55e'; ctx.font='bold 14px system-ui';
+    ctx.fillText('MAP (key → value)',20,200);
+    const mapEntries=[{k:'name',v:'"Alice"'},{k:'age',v:'"25"'},{k:'city',v:'"NYC"'}];
+    mapEntries.forEach((e,i)=>{
+      const x=20+i*120;
+      ctx.fillStyle='rgba(34,197,94,0.12)'; ctx.strokeStyle='#22c55e'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(x,210,110,50,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#64748b'; ctx.font='10px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+e.k+'"',x+55,228);
+      ctx.fillStyle='#22c55e'; ctx.font='bold 14px monospace';
+      ctx.fillText(e.v,x+55,248);
+    });
+    ctx.fillStyle='#94a3b8'; ctx.font='12px monospace'; ctx.textAlign='left';
+    ctx.fillText('map.get("age") → "25"',20,285);
+  }
+
+  window.s4Show=function(type){
+    const res=document.getElementById('s4result');
+    if(type==='list') res.innerHTML='<span style="color:#38bdf8">✓ List — order matters for playlists!</span>';
+    else if(type==='set') res.innerHTML='<span style="color:#a78bfa">✓ Set — you only care if the IP was seen before.</span>';
+    else res.innerHTML='<span style="color:#22c55e">✓ Map — look up GPA by student ID key.</span>';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s4').classList.contains('active')){ draw(); document.getElementById('s4result').textContent=''; }});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: UNSORTED LIST IMPLEMENTATION -->
+<!-- ============================================================ -->
+<div class="slide" id="s5">
+  <h2>Implementation 1: Unsorted List</h2>
+  <p class="subtitle">Store entries in an unordered list — simple but slow</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS5" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">
+        <input type="text" id="s5key" placeholder="key" style="width:70px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <input type="number" id="s5val" placeholder="val" style="width:55px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s5Put()">put</button>
+        <button class="btn btn-sm" onclick="s5Get()">get</button>
+        <button class="btn btn-sm" onclick="s5Remove()">remove</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+      <div id="s5Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+    </div>
+    <div>
+      <table style="width:100%;font-size:0.85rem;">
+        <tr><th>Operation</th><th>Time</th><th>Why?</th></tr>
+        <tr><td>get(k)</td><td style="color:#ef4444;">O(n)</td><td>Linear scan</td></tr>
+        <tr><td>put(k,v)</td><td style="color:#ef4444;">O(n)</td><td>Search first</td></tr>
+        <tr><td>remove(k)</td><td style="color:#ef4444;">O(n)</td><td>Linear scan</td></tr>
+      </table>
+
+      <div class="warning" style="margin-top:0.8rem;">
+        <h3>Why O(n) for Everything?</h3>
+        <p>Without ordering, finding a key requires checking <strong>every entry</strong>. Even <code>put()</code> must search first to check if the key already exists.</p>
+      </div>
+      <div class="key-idea">
+        <h3>When Is This OK?</h3>
+        <p>For <strong>very small maps</strong> (&lt; 20 entries), the simplicity and cache-friendliness outweigh the O(n) cost.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS5'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s5Status');
+  let entries=[ {k:'cat',v:5}, {k:'dog',v:3}, {k:'fish',v:8}, {k:'bird',v:2} ];
+  let scanIdx=-1, scanTimer=null;
+
+  function draw(highlightIdx){
+    ctx.clearRect(0,0,420,280);
+    const x0=20, y0=15, rowH=36;
+    ctx.fillStyle='#64748b'; ctx.font='bold 11px system-ui'; ctx.textAlign='left';
+    ctx.fillText('idx',x0,y0+10); ctx.fillText('KEY',x0+40,y0+10); ctx.fillText('VALUE',x0+200,y0+10);
+    ctx.strokeStyle='#334155'; ctx.beginPath(); ctx.moveTo(x0,y0+16); ctx.lineTo(400,y0+16); ctx.stroke();
+
+    entries.forEach((e,i)=>{
+      const y=y0+22+i*rowH;
+      const hl=i===highlightIdx;
+      if(hl){ ctx.fillStyle='rgba(99,102,241,0.15)'; ctx.fillRect(x0,y-4,380,rowH); }
+      if(i===scanIdx){ ctx.fillStyle='rgba(245,158,11,0.2)'; ctx.fillRect(x0,y-4,380,rowH); }
+      ctx.fillStyle=hl?'#6366f1':i===scanIdx?'#f59e0b':'#64748b';
+      ctx.font='12px monospace'; ctx.textAlign='left';
+      ctx.fillText(i,x0+8,y+14);
+      ctx.fillStyle=hl?'#fff':'#e2e8f0'; ctx.font='bold 13px monospace';
+      ctx.fillText('"'+e.k+'"',x0+40,y+14);
+      ctx.fillStyle=hl?'#22c55e':'#e2e8f0'; ctx.font='bold 14px monospace';
+      ctx.fillText(e.v,x0+210,y+14);
+    });
+
+    if(entries.length===0){
+      ctx.fillStyle='#64748b'; ctx.font='14px system-ui'; ctx.textAlign='center';
+      ctx.fillText('Empty — add entries with put()',210,120);
+    }
+
+    // scan arrow
+    if(scanIdx>=0&&scanIdx<entries.length){
+      const y=y0+22+scanIdx*rowH;
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 14px monospace'; ctx.textAlign='left';
+      ctx.fillText('→',x0-15,y+14);
+    }
+  }
+
+  function animateScan(key, callback){
+    if(scanTimer) clearTimeout(scanTimer);
+    scanIdx=0;
+    function step(){
+      if(scanIdx>=entries.length){ scanIdx=-1; draw(); callback(-1); return; }
+      draw();
+      if(entries[scanIdx].k===key){ const found=scanIdx; scanIdx=-1; draw(found); callback(found); return; }
+      scanIdx++;
+      scanTimer=setTimeout(step,350);
+    }
+    step();
+  }
+
+  window.s5Put=function(){
+    const k=document.getElementById('s5key').value.trim();
+    const v=parseInt(document.getElementById('s5val').value);
+    if(!k){ status.textContent='Enter a key.'; return; }
+    if(isNaN(v)){ status.textContent='Enter a numeric value.'; return; }
+    animateScan(k,(idx)=>{
+      if(idx>=0){
+        const old=entries[idx].v; entries[idx].v=v;
+        status.innerHTML='<span style="color:#f59e0b">Updated "'+k+'": '+old+' → '+v+' (scanned '+(idx+1)+' entries)</span>';
+      } else {
+        entries.push({k:k,v:v});
+        status.innerHTML='<span style="color:#22c55e">Inserted "'+k+'":'+v+' at end (scanned all '+( entries.length-1)+' entries)</span>';
+      }
+      draw(idx>=0?idx:entries.length-1);
+    });
+  };
+  window.s5Get=function(){
+    const k=document.getElementById('s5key').value.trim();
+    if(!k){ status.textContent='Enter a key.'; return; }
+    animateScan(k,(idx)=>{
+      if(idx>=0) status.innerHTML='<span style="color:#22c55e">get("'+k+'") → '+entries[idx].v+' (found at index '+idx+')</span>';
+      else status.innerHTML='<span style="color:#ef4444">get("'+k+'") → null (scanned all '+entries.length+' entries)</span>';
+    });
+  };
+  window.s5Remove=function(){
+    const k=document.getElementById('s5key').value.trim();
+    if(!k){ status.textContent='Enter a key.'; return; }
+    animateScan(k,(idx)=>{
+      if(idx>=0){
+        const old=entries[idx].v;
+        // swap with last
+        entries[idx]=entries[entries.length-1]; entries.pop();
+        status.innerHTML='<span style="color:#f59e0b">remove("'+k+'") → '+old+' (swap-with-last trick)</span>';
+        draw();
+      } else {
+        status.innerHTML='<span style="color:#ef4444">remove("'+k+'") → null (not found)</span>';
+      }
+    });
+  };
+  window.s5Reset=function(){
+    if(scanTimer) clearTimeout(scanTimer); scanIdx=-1;
+    entries=[{k:'cat',v:5},{k:'dog',v:3},{k:'fish',v:8},{k:'bird',v:2}];
+    status.textContent='Reset.'; draw();
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s5').classList.contains('active')) s5Reset(); });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: SORTED ARRAY IMPLEMENTATION -->
+<!-- ============================================================ -->
+<div class="slide" id="s6">
+  <h2>Implementation 2: Sorted Array</h2>
+  <p class="subtitle">Keep entries sorted by key — binary search for O(log n) lookups</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS6" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <input type="text" id="s6key" placeholder="key" value="dog" style="width:70px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s6Search()">Binary Search</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Reset()">Reset</button>
+      </div>
+      <div id="s6Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+      <div id="s6Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.75rem;margin-top:0.3rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+    <div>
+      <table style="width:100%;font-size:0.85rem;">
+        <tr><th>Operation</th><th>Time</th></tr>
+        <tr class="highlight"><td>get(k)</td><td style="color:#22c55e;"><strong>O(log n)</strong></td></tr>
+        <tr><td>put(k,v) existing</td><td style="color:#22c55e;">O(log n)</td></tr>
+        <tr><td>put(k,v) new</td><td style="color:#ef4444;">O(n)</td></tr>
+        <tr><td>remove(k)</td><td style="color:#ef4444;">O(n)</td></tr>
+      </table>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <h3>Binary Search Wins for Lookups</h3>
+        <p>Finding a key is <strong>O(log n)</strong> — much better! But inserting a <em>new</em> key still needs <strong>shifting</strong> to maintain sorted order → O(n).</p>
+      </div>
+
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>The Shifting Problem</h3>
+        <p>To insert "cow" between "cat" and "dog", we must shift "dog" and "fish" right. Same shifting cost as ArrayList insertion.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS6'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s6Status');
+  const log=document.getElementById('s6Log');
+  const entries=[{k:'ant',v:6},{k:'bird',v:2},{k:'cat',v:5},{k:'dog',v:3},{k:'fish',v:8}];
+  let lo=-1,hi=-1,mid=-1,found=-1,searchTimer=null;
+
+  function draw(){
+    ctx.clearRect(0,0,420,280);
+    const x0=15, y0=20, rowH=42, kw=110, vw=55;
+
+    entries.forEach((e,i)=>{
+      const y=y0+i*rowH;
+      let bg='rgba(30,41,59,0.8)', border='#475569', txtCol='#e2e8f0';
+      if(i===found){ bg='rgba(34,197,94,0.3)'; border='#22c55e'; txtCol='#22c55e'; }
+      else if(i===mid){ bg='rgba(245,158,11,0.3)'; border='#f59e0b'; txtCol='#f59e0b'; }
+      else if(i>=lo&&i<=hi&&lo>=0){ bg='rgba(99,102,241,0.1)'; border='#6366f1'; }
+
+      // index
+      ctx.fillStyle='#64748b'; ctx.font='11px monospace'; ctx.textAlign='right';
+      ctx.fillText('['+i+']',x0+20,y+22);
+
+      // key box
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=i===mid||i===found?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0+28,y,kw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=txtCol; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+e.k+'"',x0+28+kw/2,y+22);
+
+      // value
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.roundRect(x0+28+kw+8,y,vw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=txtCol; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+      ctx.fillText(e.v,x0+28+kw+8+vw/2,y+22);
+
+      // markers
+      if(lo>=0){
+        if(i===lo){ ctx.fillStyle='#6366f1'; ctx.font='bold 11px system-ui'; ctx.textAlign='left'; ctx.fillText('lo',x0+28+kw+vw+16,y+22); }
+        if(i===hi){ ctx.fillStyle='#6366f1'; ctx.font='bold 11px system-ui'; ctx.textAlign='left'; ctx.fillText('hi',x0+28+kw+vw+16,y+22); }
+        if(i===mid){ ctx.fillStyle='#f59e0b'; ctx.font='bold 11px system-ui'; ctx.textAlign='left'; ctx.fillText('mid',x0+28+kw+vw+16,y+22); }
+      }
+    });
+
+    // binary search label
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Sorted by key — enables binary search',210,270);
+  }
+
+  window.s6Search=function(){
+    const target=document.getElementById('s6key').value.trim().toLowerCase();
+    if(!target){ status.textContent='Enter a key.'; return; }
+    if(searchTimer) clearTimeout(searchTimer);
+    lo=0; hi=entries.length-1; mid=-1; found=-1;
+    log.innerHTML='';
+    let step=0;
+
+    function bsStep(){
+      if(lo>hi){
+        status.innerHTML='<span style="color:#ef4444">"'+target+'" not found ('+step+' comparisons)</span>';
+        log.innerHTML+='<div style="color:#ef4444">Not found!</div>';
+        lo=-1; hi=-1; mid=-1; draw(); return;
+      }
+      mid=Math.floor((lo+hi)/2);
+      step++;
+      draw();
+      const cmp=entries[mid].k.localeCompare(target);
+      if(cmp===0){
+        found=mid; mid=-1; lo=-1; hi=-1;
+        status.innerHTML='<span style="color:#22c55e">Found "'+target+'" → '+entries[found].v+' ('+step+' comparisons)</span>';
+        log.innerHTML+='<div style="color:#22c55e">mid='+found+': "'+entries[found].k+'" == "'+target+'" ✓</div>';
+        draw();
+      } else if(cmp<0){
+        log.innerHTML+='<div>mid='+mid+': "'+entries[mid].k+'" < "'+target+'" → go right</div>';
+        lo=mid+1; mid=-1;
+        searchTimer=setTimeout(bsStep,700);
+      } else {
+        log.innerHTML+='<div>mid='+mid+': "'+entries[mid].k+'" > "'+target+'" → go left</div>';
+        hi=mid-1; mid=-1;
+        searchTimer=setTimeout(bsStep,700);
+      }
+      log.scrollTop=log.scrollHeight;
+    }
+    bsStep();
+  };
+
+  window.s6Reset=function(){
+    if(searchTimer) clearTimeout(searchTimer);
+    lo=-1; hi=-1; mid=-1; found=-1;
+    log.innerHTML=''; status.textContent=''; draw();
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s6').classList.contains('active')) s6Reset(); });
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: MULTIMAP -->
+<!-- ============================================================ -->
+<div class="slide" id="s7">
+  <h2>Multimap</h2>
+  <p class="subtitle">A variation where one key maps to <strong>multiple values</strong></p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS7" width="420" height="230" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">
+        <input type="text" id="s7name" placeholder="student" value="Alice" style="width:80px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <input type="text" id="s7course" placeholder="course" value="Physics" style="width:80px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="s7Add()">Enroll</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+      <div id="s7Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+    </div>
+    <div>
+      <h3 style="color:#a78bfa;margin-bottom:0.5rem;">Simulating with Map&lt;K, List&lt;V&gt;&gt;</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">Map&lt;String, List&lt;String&gt;&gt; courses</div>
+<div class="line">    = new HashMap&lt;&gt;();</div>
+<div class="line"></div>
+<div class="line">// Add a course for Alice</div>
+<div class="line">courses.computeIfAbsent("Alice",</div>
+<div class="line">    k -> new ArrayList&lt;&gt;()).add("CS");</div>
+<div class="line"></div>
+<div class="line">courses.computeIfAbsent("Alice",</div>
+<div class="line">    k -> new ArrayList&lt;&gt;()).add("Math");</div>
+<div class="line"></div>
+<div class="line">// Get all of Alice's courses</div>
+<div class="line">courses.get("Alice");</div>
+<div class="line">// → ["CS", "Math"]</div>
+      </div></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>When to Use</h3>
+        <p>One-to-many: student → courses, word → positions in text, vertex → neighbors (adjacency list).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS7'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s7Status');
+  let mmap;
+  const colors=['#38bdf8','#a78bfa','#f59e0b','#22c55e','#f472b6','#ef4444'];
+
+  function draw(){
+    ctx.clearRect(0,0,420,230);
+    const keys=Object.keys(mmap);
+    if(keys.length===0){ ctx.fillStyle='#64748b'; ctx.font='14px system-ui'; ctx.textAlign='center'; ctx.fillText('Empty — enroll students!',210,100); return; }
+    const x0=20, y0=15, rowH=55;
+    keys.forEach((k,i)=>{
+      const y=y0+i*rowH;
+      const c=colors[i%colors.length];
+      // name box
+      ctx.fillStyle='rgba(30,41,59,0.8)'; ctx.strokeStyle=c; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(x0,y,100,40,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      ctx.fillText(k,x0+50,y+25);
+      // arrow
+      ctx.strokeStyle=c; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(x0+105,y+20); ctx.lineTo(x0+130,y+20); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x0+125,y+15); ctx.lineTo(x0+133,y+20); ctx.lineTo(x0+125,y+25); ctx.fill();
+      // value list
+      const vals=mmap[k];
+      vals.forEach((v,j)=>{
+        const vx=x0+140+j*80;
+        ctx.fillStyle='rgba(30,41,59,0.8)'; ctx.strokeStyle=c; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.roundRect(vx,y,72,40,6); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#e2e8f0'; ctx.font='12px monospace'; ctx.textAlign='center';
+        ctx.fillText(v,vx+36,y+25);
+      });
+    });
+  }
+
+  window.s7Add=function(){
+    const name=document.getElementById('s7name').value.trim();
+    const course=document.getElementById('s7course').value.trim();
+    if(!name||!course){ status.textContent='Enter both name and course.'; return; }
+    if(!mmap[name]) mmap[name]=[];
+    if(mmap[name].includes(course)){ status.innerHTML='<span style="color:#f59e0b">'+name+' already enrolled in '+course+'</span>'; return; }
+    mmap[name].push(course);
+    status.innerHTML='<span style="color:#22c55e">Enrolled '+name+' in '+course+' → ['+mmap[name].join(', ')+']</span>';
+    draw();
+  };
+  window.s7Reset=function(){
+    mmap={Alice:['CS','Math'],Bob:['CS','English'],Carol:['Math']};
+    status.textContent=''; draw();
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s7').classList.contains('active')) s7Reset(); });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  s7Reset();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: put() OPERATION -->
+<!-- ============================================================ -->
+<div class="slide" id="s8">
+  <h2>put() Operation — Step by Step</h2>
+  <p class="subtitle">Two cases: <strong>update</strong> existing key, or <strong>insert</strong> new entry</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS8" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s8Demo('update')">put("banana", 10)</button>
+        <button class="btn btn-sm" onclick="s8Demo('insert')">put("date", 5)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+      <div id="s8Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s8L1">public V put(K key, V value) {</div>
+<div class="line" id="s8L2">  // Step 1: Search for existing key</div>
+<div class="line" id="s8L3">  for (Entry e : entries) {</div>
+<div class="line" id="s8L4">    if (e.key.equals(key)) {</div>
+<div class="line" id="s8L5">      V old = e.value;</div>
+<div class="line" id="s8L6">      e.value = value; // update</div>
+<div class="line" id="s8L7">      return old;</div>
+<div class="line" id="s8L8">    }</div>
+<div class="line" id="s8L9">  }</div>
+<div class="line" id="s8L10">  // Step 2: Not found, insert new</div>
+<div class="line" id="s8L11">  entries.add(new Entry(key,value));</div>
+<div class="line" id="s8L12">  size++;</div>
+<div class="line" id="s8L13">  return null;</div>
+<div class="line" id="s8L14">}</div>
+      </div></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>put() Always Searches First</h3>
+        <p>Even for insertion, <code>put()</code> must scan <strong>all entries</strong> to check if the key exists. This is why <code>put()</code> in an unsorted list is <strong>O(n)</strong>, not O(1).</p>
+        <p style="margin-top:0.3rem;font-size:0.9rem;">Return value: old value (update) or null (insert).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS8'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s8Status');
+  let entries, scanIdx, timer, mode;
+
+  function clearHL(){ for(let i=1;i<=14;i++) document.getElementById('s8L'+i).classList.remove('active'); }
+  function hl(lines){ clearHL(); lines.forEach(n=>document.getElementById('s8L'+n).classList.add('active')); }
+
+  function draw(highlightIdx, flash){
+    ctx.clearRect(0,0,420,260);
+    const x0=30, y0=20, rowH=42, kw=120, vw=60;
+    ctx.fillStyle='#64748b'; ctx.font='bold 11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('KEY',x0+kw/2,y0); ctx.fillText('VALUE',x0+kw+40+vw/2,y0);
+
+    entries.forEach((e,i)=>{
+      const y=y0+12+i*rowH;
+      let bg='rgba(30,41,59,0.8)', border='#475569', tc='#e2e8f0', vc='#e2e8f0';
+      if(i===highlightIdx&&flash==='found'){ bg='rgba(245,158,11,0.3)'; border='#f59e0b'; tc='#f59e0b'; vc='#f59e0b'; }
+      else if(i===highlightIdx&&flash==='updated'){ bg='rgba(34,197,94,0.3)'; border='#22c55e'; vc='#22c55e'; }
+      else if(i===highlightIdx&&flash==='new'){ bg='rgba(99,102,241,0.3)'; border='#6366f1'; tc='#6366f1'; vc='#6366f1'; }
+      else if(i===scanIdx){ bg='rgba(245,158,11,0.15)'; border='#f59e0b'; }
+
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=i===highlightIdx?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0,y,kw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=tc; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+e.k+'"',x0+kw/2,y+22);
+
+      ctx.strokeStyle=border; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x0+kw+5,y+17); ctx.lineTo(x0+kw+32,y+17); ctx.stroke();
+      ctx.fillStyle=border;
+      ctx.beginPath(); ctx.moveTo(x0+kw+32,y+12); ctx.lineTo(x0+kw+40,y+17); ctx.lineTo(x0+kw+32,y+22); ctx.fill();
+
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=i===highlightIdx?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0+kw+40,y,vw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=vc; ctx.font='bold 15px monospace';
+      ctx.fillText(e.v,x0+kw+40+vw/2,y+23);
+
+      if(i===scanIdx){
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 14px monospace'; ctx.textAlign='right';
+        ctx.fillText('→',x0-8,y+22);
+      }
+    });
+  }
+
+  function reset(){
+    if(timer) clearTimeout(timer);
+    entries=[{k:'apple',v:3},{k:'banana',v:7},{k:'cherry',v:2}];
+    scanIdx=-1; mode=null; clearHL(); status.textContent=''; draw(-1);
+  }
+
+  window.s8Reset=reset;
+
+  window.s8Demo=function(m){
+    if(timer) clearTimeout(timer);
+    reset();
+    mode=m;
+    const targetKey=m==='update'?'banana':'date';
+    const targetVal=m==='update'?10:5;
+    scanIdx=0;
+    let step=0;
+
+    function animate(){
+      if(step<entries.length){
+        scanIdx=step;
+        hl([3,4]);
+        draw(step, entries[step].k===targetKey?'found':null);
+        if(entries[step].k===targetKey){
+          // found — update
+          timer=setTimeout(()=>{
+            hl([5,6,7]);
+            const old=entries[step].v;
+            entries[step].v=targetVal;
+            draw(step,'updated');
+            status.innerHTML='<span style="color:#22c55e">Found "'+targetKey+'" — updated '+old+' → '+targetVal+'. Returns: '+old+'</span>';
+          },600);
+          return;
+        }
+        step++;
+        timer=setTimeout(animate,500);
+      } else {
+        // not found — insert
+        scanIdx=-1;
+        hl([10,11,12,13]);
+        entries.push({k:targetKey,v:targetVal});
+        draw(entries.length-1,'new');
+        status.innerHTML='<span style="color:#6366f1">Key "'+targetKey+'" not found after scanning all. Inserted at end. Returns: null</span>';
+      }
+    }
+    animate();
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s8').classList.contains('active')) reset(); });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  reset();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: get() OPERATION -->
+<!-- ============================================================ -->
+<div class="slide" id="s9">
+  <h2>get() Operation</h2>
+  <p class="subtitle">Search for a key and return its value, or null if absent</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS9" width="420" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s9Demo('banana')">get("banana")</button>
+        <button class="btn btn-sm" onclick="s9Demo('grape')">get("grape")</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+      <div id="s9Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s9L1">public V get(K key) {</div>
+<div class="line" id="s9L2">  for (Entry e : entries) {</div>
+<div class="line" id="s9L3">    if (e.key.equals(key)) {</div>
+<div class="line" id="s9L4">      return e.value;  // found!</div>
+<div class="line" id="s9L5">    }</div>
+<div class="line" id="s9L6">  }</div>
+<div class="line" id="s9L7">  return null; // not in map</div>
+<div class="line" id="s9L8">}</div>
+      </div></div>
+
+      <div class="warning" style="margin-top:0.8rem;">
+        <h3>null Can Be Ambiguous</h3>
+        <p>If <code>get("grape")</code> returns null — is the key absent, or does it exist with a null value? Use <code>containsKey()</code> to disambiguate:</p>
+        <div class="code-block" style="margin-top:0.4rem;"><div class="code-content">
+<div class="line">if (map.containsKey("grape")) {</div>
+<div class="line">  // key exists, value might be null</div>
+<div class="line">} else {</div>
+<div class="line">  // key truly absent</div>
+<div class="line">}</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS9'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s9Status');
+  const entries=[{k:'apple',v:3},{k:'banana',v:7},{k:'cherry',v:2}];
+  let scanIdx=-1, timer;
+
+  function clearHL(){ for(let i=1;i<=8;i++) document.getElementById('s9L'+i).classList.remove('active'); }
+  function hl(lines){ clearHL(); lines.forEach(n=>document.getElementById('s9L'+n).classList.add('active')); }
+
+  function draw(foundIdx){
+    ctx.clearRect(0,0,420,220);
+    const x0=30, y0=25, rowH=50, kw=120, vw=60;
+    entries.forEach((e,i)=>{
+      const y=y0+i*rowH;
+      let bg='rgba(30,41,59,0.8)', border='#475569', tc='#e2e8f0';
+      if(i===foundIdx){ bg='rgba(34,197,94,0.3)'; border='#22c55e'; tc='#22c55e'; }
+      else if(i===scanIdx){ bg='rgba(245,158,11,0.15)'; border='#f59e0b'; }
+
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=i===foundIdx?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0,y,kw,38,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=tc; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+e.k+'"',x0+kw/2,y+24);
+
+      ctx.strokeStyle=border; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x0+kw+5,y+19); ctx.lineTo(x0+kw+32,y+19); ctx.stroke();
+
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=i===foundIdx?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0+kw+40,y,vw,38,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=i===foundIdx?'#22c55e':'#e2e8f0'; ctx.font='bold 16px monospace';
+      ctx.fillText(e.v,x0+kw+40+vw/2,y+25);
+
+      // comparison text
+      ctx.fillStyle=i===scanIdx?'#f59e0b':i===foundIdx?'#22c55e':'rgba(100,116,139,0.4)';
+      ctx.font='12px monospace'; ctx.textAlign='left';
+      if(i===foundIdx) ctx.fillText('== YES! ✓',x0+kw+vw+55,y+25);
+      else if(i<scanIdx||(scanIdx===-1&&foundIdx===-1)) ctx.fillText('!= No',x0+kw+vw+55,y+25);
+      else if(i===scanIdx) ctx.fillText('checking...',x0+kw+vw+55,y+25);
+
+      if(i===scanIdx){
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 14px monospace'; ctx.textAlign='right';
+        ctx.fillText('→',x0-8,y+24);
+      }
+    });
+  }
+
+  window.s9Demo=function(key){
+    if(timer) clearTimeout(timer);
+    scanIdx=0; clearHL(); status.textContent='';
+    let step=0;
+    function animate(){
+      scanIdx=step; hl([2,3]);
+      draw(-1);
+      if(step<entries.length&&entries[step].k===key){
+        timer=setTimeout(()=>{
+          scanIdx=-1; hl([4]);
+          draw(step);
+          status.innerHTML='<span style="color:#22c55e">get("'+key+'") → '+entries[step].v+' (found at index '+step+')</span>';
+        },500);
+        return;
+      }
+      step++;
+      if(step>=entries.length){
+        timer=setTimeout(()=>{
+          scanIdx=-1; hl([7]);
+          draw(-1);
+          status.innerHTML='<span style="color:#ef4444">get("'+key+'") → null (scanned all '+entries.length+' entries)</span>';
+        },500);
+        return;
+      }
+      timer=setTimeout(animate,500);
+    }
+    animate();
+  };
+
+  window.s9Reset=function(){ if(timer) clearTimeout(timer); scanIdx=-1; clearHL(); status.textContent=''; draw(-1); };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s9').classList.contains('active')) s9Reset(); });
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  draw(-1);
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: remove() OPERATION -->
+<!-- ============================================================ -->
+<div class="slide" id="s10">
+  <h2>remove() Operation</h2>
+  <p class="subtitle">Find entry by key, remove it, return old value</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS10" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s10Demo('shift')">Remove "banana" (shift)</button>
+        <button class="btn btn-sm" onclick="s10Demo('swap')">Remove "banana" (swap-last)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s10L1">public V remove(K key) {</div>
+<div class="line" id="s10L2">  for (int i = 0; i &lt; size; i++) {</div>
+<div class="line" id="s10L3">    if (entries[i].key.equals(key)) {</div>
+<div class="line" id="s10L4">      V old = entries[i].value;</div>
+<div class="line" id="s10L5">      // Swap with last entry</div>
+<div class="line" id="s10L6">      entries[i] = entries[size-1];</div>
+<div class="line" id="s10L7">      entries[size-1] = null;</div>
+<div class="line" id="s10L8">      size--;</div>
+<div class="line" id="s10L9">      return old;</div>
+<div class="line" id="s10L10">    }</div>
+<div class="line" id="s10L11">  }</div>
+<div class="line" id="s10L12">  return null;</div>
+<div class="line" id="s10L13">}</div>
+      </div></div>
+
+      <div class="key-idea" style="margin-top:0.6rem;">
+        <h3>Swap-with-Last Trick</h3>
+        <p>Since unsorted list has <strong>no required order</strong>, replace the removed entry with the last in O(1). Search is still O(n), but the removal step itself is O(1).</p>
+        <p style="margin-top:0.3rem;font-size:0.9rem;color:#f59e0b;"><strong>Does NOT work for sorted arrays</strong> — swapping breaks sorted order.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS10'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s10Status');
+  let entries, timer;
+
+  function clearHL(){ for(let i=1;i<=13;i++){ const el=document.getElementById('s10L'+i); if(el) el.classList.remove('active'); } }
+  function hl(lines){ clearHL(); lines.forEach(n=>{ const el=document.getElementById('s10L'+n); if(el) el.classList.add('active'); }); }
+
+  function draw(highlightIdx, flash, label){
+    ctx.clearRect(0,0,420,280);
+    const x0=30, y0=15, rowH=44, kw=110, vw=55;
+    ctx.fillStyle='#64748b'; ctx.font='bold 11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('idx',x0-10,y0+8); ctx.fillText('KEY',x0+kw/2,y0+8); ctx.fillText('VALUE',x0+kw+40+vw/2,y0+8);
+
+    entries.forEach((e,i)=>{
+      const y=y0+16+i*rowH;
+      let bg='rgba(30,41,59,0.8)', border='#475569';
+      if(i===highlightIdx&&flash==='found'){ bg='rgba(245,158,11,0.3)'; border='#f59e0b'; }
+      else if(i===highlightIdx&&flash==='removed'){ bg='rgba(239,68,68,0.3)'; border='#ef4444'; }
+      else if(i===highlightIdx&&flash==='swapped'){ bg='rgba(99,102,241,0.3)'; border='#6366f1'; }
+
+      ctx.fillStyle='#64748b'; ctx.font='11px monospace'; ctx.textAlign='right';
+      ctx.fillText('['+i+']',x0-4,y+22);
+
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=i===highlightIdx?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0,y,kw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+e.k+'"',x0+kw/2,y+22);
+
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.roundRect(x0+kw+40,y,vw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 14px monospace';
+      ctx.fillText(e.v,x0+kw+40+vw/2,y+23);
+    });
+
+    if(label){
+      ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='center';
+      ctx.fillText(label,210,270);
+    }
+  }
+
+  function init(){
+    if(timer) clearTimeout(timer);
+    entries=[{k:'apple',v:3},{k:'banana',v:7},{k:'cherry',v:2},{k:'date',v:5}];
+    clearHL(); status.textContent=''; draw(-1);
+  }
+  window.s10Reset=init;
+
+  window.s10Demo=function(method){
+    init();
+    const targetIdx=1; // banana
+    let step=0;
+    function animate(){
+      if(step===0){
+        hl([2,3]); draw(targetIdx,'found','Scanning... found "banana" at index 1');
+        status.textContent='Found "banana" at index 1. Old value: 7';
+      } else if(step===1){
+        if(method==='swap'){
+          hl([5,6,7,8]);
+          entries[targetIdx]={...entries[entries.length-1]};
+          entries.pop();
+          draw(targetIdx,'swapped','Swap with last ("date"), shrink array');
+          status.innerHTML='<span style="color:#22c55e">Swap-with-last: O(1) removal step!</span>';
+        } else {
+          hl([5,6]);
+          entries.splice(targetIdx,1);
+          draw(-1,null,'Shift cherry and date left — O(n) shifting');
+          status.innerHTML='<span style="color:#f59e0b">Shift removal: O(n) — must move all entries after index 1</span>';
+        }
+        return;
+      }
+      step++;
+      timer=setTimeout(animate,800);
+    }
+    animate();
+    timer=setTimeout(()=>{ step++; animate(); },800);
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s10').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 11: ORDERED / SORTED MAP -->
+<!-- ============================================================ -->
+<div class="slide" id="s11">
+  <h2>Ordered Map / Sorted Map</h2>
+  <p class="subtitle">Keys in sorted order — enables range queries and ordered traversal</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS11" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s11Op('first')">firstKey()</button>
+        <button class="btn btn-sm" onclick="s11Op('last')">lastKey()</button>
+        <button class="btn btn-sm" onclick="s11Op('sub')">subMap("bird","dog")</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+      <div id="s11Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Why Maintain Sorted Order?</h3>
+        <ul style="font-size:0.88rem;">
+          <li><strong>Range queries:</strong> "all entries between 'C' and 'M'"</li>
+          <li><strong>Ordered iteration:</strong> smallest to largest</li>
+          <li><strong>Min/max:</strong> find smallest/largest key in O(log n)</li>
+          <li><strong>Floor/ceiling:</strong> nearest key to a value</li>
+        </ul>
+      </div>
+
+      <div class="analogy" style="margin-top:0.5rem;">
+        <h3>Filing Cabinet Analogy</h3>
+        <p><strong>Unsorted map</strong> = tossing files in a box — fast to add, slow to find. <strong>Sorted map</strong> = alphabetized filing cabinet — slightly slower to insert, but fast lookup and browsing.</p>
+      </div>
+
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Requirement</h3>
+        <p>Keys must implement <code>Comparable</code> or you must provide a <code>Comparator</code>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS11'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s11Status');
+  const entries=[{k:'ant',v:6},{k:'bird',v:2},{k:'cat',v:5},{k:'dog',v:3},{k:'fish',v:8}];
+  let highlights=[];
+
+  function draw(){
+    ctx.clearRect(0,0,420,280);
+    const x0=30, y0=20, rowH=44, kw=110, vw=55;
+    ctx.fillStyle='#64748b'; ctx.font='bold 11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Sorted Map (alphabetical)',210,y0);
+
+    entries.forEach((e,i)=>{
+      const y=y0+12+i*rowH;
+      const hl=highlights.includes(i);
+      ctx.fillStyle=hl?'rgba(99,102,241,0.25)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=hl?'#6366f1':'#475569'; ctx.lineWidth=hl?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0,y,kw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=hl?'#fff':'#e2e8f0'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+e.k+'"',x0+kw/2,y+22);
+
+      ctx.strokeStyle=hl?'#6366f1':'#475569'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x0+kw+5,y+17); ctx.lineTo(x0+kw+32,y+17); ctx.stroke();
+
+      ctx.fillStyle=hl?'rgba(34,197,94,0.25)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=hl?'#22c55e':'#475569'; ctx.lineWidth=hl?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0+kw+40,y,vw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=hl?'#22c55e':'#e2e8f0'; ctx.font='bold 15px monospace';
+      ctx.fillText(e.v,x0+kw+40+vw/2,y+23);
+
+      // labels
+      if(i===0){ ctx.fillStyle='#38bdf8'; ctx.font='11px system-ui'; ctx.textAlign='left'; ctx.fillText('← firstKey()',x0+kw+vw+50,y+22); }
+      if(i===entries.length-1){ ctx.fillStyle='#38bdf8'; ctx.font='11px system-ui'; ctx.textAlign='left'; ctx.fillText('← lastKey()',x0+kw+vw+50,y+22); }
+    });
+  }
+
+  window.s11Op=function(op){
+    if(op==='first'){ highlights=[0]; status.innerHTML='<span style="color:#38bdf8">firstKey() → "ant"</span>'; }
+    else if(op==='last'){ highlights=[entries.length-1]; status.innerHTML='<span style="color:#38bdf8">lastKey() → "fish"</span>'; }
+    else if(op==='sub'){ highlights=[1,2]; status.innerHTML='<span style="color:#6366f1">subMap("bird","dog") → {bird:2, cat:5} (from ≤ key < to)</span>'; }
+    draw();
+  };
+  window.s11Reset=function(){ highlights=[]; status.textContent=''; draw(); };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s11').classList.contains('active')) s11Reset(); });
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 12: IMPLEMENTATION PREVIEW -->
+<!-- ============================================================ -->
+<div class="slide" id="s12">
+  <h2>Implementation Preview: What's Coming</h2>
+  <p class="subtitle">Two powerful map implementations ahead</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3 style="color:#f59e0b;margin-bottom:0.5rem;">Hash Table</h3>
+      <canvas id="cS12ht" width="380" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;"></canvas>
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>The Dream: O(1) Average</h3>
+        <p>Compute index directly from key via hash function. No search needed! Trade-off: no ordering, O(n) worst case from collisions.</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#22c55e;margin-bottom:0.5rem;">Binary Search Tree</h3>
+      <canvas id="cS12bst" width="380" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;"></canvas>
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Best of Both Worlds</h3>
+        <p>O(log n) for all operations <strong>AND</strong> sorted order. Java's <code>TreeMap</code> = Red-Black BST.</p>
+      </div>
+    </div>
+  </div>
+
+  <table style="width:100%;font-size:0.85rem;margin-top:0.8rem;">
+    <tr><th>Implementation</th><th>get()</th><th>put()</th><th>remove()</th><th>Ordered?</th></tr>
+    <tr><td>Unsorted List</td><td>O(n)</td><td>O(n)</td><td>O(n)</td><td>No</td></tr>
+    <tr><td>Sorted Array</td><td>O(log n)</td><td>O(n)</td><td>O(n)</td><td>Yes</td></tr>
+    <tr class="highlight"><td>Hash Table</td><td><strong>O(1) avg</strong></td><td><strong>O(1) avg</strong></td><td><strong>O(1) avg</strong></td><td>No</td></tr>
+    <tr class="highlight"><td>Balanced BST</td><td>O(log n)</td><td>O(log n)</td><td>O(log n)</td><td><strong>Yes</strong></td></tr>
+  </table>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  // Hash Table canvas
+  const ht=document.getElementById('cS12ht').getContext('2d');
+  function drawHT(){
+    ht.clearRect(0,0,380,180);
+    const buckets=[{i:0,e:'"cat"→5'},{i:1,e:null},{i:2,e:'"dog"→3'},{i:3,e:'"ant"→6'},{i:4,e:'"fish"→8'}];
+    ht.font='12px system-ui'; ht.textAlign='left';
+    ht.fillStyle='#f59e0b'; ht.fillText('key → hash() → bucket index',20,18);
+
+    buckets.forEach((b,i)=>{
+      const y=30+i*28;
+      ht.fillStyle='#334155'; ht.strokeStyle='#475569'; ht.lineWidth=1;
+      ht.fillRect(20,y,35,24); ht.strokeRect(20,y,35,24);
+      ht.fillStyle='#94a3b8'; ht.font='11px monospace'; ht.textAlign='center';
+      ht.fillText('['+b.i+']',37,y+16);
+
+      if(b.e){
+        ht.strokeStyle='#f59e0b'; ht.lineWidth=1.5;
+        ht.beginPath(); ht.moveTo(60,y+12); ht.lineTo(85,y+12); ht.stroke();
+        ht.beginPath(); ht.moveTo(82,y+8); ht.lineTo(88,y+12); ht.lineTo(82,y+16); ht.fill();
+        ht.fillStyle='rgba(245,158,11,0.15)'; ht.strokeStyle='#f59e0b';
+        ht.beginPath(); ht.roundRect(90,y,120,24,4); ht.fill(); ht.stroke();
+        ht.fillStyle='#e2e8f0'; ht.font='11px monospace'; ht.textAlign='left';
+        ht.fillText(b.e,96,y+16);
+      }
+    });
+    ht.fillStyle='#22c55e'; ht.font='bold 12px monospace'; ht.textAlign='left';
+    ht.fillText('Average: O(1) per op',220,60);
+    ht.fillStyle='#ef4444'; ht.font='11px monospace';
+    ht.fillText('No key ordering',220,78);
+  }
+
+  // BST canvas
+  const bst=document.getElementById('cS12bst').getContext('2d');
+  function drawBST(){
+    bst.clearRect(0,0,380,180);
+    const nodes=[{k:'dog',v:3,x:190,y:30},{k:'cat',v:5,x:100,y:85},{k:'fish',v:8,x:280,y:85},{k:'ant',v:6,x:50,y:140}];
+    // edges
+    bst.strokeStyle='#475569'; bst.lineWidth=1.5;
+    [[0,1],[0,2],[1,3]].forEach(([a,b])=>{
+      bst.beginPath(); bst.moveTo(nodes[a].x,nodes[a].y); bst.lineTo(nodes[b].x,nodes[b].y); bst.stroke();
+    });
+    // nodes
+    nodes.forEach(n=>{
+      bst.beginPath(); bst.arc(n.x,n.y,22,0,Math.PI*2);
+      bst.fillStyle='#1e293b'; bst.fill(); bst.strokeStyle='#22c55e'; bst.lineWidth=2; bst.stroke();
+      bst.fillStyle='#22c55e'; bst.font='bold 11px monospace'; bst.textAlign='center'; bst.textBaseline='middle';
+      bst.fillText(n.k+':'+n.v,n.x,n.y);
+    });
+    bst.fillStyle='#22c55e'; bst.font='bold 12px monospace'; bst.textAlign='left'; bst.textBaseline='alphabetic';
+    bst.fillText('All ops: O(log n)',220,160);
+    bst.fillStyle='#38bdf8'; bst.font='11px monospace';
+    bst.fillText('Keys in sorted order!',220,175);
+  }
+
+  function init(){ drawHT(); drawBST(); }
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s12').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 13: WORD FREQUENCY COUNTER -->
+<!-- ============================================================ -->
+<div class="slide" id="s13">
+  <h2>Application: Word Frequency Counter</h2>
+  <p class="subtitle">Count occurrences of each word — a classic map use case</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="margin-bottom:0.5rem;">
+        <label style="font-size:0.85rem;color:#cbd5e1;">Enter text:</label>
+        <input type="text" id="s13input" value="the cat sat on the mat the cat" style="width:100%;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.85rem;margin-top:0.3rem;">
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn btn-sm" onclick="s13Step()">Step</button>
+        <button class="btn btn-sm" onclick="s13Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      </div>
+      <canvas id="cS13" width="420" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:0.5rem;"></canvas>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s13L1">Map&lt;String, Integer&gt; freq</div>
+<div class="line" id="s13L2">    = new HashMap&lt;&gt;();</div>
+<div class="line" id="s13L3"></div>
+<div class="line" id="s13L4">for (String word : words) {</div>
+<div class="line" id="s13L5">  if (freq.containsKey(word)) {</div>
+<div class="line" id="s13L6">    freq.put(word,</div>
+<div class="line" id="s13L7">      freq.get(word) + 1);</div>
+<div class="line" id="s13L8">  } else {</div>
+<div class="line" id="s13L9">    freq.put(word, 1);</div>
+<div class="line" id="s13L10">  }</div>
+<div class="line" id="s13L11">}</div>
+<div class="line" id="s13L12"></div>
+<div class="line" id="s13L13">// Cleaner:</div>
+<div class="line" id="s13L14">freq.put(word,</div>
+<div class="line" id="s13L15">  freq.getOrDefault(word,0)+1);</div>
+      </div></div>
+
+      <div id="s13Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.75rem;margin-top:0.5rem;max-height:100px;overflow-y:auto;"></div>
+
+      <div class="analogy" style="margin-top:0.5rem;">
+        <h3>Tally Sheet</h3>
+        <p>New word? Add a row with count 1. Seen again? Add a tally mark. The map <em>is</em> the tally sheet.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS13'), ctx=canvas.getContext('2d');
+  const log=document.getElementById('s13Log');
+  let words, wordIdx, freq, timer;
+  const barColors=['#6366f1','#38bdf8','#a78bfa','#f59e0b','#22c55e','#f472b6','#ef4444','#14b8a6'];
+
+  function clearHL(){ for(let i=1;i<=15;i++){const el=document.getElementById('s13L'+i); if(el) el.classList.remove('active');} }
+  function hl(lines){ clearHL(); lines.forEach(n=>{const el=document.getElementById('s13L'+n); if(el) el.classList.add('active');}); }
+
+  function draw(currentWord){
+    ctx.clearRect(0,0,420,220);
+    const keys=Object.keys(freq);
+    if(keys.length===0){ ctx.fillStyle='#64748b'; ctx.font='14px system-ui'; ctx.textAlign='center'; ctx.fillText('Map empty — step to process words',210,100); return; }
+
+    // bar chart
+    const maxVal=Math.max(...keys.map(k=>freq[k]),1);
+    const barW=Math.min(60, (400-20)/keys.length - 8);
+    const x0=(420-keys.length*(barW+8))/2;
+    const chartH=150, y0=180;
+
+    keys.forEach((k,i)=>{
+      const x=x0+i*(barW+8);
+      const h=(freq[k]/maxVal)*chartH;
+      const c=barColors[i%barColors.length];
+      const isCurrent=(k===currentWord);
+
+      ctx.fillStyle=isCurrent?c:c+'88';
+      ctx.beginPath(); ctx.roundRect(x,y0-h,barW,h,4); ctx.fill();
+      if(isCurrent){ ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); }
+
+      // count
+      ctx.fillStyle='#fff'; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+      ctx.fillText(freq[k],x+barW/2,y0-h-8);
+
+      // key label
+      ctx.fillStyle=isCurrent?'#fff':'#94a3b8'; ctx.font='11px monospace';
+      ctx.save(); ctx.translate(x+barW/2,y0+8); ctx.rotate(0);
+      ctx.fillText('"'+k+'"',0,10);
+      ctx.restore();
+    });
+
+    // word stream indicator
+    if(wordIdx<words.length){
+      ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='left';
+      const stream=words.map((w,i)=>{
+        if(i<wordIdx) return '<span style="color:#64748b">'+w+'</span>';
+        if(i===wordIdx) return '<span style="color:#f59e0b">►'+w+'</span>';
+        return w;
+      });
+      ctx.fillText('Word '+(wordIdx+1)+'/'+words.length+': "'+words[Math.min(wordIdx,words.length-1)]+'"',10,18);
+    } else {
+      ctx.fillStyle='#22c55e'; ctx.font='bold 13px system-ui'; ctx.textAlign='center';
+      ctx.fillText('✓ All words processed!',210,18);
+    }
+  }
+
+  function init(){
+    if(timer){ clearInterval(timer); timer=null; }
+    const text=document.getElementById('s13input').value.trim();
+    words=text.split(/\s+/).filter(w=>w.length>0);
+    wordIdx=0; freq={}; clearHL(); log.innerHTML=''; draw();
+  }
+  window.s13Reset=init;
+
+  window.s13Step=function(){
+    if(wordIdx>=words.length){ return; }
+    const w=words[wordIdx];
+    if(freq.hasOwnProperty(w)){
+      freq[w]++;
+      hl([5,6,7]);
+      log.innerHTML+='<div><span style="color:#f59e0b">"'+w+'"</span> in map → count '+freq[w]+'</div>';
+    } else {
+      freq[w]=1;
+      hl([8,9]);
+      log.innerHTML+='<div><span style="color:#22c55e">"'+w+'"</span> NEW → count 1</div>';
+    }
+    log.scrollTop=log.scrollHeight;
+    wordIdx++;
+    draw(w);
+    if(wordIdx>=words.length){ clearHL(); }
+  };
+
+  window.s13Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{
+      if(wordIdx>=words.length){ clearInterval(timer); timer=null; return; }
+      s13Step();
+    },600);
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s13').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE A: Trace Map Operations -->
+<!-- ============================================================ -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Trace Map Operations</h2>
+  <p class="subtitle">Predict the return values and final map state</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:1rem;">
+        <p style="font-size:0.9rem;margin-bottom:0.8rem;">Starting with an <strong>empty map</strong>, execute:</p>
+        <div style="font-family:monospace;font-size:0.85rem;line-height:2;">
+          <div>1. put("x", 1)  → returns <input type="text" class="sCA-in" data-ans="null" style="width:50px;padding:2px 4px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;"></div>
+          <div>2. put("y", 2)  → returns <input type="text" class="sCA-in" data-ans="null" style="width:50px;padding:2px 4px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;"></div>
+          <div>3. put("x", 3)  → returns <input type="text" class="sCA-in" data-ans="1" style="width:50px;padding:2px 4px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;"></div>
+          <div>4. get("y")     → returns <input type="text" class="sCA-in" data-ans="2" style="width:50px;padding:2px 4px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;"></div>
+          <div>5. remove("y")  → returns <input type="text" class="sCA-in" data-ans="2" style="width:50px;padding:2px 4px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;"></div>
+          <div>6. get("y")     → returns <input type="text" class="sCA-in" data-ans="null" style="width:50px;padding:2px 4px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;"></div>
+          <div>7. size()       → returns <input type="text" class="sCA-in" data-ans="1" style="width:50px;padding:2px 4px;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.85rem;"></div>
+        </div>
+      </div>
+      <div style="margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="sCAcheck()">Check Answers</button>
+        <button class="btn btn-sm" onclick="sCAstep()">Step Through</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCAreset()">Reset</button>
+      </div>
+      <div id="sCAresult" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+    </div>
+    <div>
+      <canvas id="cCA" width="380" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="sCAlog" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.75rem;margin-top:0.5rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cCA'), ctx=canvas.getContext('2d');
+  const log=document.getElementById('sCAlog');
+  const ops=[
+    {op:'put',k:'x',v:1},{op:'put',k:'y',v:2},{op:'put',k:'x',v:3},
+    {op:'get',k:'y'},{op:'remove',k:'y'},{op:'get',k:'y'},{op:'size'}
+  ];
+  let map, opIdx, timer;
+
+  function drawMap(hl){
+    ctx.clearRect(0,0,380,250);
+    const keys=Object.keys(map);
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Current Map State',190,18);
+    if(keys.length===0){ ctx.fillStyle='#64748b'; ctx.font='14px system-ui'; ctx.fillText('{ empty }',190,100); return; }
+    const x0=60, y0=35, rowH=45, kw=100, vw=60;
+    keys.forEach((k,i)=>{
+      const y=y0+i*rowH;
+      const isHl=(k===hl);
+      ctx.fillStyle=isHl?'rgba(99,102,241,0.3)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isHl?'#6366f1':'#475569'; ctx.lineWidth=isHl?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0,y,kw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=isHl?'#fff':'#e2e8f0'; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+k+'"',x0+kw/2,y+22);
+      ctx.strokeStyle=isHl?'#6366f1':'#475569'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x0+kw+5,y+17); ctx.lineTo(x0+kw+28,y+17); ctx.stroke();
+      ctx.fillStyle=isHl?'rgba(34,197,94,0.3)':'rgba(30,41,59,0.8)';
+      ctx.strokeStyle=isHl?'#22c55e':'#475569'; ctx.lineWidth=isHl?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x0+kw+30,y,vw,34,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=isHl?'#22c55e':'#e2e8f0'; ctx.font='bold 16px monospace';
+      ctx.fillText(map[k],x0+kw+30+vw/2,y+23);
+    });
+    ctx.fillStyle='#64748b'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('size: '+keys.length,190,240);
+  }
+
+  function init(){ map={}; opIdx=0; if(timer) clearInterval(timer); timer=null; log.innerHTML=''; drawMap(); }
+  window.sCAreset=function(){
+    init();
+    document.querySelectorAll('.sCA-in').forEach(el=>{ el.value=''; el.style.borderColor='#475569'; });
+    document.getElementById('sCAresult').innerHTML='';
+  };
+
+  window.sCAstep=function(){
+    if(opIdx>=ops.length) return;
+    const o=ops[opIdx]; opIdx++;
+    if(o.op==='put'){
+      const old=map.hasOwnProperty(o.k)?map[o.k]:null;
+      map[o.k]=o.v;
+      const ret=old!==null?old:'null';
+      log.innerHTML+='<div>put("'+o.k+'",'+o.v+') → '+ret+'</div>';
+      drawMap(o.k);
+    } else if(o.op==='get'){
+      const val=map.hasOwnProperty(o.k)?map[o.k]:'null';
+      log.innerHTML+='<div>get("'+o.k+'") → '+val+'</div>';
+      drawMap(o.k);
+    } else if(o.op==='remove'){
+      const old=map.hasOwnProperty(o.k)?map[o.k]:'null';
+      delete map[o.k];
+      log.innerHTML+='<div style="color:#f59e0b">remove("'+o.k+'") → '+old+'</div>';
+      drawMap();
+    } else if(o.op==='size'){
+      log.innerHTML+='<div>size() → '+Object.keys(map).length+'</div>';
+      drawMap();
+    }
+    log.scrollTop=log.scrollHeight;
+    if(opIdx>=ops.length) log.innerHTML+='<div style="color:#22c55e;margin-top:4px">✓ Final map: {'+Object.keys(map).map(k=>k+':'+map[k]).join(', ')+'}</div>';
+  };
+
+  window.sCAcheck=function(){
+    const inputs=document.querySelectorAll('.sCA-in');
+    let score=0;
+    inputs.forEach(el=>{
+      const ans=el.value.trim().toLowerCase();
+      const correct=el.getAttribute('data-ans');
+      if(ans===correct){ score++; el.style.borderColor='#22c55e'; }
+      else if(ans===''){ el.style.borderColor='#f59e0b'; }
+      else { el.style.borderColor='#ef4444'; }
+    });
+    const res=document.getElementById('sCAresult');
+    if(score===7) res.innerHTML='<span style="color:#22c55e">✓ Perfect! 7/7</span>';
+    else res.innerHTML='<span style="color:#f59e0b">'+score+'/7 — Key insight: put() returns old value or null. After remove, get returns null.</span>';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sCA').classList.contains('active')) sCAreset(); });
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 14: TWO-SUM PROBLEM -->
+<!-- ============================================================ -->
+<div class="slide" id="s14">
+  <h2>Application: Two-Sum Problem</h2>
+  <p class="subtitle">Find two numbers that add to a target — O(n) with a map</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS14" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap;">
+        <label style="font-size:0.82rem;color:#cbd5e1;">nums:</label>
+        <input type="text" id="s14nums" value="2,7,11,15" style="width:100px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+        <label style="font-size:0.82rem;color:#cbd5e1;">target:</label>
+        <input type="number" id="s14target" value="9" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+        <button class="btn btn-sm" onclick="s14Step()">Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+      <div id="s14Status" style="margin-top:0.3rem;font-size:0.82rem;color:#94a3b8;min-height:1.5em;"></div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s14L1">Map&lt;Integer,Integer&gt; seen = new HashMap&lt;&gt;();</div>
+<div class="line" id="s14L2"></div>
+<div class="line" id="s14L3">for (int i = 0; i &lt; nums.length; i++) {</div>
+<div class="line" id="s14L4">  int complement = target - nums[i];</div>
+<div class="line" id="s14L5">  if (seen.containsKey(complement)) {</div>
+<div class="line" id="s14L6">    return new int[]{</div>
+<div class="line" id="s14L7">      seen.get(complement), i };</div>
+<div class="line" id="s14L8">  }</div>
+<div class="line" id="s14L9">  seen.put(nums[i], i);</div>
+<div class="line" id="s14L10">}</div>
+      </div></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>The Key Insight</h3>
+        <p>Store each number in a map as you go. For each new number, compute its <strong>complement</strong> (target − num) and check if it's already in the map. One pass = <strong>O(n)</strong> vs O(n²) brute force.</p>
+      </div>
+
+      <div class="analogy" style="margin-top:0.5rem;">
+        <h3>Dance Partner</h3>
+        <p>People enter a room one at a time, each with a number. Each asks: "Is someone here whose number + mine = target?" If yes — pair found! The <strong>map is the room's registry</strong>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS14'), ctx=canvas.getContext('2d');
+  const status=document.getElementById('s14Status');
+  let nums, target, seen, stepIdx, found, timer;
+
+  function clearHL(){ for(let i=1;i<=10;i++){const el=document.getElementById('s14L'+i); if(el) el.classList.remove('active');} }
+  function hl(lines){ clearHL(); lines.forEach(n=>{const el=document.getElementById('s14L'+n); if(el) el.classList.add('active');}); }
+
+  function draw(){
+    ctx.clearRect(0,0,420,260);
+    // Array
+    const aw=Math.min(55,(400-20)/nums.length);
+    const ax=(420-nums.length*aw)/2;
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('nums[]',210,14);
+    nums.forEach((n,i)=>{
+      const x=ax+i*aw;
+      let bg='rgba(30,41,59,0.8)', border='#475569', tc='#e2e8f0';
+      if(found&&(i===found[0]||i===found[1])){ bg='rgba(34,197,94,0.3)'; border='#22c55e'; tc='#22c55e'; }
+      else if(i===stepIdx){ bg='rgba(245,158,11,0.3)'; border='#f59e0b'; tc='#f59e0b'; }
+      else if(i<stepIdx){ bg='rgba(99,102,241,0.15)'; border='#6366f1'; }
+
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=i===stepIdx||(found&&(i===found[0]||i===found[1]))?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x,22,aw-4,40,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#64748b'; ctx.font='10px monospace'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+(aw-4)/2,36);
+      ctx.fillStyle=tc; ctx.font='bold 16px monospace';
+      ctx.fillText(n,x+(aw-4)/2,56);
+    });
+
+    // Map (seen)
+    const seenKeys=Object.keys(seen);
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui'; ctx.textAlign='left';
+    ctx.fillText('seen map: { value → index }',20,90);
+    if(seenKeys.length===0){ ctx.fillStyle='#64748b'; ctx.font='12px monospace'; ctx.fillText('{ empty }',20,115); }
+    else {
+      const mw=Math.min(80,(400-20)/seenKeys.length);
+      seenKeys.forEach((k,i)=>{
+        const x=20+i*mw;
+        ctx.fillStyle='rgba(99,102,241,0.15)'; ctx.strokeStyle='#6366f1'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.roundRect(x,100,mw-6,35,5); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#e2e8f0'; ctx.font='11px monospace'; ctx.textAlign='center';
+        ctx.fillText(k+'→'+seen[k],x+(mw-6)/2,122);
+      });
+    }
+
+    // Complement check
+    if(stepIdx>=0&&stepIdx<nums.length&&!found){
+      const comp=target-nums[stepIdx];
+      ctx.fillStyle='#f59e0b'; ctx.font='13px monospace'; ctx.textAlign='left';
+      ctx.fillText('complement = '+target+' - '+nums[stepIdx]+' = '+comp,20,160);
+      const inMap=seen.hasOwnProperty(comp);
+      ctx.fillStyle=inMap?'#22c55e':'#ef4444';
+      ctx.fillText(comp+' in seen? '+(inMap?'YES! → ['+seen[comp]+', '+stepIdx+']':'No → store '+nums[stepIdx]),20,180);
+    }
+
+    if(found){
+      ctx.fillStyle='#22c55e'; ctx.font='bold 16px system-ui'; ctx.textAlign='center';
+      ctx.fillText('✓ Found! indices ['+found[0]+', '+found[1]+']',210,170);
+      ctx.fillText(nums[found[0]]+' + '+nums[found[1]]+' = '+target,210,195);
+    }
+  }
+
+  function init(){
+    if(timer){ clearInterval(timer); timer=null; }
+    nums=document.getElementById('s14nums').value.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+    target=parseInt(document.getElementById('s14target').value)||9;
+    seen={}; stepIdx=-1; found=null; clearHL(); status.textContent=''; draw();
+  }
+  window.s14Reset=init;
+
+  window.s14Step=function(){
+    if(found) return;
+    stepIdx++;
+    if(stepIdx>=nums.length){ status.textContent='No solution found.'; clearHL(); return; }
+    const comp=target-nums[stepIdx];
+    hl([3,4,5]);
+    if(seen.hasOwnProperty(comp)){
+      found=[seen[comp],stepIdx];
+      hl([6,7]);
+      status.innerHTML='<span style="color:#22c55e">✓ '+nums[found[0]]+' + '+nums[found[1]]+' = '+target+' at indices ['+found[0]+','+found[1]+']</span>';
+    } else {
+      hl([9]);
+      seen[nums[stepIdx]]=stepIdx;
+      status.textContent='Step '+(stepIdx+1)+': '+comp+' not in map, store {'+nums[stepIdx]+'→'+stepIdx+'}';
+    }
+    draw();
+  };
+
+  window.s14Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(found||stepIdx>=nums.length){clearInterval(timer);timer=null;return;} s14Step(); },800);
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s14').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE B: Fix the Bug -->
+<!-- ============================================================ -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <p class="subtitle">This word frequency counter has a subtle error</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">Map&lt;String, Integer&gt; freq</div>
+<div class="line">    = new HashMap&lt;&gt;();</div>
+<div class="line"></div>
+<div class="line">String[] words = text.split(" ");</div>
+<div class="line"></div>
+<div class="line">for (String word : words) {</div>
+<div class="line" style="background:rgba(239,68,68,0.2);">  freq.put(word, freq.get(word) + 1);</div>
+<div class="line">}</div>
+      </div></div>
+
+      <p style="margin-top:1rem;font-size:0.9rem;"><strong>What happens when this code runs on <code>"the cat the"</code>?</strong></p>
+
+      <div style="margin-top:0.8rem;">
+        <select id="sCBsel" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85rem;width:100%;">
+          <option value="">Select the bug...</option>
+          <option value="a">NullPointerException — get() returns null for new keys, can't add null + 1</option>
+          <option value="b">Wrong count — put() overwrites instead of incrementing</option>
+          <option value="c">ArrayIndexOutOfBoundsException on split</option>
+          <option value="d">Infinite loop — words are never consumed</option>
+        </select>
+        <button class="btn btn-sm" onclick="sCBcheck()" style="margin-top:0.5rem;">Check Answer</button>
+        <div id="sCBresult" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cCB" width="380" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="sCBexpl" style="display:none;margin-top:0.5rem;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:0.8rem;font-size:0.82rem;">
+        <strong style="color:#22c55e;">Correct!</strong> When "the" is first encountered, <code>freq.get("the")</code> returns <code>null</code>. Java tries to unbox <code>null</code> to <code>int</code> for the <code>+ 1</code>, causing a <strong>NullPointerException</strong>.<br><br>
+        <strong>Fix:</strong> <code>freq.put(word, freq.getOrDefault(word, 0) + 1);</code><br>
+        Or check with <code>containsKey()</code> first (as shown in the original code).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cCB'), ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,380,220);
+    // Show the execution trace
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='left';
+    ctx.fillText('Trace: text = "the cat the"',15,22);
+
+    const steps=[
+      {word:'the', mapBefore:'{}', action:'freq.get("the") → null', result:'null + 1 → 💥 NPE!', color:'#ef4444'},
+    ];
+
+    ctx.font='13px monospace';
+    ctx.fillStyle='#f59e0b'; ctx.fillText('word = "the"',15,55);
+    ctx.fillStyle='#e2e8f0'; ctx.fillText('Map state: { }  (empty)',15,80);
+    ctx.fillStyle='#38bdf8'; ctx.fillText('freq.get("the")  →  null',15,110);
+    ctx.fillStyle='#ef4444'; ctx.fillText('null + 1  →  NullPointerException!',15,140);
+
+    // null unboxing diagram
+    ctx.fillStyle='rgba(239,68,68,0.15)'; ctx.strokeStyle='#ef4444'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(15,155,350,50,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ef4444'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Java auto-unboxes null Integer → int',190,175);
+    ctx.fillText('Cannot unbox null! → NullPointerException',190,195);
+  }
+
+  window.sCBcheck=function(){
+    const ans=document.getElementById('sCBsel').value;
+    const res=document.getElementById('sCBresult');
+    if(ans==='a'){ res.innerHTML='<span style="color:#22c55e">✓ Correct!</span>'; document.getElementById('sCBexpl').style.display='block'; }
+    else if(ans==='') res.innerHTML='<span style="color:#f59e0b">Please select an answer.</span>';
+    else res.innerHTML='<span style="color:#ef4444">✗ Not quite. Think about what get() returns when the key doesn\'t exist yet...</span>';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sCB').classList.contains('active')){ draw(); document.getElementById('sCBresult').innerHTML=''; document.getElementById('sCBexpl').style.display='none'; document.getElementById('sCBsel').value=''; }});
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 15: JAVA'S MAP INTERFACE -->
+<!-- ============================================================ -->
+<div class="slide" id="s15">
+  <h2>Java's Map Interface</h2>
+  <p class="subtitle">HashMap, TreeMap, LinkedHashMap — different trade-offs</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS15" width="420" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+
+      <table style="width:100%;font-size:0.8rem;margin-top:0.6rem;">
+        <tr><th>Impl</th><th>Order</th><th>Ops</th><th>null keys?</th></tr>
+        <tr class="highlight"><td><strong>HashMap</strong></td><td>None</td><td>O(1) avg</td><td>Yes (1)</td></tr>
+        <tr><td><strong>TreeMap</strong></td><td>Sorted</td><td>O(log n)</td><td>No</td></tr>
+        <tr><td><strong>LinkedHashMap</strong></td><td>Insertion</td><td>O(1) avg</td><td>Yes (1)</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">// HashMap — most common</div>
+<div class="line">Map&lt;String, Integer&gt; map</div>
+<div class="line">    = new HashMap&lt;&gt;();</div>
+<div class="line">map.put("apple", 3);</div>
+<div class="line">map.put("banana", 7);</div>
+<div class="line">map.get("apple");     // 3</div>
+<div class="line"></div>
+<div class="line">// Iterate entries</div>
+<div class="line">for (Map.Entry&lt;String, Integer&gt; e</div>
+<div class="line">        : map.entrySet()) {</div>
+<div class="line">  e.getKey();   // "apple"</div>
+<div class="line">  e.getValue(); // 3</div>
+<div class="line">}</div>
+      </div></div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Decision Flowchart</h3>
+        <p><strong>Fastest lookups?</strong> → HashMap<br>
+        <strong>Sorted keys / ranges?</strong> → TreeMap<br>
+        <strong>Insertion order (LRU cache)?</strong> → LinkedHashMap</p>
+      </div>
+
+      <div class="warning" style="margin-top:0.5rem;">
+        <h3>Common Mistake</h3>
+        <p>HashMap iteration order is <strong>unpredictable</strong> and changes when entries are added/removed.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS15'), ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,180);
+    // Hierarchy tree
+    const cx=210, ty=25;
+    // Map interface
+    ctx.fillStyle='rgba(99,102,241,0.2)'; ctx.strokeStyle='#6366f1'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(cx-60,ty,120,30,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#a5b4fc'; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+    ctx.fillText('Map<K,V>',cx,ty+20);
+    ctx.fillStyle='#64748b'; ctx.font='10px system-ui';
+    ctx.fillText('(interface)',cx,ty+42);
+
+    // Lines down
+    const children=[
+      {label:'HashMap',x:70,color:'#f59e0b',desc:'Hash Table'},
+      {label:'TreeMap',x:210,color:'#22c55e',desc:'Red-Black Tree'},
+      {label:'LinkedHashMap',x:350,color:'#38bdf8',desc:'Hash + Linked List'}
+    ];
+    const cy=ty+55;
+    children.forEach(c=>{
+      ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(cx,ty+30); ctx.lineTo(c.x,cy); ctx.stroke();
+      ctx.fillStyle='rgba(30,41,59,0.8)'; ctx.strokeStyle=c.color; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(c.x-55,cy,110,30,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=c.color; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText(c.label,c.x,cy+20);
+      ctx.fillStyle='#94a3b8'; ctx.font='10px system-ui';
+      ctx.fillText(c.desc,c.x,cy+44);
+    });
+
+    // Usage hints
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Default choice',70,cy+58);
+    ctx.fillText('Sorted keys',210,cy+58);
+    ctx.fillText('Preserves order',350,cy+58);
+  }
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s15').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE C: Choose the Right Map -->
+<!-- ============================================================ -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Choose the Right Map</h2>
+  <p class="subtitle">HashMap, TreeMap, or LinkedHashMap?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div id="sCCquestions">
+      <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;margin-bottom:0.7rem;">
+        <p style="font-size:0.88rem;margin-bottom:0.5rem;"><strong>1.</strong> Count word frequencies in a large text file as fast as possible.</p>
+        <select class="sCCsel" data-answer="hash" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.85rem;">
+          <option value="">Choose...</option><option value="hash">HashMap</option><option value="tree">TreeMap</option><option value="linked">LinkedHashMap</option>
+        </select>
+      </div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;margin-bottom:0.7rem;">
+        <p style="font-size:0.88rem;margin-bottom:0.5rem;"><strong>2.</strong> Store user settings and write them to a config file in the order they were added.</p>
+        <select class="sCCsel" data-answer="linked" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.85rem;">
+          <option value="">Choose...</option><option value="hash">HashMap</option><option value="tree">TreeMap</option><option value="linked">LinkedHashMap</option>
+        </select>
+      </div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;margin-bottom:0.7rem;">
+        <p style="font-size:0.88rem;margin-bottom:0.5rem;"><strong>3.</strong> Implement an address book where contacts are always displayed alphabetically.</p>
+        <select class="sCCsel" data-answer="tree" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.85rem;">
+          <option value="">Choose...</option><option value="hash">HashMap</option><option value="tree">TreeMap</option><option value="linked">LinkedHashMap</option>
+        </select>
+      </div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;">
+        <p style="font-size:0.88rem;margin-bottom:0.5rem;"><strong>4.</strong> Find all students with IDs between 1000 and 2000.</p>
+        <select class="sCCsel" data-answer="tree" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;font-size:0.85rem;">
+          <option value="">Choose...</option><option value="hash">HashMap</option><option value="tree">TreeMap</option><option value="linked">LinkedHashMap</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <button class="btn" onclick="sCCcheck()" style="margin-bottom:0.8rem;">Check All Answers</button>
+      <div id="sCCresult" style="font-size:0.85rem;"></div>
+      <div id="sCCexpl" style="display:none;margin-top:0.8rem;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:0.8rem;font-size:0.82rem;">
+        <p><strong>1. HashMap</strong> — O(1) avg ops, no ordering needed for counting.</p>
+        <p style="margin-top:0.3rem;"><strong>2. LinkedHashMap</strong> — preserves insertion order, so settings write in the order added.</p>
+        <p style="margin-top:0.3rem;"><strong>3. TreeMap</strong> — keys automatically sorted alphabetically.</p>
+        <p style="margin-top:0.3rem;"><strong>4. TreeMap</strong> — <code>subMap(1000, 2001)</code> gives all IDs in the range. HashMap can't do range queries.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  window.sCCcheck=function(){
+    const sels=document.querySelectorAll('.sCCsel');
+    let score=0;
+    sels.forEach(sel=>{
+      const ans=sel.value, correct=sel.getAttribute('data-answer');
+      if(ans===correct){ score++; sel.style.borderColor='#22c55e'; }
+      else if(ans==='') sel.style.borderColor='#f59e0b';
+      else sel.style.borderColor='#ef4444';
+    });
+    const res=document.getElementById('sCCresult');
+    if(score===4) res.innerHTML='<span style="color:#22c55e">✓ Perfect! 4/4</span>';
+    else res.innerHTML='<span style="color:#f59e0b">'+score+'/4 — Remember: HashMap for speed, TreeMap for sorting/ranges, LinkedHashMap for insertion order.</span>';
+    document.getElementById('sCCexpl').style.display='block';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sCC').classList.contains('active')){ document.querySelectorAll('.sCCsel').forEach(s=>{s.value='';s.style.borderColor='#475569';}); document.getElementById('sCCresult').innerHTML=''; document.getElementById('sCCexpl').style.display='none'; }});
+  obs.observe(document.getElementById('sCC'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- SLIDE 16: SUMMARY & CHEAT SHEET -->
+<!-- ============================================================ -->
+<div class="slide" id="s16">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <p class="subtitle">Everything you need to know about maps in one slide</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS16" width="420" height="180" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;"></canvas>
+
+      <h3 style="color:#a78bfa;margin-top:0.8rem;margin-bottom:0.3rem;">Core Operations</h3>
+      <div style="font-family:monospace;font-size:0.82rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;">
+        get(key)       → value or null<br>
+        put(key, val)  → old value or null<br>
+        remove(key)    → old value or null<br>
+        containsKey(k) → boolean<br>
+        keySet() / values() / entrySet()
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>When to Use a Map</h3>
+        <ul style="font-size:0.88rem;">
+          <li><strong>Look up values by key</strong> (not by index)</li>
+          <li><strong>Count occurrences</strong> (word frequency)</li>
+          <li><strong>Associate data</strong> (student ID → record)</li>
+          <li><strong>Check existence</strong> quickly</li>
+          <li><strong>Two-sum style</strong> complement lookups</li>
+        </ul>
+      </div>
+
+      <div class="analogy" style="margin-top:0.5rem;">
+        <h3>The Big Picture</h3>
+        <p><strong>Lists</strong> are about <em>ordering</em>. <strong>Sets</strong> are about <em>uniqueness</em>. <strong>Maps</strong> are about <em>association</em> — connecting a key to its value. Maps are arguably the most widely used data structure in real-world programming.</p>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <h3>Coming Next</h3>
+        <p><strong>Hash Tables</strong> — how to achieve O(1) average using hash functions and buckets.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS16'), ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,180);
+    const impls=[
+      {name:'Unsorted List', get:'O(n)',put:'O(n)',rem:'O(n)',ord:'No',color:'#94a3b8'},
+      {name:'Sorted Array', get:'O(log n)',put:'O(n)',rem:'O(n)',ord:'Yes',color:'#38bdf8'},
+      {name:'Hash Table', get:'O(1)',put:'O(1)',rem:'O(1)',ord:'No',color:'#f59e0b'},
+      {name:'Balanced BST', get:'O(log n)',put:'O(log n)',rem:'O(log n)',ord:'Yes',color:'#22c55e'}
+    ];
+    const colX=[10,140,220,285,350,395];
+    const headers=['Implementation','get()','put()','remove()','Ord?'];
+    // header
+    ctx.fillStyle='#64748b'; ctx.font='bold 11px system-ui';
+    headers.forEach((h,i)=>{ ctx.textAlign=i===0?'left':'center'; ctx.fillText(h,colX[i],16); });
+    ctx.strokeStyle='#334155'; ctx.beginPath(); ctx.moveTo(5,22); ctx.lineTo(415,22); ctx.stroke();
+
+    impls.forEach((impl,row)=>{
+      const y=30+row*38;
+      if(row>=2){ ctx.fillStyle='rgba(99,102,241,0.08)'; ctx.fillRect(5,y-4,410,36); }
+      ctx.fillStyle=impl.color; ctx.font='12px monospace'; ctx.textAlign='left';
+      ctx.fillText(impl.name,colX[0],y+14);
+      const vals=[impl.get,impl.put,impl.rem,impl.ord];
+      vals.forEach((v,i)=>{
+        ctx.fillStyle=(v==='O(1)')?'#22c55e':(v==='O(log n)')?'#38bdf8':'#e2e8f0';
+        ctx.font=v==='O(1)'?'bold 12px monospace':'12px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(v,colX[i+1],y+14);
+      });
+    });
+  }
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s16').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 1: 3-Question Quiz -->
+<!-- ============================================================ -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Test Your Map Knowledge</h2>
+  <p class="subtitle">3 questions — pick the best answer</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.88rem;margin-bottom:0.8rem;"><strong>Q1:</strong> What does <code>put("x",5)</code> return if "x" already has value 3?</p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;">
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1a" value="a"> null</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1a" value="b"> 3 (old value)</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1a" value="c"> 5 (new value)</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1a" value="d"> true</label>
+      </div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.88rem;margin-bottom:0.8rem;"><strong>Q2:</strong> Why is <code>put()</code> O(n) in an unsorted list map?</p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;">
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1b" value="a"> Must resize the array</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1b" value="b"> Must search for existing key first</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1b" value="c"> Must sort the entries</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1b" value="d"> Must hash the key</label>
+      </div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;">
+      <p style="font-size:0.88rem;margin-bottom:0.8rem;"><strong>Q3:</strong> Which Java Map preserves insertion order?</p>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;">
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1c" value="a"> HashMap</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1c" value="b"> TreeMap</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1c" value="c"> LinkedHashMap</label>
+        <label style="font-size:0.85rem;cursor:pointer;"><input type="radio" name="sQ1c" value="d"> ConcurrentHashMap</label>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;text-align:center;">
+    <button class="btn" onclick="sQ1check()">Check Answers</button>
+    <div id="sQ1result" style="margin-top:0.8rem;font-size:0.9rem;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+window.sQ1check=function(){
+  const a1=document.querySelector('input[name="sQ1a"]:checked');
+  const a2=document.querySelector('input[name="sQ1b"]:checked');
+  const a3=document.querySelector('input[name="sQ1c"]:checked');
+  if(!a1||!a2||!a3){ document.getElementById('sQ1result').innerHTML='<span style="color:#f59e0b">Answer all 3 questions.</span>'; return; }
+  let score=0, fb=[];
+  if(a1.value==='b'){ score++; fb.push('Q1 ✓'); } else fb.push('Q1 ✗ — put() returns the OLD value when updating.');
+  if(a2.value==='b'){ score++; fb.push('Q2 ✓'); } else fb.push('Q2 ✗ — Must linear-scan all entries to check if key exists before inserting.');
+  if(a3.value==='c'){ score++; fb.push('Q3 ✓'); } else fb.push('Q3 ✗ — LinkedHashMap uses a doubly-linked list to track insertion order.');
+  const color=score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+  document.getElementById('sQ1result').innerHTML='<span style="color:'+color+'">'+score+'/3</span><br><span style="font-size:0.82rem;color:#94a3b8;">'+fb.join(' | ')+'</span>';
+};
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 2: Trace Map Code -->
+<!-- ============================================================ -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace This Code</h2>
+  <p class="subtitle">What is printed?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">Map&lt;String, Integer&gt; m = new HashMap&lt;&gt;();</div>
+<div class="line">m.put("a", 1);</div>
+<div class="line">m.put("b", 2);</div>
+<div class="line">m.put("c", 3);</div>
+<div class="line">m.put("a", 4);</div>
+<div class="line"></div>
+<div class="line">System.out.println(m.size());</div>
+<div class="line">System.out.println(m.get("a"));</div>
+<div class="line">System.out.println(m.remove("b"));</div>
+<div class="line">System.out.println(m.get("b"));</div>
+<div class="line">System.out.println(m.size());</div>
+      </div></div>
+
+      <p style="margin-top:1rem;font-size:0.9rem;">Enter the 5 printed values (one per line):</p>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="sQ2a1" placeholder="line 1" style="width:55px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <input type="text" id="sQ2a2" placeholder="line 2" style="width:55px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <input type="text" id="sQ2a3" placeholder="line 3" style="width:55px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <input type="text" id="sQ2a4" placeholder="line 4" style="width:55px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <input type="text" id="sQ2a5" placeholder="line 5" style="width:55px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <button class="btn btn-sm" onclick="sQ2check()">Check</button>
+      </div>
+      <div id="sQ2result" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+    </div>
+    <div>
+      <canvas id="cQ2" width="380" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <button class="btn btn-sm" onclick="sQ2trace()" style="margin-top:0.5rem;">Show Step-by-Step</button>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cQ2'), ctx=canvas.getContext('2d');
+  const answers=['3','4','2','null','2'];
+  const traces=[
+    {map:{a:1},label:'put("a",1)  → {a:1}',out:[]},
+    {map:{a:1,b:2},label:'put("b",2)  → {a:1, b:2}',out:[]},
+    {map:{a:1,b:2,c:3},label:'put("c",3)  → {a:1, b:2, c:3}',out:[]},
+    {map:{a:4,b:2,c:3},label:'put("a",4)  → updates a: 1→4',out:[]},
+    {map:{a:4,b:2,c:3},label:'size() → 3',out:['3']},
+    {map:{a:4,b:2,c:3},label:'get("a") → 4',out:['3','4']},
+    {map:{a:4,c:3},label:'remove("b") → 2',out:['3','4','2']},
+    {map:{a:4,c:3},label:'get("b") → null (removed!)',out:['3','4','2','null']},
+    {map:{a:4,c:3},label:'size() → 2',out:['3','4','2','null','2']}
+  ];
+  let traceIdx=0;
+
+  function drawState(map, label, output){
+    ctx.clearRect(0,0,380,300);
+    ctx.fillStyle='#f59e0b'; ctx.font='12px monospace'; ctx.textAlign='left';
+    ctx.fillText(label,15,20);
+
+    const keys=Object.keys(map);
+    const x0=40, y0=40, rowH=40, kw=80, vw=50;
+    keys.forEach((k,i)=>{
+      const y=y0+i*rowH;
+      ctx.fillStyle='rgba(30,41,59,0.8)'; ctx.strokeStyle='#6366f1'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(x0,y,kw,30,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+      ctx.fillText('"'+k+'"',x0+kw/2,y+20);
+      ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x0+kw+5,y+15); ctx.lineTo(x0+kw+25,y+15); ctx.stroke();
+      ctx.fillStyle='rgba(30,41,59,0.8)'; ctx.strokeStyle='#22c55e'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(x0+kw+28,y,vw,30,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#22c55e'; ctx.font='bold 14px monospace';
+      ctx.fillText(map[k],x0+kw+28+vw/2,y+20);
+    });
+
+    // Output
+    if(output.length>0){
+      ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.textAlign='left';
+      ctx.fillText('Output:',15,200);
+      ctx.fillStyle='#38bdf8'; ctx.font='14px monospace';
+      output.forEach((v,i)=>{ ctx.fillText(v,80+i*50,200); });
+    }
+  }
+
+  window.sQ2trace=function(){
+    const t=traces[traceIdx%traces.length];
+    drawState(t.map,t.label,t.out);
+    traceIdx++;
+  };
+
+  window.sQ2check=function(){
+    let score=0;
+    for(let i=0;i<5;i++){
+      const el=document.getElementById('sQ2a'+(i+1));
+      const v=el.value.trim().toLowerCase();
+      if(v===answers[i]){ score++; el.style.borderColor='#22c55e'; }
+      else if(v===''){ el.style.borderColor='#f59e0b'; }
+      else { el.style.borderColor='#ef4444'; }
+    }
+    const res=document.getElementById('sQ2result');
+    if(score===5) res.innerHTML='<span style="color:#22c55e">✓ Perfect! 5/5 — Output: 3, 4, 2, null, 2</span>';
+    else res.innerHTML='<span style="color:#f59e0b">'+score+'/5 — Answers: 3 (size after 3 unique keys), 4 (a was updated), 2 (remove returns old value), null (b was removed), 2 (only a,c remain)</span>';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sQ2').classList.contains('active')){ traceIdx=0; drawState({},'',[]);
+    for(let i=1;i<=5;i++){const el=document.getElementById('sQ2a'+i); el.value=''; el.style.borderColor='#475569';} document.getElementById('sQ2result').innerHTML=''; }});
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- QUIZ 3: Two-Sum Variant -->
+<!-- ============================================================ -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Two-Sum Challenge</h2>
+  <p class="subtitle">Apply the map-based two-sum pattern</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:1rem;">
+        <p style="font-size:0.9rem;">Given <code>nums = [3, 1, 4, 1, 5, 9]</code> and <code>target = 10</code>, trace the map-based two-sum algorithm.</p>
+        <p style="font-size:0.9rem;margin-top:0.8rem;"><strong>At which index do we find the solution?</strong></p>
+        <p style="font-size:0.85rem;color:#94a3b8;margin-top:0.3rem;">(i.e., what value of <code>i</code> triggers the "found" branch?)</p>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <label style="font-size:0.85rem;">i = <input type="text" id="sQ3ans" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></label>
+        <label style="font-size:0.85rem;margin-left:0.5rem;">Pair: <input type="text" id="sQ3pair" placeholder="e.g. 3+7" style="width:70px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;"></label>
+        <button class="btn btn-sm" onclick="sQ3check()" style="margin-left:0.3rem;">Check</button>
+      </div>
+      <div id="sQ3result" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+    </div>
+    <div>
+      <canvas id="cQ3" width="400" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <button class="btn btn-sm" onclick="sQ3reveal()" style="margin-top:0.5rem;">Show Step-by-Step</button>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cQ3'), ctx=canvas.getContext('2d');
+  const nums=[3,1,4,1,5,9], target=10;
+  const steps=[
+    {i:0,num:3,comp:7,seen:{},found:false,action:'7 not in {}. Store {3→0}',seenAfter:{3:0}},
+    {i:1,num:1,comp:9,seen:{3:0},found:false,action:'9 not in {3→0}. Store {3→0, 1→1}',seenAfter:{3:0,1:1}},
+    {i:2,num:4,comp:6,seen:{3:0,1:1},found:false,action:'6 not in map. Store {3→0, 1→1, 4→2}',seenAfter:{3:0,1:1,4:2}},
+    {i:3,num:1,comp:9,seen:{3:0,1:1,4:2},found:false,action:'9 not in map. Store {3→0, 1→3, 4→2} (updates 1)',seenAfter:{3:0,1:3,4:2}},
+    {i:4,num:5,comp:5,seen:{3:0,1:3,4:2},found:false,action:'5 not in map. Store {..., 5→4}',seenAfter:{3:0,1:3,4:2,5:4}},
+    {i:5,num:9,comp:1,seen:{3:0,1:3,4:2,5:4},found:true,action:'1 IS in map at index 3! → [3, 5]',seenAfter:{3:0,1:3,4:2,5:4}}
+  ];
+  let stepIdx=0;
+
+  function drawStep(s){
+    ctx.clearRect(0,0,400,300);
+    // Array
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('nums = [3, 1, 4, 1, 5, 9]   target = 10',200,16);
+    nums.forEach((n,i)=>{
+      const x=40+i*55;
+      let bg='rgba(30,41,59,0.8)', border='#475569';
+      if(i===s.i){ bg='rgba(245,158,11,0.3)'; border='#f59e0b'; }
+      else if(s.found&&(i===3||i===5)){ bg='rgba(34,197,94,0.3)'; border='#22c55e'; }
+      else if(i<s.i){ bg='rgba(99,102,241,0.15)'; border='#6366f1'; }
+      ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=i===s.i||(s.found&&(i===3||i===5))?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x,25,48,35,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#64748b'; ctx.font='10px monospace'; ctx.textAlign='center';
+      ctx.fillText('['+i+']',x+24,38);
+      ctx.fillStyle=(i===s.i)?'#f59e0b':'#e2e8f0'; ctx.font='bold 15px monospace';
+      ctx.fillText(n,x+24,55);
+    });
+
+    // Current computation
+    ctx.fillStyle='#f59e0b'; ctx.font='13px monospace'; ctx.textAlign='left';
+    ctx.fillText('i='+s.i+': num='+s.num+'  complement='+target+'-'+s.num+'='+s.comp,15,85);
+
+    // Seen map
+    ctx.fillStyle='#94a3b8'; ctx.font='11px system-ui';
+    ctx.fillText('seen map:',15,110);
+    const keys=Object.keys(s.seen);
+    if(keys.length===0){ ctx.fillStyle='#64748b'; ctx.font='12px monospace'; ctx.fillText('{ }',90,110); }
+    else {
+      const str='{'+keys.map(k=>k+'→'+s.seen[k]).join(', ')+'}';
+      ctx.fillStyle='#6366f1'; ctx.font='12px monospace'; ctx.fillText(str,90,110);
+    }
+
+    // Action
+    ctx.fillStyle=s.found?'#22c55e':'#e2e8f0'; ctx.font=(s.found?'bold ':'')+'12px monospace';
+    ctx.fillText(s.action,15,140);
+
+    if(s.found){
+      ctx.fillStyle='#22c55e'; ctx.font='bold 18px system-ui'; ctx.textAlign='center';
+      ctx.fillText('✓ Found! nums[3] + nums[5] = 1 + 9 = 10',200,185);
+    }
+  }
+
+  window.sQ3reveal=function(){
+    if(stepIdx>=steps.length) stepIdx=0;
+    drawStep(steps[stepIdx]);
+    stepIdx++;
+  };
+
+  window.sQ3check=function(){
+    const ans=document.getElementById('sQ3ans').value.trim();
+    const pair=document.getElementById('sQ3pair').value.trim().replace(/\s/g,'');
+    const res=document.getElementById('sQ3result');
+    const iOk=(ans==='5');
+    const pairOk=(pair==='1+9'||pair==='9+1');
+    if(iOk&&pairOk) res.innerHTML='<span style="color:#22c55e">✓ Perfect! At i=5, complement=1, which is in the map at index 3. Pair: nums[3]+nums[5] = 1+9 = 10.</span>';
+    else if(iOk) res.innerHTML='<span style="color:#f59e0b">i=5 is correct! The pair is 1+9 (indices 3 and 5).</span>';
+    else res.innerHTML='<span style="color:#ef4444">✗ Trace carefully: at each step, check if (10-num) is already in the seen map. Click "Show Step-by-Step" to verify.</span>';
+  };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sQ3').classList.contains('active')){ stepIdx=0;
+    drawStep({i:-1,num:'-',comp:'-',seen:{},found:false,action:'Click Step-by-Step to trace',seenAfter:{}});
+    document.getElementById('sQ3ans').value=''; document.getElementById('sQ3pair').value=''; document.getElementById('sQ3result').innerHTML=''; }});
+  obs.observe(document.getElementById('sQ3'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','sCA','s14','sCB','s15','sCC','s16','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+
+</body>
+</html>

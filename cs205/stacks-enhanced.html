@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stacks - CS205 Data Structures (Enhanced)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { position: absolute; bottom: 20px; right: 40px; color: #64748b; font-size: 14px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #93c5fd; }
+h3 { font-size: 1.4em; margin-bottom: 12px; color: #a5b4fc; }
+p, li { font-size: 1.15em; line-height: 1.7; color: #cbd5e1; margin-bottom: 10px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 30px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.key-idea h3 { margin-bottom: 8px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.warning h3 { color: #fbbf24; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 20px 24px; margin: 16px 0; }
+.analogy h3 { color: #34d399; }
+table { border-collapse: collapse; margin: 16px 0; width: auto; }
+th, td { border: 1px solid #475569; padding: 10px 16px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; }
+td { background: #1e293b; color: #e2e8f0; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.5s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 8px; }
+code { background: #1e293b; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; color: #a5f3fc; font-size: 0.95em; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 1em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 16px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.svg-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin: 16px 0; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.controls input[type="number"], .controls input[type="text"], .controls select {
+  background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 8px 14px;
+  border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.controls input:focus, .controls select:focus { border-color: #3b82f6; }
+.controls button, .step-btn {
+  background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; color: #fff;
+  padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+  transition: all 0.2s; white-space: nowrap;
+}
+.controls button:hover, .step-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.controls button:active, .step-btn:active { transform: translateY(0); }
+.controls button.danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.controls button.success { background: linear-gradient(135deg, #10b981, #059669); }
+.controls button.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.controls button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.controls label { color: #94a3b8; font-size: 14px; }
+.status-msg { color: #94a3b8; font-size: 0.95em; min-height: 1.5em; margin: 8px 0; padding: 6px 12px; border-radius: 6px; background: rgba(30,41,59,0.5); }
+.status-msg.success { color: #34d399; }
+.status-msg.error { color: #f87171; }
+.code-block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.85em; line-height: 1.8; white-space: pre; overflow-x: auto; margin: 12px 0; color: #e2e8f0; position: relative; }
+.code-block .line { display: block; padding: 0 8px; border-radius: 4px; transition: background 0.3s; }
+.code-block .line.active { background: rgba(59,130,246,0.25); border-left: 3px solid #3b82f6; padding-left: 5px; }
+.code-block .kw { color: #c084fc; }
+.code-block .type { color: #67e8f9; }
+.code-block .str { color: #86efac; }
+.code-block .cmt { color: #64748b; font-style: italic; }
+.code-block .fn { color: #93c5fd; }
+.code-block .num { color: #fbbf24; }
+.code-block .op { color: #f472b6; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 0.85em; margin-right: 6px; }
+.tag.blue { background: rgba(59,130,246,0.2); color: #93c5fd; }
+.tag.green { background: rgba(16,185,129,0.2); color: #34d399; }
+.tag.yellow { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.tag.red { background: rgba(239,68,68,0.2); color: #f87171; }
+.playground { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin: 16px 0; }
+.playground h3 { font-size: 1.1em; margin-bottom: 12px; }
+canvas { border-radius: 8px; }
+.challenge-option { background: #1e293b; border: 2px solid #334155; border-radius: 10px; padding: 14px 20px; margin: 8px 0; cursor: pointer; transition: all 0.2s; }
+.challenge-option:hover { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
+.challenge-option.correct { border-color: #10b981; background: rgba(16,185,129,0.15); }
+.challenge-option.wrong { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+.challenge-option.disabled { pointer-events: none; opacity: 0.7; }
+.bug-line { cursor: pointer; transition: all 0.2s; padding: 2px 8px; border-radius: 4px; }
+.bug-line:hover { background: rgba(245,158,11,0.2); }
+.bug-line.selected { background: rgba(239,68,68,0.25); border-left: 3px solid #ef4444; }
+.bug-line.correct-pick { background: rgba(16,185,129,0.25); border-left: 3px solid #10b981; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE s1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div class="center" style="width:100%">
+    <h1 style="font-size:3.2em;">Stacks</h1>
+    <p class="subtitle" style="font-size:1.6em; margin-bottom:20px;">Last In, First Out (LIFO)</p>
+    <canvas id="s1-canvas" width="300" height="220" style="border-radius:12px; background:#1e293b;"></canvas>
+    <p class="subtitle" style="margin-top:20px;">CS205 Data Structures</p>
+    <p style="color:#64748b; font-size:0.9em;">Use arrow keys to navigate &middot; Interactive slides ahead!</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+// Animated stack on title slide
+(function(){
+  const canvas = document.getElementById('s1-canvas');
+  const ctx = canvas.getContext('2d');
+  const items = ['A','B','C','D'];
+  const colors = ['#3b82f6','#6366f1','#8b5cf6','#a78bfa'];
+  let shown = 0, phase = 'push', timer;
+  function draw() {
+    ctx.clearRect(0,0,300,220);
+    // Walls
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(100,20); ctx.lineTo(100,195); ctx.lineTo(200,195); ctx.lineTo(200,20); ctx.stroke();
+    // Items
+    for(let i=0;i<shown;i++){
+      const y = 195 - (i+1)*40;
+      ctx.fillStyle=colors[i]+'40';
+      ctx.fillRect(102,y,96,38);
+      ctx.strokeStyle=colors[i]; ctx.lineWidth=1.5;
+      ctx.strokeRect(102,y,96,38);
+      ctx.fillStyle=colors[i]; ctx.font='bold 18px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(items[i],150,y+19);
+    }
+    // TOP label
+    if(shown>0){
+      const topY=195-shown*40;
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 12px monospace'; ctx.textAlign='left';
+      ctx.fillText('TOP →',40,topY+19);
+    }
+    // Arrow
+    if(phase==='push'&&shown<items.length){
+      ctx.fillStyle='#34d399'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('push('+items[shown]+')',150,15);
+      ctx.beginPath(); ctx.moveTo(150,22); ctx.lineTo(145,18); ctx.lineTo(155,18); ctx.fill();
+    } else if(phase==='pop'&&shown>0){
+      ctx.fillStyle='#f87171'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('pop() → '+items[shown-1],150,15);
+    }
+  }
+  function tick(){
+    if(phase==='push'){
+      if(shown<items.length){shown++;}
+      else{phase='pop';}
+    } else {
+      if(shown>0){shown--;}
+      else{phase='push';}
+    }
+    draw();
+  }
+  draw();
+  timer=setInterval(tick,900);
+})();
+</script>
+
+<!-- ==================== SLIDE s2: WHAT IS A STACK ==================== -->
+<div class="slide" id="s2">
+  <h2>What is a Stack?</h2>
+  <div class="two-col mt">
+    <div>
+      <p>A <strong>stack</strong> is a collection with a <strong>LIFO</strong> access policy:</p>
+      <ul class="mt">
+        <li>The <strong>last</strong> element inserted is the <strong>first</strong> one removed</li>
+        <li>Access is restricted to one end called the <strong>top</strong></li>
+        <li>You can only add or remove from the top</li>
+      </ul>
+      <div class="analogy mt">
+        <h3>Analogy: Stack of Plates</h3>
+        <p>Think of a spring-loaded plate dispenser. You always take the <strong>top plate</strong>. Clean plates go on <strong>top</strong>. You never pull from the bottom.</p>
+      </div>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>LIFO = <strong>L</strong>ast <strong>I</strong>n, <strong>F</strong>irst <strong>O</strong>ut. The most recently added element is always the next one to leave.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Interactive Stack</h3>
+      <div class="controls">
+        <input type="text" id="s2-val" value="E" maxlength="3" style="width:50px; text-align:center;">
+        <button onclick="s2Push()">Push</button>
+        <button onclick="s2Pop()" class="danger">Pop</button>
+        <button onclick="s2Peek()" class="warning">Peek</button>
+      </div>
+      <canvas id="s2-canvas" width="240" height="280" style="width:100%; background:#0f172a;"></canvas>
+      <div class="status-msg" id="s2-status">Push items onto the stack, then try pop and peek!</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let stack = ['A','B','C','D'];
+  const colors = ['#3b82f6','#6366f1','#8b5cf6','#a78bfa','#c084fc','#d946ef','#ec4899','#f43f5e'];
+  const canvas = document.getElementById('s2-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function draw(highlightTop){
+    ctx.clearRect(0,0,240,280);
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(50,10); ctx.lineTo(50,255); ctx.lineTo(190,255); ctx.lineTo(190,10); ctx.stroke();
+    ctx.fillStyle='#334155'; ctx.fillRect(50,255,140,6);
+    for(let i=0;i<stack.length;i++){
+      const y=255-(i+1)*34;
+      const c=colors[i%colors.length];
+      const isTop=(i===stack.length-1);
+      ctx.fillStyle = (isTop&&highlightTop)?'rgba(251,191,36,0.25)':c+'30';
+      ctx.beginPath(); ctx.roundRect(52,y,136,32,4); ctx.fill();
+      ctx.strokeStyle = (isTop&&highlightTop)?'#fbbf24':c;
+      ctx.lineWidth = isTop?2.5:1.5;
+      ctx.beginPath(); ctx.roundRect(52,y,136,32,4); ctx.stroke();
+      ctx.fillStyle = isTop?'#e2e8f0':'#94a3b8';
+      ctx.font = 'bold 16px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(stack[i],120,y+16);
+    }
+    if(stack.length>0){
+      const topY=255-stack.length*34;
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 11px monospace'; ctx.textAlign='right';
+      ctx.fillText('TOP →',48,topY+16);
+    }
+    ctx.fillStyle='#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(`size: ${stack.length}`,120,275);
+  }
+
+  window.s2Push = function(){
+    if(stack.length>=7){document.getElementById('s2-status').textContent='Stack is full (max 7 for demo)';document.getElementById('s2-status').className='status-msg error';return;}
+    const v=document.getElementById('s2-val').value||'?';
+    stack.push(v);
+    document.getElementById('s2-status').textContent=`push("${v}") — added to top. Size: ${stack.length}`;
+    document.getElementById('s2-status').className='status-msg success';
+    // Auto-increment the input
+    const next = v.length===1 ? String.fromCharCode(v.charCodeAt(0)+1) : '?';
+    document.getElementById('s2-val').value=next;
+    draw(false);
+  };
+  window.s2Pop = function(){
+    if(stack.length===0){document.getElementById('s2-status').textContent='Stack is empty! Cannot pop.';document.getElementById('s2-status').className='status-msg error';return;}
+    const v=stack.pop();
+    document.getElementById('s2-status').textContent=`pop() → "${v}" removed from top. Size: ${stack.length}`;
+    document.getElementById('s2-status').className='status-msg';
+    draw(false);
+  };
+  window.s2Peek = function(){
+    if(stack.length===0){document.getElementById('s2-status').textContent='Stack is empty! Cannot peek.';document.getElementById('s2-status').className='status-msg error';return;}
+    document.getElementById('s2-status').textContent=`peek() → "${stack[stack.length-1]}" (still on stack, size unchanged: ${stack.length})`;
+    document.getElementById('s2-status').className='status-msg success';
+    draw(true);
+    setTimeout(()=>draw(false),1200);
+  };
+  draw(false);
+})();
+</script>
+
+<!-- ==================== SLIDE s3: THE STACK ADT ==================== -->
+<div class="slide" id="s3">
+  <h2>The Stack ADT (Abstract Data Type)</h2>
+  <div class="two-col mt">
+    <div>
+      <h3>Core Operations</h3>
+      <table style="width:100%;">
+        <tr><th>Method</th><th>Description</th><th>Time</th></tr>
+        <tr><td><code>push(e)</code></td><td>Add element <em>e</em> to top</td><td><span class="tag green">O(1)</span></td></tr>
+        <tr><td><code>pop()</code></td><td>Remove &amp; return top</td><td><span class="tag green">O(1)</span></td></tr>
+        <tr><td><code>top()</code> / <code>peek()</code></td><td>Return top without removing</td><td><span class="tag green">O(1)</span></td></tr>
+        <tr><td><code>isEmpty()</code></td><td>Is the stack empty?</td><td><span class="tag green">O(1)</span></td></tr>
+        <tr><td><code>size()</code></td><td>Number of elements</td><td><span class="tag green">O(1)</span></td></tr>
+      </table>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Every operation is <strong>O(1)</strong> — constant time. A stack does very little, but does it blazing fast.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Java Interface</h3>
+      <div class="code-block" style="font-size:0.82em;">
+<span class="line"><span class="kw">public interface</span> <span class="type">Stack</span>&lt;<span class="type">E</span>&gt; {</span>
+<span class="line"></span>
+<span class="line">    <span class="cmt">// Add element to the top</span></span>
+<span class="line">    <span class="kw">void</span> <span class="fn">push</span>(<span class="type">E</span> element);</span>
+<span class="line"></span>
+<span class="line">    <span class="cmt">// Remove and return the top</span></span>
+<span class="line">    <span class="type">E</span> <span class="fn">pop</span>();</span>
+<span class="line"></span>
+<span class="line">    <span class="cmt">// Return top without removing</span></span>
+<span class="line">    <span class="type">E</span> <span class="fn">top</span>();</span>
+<span class="line"></span>
+<span class="line">    <span class="cmt">// Is the stack empty?</span></span>
+<span class="line">    <span class="kw">boolean</span> <span class="fn">isEmpty</span>();</span>
+<span class="line"></span>
+<span class="line">    <span class="cmt">// Number of elements</span></span>
+<span class="line">    <span class="kw">int</span> <span class="fn">size</span>();</span>
+<span class="line">}</span>
+      </div>
+      <div class="warning mt">
+        <h3>Warning</h3>
+        <p><code>pop()</code> and <code>top()</code> on an empty stack should throw an <strong>EmptyStackException</strong> (or return null).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE s4: PUSH & POP (Interactive) ==================== -->
+<div class="slide" id="s4">
+  <h2>Push &amp; Pop Operations</h2>
+  <p>Watch push and pop in action — synced with array-based code highlighting.</p>
+
+  <div class="two-col mt">
+    <div>
+      <h3>Array-Based Push</h3>
+      <div class="code-block" id="s4-push-code" style="font-size:0.8em;">
+<span class="line" id="s4-p0"><span class="cmt">// t = index of top, starts at -1</span></span>
+<span class="line" id="s4-p1"><span class="kw">public void</span> <span class="fn">push</span>(<span class="type">E</span> element) {</span>
+<span class="line" id="s4-p2">    <span class="kw">if</span> (size() == data.length)</span>
+<span class="line" id="s4-p3">        <span class="kw">throw new</span> <span class="type">FullStackException</span>();</span>
+<span class="line" id="s4-p4">    t++;                <span class="cmt">// advance top</span></span>
+<span class="line" id="s4-p5">    data[t] = element;  <span class="cmt">// store</span></span>
+<span class="line" id="s4-p6">}</span>
+      </div>
+      <h3 class="mt">Array-Based Pop</h3>
+      <div class="code-block" id="s4-pop-code" style="font-size:0.8em;">
+<span class="line" id="s4-q0"><span class="kw">public</span> <span class="type">E</span> <span class="fn">pop</span>() {</span>
+<span class="line" id="s4-q1">    <span class="kw">if</span> (isEmpty())</span>
+<span class="line" id="s4-q2">        <span class="kw">throw new</span> <span class="type">EmptyStackException</span>();</span>
+<span class="line" id="s4-q3">    <span class="type">E</span> ans = data[t]; <span class="cmt">// save top</span></span>
+<span class="line" id="s4-q4">    data[t] = <span class="kw">null</span>;  <span class="cmt">// GC help</span></span>
+<span class="line" id="s4-q5">    t--;             <span class="cmt">// shrink</span></span>
+<span class="line" id="s4-q6">    <span class="kw">return</span> ans;</span>
+<span class="line" id="s4-q7">}</span>
+      </div>
+    </div>
+    <div>
+      <h3>Array Visualization</h3>
+      <div class="controls">
+        <input type="text" id="s4-val" value="E" maxlength="2" style="width:45px; text-align:center;">
+        <button onclick="s4Push()">Push</button>
+        <button onclick="s4Pop()" class="danger">Pop</button>
+        <button onclick="s4Init()" style="background:#334155; border:1px solid #475569;">Reset</button>
+      </div>
+      <canvas id="s4-canvas" width="440" height="100" style="width:100%; background:#0f172a;"></canvas>
+      <div class="status-msg" id="s4-status">Array capacity: 8 | t = 2 | size = 3</div>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Push is always <strong>O(1)</strong> — just increment t and store. Pop is O(1) — read, null out, decrement t.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const cap = 8;
+  let data, t;
+  const canvas = document.getElementById('s4-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function draw(highlightIdx, isNew) {
+    ctx.clearRect(0,0,440,100);
+    const cellW=50, padL=20;
+    for(let i=0;i<cap;i++){
+      const x=padL+i*cellW;
+      let color='#334155', fill='#1e293b';
+      if(i<=t && data[i]!==null){color='#60a5fa';fill='rgba(59,130,246,0.1)';}
+      if(i===highlightIdx){color=isNew?'#10b981':'#f87171';fill=isNew?'rgba(16,185,129,0.15)':'rgba(239,68,68,0.1)';}
+      if(i===t && data[i]!==null && highlightIdx===undefined){color='#fbbf24';fill='rgba(245,158,11,0.1)';}
+      ctx.fillStyle=fill;
+      ctx.beginPath(); ctx.roundRect(x,25,cellW-4,40,4); ctx.fill();
+      ctx.strokeStyle=color; ctx.lineWidth = (i===t&&data[i]!==null)?2.5:1.5;
+      ctx.beginPath(); ctx.roundRect(x,25,cellW-4,40,4); ctx.stroke();
+      // Value
+      ctx.fillStyle=data[i]!==null?'#e2e8f0':'#334155';
+      ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(data[i]!==null?data[i]:'',x+(cellW-4)/2,45);
+      // Index
+      ctx.fillStyle='#64748b'; ctx.font='10px monospace';
+      ctx.fillText(i,x+(cellW-4)/2,80);
+    }
+    // t marker
+    if(t>=0){
+      const tx=padL+t*cellW+(cellW-4)/2;
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText('↑ t='+t, tx, 18);
+    }
+  }
+
+  function clearHighlights(){
+    for(let i=0;i<=6;i++){const e=document.getElementById('s4-p'+i);if(e)e.classList.remove('active');}
+    for(let i=0;i<=7;i++){const e=document.getElementById('s4-q'+i);if(e)e.classList.remove('active');}
+  }
+
+  window.s4Init = function(){
+    data=new Array(cap).fill(null);
+    data[0]='A';data[1]='B';data[2]='C';
+    t=2;
+    clearHighlights();
+    document.getElementById('s4-val').value='D';
+    document.getElementById('s4-status').textContent=`Array capacity: ${cap} | t = ${t} | size = ${t+1}`;
+    document.getElementById('s4-status').className='status-msg';
+    draw();
+  };
+
+  window.s4Push = function(){
+    clearHighlights();
+    if(t+1>=cap){
+      document.getElementById('s4-p2').classList.add('active');
+      document.getElementById('s4-p3').classList.add('active');
+      document.getElementById('s4-status').textContent='FullStackException! Array is full.';
+      document.getElementById('s4-status').className='status-msg error';
+      return;
+    }
+    const v=document.getElementById('s4-val').value||'?';
+    document.getElementById('s4-p4').classList.add('active');
+    t++;
+    data[t]=v;
+    setTimeout(()=>{clearHighlights();document.getElementById('s4-p5').classList.add('active');draw(t,true);},300);
+    document.getElementById('s4-status').textContent=`push("${v}"): t++ → ${t}, data[${t}] = "${v}". Size: ${t+1}`;
+    document.getElementById('s4-status').className='status-msg success';
+    const next=v.length===1?String.fromCharCode(v.charCodeAt(0)+1):'?';
+    document.getElementById('s4-val').value=next;
+    draw(t,true);
+  };
+
+  window.s4Pop = function(){
+    clearHighlights();
+    if(t<0){
+      document.getElementById('s4-q1').classList.add('active');
+      document.getElementById('s4-q2').classList.add('active');
+      document.getElementById('s4-status').textContent='EmptyStackException! Stack is empty.';
+      document.getElementById('s4-status').className='status-msg error';
+      return;
+    }
+    document.getElementById('s4-q3').classList.add('active');
+    const v=data[t];
+    draw(t,false);
+    setTimeout(()=>{
+      document.getElementById('s4-q4').classList.add('active');
+      document.getElementById('s4-q5').classList.add('active');
+      data[t]=null; t--;
+      draw();
+      document.getElementById('s4-status').textContent=`pop() → "${v}". data[${t+1}]=null, t-- → ${t}. Size: ${t+1}`;
+    },500);
+  };
+
+  s4Init();
+})();
+</script>
+
+<!-- ==================== SLIDE s5: PEEK / TOP ==================== -->
+<div class="slide" id="s5">
+  <h2>Peek / Top</h2>
+  <p class="subtitle">Look at the top element without removing it</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Implementation</h3>
+      <div class="code-block" style="font-size:0.85em;">
+<span class="line"><span class="cmt">// Array-based</span></span>
+<span class="line"><span class="kw">public</span> <span class="type">E</span> <span class="fn">top</span>() {</span>
+<span class="line">    <span class="kw">if</span> (isEmpty())</span>
+<span class="line">        <span class="kw">throw new</span> <span class="type">EmptyStackException</span>();</span>
+<span class="line">    <span class="kw">return</span> data[t]; <span class="cmt">// no modification</span></span>
+<span class="line">}</span>
+      </div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p><code>peek()</code> = <strong>looking</strong> at the top plate without picking it up. <code>pop()</code> = actually <strong>taking</strong> it.</p>
+      </div>
+      <h3 class="mt">top() vs pop()</h3>
+      <table style="width:100%;">
+        <tr><th>Aspect</th><th><code>top()</code></th><th><code>pop()</code></th></tr>
+        <tr><td>Returns top?</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Removes top?</td><td><strong>No</strong></td><td><strong>Yes</strong></td></tr>
+        <tr><td>Changes size?</td><td>No</td><td>Yes (-1)</td></tr>
+        <tr><td>Destructive?</td><td>No</td><td>Yes</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Visual Comparison</h3>
+      <canvas id="s5-canvas" width="380" height="260" style="width:100%; background:#0f172a;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('s5-canvas');
+  const ctx=canvas.getContext('2d');
+  const items=['A','B','C','D'];
+  const colors=['#3b82f6','#6366f1','#8b5cf6','#a78bfa'];
+
+  function drawStack(x, label, data, highlight, removed){
+    ctx.fillStyle='#94a3b8'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(label,x+50,20);
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(x,30); ctx.lineTo(x,225); ctx.lineTo(x+100,225); ctx.lineTo(x+100,30); ctx.stroke();
+    ctx.fillStyle='#334155'; ctx.fillRect(x,225,100,4);
+    for(let i=0;i<data.length;i++){
+      const y=225-(i+1)*42;
+      const isTop=i===data.length-1;
+      const c=colors[i%colors.length];
+      ctx.fillStyle=(isTop&&highlight)?'rgba(251,191,36,0.2)':c+'25';
+      ctx.beginPath(); ctx.roundRect(x+2,y,96,40,4); ctx.fill();
+      ctx.strokeStyle=(isTop&&highlight)?'#fbbf24':c; ctx.lineWidth=isTop?2.5:1.5;
+      ctx.beginPath(); ctx.roundRect(x+2,y,96,40,4); ctx.stroke();
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 16px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(data[i],x+50,y+20);
+    }
+    if(removed){
+      ctx.fillStyle='#f8717180'; ctx.font='12px monospace'; ctx.textAlign='center';
+      ctx.fillText('removed →',x+50,225-(data.length)*42-8);
+    }
+  }
+
+  ctx.clearRect(0,0,380,260);
+  // Peek side
+  drawStack(20,'peek() → "D"',items,true,false);
+  ctx.fillStyle='#34d399'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+  ctx.fillText('size still 4',70,250);
+
+  // Pop side
+  drawStack(220,'pop() → "D"',['A','B','C'],false,true);
+  ctx.fillStyle='#f87171'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+  ctx.fillText('size now 3',270,250);
+
+  // VS divider
+  ctx.fillStyle='#64748b'; ctx.font='bold 18px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('vs',170,130);
+})();
+</script>
+
+<!-- ==================== SLIDE s6: ARRAY-BASED IMPLEMENTATION ==================== -->
+<div class="slide" id="s6">
+  <h2>Array-Based Implementation</h2>
+  <p class="subtitle">Store elements in an array, track the top index</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Memory Layout</h3>
+      <canvas id="s6-canvas" width="440" height="100" style="width:100%; background:#0f172a; border-radius:8px;"></canvas>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Stack "grows right" in the array. Index 0 is bottom, index <code>t</code> is top. Empty stack: <code>t = -1</code>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Complete Java Class</h3>
+      <div class="code-block" style="font-size:0.78em;">
+<span class="line"><span class="kw">public class</span> <span class="type">ArrayStack</span>&lt;<span class="type">E</span>&gt; <span class="kw">implements</span> <span class="type">Stack</span>&lt;<span class="type">E</span>&gt; {</span>
+<span class="line">    <span class="kw">private</span> <span class="type">E</span>[] data;</span>
+<span class="line">    <span class="kw">private int</span> t = -<span class="num">1</span>; <span class="cmt">// top index</span></span>
+<span class="line"></span>
+<span class="line">    <span class="kw">public</span> <span class="fn">ArrayStack</span>(<span class="kw">int</span> capacity) {</span>
+<span class="line">        data = (<span class="type">E</span>[]) <span class="kw">new</span> Object[capacity];</span>
+<span class="line">    }</span>
+<span class="line">    <span class="kw">public int</span> <span class="fn">size</span>()      { <span class="kw">return</span> t + <span class="num">1</span>; }</span>
+<span class="line">    <span class="kw">public boolean</span> <span class="fn">isEmpty</span>() { <span class="kw">return</span> t == -<span class="num">1</span>; }</span>
+<span class="line"></span>
+<span class="line">    <span class="kw">public void</span> <span class="fn">push</span>(<span class="type">E</span> e) {</span>
+<span class="line">        <span class="kw">if</span> (size() == data.length)</span>
+<span class="line">            <span class="kw">throw new</span> <span class="type">FullStackException</span>();</span>
+<span class="line">        data[++t] = e;</span>
+<span class="line">    }</span>
+<span class="line">    <span class="kw">public</span> <span class="type">E</span> <span class="fn">pop</span>() {</span>
+<span class="line">        <span class="kw">if</span> (isEmpty()) <span class="kw">throw new</span> <span class="type">EmptyStackException</span>();</span>
+<span class="line">        <span class="type">E</span> ans = data[t]; data[t] = <span class="kw">null</span>; t--;</span>
+<span class="line">        <span class="kw">return</span> ans;</span>
+<span class="line">    }</span>
+<span class="line">    <span class="kw">public</span> <span class="type">E</span> <span class="fn">top</span>() {</span>
+<span class="line">        <span class="kw">if</span> (isEmpty()) <span class="kw">throw new</span> <span class="type">EmptyStackException</span>();</span>
+<span class="line">        <span class="kw">return</span> data[t];</span>
+<span class="line">    }</span>
+<span class="line">}</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('s6-canvas');
+  const ctx=canvas.getContext('2d');
+  const cap=8,data=['A','B','C','D',null,null,null,null],t=3;
+  const cellW=50,padL=20;
+  for(let i=0;i<cap;i++){
+    const x=padL+i*cellW;
+    const hasData=data[i]!==null;
+    const isTop=i===t;
+    ctx.fillStyle=hasData?(isTop?'rgba(251,191,36,0.1)':'rgba(59,130,246,0.1)'):'#0f172a';
+    ctx.beginPath(); ctx.roundRect(x,25,cellW-4,40,4); ctx.fill();
+    ctx.strokeStyle=hasData?(isTop?'#fbbf24':'#60a5fa'):'#334155';
+    ctx.lineWidth=isTop?2.5:1.5;
+    ctx.beginPath(); ctx.roundRect(x,25,cellW-4,40,4); ctx.stroke();
+    ctx.fillStyle=hasData?'#e2e8f0':'#334155';
+    ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(hasData?data[i]:'—',x+(cellW-4)/2,45);
+    ctx.fillStyle='#64748b'; ctx.font='10px monospace';
+    ctx.fillText(i,x+(cellW-4)/2,80);
+  }
+  ctx.fillStyle='#fbbf24'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+  ctx.fillText('↑ t=3 (top)',padL+t*cellW+(cellW-4)/2,18);
+  ctx.fillStyle='#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('capacity = 8',padL,95);
+})();
+</script>
+
+<!-- ==================== SLIDE s7: WHEN ARRAY IS FULL ==================== -->
+<div class="slide" id="s7">
+  <h2>Array-Based: When the Array is Full</h2>
+  <p class="subtitle">Dynamic resizing with doubling strategy</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Dynamic Resizing Demo</h3>
+      <div class="controls">
+        <button onclick="s7Push()" id="s7-push-btn">Push Next</button>
+        <button onclick="s7Reset()" class="danger">Reset</button>
+      </div>
+      <canvas id="s7-canvas" width="480" height="130" style="width:100%; background:#0f172a; border-radius:8px;"></canvas>
+      <div class="status-msg" id="s7-status">Capacity: 2 | Size: 0 | Push items to see doubling in action</div>
+    </div>
+    <div>
+      <h3>Amortized Analysis</h3>
+      <p>Doubling seems expensive (O(n) copy), but happens <strong>rarely</strong>.</p>
+      <div class="playground" id="s7-log" style="max-height:150px; overflow-y:auto; padding:12px;">
+        <div style="font-family:monospace; font-size:0.8em; color:#94a3b8;" id="s7-log-content"></div>
+      </div>
+      <div class="key-idea mt">
+        <h3>Key Idea: Amortized O(1)</h3>
+        <p>Total cost of n pushes is O(n), so each push is <strong>O(1) amortized</strong>. The occasional resize is "paid for" by cheap pushes.</p>
+      </div>
+      <div class="warning mt">
+        <h3>Warning</h3>
+        <p>Never grow by a constant (e.g. +10). That gives <strong>O(n) amortized</strong> per push. Always <strong>double</strong>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let data, capacity, size, pushNum, totalCost;
+  const canvas=document.getElementById('s7-canvas');
+  const ctx=canvas.getContext('2d');
+  const letters='ABCDEFGHIJKLMNOP';
+
+  function draw(){
+    ctx.clearRect(0,0,480,130);
+    const maxCells=16, cellW=Math.min(50,460/Math.max(capacity,4)), padL=10;
+    for(let i=0;i<capacity;i++){
+      const x=padL+i*cellW;
+      const hasData=i<size;
+      ctx.fillStyle=hasData?'rgba(59,130,246,0.1)':'#0f172a';
+      ctx.beginPath(); ctx.roundRect(x,30,cellW-3,36,3); ctx.fill();
+      ctx.strokeStyle=hasData?'#60a5fa':'#334155'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(x,30,cellW-3,36,3); ctx.stroke();
+      if(hasData){
+        ctx.fillStyle='#e2e8f0'; ctx.font='bold 12px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(data[i],x+(cellW-3)/2,48);
+      }
+      ctx.fillStyle='#64748b'; ctx.font='9px monospace'; ctx.textAlign='center';
+      ctx.fillText(i,x+(cellW-3)/2,78);
+    }
+    if(size>0){
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 10px monospace'; ctx.textAlign='center';
+      ctx.fillText('↑t',padL+(size-1)*cellW+(cellW-3)/2,24);
+    }
+    ctx.fillStyle='#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`capacity: ${capacity}`,padL,100);
+    ctx.fillText(`size: ${size}`,padL+120,100);
+    ctx.fillText(`total cost: ${totalCost}`,padL+220,100);
+  }
+
+  window.s7Reset = function(){
+    capacity=2; size=0; pushNum=0; totalCost=0;
+    data=new Array(16).fill(null);
+    document.getElementById('s7-log-content').innerHTML='';
+    document.getElementById('s7-status').textContent=`Capacity: ${capacity} | Size: 0`;
+    document.getElementById('s7-status').className='status-msg';
+    document.getElementById('s7-push-btn').disabled=false;
+    draw();
+  };
+
+  window.s7Push = function(){
+    if(pushNum>=16){document.getElementById('s7-push-btn').disabled=true;return;}
+    pushNum++;
+    let cost=1, resized=false;
+    if(size===capacity){
+      cost+=size; // copy cost
+      capacity*=2;
+      resized=true;
+    }
+    data[size]=letters[size];
+    size++;
+    totalCost+=cost;
+    const msg = resized
+      ? `<div style="color:#fbbf24;">Push #${pushNum}: "${letters[size-1]}" — RESIZE! Copy ${size-1} items, new cap=${capacity}. Cost: ${cost}</div>`
+      : `<div>Push #${pushNum}: "${letters[size-1]}" — Cost: ${cost}</div>`;
+    document.getElementById('s7-log-content').innerHTML += msg;
+    document.getElementById('s7-status').textContent = `Capacity: ${capacity} | Size: ${size} | Amortized cost/push: ${(totalCost/pushNum).toFixed(2)}`;
+    document.getElementById('s7-status').className = resized ? 'status-msg error' : 'status-msg success';
+    draw();
+    // Scroll log
+    document.getElementById('s7-log').scrollTop=document.getElementById('s7-log').scrollHeight;
+  };
+
+  s7Reset();
+})();
+</script>
+
+<!-- ==================== SLIDE s8: LINKED-LIST IMPLEMENTATION ==================== -->
+<div class="slide" id="s8">
+  <h2>Linked-List-Based Implementation</h2>
+  <p class="subtitle">Push and pop at the head of a singly linked list</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Push = Insert at Head</h3>
+      <canvas id="s8-push-canvas" width="440" height="90" style="width:100%; background:#0f172a; border-radius:8px;"></canvas>
+      <h3 class="mt">Pop = Remove Head</h3>
+      <canvas id="s8-pop-canvas" width="440" height="90" style="width:100%; background:#0f172a; border-radius:8px;"></canvas>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Push/pop at the <strong>head</strong> of a singly linked list is O(1). No resizing needed. No fixed limit.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Complete Java Class</h3>
+      <div class="code-block" style="font-size:0.78em;">
+<span class="line"><span class="kw">public class</span> <span class="type">LinkedStack</span>&lt;<span class="type">E</span>&gt;</span>
+<span class="line">    <span class="kw">implements</span> <span class="type">Stack</span>&lt;<span class="type">E</span>&gt; {</span>
+<span class="line"></span>
+<span class="line">    <span class="kw">private</span> <span class="type">SinglyLinkedList</span>&lt;<span class="type">E</span>&gt; list</span>
+<span class="line">        = <span class="kw">new</span> <span class="type">SinglyLinkedList</span>&lt;&gt;();</span>
+<span class="line"></span>
+<span class="line">    <span class="kw">public int</span> <span class="fn">size</span>()      { <span class="kw">return</span> list.size(); }</span>
+<span class="line">    <span class="kw">public boolean</span> <span class="fn">isEmpty</span>() { <span class="kw">return</span> list.isEmpty(); }</span>
+<span class="line"></span>
+<span class="line">    <span class="kw">public void</span> <span class="fn">push</span>(<span class="type">E</span> e) {</span>
+<span class="line">        list.<span class="fn">addFirst</span>(e); <span class="cmt">// O(1)</span></span>
+<span class="line">    }</span>
+<span class="line">    <span class="kw">public</span> <span class="type">E</span> <span class="fn">pop</span>() {</span>
+<span class="line">        <span class="kw">return</span> list.<span class="fn">removeFirst</span>(); <span class="cmt">// O(1)</span></span>
+<span class="line">    }</span>
+<span class="line">    <span class="kw">public</span> <span class="type">E</span> <span class="fn">top</span>() {</span>
+<span class="line">        <span class="kw">return</span> list.<span class="fn">first</span>(); <span class="cmt">// O(1)</span></span>
+<span class="line">    }</span>
+<span class="line">}</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Draw linked list push diagram
+  const SVG='http://www.w3.org/2000/svg';
+  function drawNode(ctx,x,y,val,color,label){
+    ctx.fillStyle=color+'25';
+    ctx.beginPath(); ctx.roundRect(x,y,55,32,4); ctx.fill();
+    ctx.strokeStyle=color; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(x,y,55,32,4); ctx.stroke();
+    // Split: data | next
+    ctx.beginPath(); ctx.moveTo(x+35,y); ctx.lineTo(x+35,y+32); ctx.strokeStyle='#47556980'; ctx.stroke();
+    ctx.fillStyle=color; ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(val,x+17,y+16);
+    ctx.fillStyle='#64748b'; ctx.font='9px monospace';
+    ctx.fillText('→',x+45,y+16);
+    if(label){ctx.fillStyle='#fbbf24'; ctx.font='bold 10px monospace'; ctx.textAlign='center'; ctx.fillText(label,x+27,y-6);}
+  }
+  function drawArrow(ctx,x1,y1,x2,y2,color){
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=color||'#60a5fa';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-6,y2-4);ctx.lineTo(x2-6,y2+4);ctx.fillStyle=color||'#60a5fa';ctx.fill();
+  }
+
+  // Push canvas
+  const pc=document.getElementById('s8-push-canvas').getContext('2d');
+  pc.fillStyle='#34d399'; pc.font='bold 11px sans-serif'; pc.fillText('push(E):',10,15);
+  drawNode(pc,20,30,'E','#10b981','new');
+  drawArrow(pc,75,46,95,46,'#10b981');
+  drawNode(pc,100,30,'D','#60a5fa','top');
+  drawArrow(pc,155,46,175,46);
+  drawNode(pc,180,30,'C','#60a5fa');
+  drawArrow(pc,235,46,255,46);
+  drawNode(pc,260,30,'B','#60a5fa');
+  drawArrow(pc,315,46,335,46);
+  drawNode(pc,340,30,'A','#60a5fa');
+  pc.fillStyle='#64748b'; pc.font='10px monospace'; pc.fillText('null',400,46);
+
+  // Pop canvas
+  const qc=document.getElementById('s8-pop-canvas').getContext('2d');
+  qc.fillStyle='#f87171'; qc.font='bold 11px sans-serif'; qc.fillText('pop() → D:',10,15);
+  qc.fillStyle='#f8717130';
+  qc.beginPath(); qc.roundRect(20,28,55,34,4); qc.fill();
+  qc.strokeStyle='#f87171'; qc.lineWidth=1.5; qc.setLineDash([4,4]);
+  qc.beginPath(); qc.roundRect(20,28,55,34,4); qc.stroke();
+  qc.setLineDash([]);
+  qc.fillStyle='#f87171'; qc.font='bold 13px monospace'; qc.textAlign='center'; qc.textBaseline='middle';
+  qc.fillText('D',37,45);
+  qc.fillStyle='#f87171'; qc.font='10px monospace'; qc.textAlign='left';
+  qc.fillText('removed',20,75);
+
+  drawNode(qc,120,30,'C','#60a5fa','new top');
+  drawArrow(qc,175,46,195,46);
+  drawNode(qc,200,30,'B','#60a5fa');
+  drawArrow(qc,255,46,275,46);
+  drawNode(qc,280,30,'A','#60a5fa');
+  qc.fillStyle='#64748b'; qc.font='10px monospace'; qc.textAlign='left'; qc.fillText('null',340,46);
+})();
+</script>
+
+<!-- ==================== SLIDE s9: ARRAY vs LINKED LIST ==================== -->
+<div class="slide" id="s9">
+  <h2>Array vs Linked List Implementation</h2>
+  <p class="subtitle">Tradeoffs between the two approaches</p>
+  <div style="max-width:900px; margin:0 auto;">
+    <table style="width:100%; margin-top:20px;">
+      <tr><th style="width:28%;">Criterion</th><th style="width:36%;">Array-Based</th><th style="width:36%;">Linked-List-Based</th></tr>
+      <tr><td><strong>push / pop</strong></td><td><span class="tag green">O(1)</span> amortized</td><td><span class="tag green">O(1)</span> worst-case</td></tr>
+      <tr><td><strong>Memory/element</strong></td><td><span class="tag green">Low</span> — just the element</td><td><span class="tag yellow">Higher</span> — element + pointer</td></tr>
+      <tr><td><strong>Wasted space</strong></td><td><span class="tag yellow">Up to N unused slots</span></td><td><span class="tag green">None</span></td></tr>
+      <tr><td><strong>Resize cost</strong></td><td><span class="tag yellow">O(n) occasionally</span></td><td><span class="tag green">Never needed</span></td></tr>
+      <tr><td><strong>Max size</strong></td><td>Fixed (unless dynamic)</td><td>Limited only by memory</td></tr>
+      <tr><td><strong>Cache perf</strong></td><td><span class="tag green">Excellent</span> — contiguous</td><td><span class="tag red">Poor</span> — scattered</td></tr>
+    </table>
+    <div class="two-col mt" style="margin-top:24px;">
+      <div class="key-idea">
+        <h3>When to Use Array</h3>
+        <p>When you know the <strong>max size</strong>, or need <strong>best cache performance</strong>. Most practical implementations use arrays.</p>
+      </div>
+      <div class="key-idea">
+        <h3>When to Use Linked List</h3>
+        <p>When size is <strong>unpredictable</strong>, or you need <strong>guaranteed O(1)</strong> worst-case per operation.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE s10: PARENTHESIS MATCHING (Interactive) ==================== -->
+<div class="slide" id="s10">
+  <h2>Application: Parenthesis Matching</h2>
+  <p class="subtitle">Check if brackets are balanced using a stack</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Algorithm</h3>
+      <ul>
+        <li>Scan left to right</li>
+        <li>Opening <code>( [ {</code> → <strong>push</strong></li>
+        <li>Closing <code>) ] }</code> → <strong>pop</strong> and check match</li>
+        <li>At end: stack must be <strong>empty</strong></li>
+      </ul>
+      <div class="controls mt">
+        <input type="text" id="s10input" value="( { [ ] } )" style="width:220px;" placeholder="Enter brackets...">
+        <button class="btn" onclick="s10Run()">Check</button>
+        <button class="btn btn-outline" onclick="s10Step()">Step</button>
+        <button class="btn btn-outline" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10status" class="status mt" style="min-height:24px;"></div>
+      <div id="s10trace" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:12px; margin-top:12px; font-family:monospace; font-size:0.9em; max-height:200px; overflow-y:auto; color:#cbd5e1;"></div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Stack Visualization</h3>
+      <canvas id="s10canvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let stack = [], pos = -1, input = '', running = false;
+  const pairs = {')':'(',']':'[','}':'{'};
+  const colors = {'(':'#3b82f6',')':'#3b82f6','[':'#f59e0b',']':'#f59e0b','{':'#10b981','}':'#10b981'};
+
+  function draw(){
+    const c = document.getElementById('s10canvas');
+    if(!c) return;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    // draw stack frame
+    const bx=120, by=300, bw=160, cellH=40;
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.strokeRect(bx, by - 6*cellH, bw, 6*cellH);
+    ctx.fillStyle='#64748b'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Stack', bx+bw/2, by+20);
+    // draw items
+    for(let i=0;i<stack.length&&i<6;i++){
+      const y = by - (i+1)*cellH;
+      ctx.fillStyle = colors[stack[i]] || '#3b82f6';
+      ctx.globalAlpha=0.3; ctx.fillRect(bx+2,y+2,bw-4,cellH-4); ctx.globalAlpha=1;
+      ctx.strokeStyle = colors[stack[i]] || '#3b82f6';
+      ctx.strokeRect(bx+2,y+2,bw-4,cellH-4);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 24px monospace';
+      ctx.fillText(stack[i], bx+bw/2, y+cellH/2+8);
+    }
+    if(stack.length>0){
+      ctx.fillStyle='#fbbf24'; ctx.font='12px sans-serif';
+      ctx.fillText('← top', bx+bw+30, by - stack.length*cellH + cellH/2+4);
+    }
+    // highlight current char in input
+    if(pos>=0 && pos<input.length){
+      ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif';
+      ctx.fillText('Current character:', c.width/2, 20);
+      ctx.fillStyle='#f0abfc'; ctx.font='bold 28px monospace';
+      ctx.fillText(input[pos], c.width/2, 50);
+    }
+  }
+
+  window.s10Reset = function(){
+    stack=[]; pos=-1; running=false;
+    document.getElementById('s10status').textContent='';
+    document.getElementById('s10status').className='status mt';
+    document.getElementById('s10trace').innerHTML='';
+    input = document.getElementById('s10input').value.replace(/\s/g,'');
+    draw();
+  };
+
+  window.s10Step = function(){
+    if(pos===-1){ s10Reset(); }
+    pos++;
+    if(pos>=input.length){
+      const ok = stack.length===0;
+      const el = document.getElementById('s10status');
+      el.textContent = ok ? '✓ BALANCED — stack is empty!' : '✗ NOT BALANCED — stack not empty ('+stack.length+' remaining)';
+      el.className = 'status mt ' + (ok?'success':'error');
+      document.getElementById('s10trace').innerHTML += '<div style="color:'+(ok?'#86efac':'#f87171')+'">END: '+(ok?'BALANCED':'NOT BALANCED')+'</div>';
+      draw(); running=false; return;
+    }
+    const ch = input[pos];
+    const traceEl = document.getElementById('s10trace');
+    if('([{'.includes(ch)){
+      stack.push(ch);
+      traceEl.innerHTML += '<div><span style="color:#93c5fd">'+ch+'</span> → push → stack: ['+stack.join(', ')+']</div>';
+    } else if(')]}'.includes(ch)){
+      if(stack.length===0){
+        document.getElementById('s10status').textContent='✗ Stack empty — nothing to match with '+ch;
+        document.getElementById('s10status').className='status mt error';
+        traceEl.innerHTML += '<div style="color:#f87171">'+ch+' → pop → EMPTY STACK! INVALID</div>';
+        draw(); running=false; return;
+      }
+      const top = stack.pop();
+      if(top!==pairs[ch]){
+        document.getElementById('s10status').textContent='✗ Mismatch: popped '+top+' but expected '+pairs[ch]+' for '+ch;
+        document.getElementById('s10status').className='status mt error';
+        traceEl.innerHTML += '<div style="color:#f87171">'+ch+' → pop '+top+' → MISMATCH!</div>';
+        draw(); running=false; return;
+      }
+      traceEl.innerHTML += '<div><span style="color:#86efac">'+ch+'</span> → pop '+top+' → match ✓ → stack: ['+stack.join(', ')+']</div>';
+    }
+    draw();
+  };
+
+  window.s10Run = function(){
+    s10Reset();
+    running=true;
+    function step(){
+      if(!running) return;
+      s10Step();
+      if(pos<input.length && running) setTimeout(step, 600);
+    }
+    step();
+  };
+
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s11: POSTFIX EVALUATION (Interactive) ==================== -->
+<div class="slide" id="s11">
+  <h2>Application: Evaluating Postfix Expressions</h2>
+  <p class="subtitle">Evaluate expressions like <code>3 4 + 2 *</code> using a stack</p>
+  <div class="two-col mt">
+    <div>
+      <h3>What is Postfix (Reverse Polish)?</h3>
+      <table>
+        <tr><th>Infix</th><th>Postfix</th></tr>
+        <tr><td><code>3 + 4</code></td><td><code>3 4 +</code></td></tr>
+        <tr><td><code>(3 + 4) * 2</code></td><td><code>3 4 + 2 *</code></td></tr>
+        <tr><td><code>3 + 4 * 2</code></td><td><code>3 4 2 * +</code></td></tr>
+      </table>
+      <h3 class="mt">Algorithm</h3>
+      <ul>
+        <li><strong>Number:</strong> push it</li>
+        <li><strong>Operator:</strong> pop two, compute, push result</li>
+        <li>Final value on stack = answer</li>
+      </ul>
+      <div class="controls mt">
+        <input type="text" id="s11input" value="3 4 + 2 *" style="width:200px;">
+        <button class="btn" onclick="s11Run()">Evaluate</button>
+        <button class="btn btn-outline" onclick="s11Step()">Step</button>
+        <button class="btn btn-outline" onclick="s11Reset()">Reset</button>
+      </div>
+      <div id="s11status" class="status mt" style="min-height:24px;"></div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Stack</h3>
+      <canvas id="s11canvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let stack=[], tokens=[], pos=-1, running=false;
+  const ops = {'+':((a,b)=>a+b),'-':((a,b)=>a-b),'*':((a,b)=>a*b),'/':((a,b)=>Math.floor(a/b))};
+
+  function draw(){
+    const c=document.getElementById('s11canvas'); if(!c) return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const bx=100,by=300,bw=200,cellH=40;
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.strokeRect(bx,by-6*cellH,bw,6*cellH);
+    ctx.fillStyle='#64748b'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Stack',bx+bw/2,by+20);
+    for(let i=0;i<stack.length&&i<6;i++){
+      const y=by-(i+1)*cellH;
+      const isOp = typeof stack[i]==='string';
+      ctx.fillStyle=isOp?'rgba(245,158,11,0.3)':'rgba(59,130,246,0.3)';
+      ctx.fillRect(bx+2,y+2,bw-4,cellH-4);
+      ctx.strokeStyle=isOp?'#f59e0b':'#3b82f6';
+      ctx.strokeRect(bx+2,y+2,bw-4,cellH-4);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 22px monospace';
+      ctx.fillText(String(stack[i]),bx+bw/2,y+cellH/2+8);
+    }
+    // show tokens with highlight
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif';
+    ctx.fillText('Tokens:',c.width/2,20);
+    const startX = c.width/2 - tokens.length*20;
+    for(let i=0;i<tokens.length;i++){
+      ctx.fillStyle = i===pos?'#f0abfc': i<pos?'#475569':'#94a3b8';
+      ctx.font = i===pos?'bold 20px monospace':'16px monospace';
+      ctx.fillText(tokens[i], startX+i*40, 45);
+    }
+  }
+
+  window.s11Reset = function(){
+    stack=[]; pos=-1; running=false;
+    tokens=document.getElementById('s11input').value.trim().split(/\s+/);
+    document.getElementById('s11status').textContent='';
+    document.getElementById('s11status').className='status mt';
+    draw();
+  };
+
+  window.s11Step = function(){
+    if(pos===-1) s11Reset();
+    pos++;
+    if(pos>=tokens.length){
+      const el=document.getElementById('s11status');
+      el.textContent='Result: '+stack[0]; el.className='status mt success';
+      draw(); running=false; return;
+    }
+    const tok=tokens[pos];
+    if(tok in ops){
+      if(stack.length<2){document.getElementById('s11status').textContent='Error: not enough operands';document.getElementById('s11status').className='status mt error';running=false;draw();return;}
+      const b=stack.pop(), a=stack.pop();
+      const res=ops[tok](a,b);
+      stack.push(res);
+      document.getElementById('s11status').textContent=a+' '+tok+' '+b+' = '+res;
+    } else {
+      stack.push(parseFloat(tok));
+      document.getElementById('s11status').textContent='Push '+tok;
+    }
+    draw();
+  };
+
+  window.s11Run = function(){
+    s11Reset(); running=true;
+    function step(){if(!running)return;s11Step();if(pos<tokens.length&&running)setTimeout(step,700);}
+    step();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s12: INFIX TO POSTFIX (Interactive) ==================== -->
+<div class="slide" id="s12">
+  <h2>Application: Infix to Postfix Conversion</h2>
+  <p class="subtitle">Shunting-Yard Algorithm (Dijkstra)</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Algorithm Rules</h3>
+      <ul>
+        <li><strong>Number:</strong> output immediately</li>
+        <li><strong><code>(</code></strong> : push onto operator stack</li>
+        <li><strong><code>)</code></strong> : pop & output until <code>(</code></li>
+        <li><strong>Operator:</strong> while top has ≥ precedence, pop & output; then push</li>
+      </ul>
+      <div class="diagram small" style="margin-top:12px;">  Precedence: * /  → 2 (higher)
+              + -  → 1 (lower)</div>
+      <div class="controls mt">
+        <input type="text" id="s12input" value="3 + 4 * 2" style="width:200px;">
+        <button class="btn" onclick="s12Run()">Convert</button>
+        <button class="btn btn-outline" onclick="s12Step()">Step</button>
+        <button class="btn btn-outline" onclick="s12Reset()">Reset</button>
+      </div>
+      <div id="s12status" class="status mt" style="min-height:24px;"></div>
+    </div>
+    <div>
+      <canvas id="s12canvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let opStack=[], output=[], tokens=[], pos=-1, running=false, done=false;
+  const prec={'+':1,'-':1,'*':2,'/':2};
+
+  function draw(){
+    const c=document.getElementById('s12canvas'); if(!c) return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    // operator stack on left
+    const bx=30,by=280,bw=120,cellH=36;
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.strokeRect(bx,by-5*cellH,bw,5*cellH);
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Op Stack',bx+bw/2,by+18);
+    for(let i=0;i<opStack.length&&i<5;i++){
+      const y=by-(i+1)*cellH;
+      ctx.fillStyle='rgba(245,158,11,0.25)'; ctx.fillRect(bx+2,y+2,bw-4,cellH-4);
+      ctx.strokeStyle='#f59e0b'; ctx.strokeRect(bx+2,y+2,bw-4,cellH-4);
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 20px monospace';
+      ctx.fillText(opStack[i],bx+bw/2,y+cellH/2+7);
+    }
+    // output on right
+    ctx.fillStyle='#86efac'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('Output',280,by+18);
+    ctx.strokeStyle='#475569'; ctx.strokeRect(180,by-40,200,40);
+    ctx.fillStyle='#86efac'; ctx.font='bold 20px monospace';
+    ctx.fillText(output.join(' '),280,by-15);
+    // tokens at top
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif';
+    ctx.fillText('Tokens:',200,20);
+    const startX=200-tokens.length*18;
+    for(let i=0;i<tokens.length;i++){
+      ctx.fillStyle=i===pos?'#f0abfc':i<pos?'#475569':'#94a3b8';
+      ctx.font=i===pos?'bold 20px monospace':'16px monospace';
+      ctx.fillText(tokens[i],startX+i*36,48);
+    }
+  }
+
+  window.s12Reset = function(){
+    opStack=[]; output=[]; pos=-1; running=false; done=false;
+    tokens=document.getElementById('s12input').value.trim().split(/\s+/);
+    document.getElementById('s12status').textContent='';
+    document.getElementById('s12status').className='status mt';
+    draw();
+  };
+
+  window.s12Step = function(){
+    if(pos===-1) s12Reset();
+    if(done){return;}
+    pos++;
+    const el=document.getElementById('s12status');
+    if(pos>=tokens.length){
+      // flush remaining ops
+      while(opStack.length>0) output.push(opStack.pop());
+      el.textContent='Result: '+output.join(' ');
+      el.className='status mt success';
+      done=true; draw(); return;
+    }
+    const tok=tokens[pos];
+    if(!isNaN(tok)){
+      output.push(tok);
+      el.textContent='Number '+tok+' → output';
+    } else if(tok==='('){
+      opStack.push(tok);
+      el.textContent='( → push to op stack';
+    } else if(tok===')'){
+      while(opStack.length>0 && opStack[opStack.length-1]!=='('){
+        output.push(opStack.pop());
+      }
+      opStack.pop(); // remove (
+      el.textContent=') → pop until (';
+    } else if(tok in prec){
+      while(opStack.length>0 && opStack[opStack.length-1]!=='(' && (prec[opStack[opStack.length-1]]||0)>=prec[tok]){
+        output.push(opStack.pop());
+      }
+      opStack.push(tok);
+      el.textContent='Operator '+tok+' → push (after flushing higher prec)';
+    }
+    draw();
+  };
+
+  window.s12Run = function(){
+    s12Reset(); running=true;
+    function step(){if(!running||done)return;s12Step();if(pos<=tokens.length&&running&&!done)setTimeout(step,700);}
+    step();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s13: FUNCTION CALL STACK ==================== -->
+<div class="slide" id="s13">
+  <h2>Application: Function Call Stack</h2>
+  <p class="subtitle">How your computer manages function calls</p>
+  <div class="two-col mt">
+    <div>
+      <h3>How It Works</h3>
+      <p>Every function <strong>call</strong> pushes a stack frame. Every <strong>return</strong> pops it.</p>
+      <div class="code-block" style="font-size:0.85em;"><div class="line" id="s13L1"><span style="color:#f59e0b;">int</span> <span style="color:#86efac;">main</span>() {</div><div class="line" id="s13L2">    int x = <span style="color:#86efac;">factorial</span>(3);</div><div class="line" id="s13L3">}</div><div class="line" id="s13L4"></div><div class="line" id="s13L5"><span style="color:#f59e0b;">int</span> <span style="color:#86efac;">factorial</span>(int n) {</div><div class="line" id="s13L6">    if (n == 0) return 1;</div><div class="line" id="s13L7">    return n * factorial(n - 1);</div><div class="line" id="s13L8">}</div></div>
+      <div class="controls mt">
+        <button class="btn" onclick="s13Step()">Step</button>
+        <button class="btn btn-outline" onclick="s13Auto()">Auto Play</button>
+        <button class="btn btn-outline" onclick="s13Reset()">Reset</button>
+      </div>
+      <div id="s13status" class="status mt"></div>
+      <div class="key-idea mt">
+        <h3>Key Idea</h3>
+        <p>Recursion is the call stack in action. Deep recursion = tall stack → possible <code>StackOverflowError</code>.</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Call Stack</h3>
+      <canvas id="s13canvas" width="400" height="360" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const steps = [
+    {frames:['main()'],msg:'main() called',lines:['s13L1','s13L2']},
+    {frames:['main()','factorial(3)'],msg:'Call factorial(3) — n=3, not 0',lines:['s13L5','s13L7']},
+    {frames:['main()','factorial(3)','factorial(2)'],msg:'Call factorial(2) — n=2, not 0',lines:['s13L5','s13L7']},
+    {frames:['main()','factorial(3)','factorial(2)','factorial(1)'],msg:'Call factorial(1) — n=1, not 0',lines:['s13L5','s13L7']},
+    {frames:['main()','factorial(3)','factorial(2)','factorial(1)','factorial(0)'],msg:'Call factorial(0) — base case! return 1',lines:['s13L5','s13L6']},
+    {frames:['main()','factorial(3)','factorial(2)','factorial(1)'],msg:'factorial(0) returns 1 → factorial(1) = 1×1 = 1',lines:['s13L7']},
+    {frames:['main()','factorial(3)','factorial(2)'],msg:'factorial(1) returns 1 → factorial(2) = 2×1 = 2',lines:['s13L7']},
+    {frames:['main()','factorial(3)'],msg:'factorial(2) returns 2 → factorial(3) = 3×2 = 6',lines:['s13L7']},
+    {frames:['main()'],msg:'factorial(3) returns 6 → x = 6',lines:['s13L2']},
+  ];
+  let step=-1, running=false;
+  const frameColors=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981'];
+
+  function draw(){
+    const c=document.getElementById('s13canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    if(step<0) return;
+    const s=steps[step];
+    const bx=80,by=320,bw=240,cellH=48;
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    const h=Math.max(5,s.frames.length)*cellH;
+    ctx.strokeRect(bx,by-h,bw,h);
+    for(let i=0;i<s.frames.length;i++){
+      const y=by-(i+1)*cellH;
+      ctx.fillStyle=frameColors[i%frameColors.length]; ctx.globalAlpha=0.2;
+      ctx.fillRect(bx+2,y+2,bw-4,cellH-4); ctx.globalAlpha=1;
+      ctx.strokeStyle=frameColors[i%frameColors.length];
+      ctx.strokeRect(bx+2,y+2,bw-4,cellH-4);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 16px monospace'; ctx.textAlign='center';
+      ctx.fillText(s.frames[i],bx+bw/2,y+cellH/2+6);
+    }
+    if(s.frames.length>0){
+      ctx.fillStyle='#fbbf24'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('← top',bx+bw+8,by-s.frames.length*cellH+cellH/2+4);
+    }
+    // phase label
+    ctx.fillStyle=step<=4?'#93c5fd':'#86efac'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(step<=4?'↓ CALLING (pushing)':'↑ RETURNING (popping)',bx+bw/2,20);
+  }
+
+  function clearHL(){for(let i=1;i<=8;i++){const el=document.getElementById('s13L'+i);if(el)el.classList.remove('active');}}
+
+  window.s13Reset = function(){
+    step=-1; running=false; clearHL();
+    document.getElementById('s13status').textContent='';
+    draw();
+  };
+
+  window.s13Step = function(){
+    step++;
+    if(step>=steps.length){step=steps.length-1; document.getElementById('s13status').textContent='Done! factorial(3) = 6'; document.getElementById('s13status').className='status mt success'; return;}
+    clearHL();
+    steps[step].lines.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('active');});
+    document.getElementById('s13status').textContent='Step '+(step+1)+': '+steps[step].msg;
+    draw();
+  };
+
+  window.s13Auto = function(){
+    s13Reset(); running=true;
+    function go(){if(!running||step>=steps.length-1)return;s13Step();setTimeout(go,900);}
+    setTimeout(go,300);
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s14: UNDO/REDO (Interactive) ==================== -->
+<div class="slide" id="s14">
+  <h2>Application: Undo / Redo</h2>
+  <p class="subtitle">Two stacks power every editor's undo system</p>
+  <div class="two-col mt">
+    <div>
+      <h3>How It Works</h3>
+      <ul>
+        <li><strong>Perform action:</strong> push onto Undo, clear Redo</li>
+        <li><strong>Undo:</strong> pop from Undo → push onto Redo</li>
+        <li><strong>Redo:</strong> pop from Redo → push onto Undo</li>
+      </ul>
+      <div class="controls mt">
+        <input type="text" id="s14input" value="" style="width:160px;" placeholder='Type action (e.g. "Bold")'>
+        <button class="btn" onclick="s14Do()">Do Action</button>
+      </div>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="s14Undo()">↩ Undo</button>
+        <button class="btn btn-outline" onclick="s14Redo()">↪ Redo</button>
+        <button class="btn btn-outline" onclick="s14Reset()">Reset</button>
+      </div>
+      <div id="s14status" class="status mt" style="min-height:24px;"></div>
+      <div class="warning mt">
+        <h3>Important</h3>
+        <p>A new action <strong>clears the Redo stack</strong>. You lose forward history when you branch off.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="s14canvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let undoStack=[], redoStack=[];
+  const presets=['Type "a"','Type "b"','Bold','Italic','Delete line'];
+  let presetIdx=0;
+
+  function draw(){
+    const c=document.getElementById('s14canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellH=32;
+    // Undo stack (left)
+    const ux=30,uy=300,uw=150;
+    ctx.strokeStyle='#3b82f6'; ctx.lineWidth=2;
+    ctx.strokeRect(ux,uy-6*cellH,uw,6*cellH);
+    ctx.fillStyle='#93c5fd'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('UNDO Stack',ux+uw/2,uy+18);
+    for(let i=0;i<undoStack.length&&i<6;i++){
+      const y=uy-(i+1)*cellH;
+      ctx.fillStyle='rgba(59,130,246,0.2)'; ctx.fillRect(ux+2,y+2,uw-4,cellH-4);
+      ctx.strokeStyle='#3b82f6'; ctx.strokeRect(ux+2,y+2,uw-4,cellH-4);
+      ctx.fillStyle='#93c5fd'; ctx.font='14px monospace';
+      ctx.fillText(undoStack[i],ux+uw/2,y+cellH/2+5);
+    }
+    // Redo stack (right)
+    const rx=220,ry=300,rw=150;
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+    ctx.strokeRect(rx,ry-6*cellH,rw,6*cellH);
+    ctx.fillStyle='#fbbf24'; ctx.font='bold 14px sans-serif';
+    ctx.fillText('REDO Stack',rx+rw/2,ry+18);
+    for(let i=0;i<redoStack.length&&i<6;i++){
+      const y=ry-(i+1)*cellH;
+      ctx.fillStyle='rgba(245,158,11,0.2)'; ctx.fillRect(rx+2,y+2,rw-4,cellH-4);
+      ctx.strokeStyle='#f59e0b'; ctx.strokeRect(rx+2,y+2,rw-4,cellH-4);
+      ctx.fillStyle='#fbbf24'; ctx.font='14px monospace';
+      ctx.fillText(redoStack[i],rx+rw/2,y+cellH/2+5);
+    }
+    // arrows
+    ctx.fillStyle='#64748b'; ctx.font='12px sans-serif';
+    ctx.fillText('Undo →',190,uy-4*cellH); ctx.fillText('← Redo',190,uy-3*cellH);
+  }
+
+  window.s14Do = function(){
+    let action=document.getElementById('s14input').value.trim();
+    if(!action){action=presets[presetIdx%presets.length];presetIdx++;}
+    undoStack.push(action);
+    redoStack=[];
+    document.getElementById('s14input').value='';
+    document.getElementById('s14status').textContent='Action: '+action+' (Redo cleared)';
+    document.getElementById('s14status').className='status mt';
+    draw();
+  };
+
+  window.s14Undo = function(){
+    if(undoStack.length===0){document.getElementById('s14status').textContent='Nothing to undo!';document.getElementById('s14status').className='status mt error';return;}
+    const action=undoStack.pop();
+    redoStack.push(action);
+    document.getElementById('s14status').textContent='Undo: '+action+' → moved to Redo';
+    draw();
+  };
+
+  window.s14Redo = function(){
+    if(redoStack.length===0){document.getElementById('s14status').textContent='Nothing to redo!';document.getElementById('s14status').className='status mt error';return;}
+    const action=redoStack.pop();
+    undoStack.push(action);
+    document.getElementById('s14status').textContent='Redo: '+action+' → moved back to Undo';
+    draw();
+  };
+
+  window.s14Reset = function(){
+    undoStack=[]; redoStack=[]; presetIdx=0;
+    document.getElementById('s14status').textContent='';
+    draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s15: BROWSER BACK/FORWARD (Interactive) ==================== -->
+<div class="slide" id="s15">
+  <h2>Application: Browser Back / Forward</h2>
+  <p class="subtitle">Navigation history uses two stacks — same pattern as Undo/Redo!</p>
+  <div class="two-col mt">
+    <div>
+      <h3>How It Works</h3>
+      <ul>
+        <li><strong>Visit:</strong> push current onto Back, clear Forward</li>
+        <li><strong>Back:</strong> push current onto Forward, pop Back</li>
+        <li><strong>Forward:</strong> push current onto Back, pop Forward</li>
+      </ul>
+      <div class="controls mt">
+        <select id="s15select" style="width:160px;">
+          <option>Google</option><option>Reddit</option><option>YouTube</option>
+          <option>GitHub</option><option>Twitter</option><option>Wikipedia</option>
+        </select>
+        <button class="btn" onclick="s15Visit()">Visit Page</button>
+      </div>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="s15Back()">← Back</button>
+        <button class="btn btn-outline" onclick="s15Fwd()">Forward →</button>
+        <button class="btn btn-outline" onclick="s15Reset()">Reset</button>
+      </div>
+      <div id="s15status" class="status mt" style="min-height:24px;"></div>
+      <div class="analogy mt">
+        <h3>Same Pattern!</h3>
+        <p>Browser history = Undo/Redo with pages instead of actions. Back stack = Undo stack, Forward stack = Redo stack.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="s15canvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let backStack=[], fwdStack=[], current='(none)';
+  const pageColors={'Google':'#3b82f6','Reddit':'#f59e0b','YouTube':'#ef4444','GitHub':'#a855f7','Twitter':'#38bdf8','Wikipedia':'#64748b','(none)':'#475569'};
+
+  function draw(){
+    const c=document.getElementById('s15canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const cellH=30;
+    // current page
+    ctx.fillStyle=pageColors[current]||'#3b82f6'; ctx.font='bold 20px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Current: '+current, c.width/2, 30);
+    // back stack (left)
+    const bx=20,by=300,bw=140;
+    ctx.strokeStyle='#3b82f6'; ctx.lineWidth=2;
+    ctx.strokeRect(bx,by-6*cellH,bw,6*cellH);
+    ctx.fillStyle='#93c5fd'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('BACK Stack',bx+bw/2,by+16);
+    for(let i=0;i<backStack.length&&i<6;i++){
+      const y=by-(i+1)*cellH;
+      ctx.fillStyle=pageColors[backStack[i]]||'#3b82f6'; ctx.globalAlpha=0.25;
+      ctx.fillRect(bx+2,y+2,bw-4,cellH-4); ctx.globalAlpha=1;
+      ctx.strokeStyle=pageColors[backStack[i]]||'#3b82f6';
+      ctx.strokeRect(bx+2,y+2,bw-4,cellH-4);
+      ctx.fillStyle='#e2e8f0'; ctx.font='13px monospace';
+      ctx.fillText(backStack[i],bx+bw/2,y+cellH/2+4);
+    }
+    // forward stack (right)
+    const rx=240,ry=300,rw=140;
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+    ctx.strokeRect(rx,ry-6*cellH,rw,6*cellH);
+    ctx.fillStyle='#fbbf24'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('FWD Stack',rx+rw/2,ry+16);
+    for(let i=0;i<fwdStack.length&&i<6;i++){
+      const y=ry-(i+1)*cellH;
+      ctx.fillStyle=pageColors[fwdStack[i]]||'#f59e0b'; ctx.globalAlpha=0.25;
+      ctx.fillRect(rx+2,y+2,rw-4,cellH-4); ctx.globalAlpha=1;
+      ctx.strokeStyle=pageColors[fwdStack[i]]||'#f59e0b';
+      ctx.strokeRect(rx+2,y+2,rw-4,cellH-4);
+      ctx.fillStyle='#e2e8f0'; ctx.font='13px monospace';
+      ctx.fillText(fwdStack[i],rx+rw/2,y+cellH/2+4);
+    }
+  }
+
+  window.s15Visit = function(){
+    const page=document.getElementById('s15select').value;
+    if(current!=='(none)') backStack.push(current);
+    fwdStack=[];
+    current=page;
+    document.getElementById('s15status').textContent='Visited '+page+' (Forward cleared)';
+    draw();
+  };
+
+  window.s15Back = function(){
+    if(backStack.length===0){document.getElementById('s15status').textContent='No pages to go back to!';document.getElementById('s15status').className='status mt error';return;}
+    fwdStack.push(current);
+    current=backStack.pop();
+    document.getElementById('s15status').textContent='Back → now on '+current;
+    document.getElementById('s15status').className='status mt';
+    draw();
+  };
+
+  window.s15Fwd = function(){
+    if(fwdStack.length===0){document.getElementById('s15status').textContent='No pages to go forward to!';document.getElementById('s15status').className='status mt error';return;}
+    backStack.push(current);
+    current=fwdStack.pop();
+    document.getElementById('s15status').textContent='Forward → now on '+current;
+    document.getElementById('s15status').className='status mt';
+    draw();
+  };
+
+  window.s15Reset = function(){
+    backStack=[]; fwdStack=[]; current='(none)';
+    document.getElementById('s15status').textContent='';
+    draw();
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s16: COMMON PITFALLS ==================== -->
+<div class="slide" id="s16">
+  <h2>Common Pitfalls</h2>
+  <p class="subtitle">Mistakes to avoid when working with stacks</p>
+  <div class="three-col mt">
+    <div>
+      <div class="warning">
+        <h3>1. Popping an Empty Stack</h3>
+        <p>The #1 stack bug. Always check <code>isEmpty()</code> before <code>pop()</code> or <code>top()</code>.</p>
+      </div>
+      <div class="code-block" style="font-size:0.82em;"><div class="line"><span style="color:#64748b;">// BAD</span></div><div class="line">E val = stack.<span style="color:#86efac;">pop</span>();  <span style="color:#f87171;">// crash!</span></div><div class="line"></div><div class="line"><span style="color:#64748b;">// GOOD</span></div><div class="line"><span style="color:#c084fc;">if</span> (!stack.<span style="color:#86efac;">isEmpty</span>()) {</div><div class="line">    E val = stack.<span style="color:#86efac;">pop</span>();</div><div class="line">}</div></div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>2. Stack Overflow</h3>
+        <p>Deep recursion = deep call stack. Too deep → <code>StackOverflowError</code>.</p>
+      </div>
+      <div class="code-block" style="font-size:0.82em;"><div class="line"><span style="color:#64748b;">// Infinite recursion!</span></div><div class="line"><span style="color:#f59e0b;">int</span> <span style="color:#86efac;">bad</span>(<span style="color:#f59e0b;">int</span> n) {</div><div class="line">    <span style="color:#c084fc;">return</span> <span style="color:#86efac;">bad</span>(n - 1);</div><div class="line">    <span style="color:#64748b;">// no base case!</span></div><div class="line">}</div></div>
+      <canvas id="s16canvas" width="200" height="120" style="background:#1e293b; border-radius:8px; width:100%; margin-top:8px;"></canvas>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>3. Wrong Pop Order</h3>
+        <p>In postfix, operand order matters for <code>-</code> and <code>/</code>.</p>
+      </div>
+      <div class="code-block" style="font-size:0.82em;"><div class="line"><span style="color:#64748b;">// For "5 3 -"</span></div><div class="line">b = stack.<span style="color:#86efac;">pop</span>(); <span style="color:#64748b;">// 3</span></div><div class="line">a = stack.<span style="color:#86efac;">pop</span>(); <span style="color:#64748b;">// 5</span></div><div class="line"></div><div class="line"><span style="color:#86efac;">// Correct:</span> a - b = 5-3 = 2</div><div class="line"><span style="color:#f87171;">// Wrong:</span>   b - a = 3-5 = -2</div></div>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Remember</h3>
+        <p>First popped = <strong>second</strong> operand.<br>Second popped = <strong>first</strong> operand.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('s16canvas'); if(!c)return;
+  const ctx=c.getContext('2d');
+  const frames=['bad(-3)','bad(-2)','bad(-1)','bad(0)','bad(1)','bad(2)'];
+  const bx=60,by=110,bw=80,cellH=16;
+  ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+  for(let i=0;i<frames.length;i++){
+    const y=by-(i+1)*cellH;
+    ctx.fillStyle='rgba(239,68,68,'+((i+1)/frames.length*0.5+0.1)+')';
+    ctx.fillRect(bx,y,bw,cellH-1);
+    ctx.strokeRect(bx,y,bw,cellH-1);
+    ctx.fillStyle='#fca5a5'; ctx.font='9px monospace'; ctx.textAlign='center';
+    ctx.fillText(frames[i],bx+bw/2,y+cellH-4);
+  }
+  ctx.fillStyle='#f87171'; ctx.font='bold 10px sans-serif';
+  ctx.fillText('BOOM!',bx+bw/2,by-frames.length*cellH-4);
+  ctx.fillText('↑ keeps growing',bx+bw/2,by+12);
+})();
+</script>
+
+<!-- ==================== SLIDE s17: SUMMARY ==================== -->
+<div class="slide" id="s17">
+  <h2>Summary & Cheat Sheet</h2>
+  <div class="two-col mt">
+    <div>
+      <h3>Stack at a Glance</h3>
+      <canvas id="s17canvas" width="300" height="180" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      <h3 class="mt">Operations</h3>
+      <table style="width:100%;">
+        <tr><th>Operation</th><th>Time</th><th>Notes</th></tr>
+        <tr><td><code>push(e)</code></td><td><span style="color:#86efac;">O(1)*</span></td><td>Add to top</td></tr>
+        <tr><td><code>pop()</code></td><td><span style="color:#86efac;">O(1)</span></td><td>Remove & return top</td></tr>
+        <tr><td><code>top()</code></td><td><span style="color:#86efac;">O(1)</span></td><td>Return top (no remove)</td></tr>
+        <tr><td><code>isEmpty()</code></td><td><span style="color:#86efac;">O(1)</span></td><td>Check if empty</td></tr>
+        <tr><td><code>size()</code></td><td><span style="color:#86efac;">O(1)</span></td><td>Element count</td></tr>
+      </table>
+      <p style="font-size:0.85em; color:#64748b;">* O(1) amortized for dynamic array</p>
+    </div>
+    <div>
+      <h3>Implementations</h3>
+      <div class="key-idea">
+        <h3>Array-Based</h3>
+        <p>Simple, fast, great cache performance. Amortized O(1) with doubling.</p>
+      </div>
+      <div class="key-idea">
+        <h3>Linked-List-Based</h3>
+        <p>No size limit, guaranteed O(1) worst-case. Extra memory for pointers.</p>
+      </div>
+      <h3 class="mt">Applications</h3>
+      <table style="width:100%;">
+        <tr><th>Application</th><th>How Stacks Help</th></tr>
+        <tr><td>Parenthesis matching</td><td>Push open, pop on close</td></tr>
+        <tr><td>Postfix evaluation</td><td>Push nums, pop for ops</td></tr>
+        <tr><td>Infix → postfix</td><td>Operator stack (shunting-yard)</td></tr>
+        <tr><td>Function calls</td><td>Call stack / recursion</td></tr>
+        <tr><td>Undo / Redo</td><td>Two stacks</td></tr>
+        <tr><td>Browser history</td><td>Back & Forward stacks</td></tr>
+      </table>
+      <div class="analogy mt">
+        <h3>One Sentence</h3>
+        <p>A stack is a <strong>restricted list</strong> where you can only touch the top — and that restriction makes it powerful, fast, and useful everywhere.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('s17canvas'); if(!c)return;
+  const ctx=c.getContext('2d');
+  const bx=100,by=160,bw=100,cellH=30;
+  const items=['bottom','...','data','top'];
+  ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+  ctx.strokeRect(bx,by-items.length*cellH,bw,items.length*cellH);
+  for(let i=0;i<items.length;i++){
+    const y=by-(i+1)*cellH;
+    const alpha=(i+1)/items.length;
+    ctx.fillStyle='rgba(59,130,246,'+alpha*0.4+')';
+    ctx.fillRect(bx+2,y+2,bw-4,cellH-4);
+    ctx.strokeStyle='#3b82f6'; ctx.strokeRect(bx+2,y+2,bw-4,cellH-4);
+    ctx.fillStyle='#e2e8f0'; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+    ctx.fillText(items[i],bx+bw/2,y+cellH/2+5);
+  }
+  // arrows
+  ctx.fillStyle='#86efac'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('← push / pop here',bx+bw+10,by-items.length*cellH+cellH/2+5);
+  ctx.fillStyle='#fbbf24'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('LIFO',bx+bw/2,by-items.length*cellH-10);
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCA: Parenthesis Prediction ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A: Predict the Stack</h2>
+  <p class="subtitle">What's left on the stack after processing <code>[ ( { } ] )</code>?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Input: <code>[ ( { } ] )</code></h3>
+      <p>Trace through the parenthesis matching algorithm mentally. What happens?</p>
+      <div class="controls mt">
+        <button class="btn" onclick="sCACheck('A')" id="sCA_A" style="min-width:280px; text-align:left;">A) Stack is empty — balanced!</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sCACheck('B')" id="sCA_B" style="min-width:280px; text-align:left;">B) Mismatch at ] — { vs ]</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sCACheck('C')" id="sCA_C" style="min-width:280px; text-align:left;">C) Mismatch at ] — ( vs ]</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sCACheck('D')" id="sCA_D" style="min-width:280px; text-align:left;">D) Stack not empty at end</button>
+      </div>
+      <div id="sCAstatus" class="status mt" style="min-height:50px;"></div>
+    </div>
+    <div>
+      <h3 style="text-align:center;">Trace It Out</h3>
+      <canvas id="sCAcanvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCACheck = function(ans){
+    const el=document.getElementById('sCAstatus');
+    const btns=['A','B','C','D'];
+    btns.forEach(b=>{document.getElementById('sCA_'+b).style.opacity='0.5';});
+    document.getElementById('sCA_'+ans).style.opacity='1';
+    if(ans==='C'){
+      el.innerHTML='<span style="color:#86efac;">✓ Correct!</span> After pushing [ ( {, we pop { for }, stack is [ (. Then ] comes — we pop ( but ( doesn\'t match ]. Mismatch!';
+      el.className='status mt success';
+      sCAReveal();
+    } else {
+      el.innerHTML='<span style="color:#f87171;">✗ Not quite.</span> Trace carefully: [ push, ( push, { push, } pops {. Stack is now [ (. Next is ] — what gets popped?';
+      el.className='status mt error';
+    }
+  };
+
+  function sCAReveal(){
+    const c=document.getElementById('sCAcanvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const steps=[
+      {ch:'[',stack:['['],msg:'push ['},
+      {ch:'(',stack:['[','('],msg:'push ('},
+      {ch:'{',stack:['[','(','{'],msg:'push {'},
+      {ch:'}',stack:['[','('],msg:'pop { — matches } ✓'},
+      {ch:']',stack:['[','('],msg:'pop ( — vs ] ✗ MISMATCH!'},
+    ];
+    const colors={'[':'#3b82f6','(':'#f59e0b','{':'#10b981'};
+    const bx=140,by=300,bw=120,cellH=40;
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Final state when mismatch detected:',c.width/2,20);
+    // draw trace
+    let y=50;
+    ctx.font='13px monospace'; ctx.textAlign='left';
+    for(let i=0;i<steps.length;i++){
+      const s=steps[i];
+      ctx.fillStyle=i===4?'#f87171':'#cbd5e1';
+      ctx.fillText((i+1)+'. \''+s.ch+'\' → '+s.msg, 20, y);
+      y+=22;
+    }
+    // draw stack at step 4
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.strokeRect(bx,by-3*cellH,bw,3*cellH);
+    const stk=['[','('];
+    for(let i=0;i<stk.length;i++){
+      const sy=by-(i+1)*cellH;
+      ctx.fillStyle=colors[stk[i]]||'#3b82f6'; ctx.globalAlpha=0.3;
+      ctx.fillRect(bx+2,sy+2,bw-4,cellH-4); ctx.globalAlpha=1;
+      ctx.strokeStyle=colors[stk[i]]||'#3b82f6';
+      ctx.strokeRect(bx+2,sy+2,bw-4,cellH-4);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 24px monospace'; ctx.textAlign='center';
+      ctx.fillText(stk[i],bx+bw/2,sy+cellH/2+8);
+    }
+    ctx.fillStyle='#f87171'; ctx.font='bold 14px sans-serif';
+    ctx.fillText('( ≠ ]',bx+bw+15,by-2*cellH+cellH/2+5);
+  }
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCB: Fix the Buggy Code ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B: Fix the Bug</h2>
+  <p class="subtitle">This postfix evaluator has a bug. Find and fix it!</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Buggy Code</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="line" id="sCBL1"><span style="color:#c084fc;">for</span> (String tok : tokens) {</div><div class="line" id="sCBL2">    <span style="color:#c084fc;">if</span> (isNumber(tok)) {</div><div class="line" id="sCBL3">        stack.push(Integer.parseInt(tok));</div><div class="line" id="sCBL4">    } <span style="color:#c084fc;">else</span> {</div><div class="line" id="sCBL5">        <span style="color:#f59e0b;">int</span> a = stack.pop();</div><div class="line" id="sCBL6">        <span style="color:#f59e0b;">int</span> b = stack.pop();</div><div class="line" id="sCBL7">        stack.push(compute(a, tok, b));</div><div class="line" id="sCBL8">    }</div><div class="line" id="sCBL9">}</div></div>
+      <p class="mt">Test: <code>"8 3 -"</code> should give <strong>5</strong>, but this code gives <strong>-5</strong>.</p>
+      <h3 class="mt">Which line has the bug?</h3>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sCBCheck(5)">Line 5</button>
+        <button class="btn btn-outline" onclick="sCBCheck(6)">Line 6</button>
+        <button class="btn btn-outline" onclick="sCBCheck(7)">Line 7</button>
+      </div>
+      <div id="sCBstatus" class="status mt" style="min-height:60px;"></div>
+    </div>
+    <div>
+      <h3>Think About It</h3>
+      <div class="key-idea">
+        <h3>Stack State for "8 3 -"</h3>
+        <p>After pushing 8 then 3:</p>
+        <p style="font-family:monospace; font-size:1.1em;">
+          top → <strong>3</strong><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>8</strong>
+        </p>
+        <p>First pop gets <strong>3</strong> (stored in <code>a</code>).<br>
+        Second pop gets <strong>8</strong> (stored in <code>b</code>).<br>
+        Then we compute <code>a op b</code> = <code>3 - 8</code> = -5</p>
+      </div>
+      <div id="sCBfix" style="display:none;">
+        <div class="analogy">
+          <h3>The Fix</h3>
+          <p>Line 7 should be <code>compute(<strong>b</strong>, tok, <strong>a</strong>)</code> — swap the operand order! First popped = second operand, second popped = first operand.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCBCheck = function(line){
+    const el=document.getElementById('sCBstatus');
+    // clear highlights
+    for(let i=1;i<=9;i++){const l=document.getElementById('sCBL'+i);if(l)l.classList.remove('active');}
+    document.getElementById('sCBL'+line).classList.add('active');
+    if(line===7){
+      el.innerHTML='<span style="color:#86efac;">✓ Correct!</span> Line 7 passes <code>a, tok, b</code> but <code>a</code> was popped first (= second operand). Should be <code>compute(b, tok, a)</code>.';
+      el.className='status mt success';
+      document.getElementById('sCBfix').style.display='block';
+    } else if(line===5){
+      el.innerHTML='<span style="color:#f87171;">✗ Line 5 is fine</span> — it correctly pops the first value. The problem is how that value is <em>used</em>.';
+      el.className='status mt error';
+    } else {
+      el.innerHTML='<span style="color:#f87171;">✗ Line 6 is fine</span> — it correctly pops the second value. Look at how a and b are passed to compute().';
+      el.className='status mt error';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCC: Resizing Count ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: How Many Resizes?</h2>
+  <p class="subtitle">Array-based stack starts with capacity 2, doubles when full. How many resizes after 17 pushes?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Setup</h3>
+      <ul>
+        <li>Initial capacity: <strong>2</strong></li>
+        <li>Resize strategy: <strong>double</strong> when full</li>
+        <li>Total pushes: <strong>17</strong></li>
+      </ul>
+      <div class="controls mt">
+        <button class="btn" onclick="sCCCheck(3)" style="min-width:120px;">3 resizes</button>
+        <button class="btn" onclick="sCCCheck(4)" style="min-width:120px;">4 resizes</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sCCCheck(5)" style="min-width:120px;">5 resizes</button>
+        <button class="btn" onclick="sCCCheck(8)" style="min-width:120px;">8 resizes</button>
+      </div>
+      <div id="sCCstatus" class="status mt" style="min-height:50px;"></div>
+    </div>
+    <div>
+      <canvas id="sCCcanvas" width="400" height="340" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCCCheck = function(ans){
+    const el=document.getElementById('sCCstatus');
+    if(ans===4){
+      el.innerHTML='<span style="color:#86efac;">✓ Correct!</span> Capacity: 2→4→8→16→32. Four doublings to hold 17 items.';
+      el.className='status mt success';
+      sCCReveal();
+    } else {
+      el.innerHTML='<span style="color:#f87171;">✗ Not quite.</span> Think: 2 is full at push 3, 4 is full at push 5, 8 at push 9, 16 at push 17...';
+      el.className='status mt error';
+    }
+  };
+
+  function sCCReveal(){
+    const c=document.getElementById('sCCcanvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const caps=[2,4,8,16,32];
+    const resizeAt=[3,5,9,17];
+    ctx.fillStyle='#94a3b8'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Capacity growth with doublings',c.width/2,20);
+    const maxH=250, bw=50, gap=25, startX=40;
+    for(let i=0;i<caps.length;i++){
+      const h=caps[i]/32*maxH;
+      const x=startX+i*(bw+gap);
+      const y=300-h;
+      const isResize=i<4;
+      ctx.fillStyle=isResize?'rgba(59,130,246,0.4)':'rgba(16,185,129,0.4)';
+      ctx.fillRect(x,y,bw,h);
+      ctx.strokeStyle=isResize?'#3b82f6':'#10b981'; ctx.lineWidth=2;
+      ctx.strokeRect(x,y,bw,h);
+      ctx.fillStyle='#e2e8f0'; ctx.font='bold 16px monospace';
+      ctx.fillText(caps[i],x+bw/2,y-8);
+      if(i<4){
+        ctx.fillStyle='#fbbf24'; ctx.font='11px sans-serif';
+        ctx.fillText('resize @',x+bw/2,310);
+        ctx.fillText('push '+resizeAt[i],x+bw/2,324);
+      } else {
+        ctx.fillStyle='#86efac'; ctx.font='11px sans-serif';
+        ctx.fillText('final',x+bw/2,310);
+      }
+      if(i<caps.length-1){
+        ctx.fillStyle='#fbbf24'; ctx.font='16px sans-serif';
+        ctx.fillText('×2',x+bw+gap/2,300-h/2);
+      }
+    }
+    ctx.fillStyle='#86efac'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('4 resizes total!',c.width/2,340);
+  }
+})();
+</script>
+
+<!-- ==================== CHALLENGE sQ1: 3-Question Quiz ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Stack Fundamentals</h2>
+  <p class="subtitle">3 quick questions to test your understanding</p>
+  <div style="max-width:700px; margin:0 auto;">
+    <div class="key-idea" id="sQ1q1box">
+      <h3>Q1: What does LIFO stand for?</h3>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sQ1Answer(1,'A')">Last Input, First Output</button>
+        <button class="btn btn-outline" onclick="sQ1Answer(1,'B')">Last In, First Out</button>
+        <button class="btn btn-outline" onclick="sQ1Answer(1,'C')">Least In, First Out</button>
+      </div>
+      <div id="sQ1r1" class="status" style="min-height:20px;"></div>
+    </div>
+    <div class="key-idea mt" id="sQ1q2box">
+      <h3>Q2: You push A, B, C, D in that order. What does pop() return?</h3>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sQ1Answer(2,'A')">A</button>
+        <button class="btn btn-outline" onclick="sQ1Answer(2,'B')">B</button>
+        <button class="btn btn-outline" onclick="sQ1Answer(2,'C')">D</button>
+      </div>
+      <div id="sQ1r2" class="status" style="min-height:20px;"></div>
+    </div>
+    <div class="key-idea mt" id="sQ1q3box">
+      <h3>Q3: What is the worst-case time for push() in an array-based stack?</h3>
+      <div class="controls">
+        <button class="btn btn-outline" onclick="sQ1Answer(3,'A')">O(1)</button>
+        <button class="btn btn-outline" onclick="sQ1Answer(3,'B')">O(n) — when resizing</button>
+        <button class="btn btn-outline" onclick="sQ1Answer(3,'C')">O(log n)</button>
+      </div>
+      <div id="sQ1r3" class="status" style="min-height:20px;"></div>
+    </div>
+    <div id="sQ1final" class="status mt" style="min-height:30px; text-align:center; font-size:1.2em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={1:'B',2:'C',3:'B'};
+  const explain={
+    1:'LIFO = Last In, First Out. The most recent element added is removed first.',
+    2:'D was pushed last, so D is on top and gets popped first.',
+    3:'When the array is full, we must allocate a new array and copy all n elements → O(n). But amortized it\'s O(1).'
+  };
+  let score=0, answered={};
+
+  window.sQ1Answer = function(q,ans){
+    if(answered[q]) return;
+    answered[q]=true;
+    const el=document.getElementById('sQ1r'+q);
+    if(ans===answers[q]){
+      score++;
+      el.innerHTML='<span style="color:#86efac;">✓ Correct!</span> '+explain[q];
+      el.className='status success';
+    } else {
+      el.innerHTML='<span style="color:#f87171;">✗ Incorrect.</span> '+explain[q];
+      el.className='status error';
+    }
+    if(Object.keys(answered).length===3){
+      const fEl=document.getElementById('sQ1final');
+      fEl.textContent='Score: '+score+'/3'+(score===3?' — Perfect!':score>=2?' — Great job!':' — Review the slides!');
+      fEl.className='status mt '+(score>=2?'success':'error');
+    }
+  };
+})();
+</script>
+
+<!-- ==================== CHALLENGE sQ2: Interactive Postfix Evaluator ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Challenge: Evaluate This Postfix Expression</h2>
+  <p class="subtitle">Manually evaluate <code>5 1 2 + 4 * + 3 -</code> — what's the result?</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Expression: <code>5 1 2 + 4 * + 3 -</code></h3>
+      <p>Work through it token by token using the postfix algorithm.</p>
+      <div class="controls mt">
+        <input type="number" id="sQ2input" placeholder="Your answer" style="width:140px;">
+        <button class="btn" onclick="sQ2Check()">Check Answer</button>
+      </div>
+      <div id="sQ2status" class="status mt" style="min-height:50px;"></div>
+      <div id="sQ2hint" style="display:none;" class="mt">
+        <button class="btn btn-outline" onclick="sQ2ShowTrace()">Show Full Trace</button>
+      </div>
+    </div>
+    <div>
+      <div id="sQ2trace" style="display:none;">
+        <div class="diagram small">Token  Action                Stack
+-----  --------------------  --------
+  5    push 5                [5]
+  1    push 1                [5, 1]
+  2    push 2                [5, 1, 2]
+  +    pop 2,1 → 1+2=3      [5, 3]
+  4    push 4                [5, 3, 4]
+  *    pop 4,3 → 3*4=12     [5, 12]
+  +    pop 12,5 → 5+12=17   [17]
+  3    push 3                [17, 3]
+  -    pop 3,17 → 17-3=14   [<span style="color:#86efac;">14</span>]</div>
+      </div>
+      <div class="key-idea mt" id="sQ2tip">
+        <h3>Tips</h3>
+        <ul>
+          <li>Numbers → push</li>
+          <li>Operators → pop two, compute, push result</li>
+          <li>Watch the operand order for <code>-</code>!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ2Check = function(){
+    const val=parseInt(document.getElementById('sQ2input').value);
+    const el=document.getElementById('sQ2status');
+    if(val===14){
+      el.innerHTML='<span style="color:#86efac;">✓ Correct! The answer is 14.</span> Equivalent infix: (5 + ((1+2)*4)) - 3 = 14';
+      el.className='status mt success';
+      document.getElementById('sQ2trace').style.display='block';
+      document.getElementById('sQ2hint').style.display='none';
+    } else if(isNaN(val)){
+      el.innerHTML='Please enter a number.';
+      el.className='status mt error';
+    } else {
+      el.innerHTML='<span style="color:#f87171;">✗ Not quite (you got '+val+'). Try tracing each token step by step.</span>';
+      el.className='status mt error';
+      document.getElementById('sQ2hint').style.display='block';
+    }
+  };
+
+  window.sQ2ShowTrace = function(){
+    document.getElementById('sQ2trace').style.display='block';
+    document.getElementById('sQ2hint').style.display='none';
+  };
+})();
+</script>
+
+<!-- ==================== CHALLENGE sQ3: What's the Output? ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Challenge: What Gets Printed?</h2>
+  <p class="subtitle">Trace through this code and predict the output</p>
+  <div class="two-col mt">
+    <div>
+      <h3>Code</h3>
+      <div class="code-block" style="font-size:0.9em;"><div class="line">Stack&lt;Integer&gt; s = <span style="color:#c084fc;">new</span> Stack&lt;&gt;();</div><div class="line">s.push(<span style="color:#f59e0b;">10</span>);</div><div class="line">s.push(<span style="color:#f59e0b;">20</span>);</div><div class="line">s.push(<span style="color:#f59e0b;">30</span>);</div><div class="line">System.out.print(s.pop() + <span style="color:#a5f3fc;">" "</span>);</div><div class="line">s.push(<span style="color:#f59e0b;">40</span>);</div><div class="line">s.push(<span style="color:#f59e0b;">50</span>);</div><div class="line">System.out.print(s.pop() + <span style="color:#a5f3fc;">" "</span>);</div><div class="line">System.out.print(s.pop() + <span style="color:#a5f3fc;">" "</span>);</div><div class="line">System.out.print(s.pop() + <span style="color:#a5f3fc;">" "</span>);</div></div>
+      <div class="controls mt">
+        <button class="btn" onclick="sQ3Check('A')" style="min-width:240px; text-align:left;">A) 10 20 30 40</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sQ3Check('B')" style="min-width:240px; text-align:left;">B) 30 50 40 20</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sQ3Check('C')" style="min-width:240px; text-align:left;">C) 30 50 40 10</button>
+      </div>
+      <div class="controls">
+        <button class="btn" onclick="sQ3Check('D')" style="min-width:240px; text-align:left;">D) 50 40 20 10</button>
+      </div>
+      <div id="sQ3status" class="status mt" style="min-height:50px;"></div>
+    </div>
+    <div>
+      <div id="sQ3trace" style="display:none;">
+        <h3>Step-by-Step Trace</h3>
+        <canvas id="sQ3canvas" width="400" height="300" style="background:#1e293b; border-radius:12px; border:1px solid #334155; width:100%;"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ3Check = function(ans){
+    const el=document.getElementById('sQ3status');
+    if(ans==='B'){
+      el.innerHTML='<span style="color:#86efac;">✓ Correct!</span> push 10,20,30 → pop 30. push 40,50 → pop 50, pop 40, pop 20. Output: <strong>30 50 40 20</strong>';
+      el.className='status mt success';
+      document.getElementById('sQ3trace').style.display='block';
+      sQ3Draw();
+    } else {
+      el.innerHTML='<span style="color:#f87171;">✗ Not quite.</span> Remember: pop always removes the <strong>top</strong> element (most recently pushed). Trace carefully!';
+      el.className='status mt error';
+    }
+  };
+
+  function sQ3Draw(){
+    const c=document.getElementById('sQ3canvas'); if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    const steps=[
+      {label:'push 10,20,30',stack:[10,20,30],out:''},
+      {label:'pop → 30',stack:[10,20],out:'30'},
+      {label:'push 40,50',stack:[10,20,40,50],out:'30'},
+      {label:'pop → 50',stack:[10,20,40],out:'30 50'},
+      {label:'pop → 40',stack:[10,20],out:'30 50 40'},
+      {label:'pop → 20',stack:[10],out:'30 50 40 20'},
+    ];
+    const cols=steps.length, colW=c.width/cols;
+    for(let i=0;i<steps.length;i++){
+      const x=i*colW+colW/2;
+      ctx.fillStyle='#94a3b8'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(steps[i].label,x,16);
+      // mini stack
+      const bw=40, cellH=20, by=200;
+      ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+      ctx.strokeRect(x-bw/2,by-4*cellH,bw,4*cellH);
+      for(let j=0;j<steps[i].stack.length;j++){
+        const y=by-(j+1)*cellH;
+        ctx.fillStyle='rgba(59,130,246,0.3)'; ctx.fillRect(x-bw/2+1,y+1,bw-2,cellH-2);
+        ctx.fillStyle='#93c5fd'; ctx.font='bold 11px monospace';
+        ctx.fillText(steps[i].stack[j],x,y+cellH/2+4);
+      }
+      if(steps[i].out){
+        ctx.fillStyle='#86efac'; ctx.font='10px monospace';
+        ctx.fillText('out: '+steps[i].out,x,by+16);
+      }
+    }
+    ctx.fillStyle='#86efac'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Final output: 30 50 40 20',c.width/2,by+40);
+  }
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','sCA','s11','s12','s13','sCB','s14','s15','s16','sCC','s17','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+
+  document.querySelectorAll('.slide-number').forEach(el => {
+    el.textContent = (idx + 1) + ' / ' + slideOrder.length;
+  });
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', function(e) {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); navigate(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); navigate(-1); }
+});
+
+showSlide(0);
+</script>
+
+</body>
+</html>
