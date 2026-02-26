@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pumping Theorem - Enhanced Interactive</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.05); z-index: 200; }
+#progress { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #38bdf8; }
+h3 { font-size: 1.3em; margin-bottom: 10px; color: #a5b4fc; }
+p, li { font-size: 1.1em; line-height: 1.7; color: #cbd5e1; margin-bottom: 8px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 24px; }
+code { background: rgba(99,102,241,0.15); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono','Fira Code',monospace; color: #a5b4fc; font-size: 0.95em; }
+.btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 6px 14px; font-size: 0.85em; }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+.key-idea { background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.1)); border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.key-idea h3 { color: #4ade80; margin-bottom: 6px; }
+.warning { background: rgba(239,68,68,0.08); border-left: 4px solid #ef4444; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.warning h3 { color: #f87171; margin-bottom: 6px; }
+.analogy { background: rgba(168,85,247,0.08); border-left: 4px solid #a78bfa; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.analogy h3 { color: #c4b5fd; margin-bottom: 6px; }
+.code-block { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin: 10px 0; overflow-x: auto; }
+.code-content { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.9em; line-height: 1.8; }
+.line { padding: 1px 8px; border-left: 3px solid transparent; transition: all 0.3s; white-space: pre; }
+.line.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+table { border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #475569; padding: 8px 14px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; font-size: 0.95em; }
+td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.challenge-box { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(234,88,12,0.1)); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 12px 0; }
+.challenge-box h3 { color: #fbbf24; }
+.quiz-option { background: #334155; border: 2px solid #475569; color: #e2e8f0; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-size: 1em; transition: all 0.3s; min-width: 140px; }
+.quiz-option:hover { background: #475569; }
+.quiz-option.correct { background: rgba(16,185,129,0.3); border-color: #10b981; color: #34d399; }
+.quiz-option.wrong { background: rgba(239,68,68,0.3); border-color: #ef4444; color: #f87171; }
+.quiz-option:disabled { cursor: default; }
+.formula { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px 24px; margin: 12px 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 1.05em; color: #c4b5fd; text-align: center; }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <div style="text-align:center;">
+    <h1>The Pumping Lemma</h1>
+    <p class="subtitle">Proving Languages Are NOT Regular (or Not Context-Free)</p>
+    <canvas id="cS1" width="600" height="180" style="width:100%;max-width:600px;background:rgba(0,0,0,0.2);border-radius:12px;margin:20px auto;display:block;"></canvas>
+    <p style="color:#64748b;font-size:0.9em;">Use &larr; &rarr; arrows to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS1'), ctx = c.getContext('2d');
+  let frame = 0, animId = null, pumpI = 0, timer = 0;
+  const base = 'aabb';
+  function draw(){
+    ctx.clearRect(0,0,600,180);
+    timer++;
+    if(timer % 100 === 0) pumpI = (pumpI + 1) % 5;
+    // Build pumped string: x='a', y='a', z='bb' => pump y pumpI times
+    let str = 'a' + 'a'.repeat(pumpI) + 'bb';
+    let colors = [];
+    colors.push('#3b82f6'); // x = first 'a'
+    for(let i=0;i<pumpI;i++) colors.push('#f59e0b'); // y pumped
+    colors.push('#8b5cf6','#8b5cf6'); // z = 'bb'
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    let totalW = str.length * 32;
+    let startX = 300 - totalW/2 + 16;
+    for(let i=0;i<str.length;i++){
+      let x = startX + i * 32;
+      let y = 90 + Math.sin(frame*0.04+i*0.6)*6;
+      ctx.fillStyle = colors[i] || '#e2e8f0';
+      ctx.fillText(str[i], x, y);
+    }
+    ctx.font = '14px system-ui';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('s = xyz,  x=a  y=a  z=bb', 300, 30);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('i = '+pumpI+'  \u2192  xy\u2071z = '+str, 300, 155);
+    frame++;
+    animId = requestAnimationFrame(draw);
+  }
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s1').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h2>The Big Picture</h2>
+  <p>The pumping lemma is a tool for proving <strong>negative results</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>What it tells you</h3>
+      <ul>
+        <li>A language is <strong style="color:#f87171;">NOT</strong> regular</li>
+        <li>A language is <strong style="color:#f87171;">NOT</strong> context-free</li>
+      </ul>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Idea</h3>
+        <p>Every regular language has a "pumping" property. If a language <em>lacks</em> this property, it <strong>cannot</strong> be regular.</p>
+      </div>
+    </div>
+    <div>
+      <h3>What it does NOT tell you</h3>
+      <ul>
+        <li>It does <strong>not</strong> prove a language IS regular</li>
+        <li>Passing the pumping lemma &ne; regular</li>
+      </ul>
+      <div class="warning" style="margin-top:12px;">
+        <h3>Warning</h3>
+        <p>The pumping lemma is a <strong>necessary</strong> condition for regularity, NOT sufficient. It's a one-way test.</p>
+      </div>
+    </div>
+  </div>
+  <canvas id="cS2" width="520" height="140" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;margin:16px auto 0;display:block;"></canvas>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS2'), ctx = c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,140);
+    // Proof by contradiction flow
+    const steps = [
+      {x:30,w:120,t:'1. Assume L',t2:'is regular'},
+      {x:160,w:110,t:'2. PL applies',t2:'to L'},
+      {x:280,w:120,t:'3. Find string',t2:'can\'t pump'},
+      {x:410,w:100,t:'4. Contradiction!',t2:'L not regular'}
+    ];
+    const colors = ['#6366f1','#3b82f6','#f59e0b','#22c55e'];
+    steps.forEach((s,i) => {
+      ctx.fillStyle = colors[i];
+      ctx.globalAlpha = 0.15;
+      ctx.beginPath();
+      ctx.roundRect(s.x,30,s.w,80,8);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = colors[i];
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(s.x,30,s.w,80,8);
+      ctx.stroke();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 12px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.t, s.x+s.w/2, 62);
+      ctx.font = '11px system-ui';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(s.t2, s.x+s.w/2, 80);
+      if(i<3){
+        ctx.beginPath();
+        ctx.moveTo(s.x+s.w+2,70);
+        ctx.lineTo(steps[i+1].x-2,70);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(steps[i+1].x-2,70);
+        ctx.lineTo(steps[i+1].x-8,66);
+        ctx.lineTo(steps[i+1].x-8,74);
+        ctx.fillStyle = '#475569';
+        ctx.fill();
+      }
+    });
+  }
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s2').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: PIGEONHOLE INTUITION ==================== -->
+<div class="slide" id="s3">
+  <h2>Intuition: Why Pumping Works</h2>
+  <p>The Pigeonhole Principle meets finite automata.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS3" width="480" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s3Step()">Step</button>
+        <button class="btn btn-sm" onclick="s3Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <p>A DFA with <strong>p</strong> states reading a string of length &ge; p must visit some state <strong>twice</strong> &mdash; creating a <strong>loop</strong>.</p>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>5 pigeonholes, 6 pigeons &rArr; at least one hole has 2 pigeons. p states, p+1 visits &rArr; at least one state is visited twice.</p>
+      </div>
+      <div id="s3Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:120px;overflow-y:auto;margin-top:8px;color:#94a3b8;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS3'), ctx = c.getContext('2d');
+  // DFA for strings containing "aab": q0 -a-> q1 -a-> q2 -b-> q3(accept), with loops
+  const states = [
+    {id:'q0',x:60,y:160,acc:false},
+    {id:'q1',x:170,y:80,acc:false},
+    {id:'q2',x:300,y:80,acc:false},
+    {id:'q3',x:410,y:160,acc:true},
+  ];
+  const edges = [
+    {from:0,to:1,label:'a'},{from:1,to:2,label:'a'},{from:2,to:3,label:'b'},
+    {from:0,to:0,label:'b'},{from:1,to:1,label:'b',selfTop:true},{from:2,to:2,label:'a',selfTop:true},{from:3,to:3,label:'a,b',selfBot:true}
+  ];
+  const input = 'a a a b'.split(' '); // length 4 >= p=4, visits q1 twice
+  const trace = [0,1,2,2,3]; // state after reading each char (plus start)
+  let stepIdx = 0, timer = null;
+  function drawState(s,i,highlight){
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,22,0,Math.PI*2);
+    ctx.fillStyle = highlight==='current'?'#f59e0b':highlight==='visited'?'rgba(99,102,241,0.3)':'rgba(30,41,59,0.8)';
+    ctx.fill();
+    ctx.strokeStyle = highlight==='current'?'#f59e0b':highlight==='loop'?'#ef4444':'#475569';
+    ctx.lineWidth = highlight==='current'||highlight==='loop'?3:2;
+    ctx.stroke();
+    if(s.acc){ctx.beginPath();ctx.arc(s.x,s.y,18,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.id,s.x,s.y);
+  }
+  function draw(){
+    ctx.clearRect(0,0,480,320);
+    // Draw edges
+    edges.forEach(e=>{
+      const a=states[e.from],b=states[e.to];
+      ctx.strokeStyle='#334155';ctx.lineWidth=1.5;
+      if(e.from===e.to){
+        // self-loop
+        const dy = e.selfBot?30:-30;
+        ctx.beginPath();
+        ctx.arc(a.x,a.y+dy,16,0.2*Math.PI,0.8*Math.PI,dy>0);
+        ctx.stroke();
+        ctx.fillStyle='#64748b';ctx.font='11px monospace';ctx.textAlign='center';
+        ctx.fillText(e.label,a.x,a.y+dy+(dy>0?22:-18));
+      } else {
+        ctx.beginPath();ctx.moveTo(a.x+22*(b.x-a.x)/Math.hypot(b.x-a.x,b.y-a.y),a.y+22*(b.y-a.y)/Math.hypot(b.x-a.x,b.y-a.y));
+        ctx.lineTo(b.x-24*(b.x-a.x)/Math.hypot(b.x-a.x,b.y-a.y),b.y-24*(b.y-a.y)/Math.hypot(b.x-a.x,b.y-a.y));
+        ctx.stroke();
+        const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+        ctx.fillStyle='#64748b';ctx.font='12px monospace';ctx.textAlign='center';
+        ctx.fillText(e.label,mx+(b.y-a.y>0?-12:12),my-8);
+      }
+    });
+    // Start arrow
+    ctx.beginPath();ctx.moveTo(10,160);ctx.lineTo(36,160);ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    // Draw states with highlighting
+    const visited = trace.slice(0,stepIdx+1);
+    const visitCount = {};
+    visited.forEach(s=>{visitCount[s]=(visitCount[s]||0)+1;});
+    states.forEach((s,i)=>{
+      let hl = '';
+      if(i===trace[stepIdx]) hl='current';
+      else if(visitCount[i]>1) hl='loop';
+      else if(visitCount[i]) hl='visited';
+      drawState(s,i,hl);
+      if(visitCount[i]>1){
+        ctx.fillStyle='#ef4444';ctx.font='bold 11px system-ui';
+        ctx.fillText('×'+visitCount[i],s.x+28,s.y-16);
+      }
+    });
+    // Input display at bottom
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    for(let i=0;i<input.length;i++){
+      const x = 180 + i*40;
+      ctx.fillStyle = i<stepIdx?'#22c55e':i===stepIdx&&stepIdx>0?'#f59e0b':'#475569';
+      ctx.fillText(input[i],x,290);
+    }
+    // Loop detection label
+    if(visitCount[2]>1){
+      ctx.fillStyle='#ef4444';ctx.font='bold 13px system-ui';
+      ctx.fillText('Loop detected at q2!',240,40);
+    }
+  }
+  function init(){stepIdx=0;if(timer){clearInterval(timer);timer=null;}draw();document.getElementById('s3Log').innerHTML='';}
+  window.s3Step = function(){
+    if(stepIdx>=trace.length-1) return;
+    stepIdx++;
+    const log = document.getElementById('s3Log');
+    log.innerHTML += 'Read \''+input[stepIdx-1]+'\' \u2192 '+states[trace[stepIdx]].id+
+      (trace.slice(0,stepIdx).includes(trace[stepIdx])?' <span style="color:#ef4444">(revisited!)</span>':'')+'\n';
+    log.scrollTop=log.scrollHeight;
+    draw();
+  };
+  window.s3Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{if(stepIdx>=trace.length-1){clearInterval(timer);timer=null;return;}s3Step();},800);
+  };
+  window.s3Reset = function(){init();};
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s3').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: FORMAL STATEMENT ==================== -->
+<div class="slide" id="s4">
+  <h2>The Pumping Lemma for Regular Languages</h2>
+  <div class="key-idea">
+    <h3>Pumping Lemma (Formal Statement)</h3>
+    <p>If <strong>L</strong> is regular, then &exist; pumping length <strong>p</strong> such that &forall; <strong>s &isin; L</strong> with <strong>|s| &ge; p</strong>, s = <strong>xyz</strong> satisfying:</p>
+  </div>
+  <div class="formula" style="font-size:1.15em;padding:20px;">
+    1. |y| &gt; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (y is not empty)<br>
+    2. |xy| &le; p &nbsp;&nbsp;&nbsp;&nbsp; (loop in first p chars)<br>
+    3. xy<sup>i</sup>z &isin; L &nbsp;&nbsp;&nbsp; &forall; i &ge; 0 &nbsp; (pump y any number of times)
+  </div>
+  <canvas id="cS4" width="520" height="160" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;margin:12px auto 0;display:block;"></canvas>
+  <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:8px;">
+    <button class="btn btn-sm" onclick="s4Toggle()">Toggle pump (i=0,1,2,3)</button>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS4'), ctx = c.getContext('2d');
+  let pumpI = 1;
+  function draw(){
+    ctx.clearRect(0,0,520,160);
+    // Draw string decomposition
+    const xStr='aa', yStr='b', zStr='cc';
+    let pumped = xStr + yStr.repeat(pumpI) + zStr;
+    // Draw bracket diagram
+    ctx.font='bold 24px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    let totalLen = pumped.length;
+    let charW = Math.min(32, 400/totalLen);
+    let startX = 260 - (totalLen*charW)/2;
+    for(let i=0;i<pumped.length;i++){
+      let col;
+      if(i<xStr.length) col='#3b82f6';
+      else if(i<xStr.length+yStr.length*pumpI) col='#f59e0b';
+      else col='#8b5cf6';
+      ctx.fillStyle=col;
+      ctx.fillText(pumped[i],startX+i*charW+charW/2,70);
+    }
+    // Labels
+    ctx.font='12px system-ui';
+    const xEnd=startX+xStr.length*charW;
+    const yEnd=xEnd+yStr.length*pumpI*charW;
+    const zEnd=yEnd+zStr.length*charW;
+    // x bracket
+    ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(startX,95);ctx.lineTo(xEnd,95);ctx.stroke();
+    ctx.fillStyle='#3b82f6';ctx.fillText('x',startX+(xEnd-startX)/2,112);
+    // y bracket
+    if(pumpI>0){
+      ctx.strokeStyle='#f59e0b';
+      ctx.beginPath();ctx.moveTo(xEnd,95);ctx.lineTo(yEnd,95);ctx.stroke();
+      ctx.fillStyle='#f59e0b';ctx.fillText('y\u00D7'+pumpI,xEnd+(yEnd-xEnd)/2,112);
+    }
+    // z bracket
+    ctx.strokeStyle='#8b5cf6';
+    ctx.beginPath();ctx.moveTo(yEnd,95);ctx.lineTo(zEnd,95);ctx.stroke();
+    ctx.fillStyle='#8b5cf6';ctx.fillText('z',yEnd+(zEnd-yEnd)/2,112);
+    // i label
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 14px system-ui';ctx.textAlign='center';
+    ctx.fillText('i = '+pumpI+'  \u2192  xy\u2071z = "'+pumped+'"',260,140);
+    // |xy| <= p note
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';
+    ctx.fillText('|xy| \u2264 p',60,30);
+  }
+  window.s4Toggle = function(){pumpI=(pumpI+1)%5;draw();};
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s4').classList.contains('active')){pumpI=1;draw();}
+  });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: PUMPING GAME ==================== -->
+<div class="slide" id="s5">
+  <h2>The Pumping Game: Prove {a<sup>n</sup>b<sup>n</sup>} is NOT Regular</h2>
+  <p>Play the adversarial game &mdash; you are the prover!</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS5" width="480" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px;">
+        <p style="font-size:0.9em;margin-bottom:6px;"><strong style="color:#f87171;">Step 1:</strong> Adversary picks p = <select id="s5p" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;" onchange="s5Reset()"><option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option></select></p>
+        <p style="font-size:0.9em;margin-bottom:6px;"><strong style="color:#3b82f6;">Step 2:</strong> You pick s = a<sup>p</sup>b<sup>p</sup> (length &ge; p) &check;</p>
+        <p style="font-size:0.9em;margin-bottom:6px;"><strong style="color:#f87171;">Step 3:</strong> Adversary splits s = xyz (|xy|&le;p, |y|&gt;0)</p>
+        <p style="font-size:0.9em;margin-bottom:6px;"><strong style="color:#3b82f6;">Step 4:</strong> You pick i to break it!</p>
+        <div style="margin-top:8px;">
+          <label style="font-size:0.85em;color:#94a3b8;">Pump value i: </label>
+          <input type="range" id="s5i" min="0" max="4" value="0" style="width:120px;vertical-align:middle;" oninput="s5Pump()">
+          <span id="s5iVal" style="font-family:monospace;color:#f59e0b;">0</span>
+        </div>
+      </div>
+      <div id="s5Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:130px;overflow-y:auto;margin-top:8px;color:#94a3b8;"></div>
+      <div id="s5Verdict" style="margin-top:8px;text-align:center;font-weight:700;font-size:1em;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS5'), ctx = c.getContext('2d');
+  let p=5, pumpI=0;
+  function draw(){
+    ctx.clearRect(0,0,480,340);
+    p = parseInt(document.getElementById('s5p').value);
+    // String: a^p b^p
+    let str = 'a'.repeat(p)+'b'.repeat(p);
+    // Since |xy|<=p and y is all a's, adversary splits: x=a^(j), y=a^(k), z=a^(p-j-k) b^p
+    // Worst case for prover: any split where y is in the a's. Let's use y = first a's chunk
+    let xLen = 0, yLen = Math.min(p, p); // y = a...a (say first p a's minus x)
+    // Actually for the game: x = empty, y = first a (simplest), z = rest
+    // Let's show: x='', y='a' (the first a), z = rest
+    xLen = 0; yLen = 1;
+    let zLen = str.length - xLen - yLen;
+    // Pumped string
+    let pumped = str.substring(0,xLen) + str.substring(xLen,xLen+yLen).repeat(pumpI) + str.substring(xLen+yLen);
+    let aCount = xLen + yLen*pumpI + (p-xLen-yLen);
+    let bCount = p;
+    // Draw original string
+    ctx.font = 'bold 11px system-ui';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText('Original s = a\u2070b\u2070 (p='+p+'):', 20, 25);
+    ctx.font = 'bold 18px monospace';
+    let charW = Math.min(22, 440/(2*p));
+    for(let i=0;i<str.length;i++){
+      let col;
+      if(i<xLen) col='#3b82f6';
+      else if(i<xLen+yLen) col='#f59e0b';
+      else col='#475569';
+      ctx.fillStyle=col;
+      ctx.fillText(str[i],20+i*charW,50);
+    }
+    // Labels
+    ctx.font='10px system-ui';
+    if(yLen>0){
+      ctx.fillStyle='#f59e0b';
+      ctx.fillText('y',20+xLen*charW,70);
+    }
+    ctx.fillStyle='#475569';ctx.fillText('z',20+(xLen+yLen)*charW,70);
+    // Draw pumped string
+    ctx.font='bold 11px system-ui';ctx.fillStyle='#94a3b8';ctx.textAlign='left';
+    ctx.fillText('Pumped xy\u2071z (i='+pumpI+'):', 20, 105);
+    ctx.font='bold 18px monospace';
+    let pw = Math.min(22, 440/pumped.length);
+    for(let i=0;i<pumped.length;i++){
+      let col;
+      if(i<xLen) col='#3b82f6';
+      else if(i<xLen+yLen*pumpI) col='#f59e0b';
+      else if(pumped[i]==='a') col='#3b82f6';
+      else col='#8b5cf6';
+      ctx.fillStyle=col;
+      ctx.fillText(pumped[i],20+i*pw,130);
+    }
+    // Count
+    ctx.font='13px system-ui';
+    ctx.fillStyle='#e2e8f0';
+    ctx.fillText('#a = '+(p-1+pumpI)+'   #b = '+p, 20, 165);
+    let inLang = (p-1+pumpI)===p;
+    ctx.fillStyle=inLang?'#22c55e':'#ef4444';
+    ctx.font='bold 14px system-ui';
+    ctx.fillText(inLang?'\u2713 In language (a\u207F=b\u207F)':'\u2717 NOT in language (a\u207F\u2260b\u207F)', 20, 190);
+    // Explanation
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';
+    if(pumpI===0){
+      ctx.fillText('i=0: We deleted y, so fewer a\'s than b\'s \u2192 NOT in L!', 20, 225);
+    } else if(pumpI===1){
+      ctx.fillText('i=1: Original string, still in L.', 20, 225);
+    } else {
+      ctx.fillText('i='+pumpI+': Extra a\'s from pumping \u2192 more a\'s than b\'s \u2192 NOT in L!', 20, 225);
+    }
+    // Conclusion box
+    ctx.fillStyle='rgba(34,197,94,0.1)';
+    ctx.beginPath();ctx.roundRect(20,250,440,70,8);ctx.fill();
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(20,250,440,70,8);ctx.stroke();
+    ctx.fillStyle='#4ade80';ctx.font='bold 13px system-ui';
+    ctx.fillText('Conclusion: For ANY split by the adversary where y is in the a\'s,',30,272);
+    ctx.fillText('we can pick i=0 or i=2 to break it. So {a\u207Fb\u207F} is NOT regular!',30,292);
+    // Update verdict
+    document.getElementById('s5Verdict').innerHTML = inLang?
+      '<span style="color:#22c55e;">\u2713 xy\u2071z \u2208 L (try different i)</span>':
+      '<span style="color:#ef4444;">\u2717 xy\u2071z \u2209 L &mdash; Contradiction! L not regular.</span>';
+    document.getElementById('s5iVal').textContent=pumpI;
+  }
+  window.s5Pump = function(){
+    pumpI=parseInt(document.getElementById('s5i').value);
+    draw();
+  };
+  window.s5Reset = function(){
+    pumpI=0;document.getElementById('s5i').value=0;
+    document.getElementById('s5Log').innerHTML='';
+    document.getElementById('s5Verdict').innerHTML='';
+    draw();
+  };
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s5').classList.contains('active')){s5Reset();}
+  });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: PROOF FLOWCHART ==================== -->
+<div class="slide" id="s6">
+  <h2>The Proof as a Flowchart</h2>
+  <p>Every pumping lemma proof follows this exact structure.</p>
+  <canvas id="cS6" width="520" height="370" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;margin:12px auto 0;display:block;"></canvas>
+  <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:8px;">
+    <button class="btn btn-sm" onclick="s6Step()">Step</button>
+    <button class="btn btn-sm" onclick="s6Auto()">Auto</button>
+    <button class="btn btn-sm btn-secondary" onclick="s6Reset()">Reset</button>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS6'),ctx=c.getContext('2d');
+  const boxes=[
+    {x:160,y:20,w:200,h:40,t:'Assume L is regular',col:'#6366f1'},
+    {x:160,y:80,w:200,h:40,t:'PL gives pumping length p',col:'#3b82f6'},
+    {x:160,y:140,w:200,h:40,t:'Pick string s \u2208 L, |s|\u2265p',col:'#22c55e'},
+    {x:160,y:200,w:200,h:40,t:'For ANY split xyz...',col:'#f59e0b'},
+    {x:160,y:260,w:200,h:40,t:'Find i where xy\u2071z \u2209 L',col:'#ef4444'},
+    {x:160,y:320,w:200,h:40,t:'Contradiction! L not regular',col:'#a78bfa'},
+  ];
+  let step=0,timer=null;
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    boxes.forEach((b,i)=>{
+      const active=i<=step;
+      ctx.globalAlpha=active?1:0.25;
+      ctx.fillStyle=b.col;ctx.globalAlpha*=0.15;
+      ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,8);ctx.fill();
+      ctx.globalAlpha=active?1:0.25;
+      ctx.strokeStyle=b.col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,8);ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font=(i===step?'bold ':'')+'13px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(b.t,b.x+b.w/2,b.y+b.h/2);
+      ctx.globalAlpha=1;
+      if(i<boxes.length-1){
+        ctx.beginPath();ctx.moveTo(260,b.y+b.h);ctx.lineTo(260,boxes[i+1].y);
+        ctx.strokeStyle=active&&i<step?b.col:'#334155';ctx.lineWidth=2;ctx.stroke();
+      }
+    });
+    // Step labels on right
+    const labels=['You assume','Lemma guarantees','Your strategic choice','Adversary\'s move','Your winning move','QED!'];
+    boxes.forEach((b,i)=>{
+      if(i<=step){
+        ctx.fillStyle='#64748b';ctx.font='11px system-ui';ctx.textAlign='left';
+        ctx.fillText(labels[i],b.x+b.w+15,b.y+b.h/2+4);
+      }
+    });
+  }
+  function init(){step=0;if(timer){clearInterval(timer);timer=null;}draw();}
+  window.s6Step=function(){if(step<boxes.length-1){step++;draw();}};
+  window.s6Auto=function(){if(timer)return;timer=setInterval(()=>{if(step>=boxes.length-1){clearInterval(timer);timer=null;return;}s6Step();},900);};
+  window.s6Reset=function(){init();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s6').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: EXPLORE PUMPING ==================== -->
+<div class="slide" id="s7">
+  <h2>Explore: Pumping a<sup>p</sup>b<sup>p</sup></h2>
+  <p>Adjust the split and pump value to see why EVERY split fails.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS7" width="480" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:8px;padding:12px;border:1px solid #334155;">
+        <p style="font-size:0.9em;">p = <input type="range" id="s7p" min="3" max="7" value="4" style="width:80px;vertical-align:middle;" oninput="s7Draw()"> <span id="s7pVal">4</span></p>
+        <p style="font-size:0.9em;">|x| = <input type="range" id="s7x" min="0" max="3" value="0" style="width:80px;vertical-align:middle;" oninput="s7Draw()"> <span id="s7xVal">0</span></p>
+        <p style="font-size:0.9em;">|y| = <input type="range" id="s7y" min="1" max="4" value="2" style="width:80px;vertical-align:middle;" oninput="s7Draw()"> <span id="s7yVal">2</span></p>
+        <p style="font-size:0.9em;">pump i = <input type="range" id="s7i" min="0" max="5" value="0" style="width:80px;vertical-align:middle;" oninput="s7Draw()"> <span id="s7iVal">0</span></p>
+      </div>
+      <div id="s7Result" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:12px;margin-top:8px;font-size:0.95em;"></div>
+      <div class="key-idea" style="margin-top:8px;">
+        <h3>Key Insight</h3>
+        <p>Since |xy| &le; p, y consists entirely of <code>a</code>'s. Pumping changes only the count of a's, breaking a<sup>n</sup>=b<sup>n</sup>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS7'),ctx=c.getContext('2d');
+  window.s7Draw=function(){
+    let p=parseInt(document.getElementById('s7p').value);
+    let xLen=parseInt(document.getElementById('s7x').value);
+    let yLen=parseInt(document.getElementById('s7y').value);
+    let i=parseInt(document.getElementById('s7i').value);
+    // Enforce |xy|<=p and |y|>0
+    if(xLen+yLen>p){yLen=p-xLen;document.getElementById('s7y').value=yLen;}
+    if(yLen<1){yLen=1;document.getElementById('s7y').value=1;}
+    document.getElementById('s7pVal').textContent=p;
+    document.getElementById('s7xVal').textContent=xLen;
+    document.getElementById('s7yVal').textContent=yLen;
+    document.getElementById('s7iVal').textContent=i;
+    document.getElementById('s7x').max=p-1;
+    document.getElementById('s7y').max=p-xLen;
+    ctx.clearRect(0,0,480,320);
+    let str='a'.repeat(p)+'b'.repeat(p);
+    let zLen=str.length-xLen-yLen;
+    let pumped=str.substring(0,xLen)+'a'.repeat(yLen*i)+str.substring(xLen+yLen);
+    let aCount=p-yLen+yLen*i;
+    let bCount=p;
+    // Draw original
+    ctx.font='bold 11px system-ui';ctx.fillStyle='#94a3b8';ctx.textAlign='left';
+    ctx.fillText('Original (|s|='+str.length+'):',15,25);
+    let cw=Math.min(20,440/(2*p));
+    ctx.font='bold 16px monospace';
+    for(let j=0;j<str.length;j++){
+      ctx.fillStyle=j<xLen?'#3b82f6':j<xLen+yLen?'#f59e0b':'#8b5cf6';
+      ctx.fillText(str[j],15+j*cw,50);
+    }
+    // Brackets
+    ctx.font='10px system-ui';
+    if(xLen>0){ctx.fillStyle='#3b82f6';ctx.fillText('x('+xLen+')',15,68);}
+    ctx.fillStyle='#f59e0b';ctx.fillText('y('+yLen+')',15+xLen*cw,68);
+    ctx.fillStyle='#8b5cf6';ctx.fillText('z('+(str.length-xLen-yLen)+')',15+(xLen+yLen)*cw,68);
+    // Draw pumped
+    ctx.font='bold 11px system-ui';ctx.fillStyle='#94a3b8';
+    ctx.fillText('Pumped (i='+i+', |pumped|='+pumped.length+'):',15,105);
+    let pw=Math.min(20,440/Math.max(pumped.length,1));
+    ctx.font='bold 16px monospace';
+    for(let j=0;j<pumped.length;j++){
+      ctx.fillStyle=pumped[j]==='a'?'#3b82f6':'#8b5cf6';
+      ctx.fillText(pumped[j],15+j*pw,130);
+    }
+    // Bar chart: a count vs b count
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';ctx.textAlign='center';
+    ctx.fillText('Count comparison:',240,170);
+    let barW=80,barMaxH=100;
+    let maxC=Math.max(aCount,bCount,1);
+    // a bar
+    let aH=aCount/maxC*barMaxH;
+    ctx.fillStyle='rgba(59,130,246,0.3)';ctx.fillRect(140,280-aH,barW,aH);
+    ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;ctx.strokeRect(140,280-aH,barW,aH);
+    ctx.fillStyle='#3b82f6';ctx.font='bold 14px monospace';ctx.fillText('#a='+aCount,180,296);
+    // b bar
+    let bH=bCount/maxC*barMaxH;
+    ctx.fillStyle='rgba(139,92,246,0.3)';ctx.fillRect(260,280-bH,barW,bH);
+    ctx.strokeStyle='#8b5cf6';ctx.lineWidth=2;ctx.strokeRect(260,280-bH,barW,bH);
+    ctx.fillStyle='#8b5cf6';ctx.fillText('#b='+bCount,300,296);
+    // Verdict
+    let inL=aCount===bCount;
+    ctx.fillStyle=inL?'#22c55e':'#ef4444';ctx.font='bold 14px system-ui';
+    ctx.fillText(inL?'\u2713 In L (a\u207F=b\u207F)':'\u2717 NOT in L (a\u207F\u2260b\u207F)',240,315);
+    document.getElementById('s7Result').innerHTML=inL?
+      '<span style="color:#22c55e;">\u2713 xy<sup>'+i+'</sup>z = '+pumped+' \u2208 L</span>':
+      '<span style="color:#ef4444;">\u2717 xy<sup>'+i+'</sup>z = '+pumped+' \u2209 L &mdash; Contradiction!</span>';
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s7').classList.contains('active'))s7Draw();});
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  s7Draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: EXAMPLE 2 - ww ==================== -->
+<div class="slide" id="s8">
+  <h2>Example 2: {ww | w &isin; {0,1}*} is NOT Regular</h2>
+  <p>Prove that the language of doubled strings is not regular.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS8" width="480" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s8Step()">Step</button>
+        <button class="btn btn-sm" onclick="s8Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" id="s8Code">
+<div class="line" id="s8L0">1. Assume L = {ww} is regular</div>
+<div class="line" id="s8L1">2. Let p be the pumping length</div>
+<div class="line" id="s8L2">3. Choose s = 0&#x1D56;1&#x1D56;0&#x1D56;1&#x1D56; &isin; L</div>
+<div class="line" id="s8L3">4. s = xyz with |xy| &le; p, |y| &gt; 0</div>
+<div class="line" id="s8L4">5. y = 0&#x1D4F; (y is all 0's, within first p chars)</div>
+<div class="line" id="s8L5">6. Pump i=2: xy&sup2;z = 0&#x1D56;&#x207A;&#x1D4F;1&#x1D56;0&#x1D56;1&#x1D56;</div>
+<div class="line" id="s8L6">7. First half &ne; second half &rArr; NOT ww</div>
+<div class="line" id="s8L7">8. Contradiction! L is NOT regular. &check;</div>
+      </div></div>
+      <div id="s8Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;margin-top:8px;color:#94a3b8;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS8'),ctx=c.getContext('2d');
+  const p=4;
+  const steps=[
+    {line:0,desc:'Assume {ww} is regular',str:'',phase:'assume'},
+    {line:1,desc:'Pumping lemma gives us p',str:'',phase:'pl'},
+    {line:2,desc:'Pick s = 0\u2074 1\u2074 0\u2074 1\u2074',str:'00001111000011110',phase:'pick'},
+    {line:3,desc:'Any split: |xy|\u2264p, so x and y are in first 0\u2074',str:'00001111000011110',phase:'split'},
+    {line:4,desc:'y = 0\u1D4F (some 0\'s from the beginning)',str:'00001111000011110',phase:'ident'},
+    {line:5,desc:'Pump i=2: add more 0\'s at the start',str:'0000011110000111100',phase:'pump'},
+    {line:6,desc:'First half has more 0\'s than second half!',str:'0000011110000111100',phase:'check'},
+    {line:7,desc:'Contradiction! {ww} is NOT regular.',str:'',phase:'qed'},
+  ];
+  let stepIdx=0,timer=null;
+  function draw(){
+    ctx.clearRect(0,0,480,340);
+    let s=steps[stepIdx];
+    // Highlight code line
+    for(let i=0;i<=7;i++){
+      document.getElementById('s8L'+i).className=i===s.line?'line active':'line';
+    }
+    // Draw string if applicable
+    if(s.str){
+      let str=s.phase==='pump'||s.phase==='check'?'000001111000011110':'00001111000011110';
+      if(s.phase==='pump'||s.phase==='check') str='0000011110000111100'; // pumped (extra 0)
+      ctx.font='bold 15px monospace';
+      let cw=Math.min(24,460/str.length);
+      for(let i=0;i<str.length;i++){
+        let col='#475569';
+        if(s.phase==='split'&&i<p) col=i<1?'#3b82f6':'#f59e0b';
+        else if(s.phase==='ident'&&i>=1&&i<2) col='#f59e0b';
+        else if(s.phase==='pump') col=i<5?'#f59e0b':'#94a3b8';
+        else if(s.phase==='check'){
+          let half=Math.floor(str.length/2);
+          col=i<half?'#3b82f6':'#8b5cf6';
+        }
+        else col=str[i]==='0'?'#3b82f6':'#8b5cf6';
+        ctx.fillStyle=col;
+        ctx.fillText(str[i],10+i*cw,180);
+      }
+      if(s.phase==='check'){
+        let half=Math.floor(str.length/2);
+        ctx.font='12px system-ui';
+        ctx.fillStyle='#3b82f6';ctx.textAlign='center';
+        ctx.fillText('first half',10+half*cw/2,200);
+        ctx.fillStyle='#8b5cf6';
+        ctx.fillText('second half',10+half*cw+half*cw/2,200);
+        ctx.fillStyle='#ef4444';ctx.font='bold 14px system-ui';
+        ctx.fillText('\u2717 halves don\'t match \u2192 not in {ww}',240,230);
+      }
+    }
+    // Title
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 16px system-ui';ctx.textAlign='center';
+    ctx.fillText(s.desc,240,40);
+    // Phase indicator
+    ctx.fillStyle=s.phase==='qed'?'#22c55e':'#f59e0b';ctx.font='bold 13px system-ui';
+    ctx.fillText('Step '+(stepIdx+1)+'/'+steps.length,240,300);
+  }
+  function init(){
+    stepIdx=0;if(timer){clearInterval(timer);timer=null;}
+    document.getElementById('s8Log').innerHTML='';
+    draw();
+  }
+  window.s8Step=function(){
+    if(stepIdx>=steps.length-1)return;
+    stepIdx++;
+    document.getElementById('s8Log').innerHTML+='Step '+(stepIdx+1)+': '+steps[stepIdx].desc+'\n';
+    document.getElementById('s8Log').scrollTop=9999;
+    draw();
+  };
+  window.s8Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s8Step();},1200);};
+  window.s8Reset=function(){init();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: EXAMPLE 3 - 1^n^2 ==================== -->
+<div class="slide" id="s9">
+  <h2>Example 3: {1<sup>n&sup2;</sup> | n &ge; 0} is NOT Regular</h2>
+  <p>A language where string lengths are perfect squares.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS9" width="480" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s9Step()">Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" id="s9Code">
+<div class="line" id="s9L0">1. Assume L = {1^(n&sup2;)} is regular</div>
+<div class="line" id="s9L1">2. Let p be the pumping length</div>
+<div class="line" id="s9L2">3. Choose s = 1^(p&sup2;) &isin; L</div>
+<div class="line" id="s9L3">4. s = xyz, |xy| &le; p, |y| &gt; 0</div>
+<div class="line" id="s9L4">5. |y| = k where 1 &le; k &le; p</div>
+<div class="line" id="s9L5">6. Pump i=2: |xy&sup2;z| = p&sup2; + k</div>
+<div class="line" id="s9L6">7. p&sup2; &lt; p&sup2;+k &le; p&sup2;+p &lt; (p+1)&sup2;</div>
+<div class="line" id="s9L7">8. p&sup2;+k is NOT a perfect square!</div>
+<div class="line" id="s9L8">9. Contradiction! L is NOT regular.</div>
+      </div></div>
+      <div id="s9Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:80px;overflow-y:auto;margin-top:8px;color:#94a3b8;"></div>
+      <div class="key-idea" style="margin-top:8px;">
+        <h3>Key Insight</h3>
+        <p>Perfect squares get further apart: the gap between n&sup2; and (n+1)&sup2; is 2n+1. Pumping adds at most p, which is too small to reach the next square.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS9'),ctx=c.getContext('2d');
+  const steps=[
+    {line:0,desc:'Assume L is regular'},
+    {line:1,desc:'PL gives pumping length p'},
+    {line:2,desc:'Pick s = 1^(p\u00B2), e.g. p=4 \u2192 s = 1\u00B9\u2076'},
+    {line:3,desc:'Split xyz: |xy| \u2264 4, |y| > 0'},
+    {line:4,desc:'Say |y| = k = 2 (could be 1 to p)'},
+    {line:5,desc:'Pump i=2: |xy\u00B2z| = 16 + 2 = 18'},
+    {line:6,desc:'16 < 18 \u2264 16+4=20 < 25=(4+1)\u00B2'},
+    {line:7,desc:'18 is NOT a perfect square!'},
+    {line:8,desc:'Contradiction! {1^(n\u00B2)} is NOT regular.'},
+  ];
+  let stepIdx=0,timer=null;
+  function draw(){
+    ctx.clearRect(0,0,480,340);
+    for(let i=0;i<=8;i++) document.getElementById('s9L'+i).className=i===steps[stepIdx].line?'line active':'line';
+    // Draw number line showing perfect squares
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';ctx.textAlign='center';
+    ctx.fillText('Perfect squares on the number line:',240,30);
+    const squares=[0,1,4,9,16,25,36];
+    const maxV=36;
+    squares.forEach(sq=>{
+      let x=40+(sq/maxV)*400;
+      ctx.fillStyle='#6366f1';
+      ctx.beginPath();ctx.arc(x,60,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#e2e8f0';ctx.font='10px monospace';
+      ctx.fillText(sq,x,80);
+    });
+    // Draw line
+    ctx.strokeStyle='#334155';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(40,60);ctx.lineTo(440,60);ctx.stroke();
+    // Highlight 16 and gap
+    if(stepIdx>=5){
+      let x16=40+(16/maxV)*400;
+      let x18=40+(18/maxV)*400;
+      let x25=40+(25/maxV)*400;
+      ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(x18,60,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#f59e0b';ctx.font='10px monospace';ctx.fillText('18',x18,80);
+      // Arrow showing gap
+      ctx.strokeStyle='#ef4444';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x16,50);ctx.lineTo(x25,50);ctx.stroke();
+      ctx.fillStyle='#ef4444';ctx.font='11px system-ui';
+      ctx.fillText('gap: no square here!',x16+(x25-x16)/2,42);
+    }
+    // Step info
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 14px system-ui';ctx.textAlign='center';
+    ctx.fillText(steps[stepIdx].desc,240,120);
+    if(stepIdx>=6){
+      ctx.fillStyle='#22c55e';ctx.font='bold 16px system-ui';
+      ctx.fillText('p\u00B2 < p\u00B2+k \u2264 p\u00B2+p < (p+1)\u00B2',240,160);
+      ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';
+      ctx.fillText('The pumped length falls in a gap between consecutive squares!',240,185);
+    }
+    // Visual: draw squares as literal squares at bottom
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';
+    ctx.fillText('Visualizing perfect squares as grids:',240,220);
+    [1,2,3,4,5].forEach((n,idx)=>{
+      let x0=30+idx*95;let y0=240;let sz=Math.min(12,70/n);
+      for(let r=0;r<n;r++){
+        for(let cc=0;cc<n;cc++){
+          ctx.fillStyle=n===4&&stepIdx>=2?'rgba(99,102,241,0.4)':'rgba(71,85,105,0.3)';
+          ctx.fillRect(x0+cc*sz,y0+r*sz,sz-1,sz-1);
+        }
+      }
+      ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';
+      ctx.fillText(n+'\u00B2='+(n*n),x0+n*sz/2,y0+n*sz+14);
+    });
+  }
+  function init(){stepIdx=0;if(timer){clearInterval(timer);timer=null;}document.getElementById('s9Log').innerHTML='';draw();}
+  window.s9Step=function(){if(stepIdx>=steps.length-1)return;stepIdx++;document.getElementById('s9Log').innerHTML+='Step '+(stepIdx+1)+': '+steps[stepIdx].desc+'\n';document.getElementById('s9Log').scrollTop=9999;draw();};
+  window.s9Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s9Step();},1100);};
+  window.s9Reset=function(){init();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: COMMON MISTAKES ==================== -->
+<div class="slide" id="s10">
+  <h2>Common Mistakes in Pumping Proofs</h2>
+  <p>Avoid these pitfalls that trip up most students!</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="warning">
+        <h3>Mistake 1: Fixing the split</h3>
+        <p>You can't choose how xyz is split &mdash; the <strong>adversary</strong> picks the split. Your proof must work for <strong>ALL</strong> valid splits.</p>
+      </div>
+      <div class="warning">
+        <h3>Mistake 2: Only checking i=0</h3>
+        <p>You need to find <strong>at least one</strong> value of i that breaks it. But the adversary gets to split, so you must handle any split.</p>
+      </div>
+      <div class="warning">
+        <h3>Mistake 3: Claiming PL proves regularity</h3>
+        <p>If a language passes the PL, that tells you <strong>nothing</strong>. The PL can only prove non-regularity.</p>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Correct Approach</h3>
+        <p><strong>You</strong> choose: the string s and the pump value i.<br>
+        <strong>Adversary</strong> chooses: p and the split xyz.<br>
+        Your proof must work for ANY p and ANY valid split.</p>
+      </div>
+      <canvas id="cS10" width="420" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS10'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,200);
+    ctx.font='bold 14px system-ui';ctx.textAlign='center';
+    ctx.fillStyle='#38bdf8';ctx.fillText('Who Controls What?',210,25);
+    // Two columns
+    const cols=[
+      {x:105,title:'Adversary (A)',color:'#ef4444',items:['Picks p','Picks split xyz']},
+      {x:315,title:'You (Prover)',color:'#22c55e',items:['Picks string s','Picks pump value i']}
+    ];
+    cols.forEach(col=>{
+      ctx.fillStyle=col.color;ctx.font='bold 13px system-ui';
+      ctx.fillText(col.title,col.x,55);
+      col.items.forEach((item,i)=>{
+        ctx.fillStyle='rgba(30,41,59,0.8)';
+        ctx.beginPath();ctx.roundRect(col.x-70,65+i*40,140,30,6);ctx.fill();
+        ctx.strokeStyle=col.color;ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.roundRect(col.x-70,65+i*40,140,30,6);ctx.stroke();
+        ctx.fillStyle='#e2e8f0';ctx.font='12px system-ui';
+        ctx.fillText(item,col.x,85+i*40);
+      });
+    });
+    // Order arrows
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';
+    const order=['A picks p','You pick s','A splits xyz','You pick i'];
+    order.forEach((label,i)=>{
+      let x=50+i*95,y=165;
+      ctx.fillStyle=i%2===0?'rgba(239,68,68,0.15)':'rgba(34,197,94,0.15)';
+      ctx.beginPath();ctx.roundRect(x-40,y-12,80,24,4);ctx.fill();
+      ctx.fillStyle=i%2===0?'#f87171':'#4ade80';ctx.font='10px system-ui';ctx.textAlign='center';
+      ctx.fillText(label,x,y+4);
+      if(i<3){ctx.beginPath();ctx.moveTo(x+40,y);ctx.lineTo(x+55,y);ctx.strokeStyle='#475569';ctx.stroke();}
+    });
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: WHEN PL FAILS ==================== -->
+<div class="slide" id="s11">
+  <h2>When the Pumping Lemma Fails</h2>
+  <p>Some non-regular languages <strong>satisfy</strong> the pumping lemma anyway!</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>The PL is like a metal detector: if it beeps, there's metal. But if it doesn't beep, maybe the metal is too deep. Not beeping doesn't prove "no metal."</p>
+      </div>
+      <p>The classic example:</p>
+      <div class="formula">L = {a<sup>i</sup>b<sup>j</sup>c<sup>k</sup> | i,j,k &ge; 0 and if i=1 then j=k}</div>
+      <p style="font-size:0.95em;">This language is <strong>not regular</strong>, but it satisfies the pumping lemma! For any string of length &ge; p, you can always pump it and stay in L (because most strings have i &ne; 1, so the j=k constraint doesn't apply).</p>
+    </div>
+    <div>
+      <canvas id="cS11" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="warning" style="margin-top:12px;">
+        <h3>Takeaway</h3>
+        <p>PL passing &rArr; <strong>inconclusive</strong><br>PL failing &rArr; <strong>definitely not regular</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS11'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,280);
+    // Venn diagram: Regular ⊂ Pumpable
+    ctx.fillStyle='rgba(99,102,241,0.1)';
+    ctx.beginPath();ctx.ellipse(210,140,180,120,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#6366f1';ctx.lineWidth=2;
+    ctx.beginPath();ctx.ellipse(210,140,180,120,0,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='rgba(34,197,94,0.15)';
+    ctx.beginPath();ctx.ellipse(180,150,110,80,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2;
+    ctx.beginPath();ctx.ellipse(180,150,110,80,0,0,Math.PI*2);ctx.stroke();
+    // Labels
+    ctx.fillStyle='#22c55e';ctx.font='bold 14px system-ui';ctx.textAlign='center';
+    ctx.fillText('Regular',150,155);
+    ctx.fillStyle='#6366f1';ctx.font='bold 14px system-ui';
+    ctx.fillText('Passes PL',330,100);
+    // The gap area
+    ctx.fillStyle='#f59e0b';ctx.font='bold 12px system-ui';
+    ctx.fillText('Non-regular',330,160);
+    ctx.fillText('but passes PL!',330,178);
+    // Title
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 15px system-ui';
+    ctx.fillText('Regular \u2282 Passes Pumping Lemma',210,25);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE CA: CHALLENGE A ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A: Predict the Pump</h2>
+  <div class="challenge-box">
+    <h3>Challenge</h3>
+    <p>Language: L = {0<sup>n</sup>1<sup>2n</sup> | n &ge; 0}. We pick s = 0<sup>p</sup>1<sup>2p</sup>. The adversary splits with x = &epsilon;, y = 0<sup>2</sup>, z = 0<sup>p-2</sup>1<sup>2p</sup>.</p>
+    <p style="margin-top:8px;">If we pump with i = 0 (delete y), what is xy&deg;z?</p>
+    <div style="margin-top:12px;">
+      <input type="text" id="sCAinput" placeholder="e.g. 0^(p-2) 1^(2p)" style="padding:8px 12px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;width:300px;">
+      <button class="btn btn-sm" onclick="sCACheck()" style="margin-left:8px;">Check</button>
+    </div>
+    <div id="sCAResult" style="margin-top:12px;font-size:1em;"></div>
+  </div>
+  <canvas id="cSCA" width="520" height="200" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;margin:12px auto 0;display:block;"></canvas>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cSCA'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,200);
+    ctx.fillStyle='#94a3b8';ctx.font='13px system-ui';ctx.textAlign='center';
+    ctx.fillText('L = {0\u207F 1\u00B2\u207F | n \u2265 0}',260,25);
+    // Draw the string for p=4
+    let str='00001111111'; // 0^4 1^8 (p=4 example, but 2p=8)
+    ctx.font='bold 18px monospace';
+    for(let i=0;i<str.length;i++){
+      let col=i<2?'#f59e0b':i<4?'#3b82f6':'#8b5cf6'; // y=first 2, x=empty, rest=z
+      ctx.fillStyle=col;
+      ctx.fillText(str[i],80+i*32,70);
+    }
+    ctx.font='11px system-ui';
+    ctx.fillStyle='#f59e0b';ctx.textAlign='left';ctx.fillText('y=00',80,90);
+    ctx.fillStyle='#3b82f6';ctx.fillText('z (0\u00B2)',144,90);
+    ctx.fillStyle='#8b5cf6';ctx.fillText('z (1\u2078)',208,90);
+    // After pumping i=0: delete y
+    let pumped='001111111'; // 0^2 1^8
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';ctx.textAlign='center';
+    ctx.fillText('After i=0 (delete y):',260,125);
+    ctx.font='bold 18px monospace';
+    for(let i=0;i<pumped.length;i++){
+      ctx.fillStyle=pumped[i]==='0'?'#3b82f6':'#8b5cf6';
+      ctx.fillText(pumped[i],120+i*32,155);
+    }
+    ctx.fillStyle='#ef4444';ctx.font='bold 13px system-ui';
+    ctx.fillText('0\u00B2 1\u2078 : n=2 but 2n=4 \u2260 8 \u2192 NOT in L!',260,185);
+  }
+  window.sCACheck=function(){
+    let ans=document.getElementById('sCAinput').value.trim().toLowerCase().replace(/\s+/g,'');
+    let correct=ans.includes('p-2')&&ans.includes('2p') || ans.includes('0^(p-2)')&&ans.includes('1^(2p)') || ans==='0^(p-2)1^(2p)';
+    document.getElementById('sCAResult').innerHTML=correct?
+      '<span style="color:#22c55e;">\u2713 Correct! xy\u2070z = 0^(p-2) 1^(2p). Since p-2 \u2260 p, this string has n=p-2 zeros but 2p ones, and 2(p-2) \u2260 2p. Not in L!</span>':
+      '<span style="color:#f59e0b;">\u2139 The answer is 0^(p-2) 1^(2p). We deleted y=0\u00B2, so we have p-2 zeros and 2p ones. For this to be in L, we\'d need 2(p-2) = 2p-4 ones, but we have 2p. Contradiction!</span>';
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCA').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 12: CFL PUMPING LEMMA ==================== -->
+<div class="slide" id="s12">
+  <h2>The Pumping Lemma for Context-Free Languages</h2>
+  <p>A more powerful version for proving languages are not context-free.</p>
+  <div class="key-idea">
+    <h3>CFL Pumping Lemma</h3>
+    <p>If L is context-free, then &exist; p such that &forall; s &isin; L with |s| &ge; p, s = <strong>uvxyz</strong> satisfying:</p>
+  </div>
+  <div class="formula" style="font-size:1.1em;">
+    1. |vy| &gt; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (v and y not both empty)<br>
+    2. |vxy| &le; p &nbsp;&nbsp;&nbsp;&nbsp; (middle portion bounded)<br>
+    3. uv<sup>i</sup>xy<sup>i</sup>z &isin; L &nbsp;&nbsp; &forall; i &ge; 0 &nbsp; (pump v and y together)
+  </div>
+  <canvas id="cS12" width="520" height="160" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;margin:12px auto 0;display:block;"></canvas>
+  <div style="text-align:center;margin-top:8px;">
+    <button class="btn btn-sm" onclick="s12Toggle()">Pump (i=0,1,2,3)</button>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS12'),ctx=c.getContext('2d');
+  let pumpI=1;
+  function draw(){
+    ctx.clearRect(0,0,520,160);
+    let u='a',v='a',x='b',y='c',z='cc';
+    let pumped=u+v.repeat(pumpI)+x+y.repeat(pumpI)+z;
+    ctx.font='bold 22px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    let cw=Math.min(28,480/pumped.length);
+    let startX=260-pumped.length*cw/2;
+    const colors=['#3b82f6','#f59e0b','#94a3b8','#22c55e','#8b5cf6'];
+    let pos=0;
+    function drawSegment(str,col){
+      for(let i=0;i<str.length;i++){
+        ctx.fillStyle=col;
+        ctx.fillText(str[i],startX+pos*cw+cw/2,60);
+        pos++;
+      }
+    }
+    drawSegment(u,colors[0]);
+    drawSegment(v.repeat(pumpI),colors[1]);
+    drawSegment(x,colors[2]);
+    drawSegment(y.repeat(pumpI),colors[3]);
+    drawSegment(z,colors[4]);
+    // Labels
+    ctx.font='12px system-ui';
+    let labels=[{t:'u',c:colors[0]},{t:'v\u00D7'+pumpI,c:colors[1]},{t:'x',c:colors[2]},{t:'y\u00D7'+pumpI,c:colors[3]},{t:'z',c:colors[4]}];
+    let lx=60;
+    labels.forEach(l=>{
+      ctx.fillStyle=l.c;ctx.fillText(l.t,lx,100);lx+=80;
+    });
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 14px system-ui';ctx.textAlign='center';
+    ctx.fillText('i = '+pumpI+'  \u2192  uv\u2071xy\u2071z = "'+pumped+'"',260,135);
+  }
+  window.s12Toggle=function(){pumpI=(pumpI+1)%5;draw();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active')){pumpI=1;draw();}});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: CFL INTUITION ==================== -->
+<div class="slide" id="s13">
+  <h2>Why CFL Pumping Works: Parse Trees</h2>
+  <p>In a sufficiently long string, the parse tree must repeat a variable.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS13" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <p>If string s is long enough, the parse tree is tall enough that some variable <strong>A</strong> must appear twice on some root-to-leaf path.</p>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Like the DFA pigeonhole, but for parse trees: if the tree is tall enough, a variable must repeat. The subtree between the two A's gives us the pumpable portion (v and y).</p>
+      </div>
+      <div class="key-idea">
+        <h3>The Five Pieces</h3>
+        <p><strong>u</strong> = before outer A<br>
+        <strong>v</strong> = outer A's left yield minus inner A<br>
+        <strong>x</strong> = inner A's yield<br>
+        <strong>y</strong> = outer A's right yield minus inner A<br>
+        <strong>z</strong> = after outer A</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS13'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,440,300);
+    // Draw a parse tree with repeated variable A
+    const nodes=[
+      {x:220,y:25,label:'S',col:'#94a3b8'},
+      {x:120,y:75,label:'...',col:'#64748b'},
+      {x:220,y:75,label:'A',col:'#f59e0b'},
+      {x:320,y:75,label:'...',col:'#64748b'},
+      {x:150,y:135,label:'...',col:'#64748b'},
+      {x:220,y:135,label:'A',col:'#ef4444'},
+      {x:290,y:135,label:'...',col:'#64748b'},
+      {x:220,y:195,label:'...',col:'#64748b'},
+    ];
+    // Edges
+    const edges=[[0,1],[0,2],[0,3],[2,4],[2,5],[2,6],[5,7]];
+    edges.forEach(([a,b])=>{
+      ctx.strokeStyle='#334155';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y+12);ctx.lineTo(nodes[b].x,nodes[b].y-12);ctx.stroke();
+    });
+    // Nodes
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,14,0,Math.PI*2);
+      ctx.fillStyle=n.label==='A'?'rgba(245,158,11,0.2)':'rgba(30,41,59,0.8)';
+      ctx.fill();
+      ctx.strokeStyle=n.col;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=n.col;ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.label,n.x,n.y);
+    });
+    // Highlight repeated A
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.ellipse(220,105,100,60,0,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#f59e0b';ctx.font='11px system-ui';ctx.textAlign='left';
+    ctx.fillText('Outer A',325,105);
+    ctx.strokeStyle='#ef4444';ctx.lineWidth=2;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.ellipse(220,165,50,45,0,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ef4444';ctx.fillText('Inner A',275,165);
+    // String decomposition at bottom
+    ctx.font='bold 14px monospace';ctx.textAlign='center';
+    const parts=[{t:'u',c:'#3b82f6'},{t:'v',c:'#f59e0b'},{t:'x',c:'#94a3b8'},{t:'y',c:'#22c55e'},{t:'z',c:'#8b5cf6'}];
+    parts.forEach((p,i)=>{
+      ctx.fillStyle=p.c;ctx.fillText(p.t,100+i*70,265);
+      ctx.beginPath();ctx.moveTo(85+i*70,275);ctx.lineTo(115+i*70,275);ctx.strokeStyle=p.c;ctx.lineWidth=3;ctx.stroke();
+    });
+    ctx.fillStyle='#e2e8f0';ctx.font='12px system-ui';
+    ctx.fillText('s = u v x y z',220,295);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE CB: CHALLENGE B ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B: Fix the Proof Bug</h2>
+  <div class="challenge-box">
+    <h3>Spot the Error</h3>
+    <p>A student writes this proof that {a<sup>n</sup>b<sup>n</sup>} is not regular:</p>
+    <div class="code-block"><div class="code-content" style="font-size:0.85em;">
+<div class="line">1. Assume L = {a^n b^n} is regular with pumping length p</div>
+<div class="line" style="background:rgba(239,68,68,0.1);border-left-color:#ef4444;">2. Let s = a^p b^p. Pick x=&epsilon;, y=ab, z=a^(p-1)b^(p-1)</div>
+<div class="line">3. Pump i=0: xz = a^(p-1)b^(p-1) &isin; L. No contradiction...</div>
+<div class="line">4. Therefore the proof fails??</div>
+    </div></div>
+    <p style="margin-top:8px;">What's wrong with line 2?</p>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      <button class="quiz-option" onclick="sCBCheck(this,0)">y must be non-empty</button>
+      <button class="quiz-option" onclick="sCBCheck(this,1)">The prover can't choose the split</button>
+      <button class="quiz-option" onclick="sCBCheck(this,2)">|xy| must be &le; p</button>
+      <button class="quiz-option" onclick="sCBCheck(this,3)">s is too short</button>
+    </div>
+    <div id="sCBResult" style="margin-top:12px;font-size:0.95em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCBCheck=function(btn,idx){
+    const btns=btn.parentElement.querySelectorAll('.quiz-option');
+    btns.forEach(b=>b.disabled=true);
+    if(idx===1){
+      btn.classList.add('correct');
+      document.getElementById('sCBResult').innerHTML='<span style="color:#22c55e;">\u2713 Correct! The prover does NOT get to choose the split. The adversary picks xyz. The prover only picks the string s and the pump value i. The student fixed the split as y=ab which crosses from a\'s into b\'s, violating the requirement that the adversary controls the split. A correct proof must work for ANY valid split.</span>';
+    } else {
+      btn.classList.add('wrong');
+      btns[1].classList.add('correct');
+      let explanations=['y being non-empty is condition 1 (|y|>0), which IS satisfied here since y=ab.',
+        '',
+        '|xy| \u2264 p is important, but the main error is that the prover chose the split. y=ab does satisfy |xy|\u2264p if x=\u03B5, but the prover can\'t pick it.',
+        's = a^p b^p has length 2p \u2265 p, so s is long enough.'];
+      document.getElementById('sCBResult').innerHTML='<span style="color:#ef4444;">\u2717 Not quite. '+explanations[idx]+' The real error: the prover cannot choose the split! The adversary picks xyz.</span>';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 14: CFL EXAMPLE a^n b^n c^n ==================== -->
+<div class="slide" id="s14">
+  <h2>CFL Example: {a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>} is NOT Context-Free</h2>
+  <p>The classic example requiring the CFL pumping lemma.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS14" width="480" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s14Step()">Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" id="s14Code">
+<div class="line" id="s14L0">1. Assume L = {a^n b^n c^n} is CFL</div>
+<div class="line" id="s14L1">2. Let p be CFL pumping length</div>
+<div class="line" id="s14L2">3. Pick s = a^p b^p c^p</div>
+<div class="line" id="s14L3">4. s = uvxyz, |vxy|&le;p, |vy|&gt;0</div>
+<div class="line" id="s14L4">5. vxy can't span all 3 symbols</div>
+<div class="line" id="s14L5">6. Case: vxy in a's and b's only</div>
+<div class="line" id="s14L6">7. Pump i=2: more a's+b's, same c's</div>
+<div class="line" id="s14L7">8. #a or #b &ne; #c &rArr; NOT in L!</div>
+<div class="line" id="s14L8">9. ALL cases lead to contradiction!</div>
+      </div></div>
+      <div id="s14Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:70px;overflow-y:auto;margin-top:8px;color:#94a3b8;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS14'),ctx=c.getContext('2d');
+  const steps=[
+    {line:0,desc:'Assume {a\u207Fb\u207Fc\u207F} is context-free'},
+    {line:1,desc:'CFL pumping lemma gives us p'},
+    {line:2,desc:'Pick s = a\u2074b\u2074c\u2074 (p=4)'},
+    {line:3,desc:'Split s = uvxyz with |vxy|\u22644'},
+    {line:4,desc:'Key: |vxy|\u22644, so vxy spans at most 2 of {a,b,c}'},
+    {line:5,desc:'Case: vxy is in the a\'s and b\'s region'},
+    {line:6,desc:'Pump i=2: more a\'s or b\'s, c count unchanged'},
+    {line:7,desc:'#a or #b \u2260 #c \u2192 NOT in L!'},
+    {line:8,desc:'Every possible placement of vxy leads to contradiction!'},
+  ];
+  let stepIdx=0,timer=null;
+  function draw(){
+    ctx.clearRect(0,0,480,320);
+    for(let i=0;i<=8;i++) document.getElementById('s14L'+i).className=i===steps[stepIdx].line?'line active':'line';
+    // Draw string a^4 b^4 c^4
+    let str='aaaabbbbcccc';
+    ctx.font='bold 16px monospace';
+    let cw=35;
+    for(let i=0;i<str.length;i++){
+      let col=str[i]==='a'?'#3b82f6':str[i]==='b'?'#f59e0b':'#22c55e';
+      ctx.fillStyle=col;
+      ctx.fillText(str[i],20+i*cw,50);
+    }
+    // Show vxy region constraint
+    if(stepIdx>=3){
+      ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+      // vxy bracket spanning max 4 chars in a-b region
+      let vxyStart=2*cw+20, vxyEnd=6*cw+20;
+      ctx.beginPath();ctx.moveTo(vxyStart,60);ctx.lineTo(vxyEnd,60);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#a78bfa';ctx.font='11px system-ui';ctx.textAlign='center';
+      ctx.fillText('|vxy| \u2264 4',vxyStart+(vxyEnd-vxyStart)/2,75);
+    }
+    if(stepIdx>=5){
+      // Show case where vxy is in ab region
+      ctx.fillStyle='rgba(167,139,250,0.1)';
+      ctx.fillRect(20+2*cw,20,4*cw,50);
+      ctx.strokeStyle='#a78bfa';ctx.lineWidth=1;
+      ctx.strokeRect(20+2*cw,20,4*cw,50);
+    }
+    // Draw pumped string at bottom (i=2 case)
+    if(stepIdx>=6){
+      let pumped='aaaaabbbbbcccc'; // extra a and b from pumping
+      ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';ctx.textAlign='left';
+      ctx.fillText('Pumped (i=2):',20,115);
+      ctx.font='bold 14px monospace';
+      let pw=Math.min(30,440/pumped.length);
+      for(let i=0;i<pumped.length;i++){
+        let col=pumped[i]==='a'?'#3b82f6':pumped[i]==='b'?'#f59e0b':'#22c55e';
+        ctx.fillStyle=col;
+        ctx.fillText(pumped[i],20+i*pw,140);
+      }
+      // Counts
+      ctx.font='13px system-ui';
+      ctx.fillStyle='#3b82f6';ctx.fillText('#a = 5',20,170);
+      ctx.fillStyle='#f59e0b';ctx.fillText('#b = 5',120,170);
+      ctx.fillStyle='#22c55e';ctx.fillText('#c = 4',220,170);
+      ctx.fillStyle='#ef4444';ctx.font='bold 14px system-ui';
+      ctx.fillText('\u2717 5 \u2260 4 \u2192 Not in L!',320,170);
+    }
+    // Case analysis boxes
+    if(stepIdx>=4){
+      ctx.fillStyle='#94a3b8';ctx.font='bold 12px system-ui';ctx.textAlign='center';
+      ctx.fillText('vxy can only be in one of these regions:',240,210);
+      const cases=[
+        {t:'a\'s only',x:50,col:'#3b82f6'},
+        {t:'a-b border',x:140,col:'#818cf8'},
+        {t:'b\'s only',x:240,col:'#f59e0b'},
+        {t:'b-c border',x:340,col:'#fbbf24'},
+        {t:'c\'s only',x:430,col:'#22c55e'},
+      ];
+      cases.forEach(cs=>{
+        ctx.fillStyle=cs.col;ctx.globalAlpha=0.15;
+        ctx.beginPath();ctx.roundRect(cs.x-40,225,80,30,6);ctx.fill();
+        ctx.globalAlpha=1;ctx.strokeStyle=cs.col;ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(cs.x-40,225,80,30,6);ctx.stroke();
+        ctx.fillStyle=cs.col;ctx.font='10px system-ui';
+        ctx.fillText(cs.t,cs.x,244);
+      });
+      ctx.fillStyle='#ef4444';ctx.font='bold 12px system-ui';
+      ctx.fillText('ALL cases: pumping changes at most 2 of 3 counts \u2192 contradiction!',240,280);
+    }
+    // Step label
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 13px system-ui';ctx.textAlign='center';
+    ctx.fillText(steps[stepIdx].desc,240,310);
+  }
+  function init(){stepIdx=0;if(timer){clearInterval(timer);timer=null;}document.getElementById('s14Log').innerHTML='';draw();}
+  window.s14Step=function(){if(stepIdx>=steps.length-1)return;stepIdx++;document.getElementById('s14Log').innerHTML+='Step '+(stepIdx+1)+': '+steps[stepIdx].desc+'\n';document.getElementById('s14Log').scrollTop=9999;draw();};
+  window.s14Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s14Step();},1100);};
+  window.s14Reset=function(){init();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 15: CFL EXAMPLE ww ==================== -->
+<div class="slide" id="s15">
+  <h2>CFL Example: {ww | w &isin; {0,1}*} is NOT Context-Free</h2>
+  <p>The doubled-string language needs even more power than a PDA.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS15" width="480" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s15Step()">Step</button>
+        <button class="btn btn-sm" onclick="s15Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s15L0">1. Assume L = {ww} is CFL</div>
+<div class="line" id="s15L1">2. Pick s = 0^p 1^p 0^p 1^p</div>
+<div class="line" id="s15L2">3. s = uvxyz, |vxy|&le;p</div>
+<div class="line" id="s15L3">4. vxy spans at most 2 adjacent blocks</div>
+<div class="line" id="s15L4">5. Pumping disrupts the symmetry</div>
+<div class="line" id="s15L5">6. First half &ne; second half</div>
+<div class="line" id="s15L6">7. Contradiction! L not CFL.</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:8px;">
+        <h3>Key Insight</h3>
+        <p>{ww} is the "poster child" of non-CFL languages. It requires matching across <em>non-nested</em> boundaries, which a PDA's stack can't handle.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS15'),ctx=c.getContext('2d');
+  const steps=[
+    {line:0,desc:'Assume {ww} is CFL'},
+    {line:1,desc:'Pick s = 0\u2074 1\u2074 0\u2074 1\u2074 (p=4)'},
+    {line:2,desc:'Split s = uvxyz with |vxy|\u22644'},
+    {line:3,desc:'vxy is within at most 2 adjacent blocks'},
+    {line:4,desc:'Pump i=2: changes counts in those 2 blocks only'},
+    {line:5,desc:'First 0\u20741\u2074 \u2260 Second 0\u20741\u2074 after pumping'},
+    {line:6,desc:'Contradiction! {ww} is NOT context-free.'},
+  ];
+  let stepIdx=0,timer=null;
+  function draw(){
+    ctx.clearRect(0,0,480,300);
+    for(let i=0;i<=6;i++){let el=document.getElementById('s15L'+i);if(el)el.className=i===steps[stepIdx].line?'line active':'line';}
+    let str='00001111000011110';
+    // Color blocks
+    ctx.font='bold 14px monospace';
+    let cw=28;
+    const blockCols=['#3b82f6','#f59e0b','#3b82f6','#f59e0b'];
+    for(let i=0;i<16;i++){
+      let block=Math.floor(i/4);
+      ctx.fillStyle=blockCols[block];
+      ctx.fillText(str[i],15+i*cw,40);
+    }
+    // Block labels
+    ctx.font='10px system-ui';ctx.textAlign='center';
+    ctx.fillStyle='#3b82f6';ctx.fillText('0\u2074',15+2*cw,58);
+    ctx.fillStyle='#f59e0b';ctx.fillText('1\u2074',15+6*cw,58);
+    ctx.fillStyle='#3b82f6';ctx.fillText('0\u2074',15+10*cw,58);
+    ctx.fillStyle='#f59e0b';ctx.fillText('1\u2074',15+14*cw,58);
+    // vxy bracket
+    if(stepIdx>=2){
+      ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(15+2*cw,70);ctx.lineTo(15+6*cw,70);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#a78bfa';ctx.font='10px system-ui';
+      ctx.fillText('vxy (\u22644 chars)',15+4*cw,85);
+    }
+    // halves bracket
+    ctx.strokeStyle='#475569';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(15,20);ctx.lineTo(15+8*cw,20);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(15+8*cw,20);ctx.lineTo(15+16*cw,20);ctx.stroke();
+    ctx.fillStyle='#64748b';ctx.font='10px system-ui';
+    ctx.fillText('w',15+4*cw,15);ctx.fillText('w',15+12*cw,15);
+    // Pumped version
+    if(stepIdx>=4){
+      ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';ctx.textAlign='left';
+      ctx.fillText('Pumped (i=2):',15,115);
+      let pumped='0000011111000011110'; // extra 0 and 1 in first two blocks
+      ctx.font='bold 13px monospace';
+      let pw=Math.min(24,460/pumped.length);
+      for(let i=0;i<pumped.length;i++){
+        ctx.fillStyle=pumped[i]==='0'?'#3b82f6':'#f59e0b';
+        ctx.fillText(pumped[i],15+i*pw,140);
+      }
+      ctx.fillStyle='#ef4444';ctx.font='bold 12px system-ui';ctx.textAlign='center';
+      ctx.fillText('First half \u2260 Second half \u2192 NOT ww!',240,170);
+    }
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 13px system-ui';ctx.textAlign='center';
+    ctx.fillText(steps[stepIdx].desc,240,210);
+  }
+  function init(){stepIdx=0;if(timer){clearInterval(timer);timer=null;}draw();}
+  window.s15Step=function(){if(stepIdx>=steps.length-1)return;stepIdx++;draw();};
+  window.s15Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s15Step();},1000);};
+  window.s15Reset=function(){init();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: COMPARING BOTH LEMMAS ==================== -->
+<div class="slide" id="s16">
+  <h2>Comparing the Two Pumping Lemmas</h2>
+  <p>Side-by-side comparison of regular vs CFL pumping.</p>
+  <div style="overflow-x:auto;margin-top:1rem;">
+    <table style="width:100%;max-width:800px;margin:0 auto;">
+      <tr><th></th><th style="color:#3b82f6;">Regular PL</th><th style="color:#a78bfa;">CFL PL</th></tr>
+      <tr><td style="color:#94a3b8;">Decomposition</td><td>s = <strong>xyz</strong> (3 parts)</td><td>s = <strong>uvxyz</strong> (5 parts)</td></tr>
+      <tr><td style="color:#94a3b8;">Non-empty</td><td>|y| &gt; 0</td><td>|vy| &gt; 0</td></tr>
+      <tr><td style="color:#94a3b8;">Length bound</td><td>|xy| &le; p</td><td>|vxy| &le; p</td></tr>
+      <tr><td style="color:#94a3b8;">Pumping</td><td>xy<sup>i</sup>z &isin; L</td><td>uv<sup>i</sup>xy<sup>i</sup>z &isin; L</td></tr>
+      <tr><td style="color:#94a3b8;">Pump pieces</td><td>1 piece (y)</td><td>2 pieces (v, y) pumped together</td></tr>
+      <tr><td style="color:#94a3b8;">Intuition</td><td>DFA loop (pigeonhole)</td><td>Parse tree repeated variable</td></tr>
+      <tr><td style="color:#94a3b8;">Proves</td><td>NOT regular</td><td>NOT context-free</td></tr>
+    </table>
+  </div>
+  <div class="analogy" style="max-width:600px;margin:16px auto;">
+    <h3>Analogy</h3>
+    <p>Regular PL: finding a loop in a circle (DFA). CFL PL: finding a repeated node in a tree (parse tree). More structure = more pieces.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 17: BEYOND PUMPING ==================== -->
+<div class="slide" id="s17">
+  <h2>Beyond Pumping</h2>
+  <p>The pumping lemma isn't the only tool. Here are stronger alternatives.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#3b82f6;">Myhill-Nerode Theorem</h3>
+      <p style="font-size:0.95em;">A language L is regular iff it has a <strong>finite number of equivalence classes</strong> under the distinguishability relation.</p>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>If you can find infinitely many strings that are pairwise distinguishable (each pair needs a different "suffix" to tell them apart), then L is not regular. This is both necessary AND sufficient!</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#a78bfa;">Ogden's Lemma</h3>
+      <p style="font-size:0.95em;">A stronger version of the CFL pumping lemma where you <strong>mark</strong> certain positions, and v and y must contain marked positions.</p>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Ogden's gives you more control over WHERE the pumping happens. Useful when the basic CFL PL fails for a particular language.</p>
+      </div>
+      <canvas id="cS17" width="400" height="120" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS17'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,400,120);
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';ctx.textAlign='center';
+    ctx.fillText('Proof Power Comparison:',200,20);
+    const tools=[
+      {t:'Pumping\nLemma',x:60,w:80,h:40,col:'#6366f1'},
+      {t:'Myhill-\nNerode',x:160,w:80,h:70,col:'#3b82f6'},
+      {t:'Ogden\'s\nLemma',x:260,w:80,h:55,col:'#a78bfa'},
+    ];
+    tools.forEach(t=>{
+      let y=100-t.h;
+      ctx.fillStyle=t.col;ctx.globalAlpha=0.2;
+      ctx.beginPath();ctx.roundRect(t.x,y,t.w,t.h,6);ctx.fill();
+      ctx.globalAlpha=1;ctx.strokeStyle=t.col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(t.x,y,t.w,t.h,6);ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='11px system-ui';
+      let lines=t.t.split('\n');
+      lines.forEach((l,i)=>ctx.fillText(l,t.x+t.w/2,y+t.h/2-6+i*14));
+    });
+    ctx.fillStyle='#64748b';ctx.font='10px system-ui';
+    ctx.fillText('\u2190 weaker       stronger \u2192',200,115);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s17').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s17'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE CC: CHALLENGE C ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: Classify the Language</h2>
+  <div class="challenge-box">
+    <h3>Which pumping lemma do you need?</h3>
+    <p>For each language, decide: Regular PL, CFL PL, or neither (language IS regular/CFL)?</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155;">
+        <p style="font-size:0.95em;">1. L = {a<sup>n</sup> | n is prime}</p>
+        <select id="sCCq1" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:4px 8px;margin-top:4px;">
+          <option value="">Choose...</option><option value="reg">Regular PL</option><option value="cfl">CFL PL</option><option value="is_reg">Already regular</option><option value="is_cfl">Already CFL</option>
+        </select>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155;">
+        <p style="font-size:0.95em;">2. L = {a<sup>n</sup>b<sup>m</sup> | n &le; m}</p>
+        <select id="sCCq2" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:4px 8px;margin-top:4px;">
+          <option value="">Choose...</option><option value="reg">Regular PL</option><option value="cfl">CFL PL</option><option value="is_reg">Already regular</option><option value="is_cfl">Already CFL</option>
+        </select>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155;">
+        <p style="font-size:0.95em;">3. L = {a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>}</p>
+        <select id="sCCq3" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:4px 8px;margin-top:4px;">
+          <option value="">Choose...</option><option value="reg">Regular PL</option><option value="cfl">CFL PL</option><option value="is_reg">Already regular</option><option value="is_cfl">Already CFL</option>
+        </select>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155;">
+        <p style="font-size:0.95em;">4. L = (ab)*</p>
+        <select id="sCCq4" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:4px 8px;margin-top:4px;">
+          <option value="">Choose...</option><option value="reg">Regular PL</option><option value="cfl">CFL PL</option><option value="is_reg">Already regular</option><option value="is_cfl">Already CFL</option>
+        </select>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn" onclick="sCCCheck()">Check All</button>
+    </div>
+    <div id="sCCResult" style="margin-top:12px;font-size:0.9em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers={sCCq1:'reg',sCCq2:'is_cfl',sCCq3:'cfl',sCCq4:'is_reg'};
+  const explanations={
+    sCCq1:'Regular PL: primes are not regular (gaps between primes are unbounded, pumping creates arithmetic progressions that eventually miss a prime).',
+    sCCq2:'Already CFL: {a\u207Fb\u1D50 | n\u2264m} can be generated by S \u2192 aSb | Sb | \u03B5. It\'s context-free but not regular.',
+    sCCq3:'CFL PL: {a\u207Fb\u207Fc\u207F} is the classic non-CFL example. Need 3-way matching.',
+    sCCq4:'Already regular: (ab)* is described by a regex! It\'s regular.'
+  };
+  window.sCCCheck=function(){
+    let score=0,html='';
+    Object.keys(answers).forEach(id=>{
+      let val=document.getElementById(id).value;
+      let correct=val===answers[id];
+      if(correct)score++;
+      let el=document.getElementById(id);
+      el.style.borderColor=correct?'#22c55e':'#ef4444';
+      html+='<p style="color:'+(correct?'#22c55e':'#ef4444')+';">'+(correct?'\u2713':'\u2717')+' '+explanations[id]+'</p>';
+    });
+    document.getElementById('sCCResult').innerHTML='<p style="font-weight:700;color:#e2e8f0;">Score: '+score+'/4</p>'+html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 18: SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#3b82f6;">Regular PL Template</h3>
+      <div class="code-block"><div class="code-content" style="font-size:0.8em;">
+<div class="line">1. Assume L is regular (for contradiction)</div>
+<div class="line">2. Let p be the pumping length</div>
+<div class="line">3. Choose s = [string in L, |s|&ge;p]</div>
+<div class="line">4. For ANY split s=xyz with |xy|&le;p, |y|&gt;0:</div>
+<div class="line">5.   Show xy^i z &notin; L for some i</div>
+<div class="line">6. Contradiction! L is NOT regular.</div>
+      </div></div>
+      <h3 style="color:#a78bfa;margin-top:12px;">CFL PL Template</h3>
+      <div class="code-block"><div class="code-content" style="font-size:0.8em;">
+<div class="line">1. Assume L is CFL (for contradiction)</div>
+<div class="line">2. Let p be the CFL pumping length</div>
+<div class="line">3. Choose s = [string in L, |s|&ge;p]</div>
+<div class="line">4. For ANY split s=uvxyz, |vxy|&le;p, |vy|&gt;0:</div>
+<div class="line">5.   Show uv^i xy^i z &notin; L for some i</div>
+<div class="line">6. Contradiction! L is NOT CFL.</div>
+      </div></div>
+    </div>
+    <div>
+      <canvas id="cS18" width="420" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS18'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,300);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 14px system-ui';ctx.textAlign='center';
+    ctx.fillText('Language Hierarchy & Tools',210,25);
+    // Nested boxes for Chomsky hierarchy
+    const levels=[
+      {label:'All Languages',w:380,h:250,x:20,y:40,col:'#64748b'},
+      {label:'RE (Recursively Enumerable)',w:320,h:200,x:50,y:60,col:'#ef4444'},
+      {label:'Decidable',w:260,h:150,x:80,y:85,col:'#f59e0b'},
+      {label:'Context-Free',w:200,h:100,x:110,y:110,col:'#a78bfa'},
+      {label:'Regular',w:140,h:50,x:140,y:135,col:'#3b82f6'},
+    ];
+    levels.forEach(l=>{
+      ctx.fillStyle=l.col;ctx.globalAlpha=0.08;
+      ctx.beginPath();ctx.roundRect(l.x,l.y,l.w,l.h,12);ctx.fill();
+      ctx.globalAlpha=1;ctx.strokeStyle=l.col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(l.x,l.y,l.w,l.h,12);ctx.stroke();
+      ctx.fillStyle=l.col;ctx.font='bold 11px system-ui';ctx.textAlign='left';
+      ctx.fillText(l.label,l.x+8,l.y+14);
+    });
+    // Tool annotations
+    ctx.font='10px system-ui';
+    ctx.fillStyle='#3b82f6';ctx.textAlign='right';
+    ctx.fillText('Regular PL \u2192',395,160);
+    ctx.fillStyle='#a78bfa';
+    ctx.fillText('CFL PL \u2192',395,210);
+    // Quick reference
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText('PL = necessary condition, not sufficient',210,285);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s18').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE Q1: QUIZ MC ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Multiple Choice</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:#1e293b;padding:16px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;color:#38bdf8;font-weight:600;">Q1: In a PL proof, who picks the string s?</p>
+      <div style="margin-top:8px;">
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q1r" value="0"> The adversary</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q1r" value="1"> The prover (you)</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q1r" value="2"> It doesn't matter</label>
+      </div>
+      <div id="q1fb" style="margin-top:8px;font-size:0.85em;"></div>
+    </div>
+    <div style="background:#1e293b;padding:16px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;color:#38bdf8;font-weight:600;">Q2: In the CFL PL, how many pieces is the string split into?</p>
+      <div style="margin-top:8px;">
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q2r" value="0"> 3 (xyz)</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q2r" value="1"> 4 (uvyz)</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q2r" value="2"> 5 (uvxyz)</label>
+      </div>
+      <div id="q2fb" style="margin-top:8px;font-size:0.85em;"></div>
+    </div>
+    <div style="background:#1e293b;padding:16px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;color:#38bdf8;font-weight:600;">Q3: If a language passes the PL, what can we conclude?</p>
+      <div style="margin-top:8px;">
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q3r" value="0"> It's regular</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q3r" value="1"> Nothing</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="q3r" value="2"> It's not regular</label>
+      </div>
+      <div id="q3fb" style="margin-top:8px;font-size:0.85em;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:16px;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:16px;font-weight:700;font-size:1.1em;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ1Check=function(){
+    const answers=[1,2,1];
+    const explanations=[
+      'The prover picks s strategically to set up the contradiction.',
+      'CFL PL splits into 5 pieces: u, v, x, y, z.',
+      'Passing the PL tells us nothing \u2014 it\'s only a necessary condition, not sufficient.'
+    ];
+    let score=0;
+    answers.forEach((a,i)=>{
+      let sel=document.querySelector('input[name="q'+(i+1)+'r"]:checked');
+      let correct=sel&&parseInt(sel.value)===a;
+      if(correct)score++;
+      document.getElementById('q'+(i+1)+'fb').innerHTML='<span style="color:'+(correct?'#22c55e':'#ef4444')+';">'+(correct?'\u2713 Correct!':'\u2717 '+explanations[i])+'</span>';
+    });
+    document.getElementById('sQ1Score').innerHTML='<span style="color:'+(score===3?'#22c55e':'#f59e0b')+';">'+score+'/3</span>';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE Q2: QUIZ TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace the Proof</h2>
+  <div class="challenge-box">
+    <h3>Complete the Pumping Proof</h3>
+    <p>Language: L = {a<sup>n</sup>b<sup>2n</sup> | n &ge; 0}. Fill in the blanks:</p>
+    <div class="code-block"><div class="code-content" style="font-size:0.9em;">
+<div class="line">1. Assume L is regular with pumping length p</div>
+<div class="line">2. Choose s = a^p b^(2p) &isin; L, |s| = 3p &ge; p &check;</div>
+<div class="line">3. s = xyz, |xy| &le; p, so y = a^k for some k &ge; 1</div>
+<div class="line">4. Pump with i = <input type="text" id="sQ2i" style="width:40px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="?"></div>
+<div class="line">5. xy^i z = a^(<input type="text" id="sQ2a" style="width:80px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="?">) b^(2p)</div>
+<div class="line">6. For this to be in L, need #b = 2 &times; #a</div>
+<div class="line">7. But 2p &ne; 2&times;(<input type="text" id="sQ2c" style="width:80px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="?">) since k &ge; 1</div>
+<div class="line">8. Contradiction! L is NOT regular.</div>
+    </div></div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn" onclick="sQ2Check()">Check</button>
+    </div>
+    <div id="sQ2Result" style="margin-top:12px;font-size:0.95em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ2Check=function(){
+    let i=document.getElementById('sQ2i').value.trim();
+    let a=document.getElementById('sQ2a').value.trim().replace(/\s/g,'');
+    let c=document.getElementById('sQ2c').value.trim().replace(/\s/g,'');
+    let iOk=i==='0'||i==='2';
+    let aOk=false,cOk=false;
+    if(i==='0'){
+      aOk=a==='p-k'||a==='(p-k)';
+      cOk=c==='p-k'||c==='(p-k)';
+    } else if(i==='2'){
+      aOk=a==='p+k'||a==='(p+k)';
+      cOk=c==='p+k'||c==='(p+k)';
+    }
+    let score=(iOk?1:0)+(aOk?1:0)+(cOk?1:0);
+    let html='<p style="font-weight:700;color:'+(score===3?'#22c55e':'#f59e0b')+';">'+score+'/3 correct</p>';
+    if(!iOk) html+='<p style="color:#f59e0b;">i: Use i=0 (deleting y gives p-k a\'s) or i=2 (extra y gives p+k a\'s).</p>';
+    if(!aOk) html+='<p style="color:#f59e0b;">a count: If i=0, it\'s p-k. If i=2, it\'s p+k.</p>';
+    if(!cOk) html+='<p style="color:#f59e0b;">Check: 2p \u2260 2(p\u00B1k) since k\u22651.</p>';
+    if(score===3) html+='<p style="color:#22c55e;">Perfect! The key insight: pumping changes #a but not #b, breaking the 1:2 ratio.</p>';
+    document.getElementById('sQ2Result').innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE Q3: QUIZ BUILD ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Build Your Own Proof</h2>
+  <div class="challenge-box">
+    <h3>Prove {0<sup>n</sup>1<sup>n</sup>2<sup>n</sup>} is not context-free</h3>
+    <p>Drag the proof steps into the correct order:</p>
+    <div id="sQ3Steps" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+      <div class="quiz-option" draggable="false" style="cursor:pointer;text-align:left;padding:10px 16px;width:100%;" onclick="sQ3Pick(this)" data-idx="4">Pump i=2: increases count of at most 2 symbols</div>
+      <div class="quiz-option" draggable="false" style="cursor:pointer;text-align:left;padding:10px 16px;width:100%;" onclick="sQ3Pick(this)" data-idx="1">Let p be the CFL pumping length</div>
+      <div class="quiz-option" draggable="false" style="cursor:pointer;text-align:left;padding:10px 16px;width:100%;" onclick="sQ3Pick(this)" data-idx="5">Third symbol count unchanged &rArr; not in L</div>
+      <div class="quiz-option" draggable="false" style="cursor:pointer;text-align:left;padding:10px 16px;width:100%;" onclick="sQ3Pick(this)" data-idx="0">Assume L = {0^n 1^n 2^n} is CFL</div>
+      <div class="quiz-option" draggable="false" style="cursor:pointer;text-align:left;padding:10px 16px;width:100%;" onclick="sQ3Pick(this)" data-idx="3">|vxy| &le; p, so vxy spans at most 2 of {0,1,2}</div>
+      <div class="quiz-option" draggable="false" style="cursor:pointer;text-align:left;padding:10px 16px;width:100%;" onclick="sQ3Pick(this)" data-idx="6">Contradiction! L is NOT context-free.</div>
+      <div class="quiz-option" draggable="false" style="cursor:pointer;text-align:left;padding:10px 16px;width:100%;" onclick="sQ3Pick(this)" data-idx="2">Pick s = 0^p 1^p 2^p</div>
+    </div>
+    <div id="sQ3Order" style="margin-top:12px;font-family:monospace;font-size:0.9em;color:#94a3b8;">Your order: <span id="sQ3Seq"></span></div>
+    <div style="margin-top:8px;">
+      <button class="btn btn-sm" onclick="sQ3CheckOrder()">Check Order</button>
+      <button class="btn btn-sm btn-secondary" onclick="sQ3ResetOrder()">Reset</button>
+    </div>
+    <div id="sQ3Result" style="margin-top:8px;font-size:0.95em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let order=[];
+  window.sQ3Pick=function(el){
+    let idx=parseInt(el.dataset.idx);
+    if(order.includes(idx))return;
+    order.push(idx);
+    el.style.opacity='0.4';
+    el.style.borderColor='#6366f1';
+    document.getElementById('sQ3Seq').textContent=order.map(i=>(i+1)).join(' \u2192 ');
+  };
+  window.sQ3CheckOrder=function(){
+    let correct=[0,1,2,3,4,5,6];
+    let isCorrect=JSON.stringify(order)===JSON.stringify(correct);
+    document.getElementById('sQ3Result').innerHTML=isCorrect?
+      '<span style="color:#22c55e;">\u2713 Perfect order! The proof flows logically from assumption through contradiction.</span>':
+      '<span style="color:#f59e0b;">Correct order: Assume \u2192 Get p \u2192 Pick s \u2192 Note vxy constraint \u2192 Pump \u2192 Show not in L \u2192 Contradiction. Try again!</span>';
+  };
+  window.sQ3ResetOrder=function(){
+    order=[];
+    document.getElementById('sQ3Seq').textContent='';
+    document.getElementById('sQ3Result').innerHTML='';
+    document.querySelectorAll('#sQ3Steps .quiz-option').forEach(el=>{el.style.opacity='1';el.style.borderColor='#475569';});
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','s17','sCC','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>
