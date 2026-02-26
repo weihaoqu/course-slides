@@ -1,0 +1,2401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regular Expressions - Enhanced Interactive</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.05); z-index: 200; }
+#progress { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #38bdf8; }
+h3 { font-size: 1.3em; margin-bottom: 10px; color: #a5b4fc; }
+p, li { font-size: 1.1em; line-height: 1.7; color: #cbd5e1; margin-bottom: 8px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 24px; }
+code { background: rgba(99,102,241,0.15); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono','Fira Code',monospace; color: #a5b4fc; font-size: 0.95em; }
+.btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 6px 14px; font-size: 0.85em; }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+.key-idea { background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.1)); border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.key-idea h3 { color: #4ade80; margin-bottom: 6px; }
+.warning { background: rgba(239,68,68,0.08); border-left: 4px solid #ef4444; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.warning h3 { color: #f87171; margin-bottom: 6px; }
+.analogy { background: rgba(168,85,247,0.08); border-left: 4px solid #a78bfa; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.analogy h3 { color: #c4b5fd; margin-bottom: 6px; }
+.code-block { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin: 10px 0; overflow-x: auto; }
+.code-content { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.9em; line-height: 1.8; }
+.line { padding: 1px 8px; border-left: 3px solid transparent; transition: all 0.3s; white-space: pre; }
+.line.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+table { border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #475569; padding: 8px 14px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; font-size: 0.95em; }
+td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <div style="text-align:center;">
+    <h1>Regular Expressions</h1>
+    <p class="subtitle">CS305 — Formal Language Theory</p>
+    <canvas id="cS1" width="500" height="200" style="width:100%;max-width:500px;background:rgba(0,0,0,0.2);border-radius:12px;margin:20px auto;display:block;"></canvas>
+    <p style="color:#64748b;font-size:0.9em;">Use ← → arrows to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS1');
+  const ctx = canvas.getContext('2d');
+  let angle = 0;
+  let animId = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, 500, 200);
+    const cx = 250, cy = 100;
+    const labels = ['RE', 'NFA', 'DFA'];
+    const colors = ['#a78bfa', '#38bdf8', '#22c55e'];
+    const r = 70;
+    for (let i = 0; i < 3; i++) {
+      const a = angle + (i * Math.PI * 2 / 3) - Math.PI / 2;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      // Draw edges to next
+      const nextA = angle + ((i + 1) % 3 * Math.PI * 2 / 3) - Math.PI / 2;
+      const nx = cx + Math.cos(nextA) * r;
+      const ny = cy + Math.sin(nextA) * r;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(nx, ny);
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    for (let i = 0; i < 3; i++) {
+      const a = angle + (i * Math.PI * 2 / 3) - Math.PI / 2;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      ctx.beginPath();
+      ctx.arc(x, y, 28, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+      ctx.strokeStyle = colors[i];
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.fillStyle = colors[i];
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(labels[i], x, y);
+    }
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '13px system-ui';
+    ctx.fillText('All describe the same languages!', cx, cy);
+    angle += 0.005;
+    animId = requestAnimationFrame(draw);
+  }
+
+  function init() { if (animId) cancelAnimationFrame(animId); draw(); }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s1').classList.contains('active')) init();
+    else if (animId) { cancelAnimationFrame(animId); animId = null; }
+  });
+  obs.observe(document.getElementById('s1'), {attributes: true, attributeFilter: ['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h2>The Big Picture: Three Equivalent Views</h2>
+  <p>Regular Expressions, DFAs, and NFAs all describe the <strong>exact same class</strong> of languages.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS2" width="440" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Any language you can describe with an RE, you can build a DFA for — and vice versa. The proofs go around the triangle:</p>
+        <ul style="margin-top:8px;">
+          <li><strong>RE → ε-NFA</strong>: Thompson's Construction</li>
+          <li><strong>NFA → DFA</strong>: Subset Construction</li>
+          <li><strong>DFA → RE</strong>: State Elimination</li>
+        </ul>
+      </div>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy</h3>
+        <p>It's like having three different <strong>maps</strong> of the same city — street map, satellite view, and transit map. Different formats, same territory.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS2');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 320);
+    const cx = 220, cy = 155;
+    const nodes = [
+      { label: 'RE', x: cx, y: 50, color: '#a78bfa' },
+      { label: 'NFA', x: cx - 120, y: 250, color: '#38bdf8' },
+      { label: 'DFA', x: cx + 120, y: 250, color: '#22c55e' }
+    ];
+    const edges = [
+      { from: 0, to: 1, label: "Thompson's", dx: -12, dy: 0 },
+      { from: 1, to: 2, label: 'Subset Constr.', dx: 0, dy: 16 },
+      { from: 2, to: 0, label: 'State Elim.', dx: 12, dy: 0 }
+    ];
+    // Draw edges
+    edges.forEach(e => {
+      const f = nodes[e.from], t = nodes[e.to];
+      const mx = (f.x + t.x) / 2 + e.dx * 2, my = (f.y + t.y) / 2 + e.dy;
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(t.x, t.y);
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Arrowhead
+      const angle = Math.atan2(t.y - f.y, t.x - f.x);
+      const ax = t.x - Math.cos(angle) * 35, ay = t.y - Math.sin(angle) * 35;
+      ctx.beginPath();
+      ctx.moveTo(ax + Math.cos(angle) * 10, ay + Math.sin(angle) * 10);
+      ctx.lineTo(ax + Math.cos(angle + 2.5) * 8, ay + Math.sin(angle + 2.5) * 8);
+      ctx.lineTo(ax + Math.cos(angle - 2.5) * 8, ay + Math.sin(angle - 2.5) * 8);
+      ctx.fillStyle = '#475569';
+      ctx.fill();
+      // Label
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = '12px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(e.label, mx, my);
+    });
+    // Draw nodes
+    nodes.forEach(n => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 30, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+      ctx.strokeStyle = n.color;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.fillStyle = n.color;
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+    // Center text
+    ctx.fillStyle = '#64748b';
+    ctx.font = '13px system-ui';
+    ctx.fillText('Same power!', cx, cy + 10);
+    ctx.fillText('= Regular Languages', cx, cy + 28);
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s2').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s2'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: WHAT IS A RE ==================== -->
+<div class="slide" id="s3">
+  <h2>What Is a Regular Expression?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <p>A <strong>regular expression</strong> is a compact, algebraic notation for describing a <strong>set of strings</strong> (a language).</p>
+      <ul style="margin-top:10px;">
+        <li>Every RE defines a language L(R)</li>
+        <li>Built from three simple operations</li>
+        <li>No memory, no counting — just patterns</li>
+        <li>Equivalent in power to finite automata</li>
+      </ul>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy</h3>
+        <p><strong>Regex : languages :: arithmetic : numbers</strong><br>
+        Just as <code>3 + 5 × 2</code> compactly describes 13, <code>(0|1)*01</code> compactly describes "all binary strings ending in 01."</p>
+      </div>
+    </div>
+    <div>
+      <h3>Quick Examples</h3>
+      <table style="width:100%;">
+        <tr><th>RE</th><th>Language L(R)</th></tr>
+        <tr><td><code>0</code></td><td>{ "0" }</td></tr>
+        <tr><td><code>0|1</code></td><td>{ "0", "1" }</td></tr>
+        <tr><td><code>01</code></td><td>{ "01" }</td></tr>
+        <tr><td><code>0*</code></td><td>{ ε, "0", "00", ... }</td></tr>
+        <tr><td><code>(0|1)*</code></td><td>All binary strings</td></tr>
+        <tr style="background:rgba(99,102,241,0.1);"><td><code>(0|1)*01</code></td><td>Ends in 01</td></tr>
+      </table>
+      <div style="margin-top:12px;background:rgba(0,0,0,0.2);border-radius:8px;padding:12px;">
+        <p style="font-size:0.9em;color:#94a3b8;margin:0 0 6px;">Try it — enter a string to test against <code>(0|1)*01</code>:</p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="s3input" placeholder="e.g. 1001" style="padding:6px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;width:120px;">
+          <button class="btn btn-sm" onclick="s3Test()">Test</button>
+          <span id="s3result" style="font-weight:600;font-size:0.9em;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s3Test = function() {
+    const val = document.getElementById('s3input').value;
+    const res = document.getElementById('s3result');
+    if (/^[01]*01$/.test(val)) {
+      res.textContent = '✓ Accepted!';
+      res.style.color = '#22c55e';
+    } else {
+      res.textContent = '✗ Rejected';
+      res.style.color = '#ef4444';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 4: THREE OPERATIONS ==================== -->
+<div class="slide" id="s4">
+  <h2>The Three Basic Operations</h2>
+  <p>Every RE is built from just <strong>three operations</strong>. Click each to see the Canvas diagram:</p>
+  <div style="display:flex;gap:8px;margin:10px 0;">
+    <button class="btn btn-sm" onclick="s4Show(0)" id="s4btn0">Union (|)</button>
+    <button class="btn btn-sm" onclick="s4Show(1)" id="s4btn1">Concatenation (.)</button>
+    <button class="btn btn-sm" onclick="s4Show(2)" id="s4btn2">Kleene Star (*)</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <canvas id="cS4" width="440" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    <div id="s4info" style="font-size:0.95em;">
+      <p style="color:#94a3b8;">Click an operation above to see how it works.</p>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:12px;">
+    <h3>That's It!</h3>
+    <p>Union, Concatenation, and Kleene Star — these three are <strong>all you need</strong> to build every regular expression. Like LEGO bricks: simple pieces, infinite combinations.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+  let current = -1;
+
+  function drawArrow(x1, y1, x2, y2, color, dashed) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    if (dashed) ctx.setLineDash([6, 4]);
+    else ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 8 * Math.cos(a - 0.4), y2 - 8 * Math.sin(a - 0.4));
+    ctx.lineTo(x2 - 8 * Math.cos(a + 0.4), y2 - 8 * Math.sin(a + 0.4));
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function drawNode(x, y, label, color, accept) {
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    if (accept) {
+      ctx.beginPath();
+      ctx.arc(x, y, 16, 0, Math.PI * 2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.fillStyle = color;
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function drawBox(x, y, w, h, label) {
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(59,130,246,0.08)';
+    ctx.fill();
+    ctx.fillStyle = '#93c5fd';
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x + w / 2, y + h / 2);
+  }
+
+  function drawLabel(x, y, text, color) {
+    ctx.fillStyle = color || '#f59e0b';
+    ctx.font = '13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, x, y);
+  }
+
+  function drawUnion() {
+    ctx.clearRect(0, 0, 440, 260);
+    drawNode(60, 130, 'start', '#93c5fd', false);
+    drawBox(140, 40, 160, 50, 'NFA(R1)');
+    drawBox(140, 170, 160, 50, 'NFA(R2)');
+    drawNode(380, 130, 'acc', '#93c5fd', true);
+    drawArrow(78, 118, 140, 65, '#8b5cf6', true);
+    drawLabel(100, 82, 'ε');
+    drawArrow(78, 142, 140, 195, '#8b5cf6', true);
+    drawLabel(100, 178, 'ε');
+    drawArrow(300, 65, 362, 118, '#8b5cf6', true);
+    drawLabel(340, 82, 'ε');
+    drawArrow(300, 195, 362, 142, '#8b5cf6', true);
+    drawLabel(340, 178, 'ε');
+    drawLabel(220, 25, 'R1 | R2 = "either R1 or R2"', '#e2e8f0');
+  }
+
+  function drawConcat() {
+    ctx.clearRect(0, 0, 440, 260);
+    drawBox(30, 90, 160, 60, 'NFA(R1)');
+    drawArrow(190, 120, 248, 120, '#8b5cf6', true);
+    drawLabel(220, 108, 'ε');
+    drawBox(250, 90, 160, 60, 'NFA(R2)');
+    drawLabel(220, 50, 'R1 R2 = "R1 followed by R2"', '#e2e8f0');
+    drawLabel(110, 180, 'start = s1', '#64748b');
+    drawLabel(330, 180, 'accept = f2', '#64748b');
+  }
+
+  function drawStar() {
+    ctx.clearRect(0, 0, 440, 260);
+    drawNode(50, 130, 'start', '#93c5fd', false);
+    drawBox(130, 100, 180, 60, 'NFA(R)');
+    drawNode(390, 130, 'acc', '#93c5fd', true);
+    drawArrow(70, 130, 130, 130, '#8b5cf6', true);
+    drawLabel(100, 118, 'ε');
+    drawArrow(310, 130, 372, 130, '#8b5cf6', true);
+    drawLabel(340, 118, 'ε');
+    // Loop back
+    ctx.beginPath();
+    ctx.moveTo(300, 100);
+    ctx.quadraticCurveTo(220, 50, 140, 100);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawLabel(220, 55, 'ε (loop)', '#f59e0b');
+    // Bypass
+    ctx.beginPath();
+    ctx.moveTo(60, 150);
+    ctx.quadraticCurveTo(220, 230, 380, 150);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawLabel(220, 220, 'ε (bypass: zero copies)', '#f59e0b');
+    drawLabel(220, 25, 'R* = "zero or more copies of R"', '#e2e8f0');
+  }
+
+  const infos = [
+    '<h3 style="color:#a5b4fc;">Union: R1 | R2</h3><p><strong>L(R1 | R2) = L(R1) ∪ L(R2)</strong></p><p>"Match either R1 or R2"</p><p style="color:#94a3b8;margin-top:8px;">Example: <code>0|1</code> = { "0", "1" }</p><p style="color:#94a3b8;">The NFA nondeterministically guesses which branch will match.</p>',
+    '<h3 style="color:#a5b4fc;">Concatenation: R1 R2</h3><p><strong>L(R1R2) = { xy : x ∈ L(R1), y ∈ L(R2) }</strong></p><p>"Match R1 followed by R2"</p><p style="color:#94a3b8;margin-top:8px;">Example: <code>01</code> = { "01" }</p><p style="color:#94a3b8;">Like coupling train cars — a string must ride through both.</p>',
+    '<h3 style="color:#a5b4fc;">Kleene Star: R*</h3><p><strong>L(R*) = { ε, w, ww, www, ... : w ∈ L(R) }</strong></p><p>"Match zero or more copies of R"</p><p style="color:#94a3b8;margin-top:8px;">Example: <code>0*</code> = { ε, "0", "00", "000", ... }</p><p style="color:#94a3b8;">The bypass arrow is what allows accepting ε (zero copies).</p>'
+  ];
+
+  window.s4Show = function(idx) {
+    current = idx;
+    document.querySelectorAll('[id^="s4btn"]').forEach((b, i) => {
+      b.style.opacity = i === idx ? '1' : '0.5';
+    });
+    if (idx === 0) drawUnion();
+    else if (idx === 1) drawConcat();
+    else drawStar();
+    document.getElementById('s4info').innerHTML = infos[idx];
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s4').classList.contains('active') && current >= 0) {
+      window.s4Show(current);
+    }
+  });
+  obs.observe(document.getElementById('s4'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 5: FORMAL DEFINITION ==================== -->
+<div class="slide" id="s5">
+  <h2>Formal Definition (Recursive)</h2>
+  <p>A regular expression over alphabet Σ is defined <strong>inductively</strong>. Click to explore:</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+    <button class="btn btn-sm" onclick="s5Select(0)">∅</button>
+    <button class="btn btn-sm" onclick="s5Select(1)">ε</button>
+    <button class="btn btn-sm" onclick="s5Select(2)">a</button>
+    <button class="btn btn-sm" onclick="s5Select(3)">0|1</button>
+    <button class="btn btn-sm" onclick="s5Select(4)">01</button>
+    <button class="btn btn-sm" onclick="s5Select(5)">0*</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS5" width="440" height="240" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+        <span style="color:#94a3b8;font-size:0.9em;">Test string:</span>
+        <input type="text" id="s5input" placeholder='type here' style="padding:5px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;width:120px;">
+        <button class="btn btn-sm" onclick="s5Check()">Check</button>
+        <span id="s5verdict" style="font-weight:600;font-size:0.9em;"></span>
+      </div>
+    </div>
+    <div id="s5info" style="color:#94a3b8;">
+      <p>Select a regular expression above to see its formal definition, language, and Canvas visualization.</p>
+    </div>
+  </div>
+  <div class="warning" style="margin-top:12px;">
+    <h3>Watch Out: ∅ vs ε</h3>
+    <p><strong>∅</strong> matches <em>nothing at all</em> (empty language — 0 elements). <strong>ε</strong> matches the empty string "" (1 element). They are NOT the same!</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+  let currentIdx = -1;
+
+  const defs = [
+    { re: '∅', type: 'Base case #1: Empty set', def: 'L(∅) = { }', strings: [], test: s => false, draw: drawEmpty },
+    { re: 'ε', type: 'Base case #2: Empty string', def: 'L(ε) = { "" }', strings: ['""'], test: s => s === '', draw: drawEps },
+    { re: 'a', type: 'Base case #3: Single symbol', def: 'L(a) = { "a" }', strings: ['"a"'], test: s => s === 'a', draw: drawSym },
+    { re: '0|1', type: 'Inductive: Union', def: 'L(0|1) = { "0", "1" }', strings: ['"0"', '"1"'], test: s => s === '0' || s === '1', draw: drawUnion5 },
+    { re: '01', type: 'Inductive: Concatenation', def: 'L(01) = { "01" }', strings: ['"01"'], test: s => s === '01', draw: drawConcat5 },
+    { re: '0*', type: 'Inductive: Kleene Star', def: 'L(0*) = { "", "0", "00", ... }', strings: ['""', '"0"', '"00"', '"000"', '...'], test: s => /^0*$/.test(s), draw: drawStar5 }
+  ];
+
+  function drawNode(x, y, label, color, accept) {
+    ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill();
+    ctx.strokeStyle = color || '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    if (accept) { ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.strokeStyle = color || '#93c5fd'; ctx.lineWidth = 1.5; ctx.stroke(); }
+    ctx.fillStyle = color || '#93c5fd'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function drawArr(x1, y1, x2, y2, label, color, dashed) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 2;
+    if (dashed) ctx.setLineDash([6, 4]); else ctx.setLineDash([]);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#f59e0b'; ctx.font = '14px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(label, (x1 + x2) / 2, Math.min(y1, y2) - 8);
+  }
+
+  function drawEmpty() {
+    ctx.clearRect(0, 0, 440, 240);
+    drawNode(140, 120, 'q0', '#93c5fd', false);
+    drawNode(300, 120, 'q1', '#93c5fd', true);
+    ctx.fillStyle = '#ef4444'; ctx.font = '14px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('No transition!', 220, 100);
+    ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui';
+    ctx.fillText('start', 140, 150); ctx.fillText('accept', 300, 150);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '13px system-ui';
+    ctx.fillText('Cannot reach accept → accepts nothing', 220, 200);
+  }
+
+  function drawEps() {
+    ctx.clearRect(0, 0, 440, 240);
+    drawNode(140, 120, 'q0', '#93c5fd', false);
+    drawNode(300, 120, 'q1', '#93c5fd', true);
+    drawArr(158, 120, 280, 120, 'ε', '#8b5cf6', true);
+    ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('start', 140, 150); ctx.fillText('accept', 300, 150);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '13px system-ui';
+    ctx.fillText('ε-transition → accepts only ""', 220, 200);
+  }
+
+  function drawSym() {
+    ctx.clearRect(0, 0, 440, 240);
+    drawNode(140, 120, 'q0', '#93c5fd', false);
+    drawNode(300, 120, 'q1', '#93c5fd', true);
+    drawArr(158, 120, 280, 120, 'a', '#475569', false);
+    ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('start', 140, 150); ctx.fillText('accept', 300, 150);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '13px system-ui';
+    ctx.fillText('Accepts only "a"', 220, 200);
+  }
+
+  function drawUnion5() {
+    ctx.clearRect(0, 0, 440, 240);
+    drawNode(60, 120, 'q0', '#93c5fd', false);
+    drawNode(180, 60, 'q1', '#93c5fd', false);
+    drawNode(180, 180, 'q3', '#93c5fd', false);
+    drawNode(300, 60, 'q2', '#93c5fd', false);
+    drawNode(300, 180, 'q4', '#93c5fd', false);
+    drawNode(380, 120, 'qf', '#93c5fd', true);
+    drawArr(76, 110, 162, 62, 'ε', '#8b5cf6', true);
+    drawArr(76, 130, 162, 178, 'ε', '#8b5cf6', true);
+    drawArr(198, 60, 282, 60, '0', '#475569', false);
+    drawArr(198, 180, 282, 180, '1', '#475569', false);
+    drawArr(318, 62, 364, 110, 'ε', '#8b5cf6', true);
+    drawArr(318, 178, 364, 130, 'ε', '#8b5cf6', true);
+  }
+
+  function drawConcat5() {
+    ctx.clearRect(0, 0, 440, 240);
+    drawNode(80, 120, 'q0', '#93c5fd', false);
+    drawNode(180, 120, 'q1', '#93c5fd', false);
+    drawNode(280, 120, 'q2', '#93c5fd', false);
+    drawNode(380, 120, 'q3', '#93c5fd', true);
+    drawArr(98, 120, 162, 120, '0', '#475569', false);
+    drawArr(198, 120, 262, 120, 'ε', '#8b5cf6', true);
+    drawArr(298, 120, 362, 120, '1', '#475569', false);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('0 then ε-jump then 1 → accepts "01"', 220, 200);
+  }
+
+  function drawStar5() {
+    ctx.clearRect(0, 0, 440, 240);
+    drawNode(60, 120, 'qs', '#93c5fd', false);
+    drawNode(170, 120, 'q0', '#93c5fd', false);
+    drawNode(280, 120, 'q1', '#93c5fd', false);
+    drawNode(380, 120, 'qa', '#93c5fd', true);
+    drawArr(78, 120, 152, 120, 'ε', '#8b5cf6', true);
+    drawArr(188, 120, 262, 120, '0', '#475569', false);
+    drawArr(298, 120, 362, 120, 'ε', '#8b5cf6', true);
+    // Loop back
+    ctx.beginPath(); ctx.moveTo(275, 100); ctx.quadraticCurveTo(225, 60, 175, 100);
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#f59e0b'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('ε (loop)', 225, 58);
+    // Bypass
+    ctx.beginPath(); ctx.moveTo(70, 140); ctx.quadraticCurveTo(220, 210, 370, 140);
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillText('ε (bypass)', 220, 205);
+  }
+
+  window.s5Select = function(idx) {
+    currentIdx = idx;
+    const d = defs[idx];
+    d.draw();
+    let html = '<h3 style="color:#f59e0b;font-family:monospace;font-size:1.3em;">' + d.re + '</h3>';
+    html += '<p style="color:#a5b4fc;">' + d.type + '</p>';
+    html += '<p style="color:#e2e8f0;margin-top:8px;"><strong>' + d.def + '</strong></p>';
+    html += '<p style="margin-top:8px;">Strings in language:</p>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">';
+    if (d.strings.length === 0) {
+      html += '<span style="color:#f87171;font-style:italic;">No strings — empty language</span>';
+    } else {
+      d.strings.forEach(s => {
+        if (s === '...') html += '<span style="color:#94a3b8;">...</span>';
+        else html += '<span style="background:rgba(34,197,94,0.15);border:1px solid #22c55e;border-radius:12px;padding:3px 10px;color:#4ade80;font-family:monospace;font-size:0.9em;">' + s + '</span>';
+      });
+    }
+    html += '</div>';
+    document.getElementById('s5info').innerHTML = html;
+  };
+
+  window.s5Check = function() {
+    if (currentIdx < 0) return;
+    const val = document.getElementById('s5input').value;
+    const verdict = document.getElementById('s5verdict');
+    if (defs[currentIdx].test(val)) {
+      verdict.textContent = '✓ Accepted!';
+      verdict.style.color = '#22c55e';
+    } else {
+      verdict.textContent = '✗ Rejected';
+      verdict.style.color = '#ef4444';
+    }
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s5').classList.contains('active') && currentIdx >= 0) defs[currentIdx].draw();
+  });
+  obs.observe(document.getElementById('s5'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 6: OPERATOR PRECEDENCE ==================== -->
+<div class="slide" id="s6">
+  <h2>Operator Precedence</h2>
+  <p>Just like arithmetic has PEMDAS, regular expressions have a precedence order:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:10px;">
+    <div>
+      <canvas id="cS6" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s6Compare(0)">ab|c</button>
+        <button class="btn btn-sm" onclick="s6Compare(1)">ab*</button>
+        <button class="btn btn-sm" onclick="s6Compare(2)">a|bc*</button>
+      </div>
+    </div>
+    <div>
+      <div id="s6result" style="min-height:140px;">
+        <table style="width:100%;margin-bottom:12px;">
+          <tr><th>Priority</th><th>Regex</th><th>Like Arithmetic</th></tr>
+          <tr><td>Highest</td><td><code>*</code> Star</td><td>Exponent (^)</td></tr>
+          <tr><td>Middle</td><td><code>.</code> Concat</td><td>Multiply (×)</td></tr>
+          <tr><td>Lowest</td><td><code>|</code> Union</td><td>Add (+)</td></tr>
+        </table>
+        <p style="color:#94a3b8;font-size:0.9em;">Click a regex above to compare correct vs incorrect parsing.</p>
+      </div>
+      <div class="analogy" style="margin-top:8px;">
+        <h3>Arithmetic Parallel</h3>
+        <p>Just as <code>2+3×4 = 14</code> (not 20), <code>a|bc = {a, bc}</code> (not {ac, bc}).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS6');
+  const ctx = canvas.getContext('2d');
+
+  const examples = [
+    { re: 'ab|c', correct: { parsed: '(ab)|c', lang: '{ "ab", "c" }' }, wrong: { parsed: 'a(b|c)', lang: '{ "ab", "ac" }' } },
+    { re: 'ab*', correct: { parsed: 'a(b*)', lang: '{ "a", "ab", "abb", ... }' }, wrong: { parsed: '(ab)*', lang: '{ "", "ab", "abab", ... }' } },
+    { re: 'a|bc*', correct: { parsed: 'a|(b(c*))', lang: '{ "a", "b", "bc", "bcc", ... }' }, wrong: { parsed: '(a|b)(c*)', lang: '{ "a", "b", "ac", "bc", ... }' } }
+  ];
+
+  function drawPrecedence() {
+    ctx.clearRect(0, 0, 440, 300);
+    const levels = [
+      { label: '* Star', priority: 'HIGHEST', color: '#ef4444', y: 60 },
+      { label: '. Concat', priority: 'MIDDLE', color: '#f59e0b', y: 140 },
+      { label: '| Union', priority: 'LOWEST', color: '#22c55e', y: 220 }
+    ];
+    levels.forEach((lv, i) => {
+      ctx.fillStyle = lv.color;
+      ctx.globalAlpha = 0.15;
+      ctx.beginPath(); ctx.roundRect(50, lv.y - 25, 340, 50, 10); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = lv.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(50, lv.y - 25, 340, 50, 10); ctx.stroke();
+      ctx.fillStyle = lv.color;
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(lv.label, 220, lv.y);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px system-ui';
+      ctx.fillText(lv.priority, 220, lv.y + 16);
+    });
+    // Arrow
+    ctx.beginPath(); ctx.moveTo(20, 50); ctx.lineTo(20, 240);
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Binds', 20, 40);
+    ctx.fillText('tighter', 20, 255);
+  }
+
+  window.s6Compare = function(idx) {
+    const ex = examples[idx];
+    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+    html += '<div style="background:rgba(34,197,94,0.08);border:2px solid #22c55e;border-radius:10px;padding:12px;">';
+    html += '<h3 style="color:#4ade80;font-size:0.95em;">✓ Correct</h3>';
+    html += '<p style="color:#e2e8f0;"><code>' + ex.re + '</code> = <code>' + ex.correct.parsed + '</code></p>';
+    html += '<p style="color:#94a3b8;font-size:0.9em;">L = ' + ex.correct.lang + '</p></div>';
+    html += '<div style="background:rgba(239,68,68,0.08);border:2px solid #ef4444;border-radius:10px;padding:12px;">';
+    html += '<h3 style="color:#f87171;font-size:0.95em;">✗ Common Mistake</h3>';
+    html += '<p style="color:#e2e8f0;"><code>' + ex.re + '</code> ≠ <code>' + ex.wrong.parsed + '</code></p>';
+    html += '<p style="color:#94a3b8;font-size:0.9em;">Would be: ' + ex.wrong.lang + '</p></div></div>';
+    document.getElementById('s6result').innerHTML = html;
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s6').classList.contains('active')) drawPrecedence();
+  });
+  obs.observe(document.getElementById('s6'), {attributes: true, attributeFilter: ['class']});
+  drawPrecedence();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: PARSE TREE EXPLORER ==================== -->
+<div class="slide" id="s7">
+  <h2>Interactive RE Parse Tree Explorer</h2>
+  <p>Select a regex to see its parse tree built step by step on Canvas:</p>
+  <div style="display:flex;gap:8px;margin:8px 0;">
+    <button class="btn btn-sm" onclick="s7Select(0)">a(a|b)*</button>
+    <button class="btn btn-sm" onclick="s7Select(1)">(0|1)*0</button>
+    <button class="btn btn-sm" onclick="s7Select(2)">a*b*c*</button>
+    <button class="btn btn-sm" onclick="s7Select(3)">(aa|bb)(a|b)*</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:1.5rem;">
+    <canvas id="cS7" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    <div>
+      <div id="s7lang" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:12px;min-height:60px;margin-bottom:10px;">
+        <p style="color:#94a3b8;">Select a regex to explore its parse tree.</p>
+      </div>
+      <div class="key-idea">
+        <h3>Reading Strategy</h3>
+        <p>1. Find the <strong>outermost</strong> (lowest precedence) operation<br>
+        2. Break into sub-expressions<br>
+        3. Describe each part in English<br>
+        4. Combine</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS7');
+  const ctx = canvas.getContext('2d');
+  let animTimers = [];
+
+  const trees = [
+    {
+      regex: 'a(a|b)*',
+      lang: 'Strings over {a,b} starting with "a": { "a", "aa", "ab", "aab", ... }',
+      nodes: [
+        { label: 'concat', type: 'op', x: 260, y: 40 },
+        { label: 'a', type: 'leaf', x: 140, y: 120 },
+        { label: 'star *', type: 'op', x: 380, y: 120 },
+        { label: 'union |', type: 'op', x: 380, y: 210 },
+        { label: 'a', type: 'leaf', x: 300, y: 290 },
+        { label: 'b', type: 'leaf', x: 460, y: 290 }
+      ],
+      edges: [[0,1],[0,2],[2,3],[3,4],[3,5]]
+    },
+    {
+      regex: '(0|1)*0',
+      lang: 'Binary strings ending in 0: { "0", "00", "10", "110", ... }',
+      nodes: [
+        { label: 'concat', type: 'op', x: 260, y: 40 },
+        { label: 'star *', type: 'op', x: 160, y: 120 },
+        { label: '0', type: 'leaf', x: 380, y: 120 },
+        { label: 'union |', type: 'op', x: 160, y: 210 },
+        { label: '0', type: 'leaf', x: 80, y: 290 },
+        { label: '1', type: 'leaf', x: 240, y: 290 }
+      ],
+      edges: [[0,1],[0,2],[1,3],[3,4],[3,5]]
+    },
+    {
+      regex: 'a*b*c*',
+      lang: 'Zero or more a\'s, then b\'s, then c\'s: { "", "a", "b", "abc", "aabbc", ... }',
+      nodes: [
+        { label: 'concat', type: 'op', x: 260, y: 40 },
+        { label: 'concat', type: 'op', x: 140, y: 120 },
+        { label: 'star *', type: 'op', x: 400, y: 120 },
+        { label: 'star *', type: 'op', x: 70, y: 210 },
+        { label: 'star *', type: 'op', x: 220, y: 210 },
+        { label: 'c', type: 'leaf', x: 400, y: 210 },
+        { label: 'a', type: 'leaf', x: 70, y: 290 },
+        { label: 'b', type: 'leaf', x: 220, y: 290 }
+      ],
+      edges: [[0,1],[0,2],[1,3],[1,4],[2,5],[3,6],[4,7]]
+    },
+    {
+      regex: '(aa|bb)(a|b)*',
+      lang: 'Starts with "aa" or "bb": { "aa", "bb", "aaa", "bba", ... }',
+      nodes: [
+        { label: 'concat', type: 'op', x: 260, y: 40 },
+        { label: 'union |', type: 'op', x: 130, y: 120 },
+        { label: 'star *', type: 'op', x: 400, y: 120 },
+        { label: 'aa', type: 'leaf', x: 60, y: 210 },
+        { label: 'bb', type: 'leaf', x: 200, y: 210 },
+        { label: 'union |', type: 'op', x: 400, y: 210 },
+        { label: 'a', type: 'leaf', x: 340, y: 290 },
+        { label: 'b', type: 'leaf', x: 460, y: 290 }
+      ],
+      edges: [[0,1],[0,2],[1,3],[1,4],[2,5],[5,6],[5,7]]
+    }
+  ];
+
+  function drawTree(treeIdx, upToNode) {
+    ctx.clearRect(0, 0, 520, 340);
+    const tree = trees[treeIdx];
+    // Draw edges first
+    tree.edges.forEach(([from, to]) => {
+      if (from < upToNode && to < upToNode) {
+        const f = tree.nodes[from], t = tree.nodes[to];
+        ctx.beginPath(); ctx.moveTo(f.x, f.y + 18); ctx.lineTo(t.x, t.y - 18);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+      }
+    });
+    // Draw nodes
+    for (let i = 0; i < Math.min(upToNode, tree.nodes.length); i++) {
+      const n = tree.nodes[i];
+      const color = n.type === 'op' ? '#8b5cf6' : '#10b981';
+      ctx.beginPath(); ctx.arc(n.x, n.y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b'; ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.font = n.type === 'op' ? 'bold 13px system-ui' : 'bold 14px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    }
+  }
+
+  window.s7Select = function(idx) {
+    animTimers.forEach(t => clearTimeout(t));
+    animTimers = [];
+    const tree = trees[idx];
+    for (let i = 0; i <= tree.nodes.length; i++) {
+      const t = setTimeout(() => drawTree(idx, i + 1), i * 350);
+      animTimers.push(t);
+    }
+    const t = setTimeout(() => {
+      document.getElementById('s7lang').innerHTML = '<p style="color:#f59e0b;font-weight:600;">' + tree.regex + '</p><p style="color:#cbd5e1;">' + tree.lang + '</p>';
+    }, tree.nodes.length * 350 + 200);
+    animTimers.push(t);
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s7').classList.contains('active')) {
+      ctx.clearRect(0, 0, 520, 340);
+    }
+  });
+  obs.observe(document.getElementById('s7'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 8: WRITING REs ==================== -->
+<div class="slide" id="s8">
+  <h2>Writing Regular Expressions</h2>
+  <p>Given a language description, write the RE. Click each example to reveal the answer:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:10px;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;cursor:pointer;" onclick="s8Reveal(0)">
+      <h3 style="font-size:1em;">"Binary strings of length exactly 3"</h3>
+      <div id="s8a0" style="display:none;margin-top:8px;">
+        <p style="color:#94a3b8;font-size:0.9em;">Think: 3 symbols, each is 0 or 1</p>
+        <code style="font-size:1.1em;color:#22c55e;">(0|1)(0|1)(0|1)</code>
+        <p style="color:#64748b;font-size:0.85em;margin-top:4px;">Check: 000 ✓  010 ✓  111 ✓  0 ✗  0011 ✗</p>
+      </div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;cursor:pointer;" onclick="s8Reveal(1)">
+      <h3 style="font-size:1em;">"Binary strings containing 010"</h3>
+      <div id="s8a1" style="display:none;margin-top:8px;">
+        <p style="color:#94a3b8;font-size:0.9em;">Think: something, 010, something</p>
+        <code style="font-size:1.1em;color:#22c55e;">(0|1)*010(0|1)*</code>
+        <p style="color:#64748b;font-size:0.85em;margin-top:4px;">Check: 010 ✓  10101 ✓  111 ✗</p>
+      </div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;cursor:pointer;" onclick="s8Reveal(2)">
+      <h3 style="font-size:1em;">"Strings over {a,b} with even length"</h3>
+      <div id="s8a2" style="display:none;margin-top:8px;">
+        <p style="color:#94a3b8;font-size:0.9em;">Think: pairs of symbols, repeated</p>
+        <code style="font-size:1.1em;color:#22c55e;">((a|b)(a|b))*</code>
+        <p style="color:#64748b;font-size:0.85em;margin-top:4px;">Check: "" ✓  "ab" ✓  "a" ✗  "abba" ✓</p>
+      </div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;cursor:pointer;" onclick="s8Reveal(3)">
+      <h3 style="font-size:1em;">"Over {0,1} with no consecutive 1s"</h3>
+      <div id="s8a3" style="display:none;margin-top:8px;">
+        <p style="color:#94a3b8;font-size:0.9em;">Think: after each 1, must see 0 or end</p>
+        <code style="font-size:1.1em;color:#22c55e;">(0|10)*(1|ε)</code>
+        <p style="color:#64748b;font-size:0.85em;margin-top:4px;">Check: "" ✓  "101" ✓  "11" ✗  "010" ✓</p>
+      </div>
+    </div>
+  </div>
+  <div class="analogy" style="margin-top:12px;">
+    <h3>Writing Strategy</h3>
+    <p><strong>Think in building blocks:</strong> (1) What must appear? → concat. (2) What can repeat? → star. (3) What are the choices? → union. Combine these three to express any regular language.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s8Reveal = function(idx) {
+    const el = document.getElementById('s8a' + idx);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 9: THOMPSON OVERVIEW ==================== -->
+<div class="slide" id="s9">
+  <h2>RE → ε-NFA: Thompson's Construction</h2>
+  <p>We can systematically convert <strong>any RE into an equivalent ε-NFA</strong> using Thompson's Construction (1968).</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:10px;">
+    <div>
+      <canvas id="cS9" width="440" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>The Idea: Build Like LEGO</h3>
+        <ol style="margin-top:6px;">
+          <li>Each sub-expression gets a small NFA "fragment"</li>
+          <li>Every fragment has <strong>exactly one start</strong> and <strong>one accept</strong> state</li>
+          <li>Combine fragments using rules for |, ·, and *</li>
+          <li>The structure mirrors the parse tree!</li>
+        </ol>
+      </div>
+      <div class="analogy" style="margin-top:10px;">
+        <h3>Analogy</h3>
+        <p>Each base case (symbol, ε) is a basic LEGO brick. Union, concat, and star are <strong>ways to snap bricks together</strong>. Build bottom-up until you have one NFA for the whole RE.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 280);
+    // Draw the fragment concept
+    ctx.fillStyle = '#94a3b8'; ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Every Thompson fragment:', 220, 25);
+    // Fragment box
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(100, 50, 240, 80, 12); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(59,130,246,0.05)'; ctx.fill();
+    // Start node
+    ctx.beginPath(); ctx.arc(140, 90, 15, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill();
+    ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('start', 140, 90);
+    // Accept node
+    ctx.beginPath(); ctx.arc(300, 90, 15, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill();
+    ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(300, 90, 11, 0, Math.PI * 2);
+    ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 10px monospace';
+    ctx.fillText('accept', 300, 90);
+    // Arrow
+    ctx.beginPath(); ctx.moveTo(155, 90); ctx.lineTo(283, 90);
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px system-ui';
+    ctx.fillText('...processing...', 220, 80);
+    // Properties list
+    const props = ['✓ One start state (no incoming)', '✓ One accept state (no outgoing)', '✓ Clean composition guaranteed'];
+    props.forEach((p, i) => {
+      ctx.fillStyle = '#4ade80'; ctx.font = '13px system-ui'; ctx.textAlign = 'left';
+      ctx.fillText(p, 70, 165 + i * 28);
+    });
+    // Build order
+    ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Build bottom-up from parse tree:', 220, 260);
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s9').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s9'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: THOMPSON ALL RULES ==================== -->
+<div class="slide" id="s10">
+  <h2>Thompson's Construction Rules</h2>
+  <p>Click each rule to see the NFA fragment it produces:</p>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;">
+    <button class="btn btn-sm" onclick="s10Show(0)">ε (base)</button>
+    <button class="btn btn-sm" onclick="s10Show(1)">∅ (base)</button>
+    <button class="btn btn-sm" onclick="s10Show(2)">Symbol a</button>
+    <button class="btn btn-sm" onclick="s10Show(3)">Union R1|R2</button>
+    <button class="btn btn-sm" onclick="s10Show(4)">Concat R1R2</button>
+    <button class="btn btn-sm" onclick="s10Show(5)">Star R*</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <canvas id="cS10" width="460" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    <div id="s10info" style="color:#94a3b8;">
+      <p>Click a rule above to see its NFA fragment on the Canvas.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+
+  function node(x, y, label, accept) {
+    ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill();
+    ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    if (accept) { ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function arr(x1, y1, x2, y2, label, color, dashed) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 2;
+    if (dashed) ctx.setLineDash([6, 4]); else ctx.setLineDash([]);
+    ctx.stroke(); ctx.setLineDash([]);
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 7 * Math.cos(a - 0.4), y2 - 7 * Math.sin(a - 0.4));
+    ctx.lineTo(x2 - 7 * Math.cos(a + 0.4), y2 - 7 * Math.sin(a + 0.4));
+    ctx.fillStyle = color || '#475569'; ctx.fill();
+    if (label) {
+      ctx.fillStyle = '#f59e0b'; ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(label, (x1 + x2) / 2, Math.min(y1, y2) - 8);
+    }
+  }
+
+  function box(x, y, w, h, label) {
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = 'rgba(59,130,246,0.06)'; ctx.fill();
+    ctx.fillStyle = '#93c5fd'; ctx.font = '14px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x + w / 2, y + h / 2);
+  }
+
+  function curveArr(x1, y1, cx, cy, x2, y2, label, color) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx, cy, x2, y2);
+    ctx.strokeStyle = color || '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    if (label) {
+      ctx.fillStyle = color || '#f59e0b'; ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(label, cx, cy - 5);
+    }
+  }
+
+  const infos = [
+    '<h3 style="color:#a5b4fc;">Base: ε</h3><p>L(ε) = { "" }</p><p style="color:#94a3b8;">Single ε-transition from start to accept. Accepts only the empty string.</p>',
+    '<h3 style="color:#a5b4fc;">Base: ∅</h3><p>L(∅) = { }</p><p style="color:#94a3b8;">No transition at all. Start can never reach accept. Accepts nothing.</p>',
+    '<h3 style="color:#a5b4fc;">Base: Symbol a</h3><p>L(a) = { "a" }</p><p style="color:#94a3b8;">Single transition on symbol "a" from start to accept.</p>',
+    '<h3 style="color:#a5b4fc;">Union: R1 | R2</h3><p>L(R1|R2) = L(R1) ∪ L(R2)</p><p style="color:#94a3b8;">New start branches to both sub-NFAs via ε. Both feed into new accept via ε. The NFA nondeterministically guesses which branch matches.</p>',
+    '<h3 style="color:#a5b4fc;">Concatenation: R1 R2</h3><p>L(R1R2) = { xy : x ∈ L(R1), y ∈ L(R2) }</p><p style="color:#94a3b8;">Chain the two fragments: R1\'s accept connects to R2\'s start via ε. Start of R1 becomes the start, accept of R2 becomes the accept.</p>',
+    '<h3 style="color:#a5b4fc;">Kleene Star: R*</h3><p>L(R*) = { ε, w, ww, ... }</p><p style="color:#94a3b8;">Four ε-transitions: start→inner start, inner accept→outer accept, inner accept→inner start (loop), start→accept (bypass for zero copies).</p><div class="warning" style="margin-top:8px;"><h3>The bypass</h3><p>The ε from start directly to accept is what makes R* accept ε. Without it, you\'d have R⁺ (one or more).</p></div>'
+  ];
+
+  window.s10Show = function(idx) {
+    ctx.clearRect(0, 0, 460, 300);
+    if (idx === 0) { // epsilon
+      node(150, 150, 'q0', false); node(310, 150, 'q1', true);
+      arr(168, 150, 290, 150, 'ε', '#8b5cf6', true);
+      ctx.fillStyle = '#64748b'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('start', 150, 180); ctx.fillText('accept', 310, 180);
+    } else if (idx === 1) { // empty
+      node(150, 150, 'q0', false); node(310, 150, 'q1', true);
+      ctx.fillStyle = '#ef4444'; ctx.font = '14px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('No transition!', 230, 130);
+      ctx.fillStyle = '#64748b'; ctx.font = '11px system-ui';
+      ctx.fillText('start', 150, 180); ctx.fillText('accept', 310, 180);
+    } else if (idx === 2) { // symbol
+      node(150, 150, 'q0', false); node(310, 150, 'q1', true);
+      arr(168, 150, 290, 150, 'a', '#475569', false);
+      ctx.fillStyle = '#64748b'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('start', 150, 180); ctx.fillText('accept', 310, 180);
+    } else if (idx === 3) { // union
+      node(60, 150, 'start', false);
+      box(130, 50, 180, 50, 'NFA(R1)');
+      box(130, 200, 180, 50, 'NFA(R2)');
+      node(400, 150, 'acc', true);
+      arr(76, 138, 130, 75, 'ε', '#8b5cf6', true);
+      arr(76, 162, 130, 225, 'ε', '#8b5cf6', true);
+      arr(310, 75, 382, 138, 'ε', '#8b5cf6', true);
+      arr(310, 225, 382, 162, 'ε', '#8b5cf6', true);
+    } else if (idx === 4) { // concat
+      box(40, 110, 160, 60, 'NFA(R1)');
+      arr(200, 140, 258, 140, 'ε', '#8b5cf6', true);
+      box(260, 110, 160, 60, 'NFA(R2)');
+      ctx.fillStyle = '#64748b'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('start = s1', 120, 195); ctx.fillText('accept = f2', 340, 195);
+    } else { // star
+      node(50, 150, 'qs', false);
+      box(120, 120, 200, 60, 'NFA(R)');
+      node(410, 150, 'qa', true);
+      arr(68, 150, 120, 150, 'ε', '#8b5cf6', true);
+      arr(320, 150, 392, 150, 'ε', '#8b5cf6', true);
+      curveArr(310, 120, 220, 70, 130, 120, 'ε (loop)', '#f59e0b');
+      curveArr(60, 170, 230, 250, 400, 170, 'ε (bypass)', '#f59e0b');
+    }
+    document.getElementById('s10info').innerHTML = infos[idx];
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s10').classList.contains('active')) ctx.clearRect(0, 0, 460, 300);
+  });
+  obs.observe(document.getElementById('s10'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 11: THOMPSON STEP-THROUGH ==================== -->
+<div class="slide" id="s11">
+  <h2>Thompson's Construction: (0|1)*01</h2>
+  <p>Watch the NFA build step by step:</p>
+  <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:1rem;">
+    <canvas id="cS11" width="540" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    <div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+      <div id="s11status" style="color:#f59e0b;font-weight:600;font-size:0.9em;margin-bottom:6px;">Step 0 / 9</div>
+      <div id="s11log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:0.78rem;max-height:180px;overflow-y:auto;line-height:1.7;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+  let stepIdx = 0;
+  let timer = null;
+
+  function node(x, y, label, color, accept) {
+    ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill();
+    ctx.strokeStyle = color || '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    if (accept) { ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.fillStyle = color || '#93c5fd'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function line(x1, y1, x2, y2, label, color, dashed) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 1.5;
+    if (dashed) ctx.setLineDash([5, 3]); else ctx.setLineDash([]);
+    ctx.stroke(); ctx.setLineDash([]);
+    if (label) {
+      ctx.fillStyle = '#f59e0b'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      ctx.fillText(label, mx, my - 7);
+    }
+  }
+
+  function curve(x1, y1, cx, cy, x2, y2, label) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx, cy, x2, y2);
+    ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 3]); ctx.stroke(); ctx.setLineDash([]);
+    if (label) { ctx.fillStyle = '#f59e0b'; ctx.font = '9px system-ui'; ctx.textAlign = 'center'; ctx.fillText(label, cx, cy - 5); }
+  }
+
+  const steps = [
+    { msg: "Base: NFA for '0' → A --0→ B" },
+    { msg: "Base: NFA for '1' → C --1→ D" },
+    { msg: "Union: 0|1 → new start q_u, accept q_ua with ε branches" },
+    { msg: "Star: (0|1)* → wrap union with loop-back and bypass" },
+    { msg: "Base: NFA for '0' (final) → E --0→ F" },
+    { msg: "Base: NFA for '1' (final) → G --1→ H" },
+    { msg: "Concat: 01 → connect F --ε→ G" },
+    { msg: "Concat: (0|1)*01 → connect q_sa --ε→ E" },
+    { msg: "Done! Start=q_s, Accept=H. NFA for (0|1)*01 complete!" }
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 540, 300);
+    // Step 1: A(110,70) --0→ B(190,70)
+    if (stepIdx >= 1) {
+      node(110, 70, 'A', '#93c5fd'); node(190, 70, 'B', '#93c5fd');
+      line(124, 70, 176, 70, '0');
+    }
+    // Step 2: C(110,180) --1→ D(190,180)
+    if (stepIdx >= 2) {
+      node(110, 180, 'C', '#93c5fd'); node(190, 180, 'D', '#93c5fd');
+      line(124, 180, 176, 180, '1');
+    }
+    // Step 3: Union
+    if (stepIdx >= 3) {
+      node(40, 125, 'qu', '#93c5fd'); node(260, 125, 'qua', '#93c5fd');
+      line(52, 115, 98, 75, 'ε', '#8b5cf6', true);
+      line(52, 135, 98, 175, 'ε', '#8b5cf6', true);
+      line(204, 70, 246, 115, 'ε', '#8b5cf6', true);
+      line(204, 180, 246, 135, 'ε', '#8b5cf6', true);
+    }
+    // Step 4: Star
+    if (stepIdx >= 4) {
+      node(10, 125, 'qs', '#38bdf8'); node(310, 125, 'qsa', '#93c5fd');
+      line(22, 125, 28, 125, 'ε', '#8b5cf6', true);
+      line(274, 125, 296, 125, 'ε', '#8b5cf6', true);
+      curve(255, 110, 150, 30, 45, 110, 'ε loop');
+      curve(16, 140, 160, 260, 304, 140, 'ε bypass');
+    }
+    // Step 5: E(370,125) --0→ F(430,125)
+    if (stepIdx >= 5) {
+      node(370, 125, 'E', '#93c5fd'); node(430, 125, 'F', '#93c5fd');
+      line(384, 125, 416, 125, '0');
+    }
+    // Step 6: G(470,125) --1→ H(530,125)
+    if (stepIdx >= 6) {
+      node(470, 125, 'G', '#93c5fd'); node(530, 125, 'H', '#93c5fd');
+      line(484, 125, 516, 125, '1');
+    }
+    // Step 7: concat F→G
+    if (stepIdx >= 7) {
+      line(444, 125, 456, 125, 'ε', '#8b5cf6', true);
+    }
+    // Step 8: concat qsa→E
+    if (stepIdx >= 8) {
+      line(324, 125, 356, 125, 'ε', '#8b5cf6', true);
+    }
+    // Step 9: mark start/accept
+    if (stepIdx >= 9) {
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('START', 10, 105);
+      ctx.fillText('ACCEPT', 530, 105);
+      node(530, 125, 'H', '#22c55e', true);
+    }
+  }
+
+  function updateLog() {
+    const log = document.getElementById('s11log');
+    let html = '';
+    for (let i = 0; i < steps.length; i++) {
+      if (i < stepIdx) html += '<div style="color:#22c55e;">✓ Step ' + (i + 1) + ': ' + steps[i].msg + '</div>';
+      else if (i === stepIdx) html += '<div style="color:#f59e0b;">→ Step ' + (i + 1) + ': ' + steps[i].msg + '</div>';
+      else html += '<div style="color:#64748b;">  Step ' + (i + 1) + ': ' + steps[i].msg + '</div>';
+    }
+    log.innerHTML = html;
+    log.scrollTop = log.scrollHeight;
+    document.getElementById('s11status').textContent = 'Step ' + stepIdx + ' / ' + steps.length;
+  }
+
+  window.s11Step = function() {
+    if (stepIdx >= steps.length) return;
+    stepIdx++;
+    draw();
+    updateLog();
+  };
+
+  window.s11Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s11Step();
+    }, 800);
+  };
+
+  window.s11Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0;
+    draw();
+    updateLog();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s11').classList.contains('active')) { draw(); updateLog(); }
+  });
+  obs.observe(document.getElementById('s11'), {attributes: true, attributeFilter: ['class']});
+  draw(); updateLog();
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: CHALLENGE - PREDICT ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the Thompson NFA</h2>
+  <p>Given the RE <code>a(b|c)</code>, how many states will Thompson's Construction produce?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <p>Think about it step by step:</p>
+      <ol style="margin:10px 0;color:#94a3b8;">
+        <li>Base case for <code>a</code>: 2 states</li>
+        <li>Base case for <code>b</code>: 2 states</li>
+        <li>Base case for <code>c</code>: 2 states</li>
+        <li>Union <code>b|c</code>: adds 2 new states</li>
+        <li>Concat <code>a·(b|c)</code>: merges, no new states</li>
+      </ol>
+      <div style="margin-top:12px;">
+        <label style="color:#94a3b8;">Your answer:</label>
+        <select id="sCAanswer" style="padding:6px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:1em;">
+          <option value="">-- select --</option>
+          <option value="6">6 states</option>
+          <option value="8">8 states</option>
+          <option value="10">10 states</option>
+        </select>
+        <button class="btn btn-sm" onclick="sCACheck()" style="margin-left:8px;">Check</button>
+      </div>
+      <div id="sCAfeedback" style="margin-top:10px;"></div>
+    </div>
+    <canvas id="cSCA" width="440" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cSCA');
+  const ctx = canvas.getContext('2d');
+
+  function node(x, y, label, color, accept) {
+    ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill();
+    ctx.strokeStyle = color || '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    if (accept) { ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.fillStyle = color || '#93c5fd'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function line(x1, y1, x2, y2, label, color, dashed) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 1.5;
+    if (dashed) ctx.setLineDash([5, 3]); else ctx.setLineDash([]);
+    ctx.stroke(); ctx.setLineDash([]);
+    if (label) {
+      ctx.fillStyle = '#f59e0b'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(label, (x1 + x2) / 2, Math.min(y1, y2) - 7);
+    }
+  }
+
+  function drawAnswer() {
+    ctx.clearRect(0, 0, 440, 280);
+    ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Thompson NFA for a(b|c)', 220, 20);
+    // a: q0→q1
+    node(30, 140, 'q0', '#38bdf8'); node(90, 140, 'q1', '#93c5fd');
+    line(44, 140, 76, 140, 'a');
+    // concat: q1→q2 ε
+    line(104, 140, 136, 140, 'ε', '#8b5cf6', true);
+    // union start: q2
+    node(150, 140, 'q2', '#93c5fd');
+    // b: q3→q4
+    node(230, 70, 'q3', '#93c5fd'); node(310, 70, 'q4', '#93c5fd');
+    line(244, 70, 296, 70, 'b');
+    // c: q5→q6
+    node(230, 210, 'q5', '#93c5fd'); node(310, 210, 'q6', '#93c5fd');
+    line(244, 210, 296, 210, 'c');
+    // union accept: q7
+    node(390, 140, 'q7', '#22c55e', true);
+    // ε branches
+    line(162, 130, 218, 74, 'ε', '#8b5cf6', true);
+    line(162, 150, 218, 206, 'ε', '#8b5cf6', true);
+    line(324, 70, 378, 130, 'ε', '#8b5cf6', true);
+    line(324, 210, 378, 150, 'ε', '#8b5cf6', true);
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 10px system-ui';
+    ctx.fillText('START', 30, 165); ctx.fillText('ACCEPT', 390, 165);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px system-ui';
+    ctx.fillText('8 states: q0–q7', 220, 270);
+  }
+
+  window.sCACheck = function() {
+    const answer = document.getElementById('sCAanswer').value;
+    const fb = document.getElementById('sCAfeedback');
+    if (!answer) { fb.innerHTML = '<p style="color:#f59e0b;">Please select an answer.</p>'; return; }
+    if (answer === '8') {
+      fb.innerHTML = '<div style="color:#22c55e;font-weight:600;">✓ Correct! 8 states.</div><p style="color:#94a3b8;font-size:0.9em;">3 base cases (6 states) + union adds 2 new states + concat merges (no new) = 8 total.</p>';
+      drawAnswer();
+    } else {
+      fb.innerHTML = '<div style="color:#ef4444;font-weight:600;">✗ Not quite.</div><p style="color:#94a3b8;font-size:0.9em;">Remember: each base case creates 2 states, union adds 2 new states, concatenation merges (accept of first = start of second via ε, but that ε still creates the connection between existing states).</p>';
+    }
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCA').classList.contains('active')) ctx.clearRect(0, 0, 440, 280);
+  });
+  obs.observe(document.getElementById('sCA'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 12: STATE ELIMINATION OVERVIEW ==================== -->
+<div class="slide" id="s12">
+  <h2>DFA → RE: State Elimination</h2>
+  <p>To convert a DFA back to a regular expression, we <strong>eliminate states one by one</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:10px;">
+    <canvas id="cS12" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    <div>
+      <div class="key-idea">
+        <h3>The Algorithm</h3>
+        <ol style="font-size:0.95em;">
+          <li>Add new unique start <strong>s</strong> → old start (ε)</li>
+          <li>Add new unique accept <strong>f</strong> ← old accepts (ε)</li>
+          <li>Remove states one by one (not s or f)</li>
+          <li>When only s and f remain, the edge label is the RE!</li>
+        </ol>
+      </div>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Core Rule for Removing State q</h3>
+        <p style="font-size:0.9em;">For every pair (qi, qj) through q:<br>
+        New label = <code>(old qi→qj) | (qi→q)(q→q)*(q→qj)</code></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 300);
+    ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Before removing q_rip:', 140, 25);
+    // qi
+    ctx.beginPath(); ctx.arc(60, 80, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill(); ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('qi', 60, 80);
+    // q_rip
+    ctx.beginPath(); ctx.arc(170, 80, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 11px monospace'; ctx.fillText('qrip', 170, 80);
+    // qj
+    ctx.beginPath(); ctx.arc(280, 80, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill(); ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 12px monospace'; ctx.fillText('qj', 280, 80);
+    // Arrows
+    ctx.beginPath(); ctx.moveTo(78, 80); ctx.lineTo(150, 80); ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#a5b4fc'; ctx.font = '12px system-ui'; ctx.fillText('R1', 114, 70);
+    ctx.beginPath(); ctx.moveTo(188, 80); ctx.lineTo(260, 80); ctx.strokeStyle = '#475569'; ctx.stroke();
+    ctx.fillStyle = '#a5b4fc'; ctx.fillText('R3', 224, 70);
+    // Self-loop
+    ctx.beginPath();
+    ctx.arc(170, 80, 30, -2.3, -0.8);
+    ctx.strokeStyle = '#475569'; ctx.stroke();
+    ctx.fillStyle = '#a5b4fc'; ctx.fillText('R2', 170, 36);
+
+    // After
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('After removing q_rip:', 140, 170);
+    // qi
+    ctx.beginPath(); ctx.arc(80, 230, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill(); ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 12px monospace'; ctx.fillText('qi', 80, 230);
+    // qj
+    ctx.beginPath(); ctx.arc(280, 230, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill(); ctx.strokeStyle = '#93c5fd'; ctx.stroke();
+    ctx.fillStyle = '#93c5fd'; ctx.fillText('qj', 280, 230);
+    // New combined edge
+    ctx.beginPath(); ctx.moveTo(98, 230); ctx.lineTo(260, 230);
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('R1 R2* R3', 180, 218);
+    // X through q_rip
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(380, 60); ctx.lineTo(420, 100); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(420, 60); ctx.lineTo(380, 100); ctx.stroke();
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px system-ui'; ctx.fillText('qrip', 400, 48);
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s12').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s12'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: STATE ELIMINATION STEP-THROUGH ==================== -->
+<div class="slide" id="s13">
+  <h2>State Elimination: Step-Through</h2>
+  <p>Convert a DFA (binary strings ending in 1) to RE:</p>
+  <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:1rem;">
+    <canvas id="cS13" width="480" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    <div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="btn btn-sm" onclick="s13Step()">Step</button>
+        <button class="btn btn-sm" onclick="s13Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      </div>
+      <div id="s13status" style="color:#f59e0b;font-weight:600;font-size:0.9em;margin-bottom:6px;">Step 0 / 7</div>
+      <div id="s13log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-family:monospace;font-size:0.75rem;max-height:180px;overflow-y:auto;line-height:1.7;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS13');
+  const ctx = canvas.getContext('2d');
+  let stepIdx = 0;
+  let timer = null;
+
+  function node(x, y, label, color, accept) {
+    ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill();
+    ctx.strokeStyle = color || '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    if (accept) { ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.fillStyle = color || '#93c5fd'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function edge(x1, y1, x2, y2, label, color) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    if (label) {
+      ctx.fillStyle = color === '#22c55e' ? '#22c55e' : '#f59e0b';
+      ctx.font = (color === '#22c55e' ? 'bold ' : '') + '12px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 - 10);
+    }
+  }
+
+  function selfLoop(x, y, label, color) {
+    ctx.beginPath(); ctx.arc(x, y - 30, 14, 0.3, 2.8);
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = color === '#22c55e' ? '#22c55e' : '#f59e0b';
+    ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(label, x, y - 52);
+  }
+
+  function curveEdge(x1, y1, cx, cy, x2, y2, label, color) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx, cy, x2, y2);
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    if (label) {
+      ctx.fillStyle = color === '#22c55e' ? '#22c55e' : '#f59e0b';
+      ctx.font = (color === '#22c55e' ? 'bold ' : '') + '11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(label, cx, cy - 8);
+    }
+  }
+
+  const steps = [
+    { msg: "Original DFA: q0 --0→ q0, q0 --1→ q1, q1 --0→ q0, q1 --1→ q1. Accept: q1" },
+    { msg: "Add new start s --ε→ q0, and q1 --ε→ new accept f" },
+    { msg: "Prepare to eliminate q0: analyze all paths through q0" },
+    { msg: "After eliminating q0: s --0*1→ q1, q1 self-loop (1|00*1)" },
+    { msg: "Prepare to eliminate q1: analyze paths through q1" },
+    { msg: "After eliminating q1: s --0*1(1|00*1)*→ f" },
+    { msg: "Final RE: 0*1(1|00*1)* which simplifies to (0|1)*1" }
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 300);
+    const showQ0 = stepIdx < 4;
+    const showQ1 = stepIdx < 6;
+
+    if (showQ0) {
+      node(170, 140, 'q0', stepIdx === 3 ? '#f59e0b' : '#93c5fd');
+      if (stepIdx < 3) {
+        selfLoop(170, 140, '0');
+        edge(188, 132, 262, 108, '1');
+        edge(262, 148, 188, 148, '0');
+      }
+    }
+    if (showQ1) {
+      node(280, 100, 'q1', stepIdx === 5 ? '#f59e0b' : '#93c5fd', stepIdx < 2);
+      if (stepIdx < 4) selfLoop(280, 100, '1');
+      if (stepIdx >= 4) selfLoop(280, 100, '(1|00*1)', '#22c55e');
+    }
+    // s and f
+    if (stepIdx >= 2) {
+      node(50, 140, 's', '#38bdf8');
+      node(420, 140, 'f', '#93c5fd', true);
+      if (stepIdx < 4) {
+        edge(68, 140, 152, 140, 'ε', '#8b5cf6');
+        edge(298, 100, 402, 130, 'ε', '#8b5cf6');
+      }
+    }
+    // After eliminating q0
+    if (stepIdx >= 4 && stepIdx < 6) {
+      curveEdge(68, 132, 170, 70, 264, 92, '0*1', '#22c55e');
+      edge(298, 100, 402, 130, 'ε', '#8b5cf6');
+    }
+    // After eliminating q1 - final edge
+    if (stepIdx >= 6) {
+      node(50, 140, 's', '#38bdf8');
+      node(420, 140, 'f', '#22c55e', true);
+      curveEdge(68, 130, 240, 50, 402, 130, '0*1(1|00*1)*', '#22c55e');
+    }
+    // X marks
+    if (stepIdx >= 4 && showQ0 === false) {
+      // q0 already gone
+    }
+    // Result box
+    if (stepIdx >= 7) {
+      ctx.fillStyle = 'rgba(34,197,94,0.1)';
+      ctx.beginPath(); ctx.roundRect(80, 220, 320, 40, 8); ctx.fill();
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(80, 220, 320, 40, 8); ctx.stroke();
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('Final RE: 0*1(1|00*1)* = (0|1)*1', 240, 244);
+    }
+  }
+
+  function updateLog() {
+    const log = document.getElementById('s13log');
+    let html = '';
+    for (let i = 0; i < steps.length; i++) {
+      if (i < stepIdx) html += '<div style="color:#22c55e;">✓ ' + steps[i].msg + '</div>';
+      else if (i === stepIdx) html += '<div style="color:#f59e0b;">→ ' + steps[i].msg + '</div>';
+      else html += '<div style="color:#64748b;">  ' + steps[i].msg + '</div>';
+    }
+    log.innerHTML = html;
+    log.scrollTop = log.scrollHeight;
+    document.getElementById('s13status').textContent = 'Step ' + stepIdx + ' / ' + steps.length;
+  }
+
+  window.s13Step = function() {
+    if (stepIdx >= steps.length) return;
+    stepIdx++;
+    draw(); updateLog();
+  };
+
+  window.s13Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s13Step();
+    }, 1200);
+  };
+
+  window.s13Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; draw(); updateLog();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s13').classList.contains('active')) { draw(); updateLog(); }
+  });
+  obs.observe(document.getElementById('s13'), {attributes: true, attributeFilter: ['class']});
+  draw(); updateLog();
+})();
+</script>
+
+<!-- ==================== SLIDE sCB: CHALLENGE - FIX BUG ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug</h2>
+  <p>A student tried to eliminate state q1 from this DFA but got the wrong RE. Find the mistake:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:10px;">
+    <div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;">
+        <p style="color:#94a3b8;font-size:0.9em;">DFA: s --ε→ q0, q0 --0→ q0, q0 --1→ q1, q1 --1→ q1, q1 --0→ q0, q1 --ε→ f</p>
+        <p style="color:#94a3b8;font-size:0.9em;margin-top:6px;">Student eliminated q0 first and wrote:</p>
+        <p style="color:#e2e8f0;margin-top:4px;"><code>s --0*1→ q1</code> ✓</p>
+        <p style="color:#e2e8f0;"><code>q1 self-loop: 1</code> <span style="color:#ef4444;">← BUG?</span></p>
+        <p style="color:#e2e8f0;"><code>q1 --ε→ f</code> ✓</p>
+      </div>
+      <div style="margin-top:12px;">
+        <p>What's wrong with the q1 self-loop label?</p>
+        <select id="sCBanswer" style="padding:6px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.95em;width:100%;margin-top:6px;">
+          <option value="">-- select --</option>
+          <option value="a">It should be (1|0) since q1 has both a 0 and 1 transition</option>
+          <option value="b">It should be (1|00*1) — must include the path q1→q0→...→q1 through q0's self-loop</option>
+          <option value="c">It should just be 0*1 since the 0-loop was on q0</option>
+        </select>
+        <button class="btn btn-sm" onclick="sCBCheck()" style="margin-top:8px;">Check</button>
+      </div>
+      <div id="sCBfeedback" style="margin-top:8px;"></div>
+    </div>
+    <canvas id="cSCB" width="440" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cSCB');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 280);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Original DFA (before any elimination):', 220, 20);
+    // q0
+    ctx.beginPath(); ctx.arc(150, 120, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill(); ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('q0', 150, 120);
+    // q1
+    ctx.beginPath(); ctx.arc(300, 120, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill(); ctx.strokeStyle = '#93c5fd'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(300, 120, 14, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#93c5fd'; ctx.fillText('q1', 300, 120);
+    // q0 self-loop
+    ctx.beginPath(); ctx.arc(150, 90, 14, 0.3, 2.8);
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#f59e0b'; ctx.font = '12px system-ui'; ctx.fillText('0', 150, 62);
+    // q0→q1
+    ctx.beginPath(); ctx.moveTo(168, 112); ctx.lineTo(280, 112);
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillText('1', 224, 102);
+    // q1→q0
+    ctx.beginPath(); ctx.moveTo(282, 130); ctx.lineTo(170, 130);
+    ctx.strokeStyle = '#475569'; ctx.stroke();
+    ctx.fillText('0', 224, 146);
+    // q1 self-loop
+    ctx.beginPath(); ctx.arc(300, 90, 14, 0.3, 2.8);
+    ctx.strokeStyle = '#475569'; ctx.stroke();
+    ctx.fillText('1', 300, 62);
+
+    ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('s → q0 (ε)    q1 → f (ε)', 220, 200);
+    ctx.fillStyle = '#f59e0b'; ctx.font = '13px system-ui';
+    ctx.fillText('After eliminating q0, what is q1\'s self-loop?', 220, 240);
+  }
+
+  window.sCBCheck = function() {
+    const answer = document.getElementById('sCBanswer').value;
+    const fb = document.getElementById('sCBfeedback');
+    if (!answer) { fb.innerHTML = '<p style="color:#f59e0b;">Please select an answer.</p>'; return; }
+    if (answer === 'b') {
+      fb.innerHTML = '<div style="color:#22c55e;font-weight:600;">✓ Correct!</div><p style="color:#94a3b8;font-size:0.9em;">When q0 is eliminated, q1\'s self-loop must include the path q1→q0→(q0 self-loop)*→q1, which is <code>00*1</code>. Combined with the original self-loop <code>1</code>, the new label is <code>(1|00*1)</code>.</p>';
+    } else {
+      fb.innerHTML = '<div style="color:#ef4444;font-weight:600;">✗ Not quite.</div><p style="color:#94a3b8;font-size:0.9em;">Think about ALL paths from q1 back to q1 that go through q0. q1→q0 (on 0), then q0→q0 (0 self-loop, zero or more times), then q0→q1 (on 1). That\'s the path <code>00*1</code>.</p>';
+    }
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCB').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('sCB'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 14: ALGEBRAIC LAWS ==================== -->
+<div class="slide" id="s14">
+  <h2>Algebraic Laws of Regular Expressions</h2>
+  <p>REs obey useful identities. Click a category to explore:</p>
+  <div style="display:flex;gap:6px;margin:8px 0;">
+    <button class="btn btn-sm" onclick="s14Show(0)">Union</button>
+    <button class="btn btn-sm" onclick="s14Show(1)">Concat</button>
+    <button class="btn btn-sm" onclick="s14Show(2)">Distributivity</button>
+    <button class="btn btn-sm" onclick="s14Show(3)">Star</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div id="s14laws">
+      <table style="width:100%;font-size:0.95em;">
+        <tr><th>Category</th><th>Law</th><th>Rule</th></tr>
+        <tr><td rowspan="4">Union</td><td>Commutative</td><td><code>R|S = S|R</code></td></tr>
+        <tr><td>Associative</td><td><code>(R|S)|T = R|(S|T)</code></td></tr>
+        <tr><td>Idempotent</td><td><code>R|R = R</code></td></tr>
+        <tr><td>Identity</td><td><code>R|∅ = R</code></td></tr>
+        <tr><td rowspan="3">Concat</td><td>Associative</td><td><code>(RS)T = R(ST)</code></td></tr>
+        <tr><td>Identity</td><td><code>Rε = εR = R</code></td></tr>
+        <tr><td>Annihilator</td><td><code>R∅ = ∅R = ∅</code></td></tr>
+        <tr><td rowspan="2">Distrib.</td><td>Left</td><td><code>R(S|T) = RS|RT</code></td></tr>
+        <tr><td>Right</td><td><code>(S|T)R = SR|TR</code></td></tr>
+        <tr><td rowspan="3">Star</td><td>Idempotent</td><td><code>(R*)* = R*</code></td></tr>
+        <tr><td>Star of ε</td><td><code>ε* = ε</code></td></tr>
+        <tr><td>Star of ∅</td><td><code>∅* = ε</code></td></tr>
+      </table>
+    </div>
+    <div id="s14detail" style="color:#94a3b8;">
+      <div class="warning">
+        <h3>Not Commutative!</h3>
+        <p>Concatenation is <strong>NOT</strong> commutative. <code>ab ≠ ba</code>. Order matters!</p>
+      </div>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Why These Matter</h3>
+        <p>These laws let you <strong>simplify</strong> complex REs. For example: <code>0*1(1|00*1)* = (0|1)*1</code> can be verified algebraically.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const details = [
+    '<h3 style="color:#a5b4fc;">Union Laws</h3><p><code>R|S = S|R</code> — order doesn\'t matter in "or"</p><p><code>R|R = R</code> — saying it twice is redundant</p><p><code>R|∅ = R</code> — "R or nothing" is just R</p><p style="color:#94a3b8;margin-top:8px;">Union is analogous to set union or addition.</p>',
+    '<h3 style="color:#a5b4fc;">Concatenation Laws</h3><p><code>Rε = εR = R</code> — empty string is the identity</p><p><code>R∅ = ∅</code> — concatenating with nothing gives nothing</p><p style="color:#94a3b8;margin-top:8px;">Like multiplication: identity is 1 (=ε), annihilator is 0 (=∅).</p><div class="warning" style="margin-top:8px;"><h3>NOT Commutative</h3><p><code>ab ≠ ba</code>. Unlike union, order matters in concat!</p></div>',
+    '<h3 style="color:#a5b4fc;">Distributivity</h3><p><code>R(S|T) = RS | RT</code></p><p><code>(S|T)R = SR | TR</code></p><p style="color:#94a3b8;margin-top:8px;">Just like arithmetic: <code>a(b+c) = ab + ac</code>. This works in both directions — you can factor out common prefixes/suffixes to simplify REs.</p>',
+    '<h3 style="color:#a5b4fc;">Star Laws</h3><p><code>(R*)* = R*</code> — starring an already-starred RE changes nothing</p><p><code>ε* = ε</code> — repeating empty string is still empty string</p><p><code>∅* = ε</code> — zero copies of nothing = ε (tricky!)</p><p style="color:#94a3b8;margin-top:8px;">The ∅* = ε identity is the trickiest. R* always includes ε (zero copies), and with ∅ there\'s nothing else to include.</p>'
+  ];
+
+  window.s14Show = function(idx) {
+    document.getElementById('s14detail').innerHTML = details[idx];
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 15: THEORY VS PRACTICE ==================== -->
+<div class="slide" id="s15">
+  <h2>Theory vs Practice: Regex in Programming</h2>
+  <p>The "regex" in Python/Java is <strong>more powerful</strong> than theoretical REs!</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:10px;">
+    <div>
+      <h3>Theoretical RE (CS305)</h3>
+      <ul>
+        <li>Only: union, concat, star</li>
+        <li>Describes exactly the regular languages</li>
+        <li>Equivalent to DFA/NFA</li>
+        <li>Always runs in O(n) time</li>
+      </ul>
+      <h3 style="margin-top:12px;">Practical Regex (Programming)</h3>
+      <ul>
+        <li>Adds: <code>+, ?, {n,m}, [a-z], \d</code></li>
+        <li><strong>Backreferences</strong>: <code>\1</code> (NOT regular!)</li>
+        <li><strong>Lookahead</strong> (NOT regular!)</li>
+        <li>Can cause exponential blowup!</li>
+      </ul>
+    </div>
+    <div>
+      <table style="width:100%;font-size:0.9em;">
+        <tr><th>Feature</th><th>Theoretical</th><th>Still Regular?</th></tr>
+        <tr><td><code>R+</code></td><td>Write as <code>RR*</code></td><td style="color:#22c55e;">Yes</td></tr>
+        <tr><td><code>R?</code></td><td>Write as <code>R|ε</code></td><td style="color:#22c55e;">Yes</td></tr>
+        <tr><td><code>[a-z]</code></td><td>Write as <code>a|b|...|z</code></td><td style="color:#22c55e;">Yes</td></tr>
+        <tr><td><code>R{3,5}</code></td><td>Expand manually</td><td style="color:#22c55e;">Yes</td></tr>
+        <tr style="background:rgba(239,68,68,0.1);"><td><code>\1</code> backref</td><td>Cannot express</td><td style="color:#ef4444;">NO!</td></tr>
+        <tr style="background:rgba(239,68,68,0.1);"><td><code>(?=...)</code></td><td>Cannot express</td><td style="color:#ef4444;">NO!</td></tr>
+      </table>
+      <div class="warning" style="margin-top:10px;">
+        <h3>ReDoS</h3>
+        <p style="font-size:0.9em;">Backreferences make regex matching <strong>NP-hard</strong>. Patterns like <code>(a+)+</code> cause catastrophic backtracking — a real security vulnerability.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 16: COMMON PATTERNS ==================== -->
+<div class="slide" id="s16">
+  <h2>Common RE Patterns</h2>
+  <p>Useful building blocks for writing regular expressions:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:10px;">
+    <div>
+      <h3>Over Σ = {0, 1}</h3>
+      <table style="width:100%;font-size:0.9em;">
+        <tr><th>Language</th><th>RE</th></tr>
+        <tr><td>All strings</td><td><code>(0|1)*</code></td></tr>
+        <tr><td>Starts with 1</td><td><code>1(0|1)*</code></td></tr>
+        <tr><td>Ends in 00</td><td><code>(0|1)*00</code></td></tr>
+        <tr><td>Contains 101</td><td><code>(0|1)*101(0|1)*</code></td></tr>
+        <tr><td>Even length</td><td><code>((0|1)(0|1))*</code></td></tr>
+        <tr><td>Only 0s</td><td><code>0*</code></td></tr>
+        <tr><td>Exactly 3 chars</td><td><code>(0|1)(0|1)(0|1)</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Over Σ = {a, b}</h3>
+      <table style="width:100%;font-size:0.9em;">
+        <tr><th>Language</th><th>RE</th></tr>
+        <tr><td>Starts & ends with a</td><td><code>a(a|b)*a | a</code></td></tr>
+        <tr><td>≥2 b's</td><td><code>(a|b)*b(a|b)*b(a|b)*</code></td></tr>
+        <tr><td>No consecutive a's</td><td><code>(b|ab)*(a|ε)</code></td></tr>
+        <tr><td>Every a followed by b</td><td><code>(b|ab)*</code></td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Building Block Patterns</h3>
+        <p style="font-size:0.9em;"><code>Σ*</code> = anything<br>
+        <code>Σ* w Σ*</code> = contains w<br>
+        <code>w Σ*</code> = starts with w<br>
+        <code>Σ* w</code> = ends with w</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 17: RE TESTER ==================== -->
+<div class="slide" id="s17">
+  <h2>Interactive RE Tester</h2>
+  <p>Enter a simple RE and test strings against it:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:10px;">
+    <div>
+      <div style="margin-bottom:10px;">
+        <label style="color:#94a3b8;font-size:0.9em;">Regular Expression (over {0,1}):</label>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <input type="text" id="s17re" value="(0|1)*01" style="flex:1;padding:8px 12px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:1.1em;">
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <button class="btn btn-sm btn-secondary" onclick="s17Set('(0|1)*01')">(0|1)*01</button>
+          <button class="btn btn-sm btn-secondary" onclick="s17Set('0*1(1|00*1)*')">0*1(1|00*1)*</button>
+          <button class="btn btn-sm btn-secondary" onclick="s17Set('(0|1)*00')">(0|1)*00</button>
+          <button class="btn btn-sm btn-secondary" onclick="s17Set('((0|1)(0|1))*')">((0|1)(0|1))*</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label style="color:#94a3b8;font-size:0.9em;">Test string:</label>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <input type="text" id="s17str" placeholder="e.g. 1001" style="flex:1;padding:8px 12px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <button class="btn btn-sm" onclick="s17Test()">Test</button>
+        </div>
+      </div>
+      <div id="s17result" style="margin-top:10px;font-size:1.1em;font-weight:600;"></div>
+      <div id="s17batch" style="margin-top:12px;background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;font-family:monospace;font-size:0.85em;max-height:120px;overflow-y:auto;"></div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>How This Works</h3>
+        <p style="font-size:0.9em;">This tester converts the theoretical RE into a JavaScript regex. It supports: <code>0</code>, <code>1</code>, <code>|</code> (union), concatenation, <code>*</code> (star), <code>ε</code> (empty string), and parentheses.</p>
+      </div>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Reminder</h3>
+        <p style="font-size:0.9em;">This is a <strong>theoretical</strong> RE tester — only the three basic operations (union, concat, star) plus base cases. No <code>+</code>, <code>?</code>, <code>[...]</code>, or backreferences.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  function reToRegex(re) {
+    // Simple conversion: replace ε with empty, keep |, *, parens, 0, 1, a-z
+    let s = re.replace(/ε/g, '');
+    // Ensure it's a valid JS regex anchored
+    try { return new RegExp('^(' + s + ')$'); } catch(e) { return null; }
+  }
+
+  window.s17Set = function(re) {
+    document.getElementById('s17re').value = re;
+    s17BatchTest(re);
+  };
+
+  window.s17Test = function() {
+    const re = document.getElementById('s17re').value;
+    const str = document.getElementById('s17str').value;
+    const regex = reToRegex(re);
+    const result = document.getElementById('s17result');
+    if (!regex) { result.textContent = 'Invalid RE'; result.style.color = '#f59e0b'; return; }
+    if (regex.test(str)) {
+      result.textContent = '✓ "' + str + '" is ACCEPTED';
+      result.style.color = '#22c55e';
+    } else {
+      result.textContent = '✗ "' + str + '" is REJECTED';
+      result.style.color = '#ef4444';
+    }
+    s17BatchTest(re);
+  };
+
+  function s17BatchTest(re) {
+    const regex = reToRegex(re);
+    if (!regex) return;
+    const testStrings = ['', '0', '1', '00', '01', '10', '11', '001', '010', '011', '100', '101', '110', '111', '0101', '1001', '1100'];
+    let html = '<div style="color:#94a3b8;margin-bottom:4px;">Batch test results:</div>';
+    testStrings.forEach(s => {
+      const accepted = regex.test(s);
+      const display = s === '' ? 'ε' : s;
+      html += '<span style="color:' + (accepted ? '#22c55e' : '#64748b') + ';margin-right:8px;">' + (accepted ? '✓' : '✗') + display + '</span>';
+    });
+    document.getElementById('s17batch').innerHTML = html;
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s17').classList.contains('active')) {
+      s17BatchTest(document.getElementById('s17re').value);
+    }
+  });
+  obs.observe(document.getElementById('s17'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE sCC: CHALLENGE - MATCH LANGUAGE ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Match Language to RE</h2>
+  <p>For each language description, select the correct regular expression:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sCCq1box">
+      <h3 style="font-size:0.95em;">1. Binary strings with at least one 0</h3>
+      <select id="sCCq1" style="width:100%;padding:6px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.9em;margin-top:8px;">
+        <option value="">-- select --</option>
+        <option value="a">(0|1)*0(0|1)*</option>
+        <option value="b">0(0|1)*</option>
+        <option value="c">(0|1)*0</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sCCq2box">
+      <h3 style="font-size:0.95em;">2. Strings over {a,b} of odd length</h3>
+      <select id="sCCq2" style="width:100%;padding:6px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.9em;margin-top:8px;">
+        <option value="">-- select --</option>
+        <option value="a">(a|b)((a|b)(a|b))*</option>
+        <option value="b">((a|b)(a|b))*(a|b)</option>
+        <option value="c">(a|b)(a|b)*</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sCCq3box">
+      <h3 style="font-size:0.95em;">3. Binary strings NOT ending in 11</h3>
+      <select id="sCCq3" style="width:100%;padding:6px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.9em;margin-top:8px;">
+        <option value="">-- select --</option>
+        <option value="a">(0|1)*0 | (0|1)*01 | ε | 0 | 1</option>
+        <option value="b">(0|10)*(1|ε)</option>
+        <option value="c">(0|1)*(0|01|ε)</option>
+      </select>
+    </div>
+  </div>
+  <div style="margin-top:12px;text-align:center;">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCfeedback" style="margin-top:10px;text-align:center;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCCCheck = function() {
+    const answers = { sCCq1: 'a', sCCq2: 'a', sCCq3: 'c' };
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const val = document.getElementById(id).value;
+      const box = document.getElementById(id + 'box');
+      if (val === correct) {
+        box.style.borderColor = '#22c55e';
+        box.style.border = '2px solid #22c55e';
+        score++;
+      } else {
+        box.style.border = '2px solid #ef4444';
+      }
+    });
+    const fb = document.getElementById('sCCfeedback');
+    if (score === 3) {
+      fb.innerHTML = '<span style="color:#22c55e;font-size:1.2em;font-weight:600;">✓ Perfect! 3/3</span>';
+    } else {
+      fb.innerHTML = '<span style="color:#f59e0b;font-size:1.1em;">' + score + '/3 correct.</span> <span style="color:#94a3b8;">Q1: (0|1)*0(0|1)* has 0 anywhere. Q2: one char then pairs. Q3: must end in 0, 01, or be short (ε, single char).</span>';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 18: SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary & Cheat Sheet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS18" width="440" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:12px;margin-top:10px;font-size:0.9em;">
+        <p style="color:#f59e0b;font-weight:600;margin-bottom:4px;">Precedence: * > concat > |</p>
+        <p style="color:#94a3b8;">Base: ∅ (empty lang), ε (empty string), a (symbol)</p>
+        <p style="color:#94a3b8;">Operations: R|S (union), RS (concat), R* (star)</p>
+      </div>
+    </div>
+    <div>
+      <h3>Key Identities</h3>
+      <table style="width:100%;font-size:0.85em;">
+        <tr><td><code>R|S = S|R</code></td><td>union commutes</td></tr>
+        <tr><td><code>R|R = R</code></td><td>idempotent</td></tr>
+        <tr><td><code>Rε = R</code></td><td>concat identity</td></tr>
+        <tr><td><code>R∅ = ∅</code></td><td>annihilator</td></tr>
+        <tr><td><code>(R*)* = R*</code></td><td>star idempotent</td></tr>
+        <tr><td><code>∅* = ε</code></td><td>star of empty</td></tr>
+      </table>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Common Mistakes</h3>
+        <ul style="font-size:0.9em;">
+          <li>∅ ≠ ε (empty lang vs empty string)</li>
+          <li><code>ab*</code> ≠ <code>(ab)*</code> (star binds tightest)</li>
+          <li>R* always includes ε</li>
+          <li>Concat does NOT commute</li>
+          <li>Practical regex ≠ theoretical RE</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS18');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 250);
+    // Equivalence triangle
+    const cx = 220, cy = 120;
+    const nodes = [
+      { label: 'RE', x: cx, y: 40, color: '#a78bfa' },
+      { label: 'ε-NFA', x: cx - 100, y: 190, color: '#38bdf8' },
+      { label: 'DFA', x: cx + 100, y: 190, color: '#22c55e' }
+    ];
+    const edges = [
+      { from: 0, to: 1, label: "Thompson's" },
+      { from: 1, to: 2, label: 'Subset' },
+      { from: 2, to: 0, label: 'State Elim.' }
+    ];
+    edges.forEach(e => {
+      const f = nodes[e.from], t = nodes[e.to];
+      ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(t.x, t.y);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+      const mx = (f.x + t.x) / 2, my = (f.y + t.y) / 2;
+      ctx.fillStyle = '#f59e0b'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(e.label, mx + (e.from === 0 && e.to === 1 ? -15 : e.from === 2 ? 15 : 0), my + (e.from === 1 ? 15 : -5));
+    });
+    nodes.forEach(n => {
+      ctx.beginPath(); ctx.arc(n.x, n.y, 28, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b'; ctx.fill();
+      ctx.strokeStyle = n.color; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.fillStyle = n.color; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+    ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('All = Regular Languages', cx, cy + 5);
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s18').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s18'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: QUIZ MC ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Multiple Choice</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sQ1q1box">
+      <h3 style="font-size:0.95em;">Q1: What is L(∅*)?</h3>
+      <div style="margin-top:8px;">
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q1" value="a"> { }</label>
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q1" value="b"> { ε }</label>
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q1" value="c"> { ∅ }</label>
+      </div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sQ1q2box">
+      <h3 style="font-size:0.95em;">Q2: Which is NOT a valid RE simplification?</h3>
+      <div style="margin-top:8px;">
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q2" value="a"> R|R = R</label>
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q2" value="b"> RS = SR</label>
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q2" value="c"> R|∅ = R</label>
+      </div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sQ1q3box">
+      <h3 style="font-size:0.95em;">Q3: Thompson's Construction for a symbol 'a' produces how many states?</h3>
+      <div style="margin-top:8px;">
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q3" value="a"> 1</label>
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q3" value="b"> 2</label>
+        <label style="display:block;padding:4px 0;cursor:pointer;color:#cbd5e1;"><input type="radio" name="sQ1q3" value="c"> 3</label>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <div id="sQ1score" style="margin-top:8px;font-size:1.2em;font-weight:600;"></div>
+  </div>
+  <div id="sQ1feedback" style="margin-top:8px;text-align:center;color:#94a3b8;font-size:0.9em;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ1Check = function() {
+    const answers = { sQ1q1: 'b', sQ1q2: 'b', sQ1q3: 'b' };
+    let score = 0;
+    Object.entries(answers).forEach(([name, correct]) => {
+      const selected = document.querySelector('input[name="' + name + '"]:checked');
+      const box = document.getElementById(name + 'box');
+      if (selected && selected.value === correct) {
+        box.style.border = '2px solid #22c55e';
+        score++;
+      } else {
+        box.style.border = '2px solid #ef4444';
+      }
+    });
+    const el = document.getElementById('sQ1score');
+    el.textContent = score + ' / 3';
+    el.style.color = score === 3 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+    document.getElementById('sQ1feedback').innerHTML =
+      'Q1: ∅* = {ε} (star always includes zero copies). ' +
+      'Q2: RS ≠ SR — concat is NOT commutative. ' +
+      'Q3: Each base case (symbol) creates exactly 2 states (start + accept).';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: QUIZ TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace Exercise</h2>
+  <p>Given the RE <code>(0|1)*00</code>, determine which strings are accepted:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;">
+        <p style="color:#94a3b8;margin-bottom:8px;">For each string, select Accept or Reject:</p>
+        <div id="sQ2questions"></div>
+        <button class="btn" onclick="sQ2Check()" style="margin-top:10px;">Check Answers</button>
+        <div id="sQ2score" style="margin-top:8px;font-size:1.1em;font-weight:600;"></div>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>The RE: (0|1)*00</h3>
+        <p>This accepts all binary strings <strong>ending in 00</strong>.</p>
+        <p style="color:#94a3b8;font-size:0.9em;margin-top:6px;"><code>(0|1)*</code> matches any prefix, then <code>00</code> requires the string to end with two zeros.</p>
+      </div>
+      <div id="sQ2explanation" style="margin-top:10px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const strings = [
+    { s: '00', accept: true },
+    { s: '100', accept: true },
+    { s: '010', accept: false },
+    { s: '1100', accept: true },
+    { s: '01', accept: false },
+    { s: '000', accept: true }
+  ];
+
+  function init() {
+    const area = document.getElementById('sQ2questions');
+    let html = '';
+    strings.forEach((item, i) => {
+      html += '<div style="display:flex;align-items:center;gap:10px;margin:6px 0;" id="sQ2row' + i + '">';
+      html += '<code style="width:60px;">' + item.s + '</code>';
+      html += '<label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="sQ2q' + i + '" value="accept"> Accept</label>';
+      html += '<label style="color:#cbd5e1;cursor:pointer;"><input type="radio" name="sQ2q' + i + '" value="reject"> Reject</label>';
+      html += '</div>';
+    });
+    area.innerHTML = html;
+  }
+
+  window.sQ2Check = function() {
+    let score = 0;
+    strings.forEach((item, i) => {
+      const selected = document.querySelector('input[name="sQ2q' + i + '"]:checked');
+      const row = document.getElementById('sQ2row' + i);
+      const correct = item.accept ? 'accept' : 'reject';
+      if (selected && selected.value === correct) {
+        row.style.background = 'rgba(34,197,94,0.1)';
+        row.style.borderRadius = '6px';
+        score++;
+      } else {
+        row.style.background = 'rgba(239,68,68,0.1)';
+        row.style.borderRadius = '6px';
+      }
+    });
+    const el = document.getElementById('sQ2score');
+    el.textContent = score + ' / ' + strings.length;
+    el.style.color = score === strings.length ? '#22c55e' : '#f59e0b';
+    document.getElementById('sQ2explanation').innerHTML = '<div class="analogy"><h3>Answers</h3><p style="font-size:0.9em;">' +
+      strings.map(item => '<code>' + item.s + '</code> → ' + (item.accept ? '<span style="color:#22c55e;">Accept</span>' : '<span style="color:#ef4444;">Reject</span>') + ' (ends in 00? ' + (item.accept ? 'Yes' : 'No') + ')').join('<br>') + '</p></div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sQ2').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('sQ2'), {attributes: true, attributeFilter: ['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: QUIZ BUILD RE ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Build the RE</h2>
+  <p>Write the regular expression for each language description. Type your answer and check:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sQ3q1box">
+      <h3 style="font-size:0.95em;">1. Binary strings starting with 1 and ending with 0</h3>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input type="text" id="sQ3a1" placeholder="Your RE" style="flex:1;padding:6px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="sQ3Check(1)">Check</button>
+      </div>
+      <div id="sQ3f1" style="margin-top:6px;font-size:0.85em;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sQ3q2box">
+      <h3 style="font-size:0.95em;">2. Strings over {a,b} with exactly one b</h3>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input type="text" id="sQ3a2" placeholder="Your RE" style="flex:1;padding:6px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="sQ3Check(2)">Check</button>
+      </div>
+      <div id="sQ3f2" style="margin-top:6px;font-size:0.85em;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;" id="sQ3q3box">
+      <h3 style="font-size:0.95em;">3. Binary strings with an even number of 0s</h3>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input type="text" id="sQ3a3" placeholder="Your RE" style="flex:1;padding:6px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn btn-sm" onclick="sQ3Check(3)">Check</button>
+      </div>
+      <div id="sQ3f3" style="margin-top:6px;font-size:0.85em;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:14px;">
+      <h3 style="font-size:0.95em;">Answers</h3>
+      <button class="btn btn-sm btn-secondary" onclick="sQ3Reveal()" style="margin-top:8px;">Reveal All Answers</button>
+      <div id="sQ3answers" style="margin-top:8px;font-size:0.9em;display:none;">
+        <p><strong>1:</strong> <code>1(0|1)*0</code></p>
+        <p><strong>2:</strong> <code>a*ba*</code></p>
+        <p><strong>3:</strong> <code>(1*01*01*)*1*</code> or <code>(1|01*0)*</code></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Test RE answer by checking against test strings
+  const tests = {
+    1: { pos: ['10', '100', '110', '1010', '10110'], neg: ['0', '1', '01', '11', '00', '011'] },
+    2: { pos: ['b', 'ab', 'ba', 'aab', 'aba', 'baa', 'aaab'], neg: ['', 'a', 'aa', 'bb', 'abb', 'bab', 'bba'] },
+    3: { pos: ['', '1', '11', '00', '1001', '0110', '0011'], neg: ['0', '010', '100', '001', '10010'] }
+  };
+
+  function reToRegex(re) {
+    let s = re.replace(/ε/g, '');
+    try { return new RegExp('^(' + s + ')$'); } catch(e) { return null; }
+  }
+
+  window.sQ3Check = function(q) {
+    const re = document.getElementById('sQ3a' + q).value.trim();
+    const fb = document.getElementById('sQ3f' + q);
+    const box = document.getElementById('sQ3q' + q + 'box');
+    if (!re) { fb.innerHTML = '<span style="color:#f59e0b;">Enter a RE first.</span>'; return; }
+    const regex = reToRegex(re);
+    if (!regex) { fb.innerHTML = '<span style="color:#ef4444;">Invalid regex syntax.</span>'; return; }
+    const t = tests[q];
+    let allCorrect = true;
+    let wrongExample = '';
+    for (const s of t.pos) {
+      if (!regex.test(s)) { allCorrect = false; wrongExample = '"' + s + '" should be accepted but isn\'t'; break; }
+    }
+    if (allCorrect) {
+      for (const s of t.neg) {
+        if (regex.test(s)) { allCorrect = false; wrongExample = '"' + (s || 'ε') + '" should be rejected but is accepted'; break; }
+      }
+    }
+    if (allCorrect) {
+      fb.innerHTML = '<span style="color:#22c55e;">✓ Correct! All test cases pass.</span>';
+      box.style.border = '2px solid #22c55e';
+    } else {
+      fb.innerHTML = '<span style="color:#ef4444;">✗ Not quite: ' + wrongExample + '.</span>';
+      box.style.border = '2px solid #ef4444';
+    }
+  };
+
+  window.sQ3Reveal = function() {
+    document.getElementById('sQ3answers').style.display = 'block';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">← Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next →</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','s17','sCC','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>
