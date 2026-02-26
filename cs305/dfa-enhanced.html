@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFA Enhanced — Interactive Deterministic Finite Automata</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden}
+  .slide{display:none;min-height:100vh;padding:2.5rem 3.5rem;position:relative;flex-direction:column;justify-content:center}
+  .slide.active{display:flex}
+  .fade-in{animation:fadeIn .4s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:200}
+  #progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#a78bfa);transition:width .3s}
+  h1{font-size:2.4em;margin-bottom:.5rem;background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+  h2{font-size:1.7em;color:#38bdf8;margin-bottom:.5rem}
+  h3{font-size:1.2em;color:#a5b4fc;margin-bottom:.4rem}
+  p,li{font-size:1.05em;line-height:1.7;color:#cbd5e1}
+  .subtitle{font-size:1.15em;color:#94a3b8;margin-bottom:1.2rem}
+  .nav{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);display:flex;gap:.75rem;z-index:100}
+  .nav button{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:.5rem 1.4rem;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+  .nav button:hover{background:#475569}
+  .nav button:disabled{opacity:.3;cursor:not-allowed}
+  .btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+  .btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+  .btn-sm{padding:.35rem .8rem;font-size:.82rem}
+  .btn-secondary{background:#334155;color:#e2e8f0;border:1px solid #475569}
+  .btn-secondary:hover{background:#475569}
+  .key-idea{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(16,185,129,.1));border-left:4px solid #22c55e;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .warning{background:rgba(239,68,68,.08);border-left:4px solid #ef4444;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .analogy{background:rgba(139,92,246,.08);border-left:4px solid #a78bfa;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .code-block{background:rgba(0,0,0,.3);border:1px solid #334155;border-radius:10px;padding:.8rem 1rem;margin:.5rem 0;overflow-x:auto}
+  .code-content{font-family:'SF Mono','Fira Code',monospace;font-size:.85rem;line-height:1.7}
+  .line{padding:1px 6px;border-left:3px solid transparent;border-radius:0 4px 4px 0;white-space:pre}
+  .line.active{background:rgba(99,102,241,.15);border-left-color:#6366f1}
+  .slide-number{position:absolute;bottom:1rem;right:2rem;color:#475569;font-size:.8rem}
+  ul{padding-left:1.5rem}
+  ul li{margin-bottom:.4rem}
+  canvas{border-radius:12px}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== s1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div style="text-align:center">
+    <h1 style="font-size:3em">Deterministic Finite Automata</h1>
+    <p class="subtitle" style="font-size:1.3em">The simplest computational model — and the foundation of everything</p>
+    <div style="margin-top:2rem;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap">
+      <span style="background:#1e293b;padding:.5rem 1rem;border-radius:8px;border:1px solid #334155;color:#94a3b8">5-Tuple Definition</span>
+      <span style="background:#1e293b;padding:.5rem 1rem;border-radius:8px;border:1px solid #334155;color:#94a3b8">State Diagrams</span>
+      <span style="background:#1e293b;padding:.5rem 1rem;border-radius:8px;border:1px solid #334155;color:#94a3b8">Product Construction</span>
+      <span style="background:#1e293b;padding:.5rem 1rem;border-radius:8px;border:1px solid #334155;color:#94a3b8">Minimization</span>
+    </div>
+    <p style="margin-top:2.5rem;color:#64748b;font-size:.9em">Use <b>Arrow Keys</b> to navigate &bull; Interactive Canvas visualizations throughout</p>
+  </div>
+</div>
+
+<!-- ==================== s2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h1>The Big Picture</h1>
+  <p class="subtitle">Where DFAs fit in the Chomsky hierarchy</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS2" width="520" height="370" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>DFAs recognize Regular Languages (Type 3)</h3>
+        <p>The simplest class in the hierarchy. Every DFA reads input left-to-right, one symbol at a time, with <b>no memory beyond its current state</b>.</p>
+      </div>
+      <div class="analogy">
+        <h3>Think of it this way</h3>
+        <p>A DFA is like a vending machine with a fixed set of buttons. It has no scratch paper, no stack, no tape — just a <b>finite number of states</b> and transitions between them.</p>
+      </div>
+      <p style="margin-top:.5rem;color:#94a3b8;font-size:.9em">Click on the hierarchy levels to highlight them.</p>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS2');
+  const ctx = canvas.getContext('2d');
+  let hovered = -1;
+  const levels = [
+    {label:'Recursively Enumerable (Type 0)',sub:'Turing Machines',color:'#ef4444',y:20,h:340},
+    {label:'Context-Sensitive (Type 1)',sub:'Linear-bounded automata',color:'#f59e0b',y:60,h:260},
+    {label:'Context-Free (Type 2)',sub:'Pushdown Automata',color:'#22c55e',y:100,h:180},
+    {label:'Regular (Type 3)',sub:'DFA / NFA',color:'#6366f1',y:150,h:100}
+  ];
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    levels.forEach((lv,i)=>{
+      const x=20+i*30, w=480-i*60;
+      ctx.fillStyle = hovered===i ? lv.color+'44' : lv.color+'1a';
+      ctx.strokeStyle = hovered===i ? lv.color : lv.color+'88';
+      ctx.lineWidth = hovered===i ? 2.5 : 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x,lv.y,w,lv.h,12);
+      ctx.fill();ctx.stroke();
+      ctx.fillStyle = hovered===i ? '#fff' : '#e2e8f0';
+      ctx.font = hovered===i ? 'bold 13px sans-serif' : '13px sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText(lv.label, 260, lv.y+22);
+      ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';
+      ctx.fillText(lv.sub, 260, lv.y+40);
+    });
+    // Highlight DFA
+    if(hovered===-1){
+      ctx.fillStyle='#6366f1';ctx.font='bold 15px sans-serif';ctx.textAlign='center';
+      ctx.fillText('← You are here!', 400, 205);
+      ctx.beginPath();ctx.moveTo(370,200);ctx.lineTo(350,200);
+      ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(350,200);ctx.lineTo(356,195);ctx.lineTo(356,205);ctx.closePath();
+      ctx.fillStyle='#6366f1';ctx.fill();
+    }
+  }
+  canvas.addEventListener('mousemove',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const y=((e.clientY-rect.top)/rect.height)*370;
+    let h=-1;
+    for(let i=levels.length-1;i>=0;i--){
+      if(y>=levels[i].y && y<=levels[i].y+levels[i].h){h=i;break}
+    }
+    if(h!==hovered){hovered=h;draw()}
+  });
+  canvas.addEventListener('mouseleave',()=>{hovered=-1;draw()});
+  const obs=new MutationObserver(()=>{if(document.getElementById('s2').classList.contains('active')){hovered=-1;draw()}});
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s3: INTUITION ==================== -->
+<div class="slide" id="s3">
+  <h1>The Turnstile Analogy</h1>
+  <p class="subtitle">A DFA is just a machine that reads input and changes state</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS3" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="s3Step()">Step</button>
+        <button class="btn btn-sm" onclick="s3Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+      <div id="s3Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.78rem;max-height:80px;overflow-y:auto;margin-top:.5rem;color:#94a3b8"></div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Subway Turnstile</h3>
+        <p>A turnstile has two states: <b>Locked</b> and <b>Unlocked</b>. Insert a coin → unlocks. Push → locks again. This IS a DFA!</p>
+      </div>
+      <div class="key-idea">
+        <h3>Key DFA Properties</h3>
+        <ul>
+          <li><b>Deterministic</b> — exactly ONE transition per (state, symbol)</li>
+          <li><b>Finite</b> — fixed number of states</li>
+          <li><b>No memory</b> — only the current state matters</li>
+          <li><b>Total function</b> — must handle every possible input</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS3');
+  const ctx=canvas.getContext('2d');
+  const input=['coin','push','push','coin','coin','push'];
+  let stepIdx=0, state='Locked', timer=null;
+  const steps=[];
+  // precompute
+  let st='Locked';
+  input.forEach(sym=>{
+    const prev=st;
+    st = (st==='Locked' && sym==='coin') ? 'Unlocked' :
+         (st==='Unlocked' && sym==='push') ? 'Locked' : st;
+    steps.push({prev,sym,next:st});
+  });
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    const lx=150,ux=370,cy=140,r=45;
+    // edges
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    // coin: Locked->Unlocked (top arc)
+    ctx.beginPath();ctx.moveTo(lx+r,cy-20);
+    ctx.quadraticCurveTo(260,cy-100,ux-r,cy-20);
+    ctx.stroke();
+    drawArrow(ctx,ux-r-5,cy-25,ux-r,cy-20,'#475569');
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+    ctx.fillText('coin',260,cy-65);
+    // push: Unlocked->Locked (bottom arc)
+    ctx.beginPath();ctx.moveTo(ux-r,cy+20);
+    ctx.quadraticCurveTo(260,cy+100,lx+r,cy+20);
+    ctx.strokeStyle='#475569';ctx.stroke();
+    drawArrow(ctx,lx+r+5,cy+25,lx+r,cy+20,'#475569');
+    ctx.fillStyle='#94a3b8';ctx.fillText('push',260,cy+80);
+    // self-loops
+    ctx.beginPath();ctx.arc(lx,cy-r-20,18,0.3,Math.PI-0.3);ctx.strokeStyle='#475569';ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.fillText('push',lx,cy-r-45);
+    ctx.beginPath();ctx.arc(ux,cy-r-20,18,0.3,Math.PI-0.3);ctx.stroke();
+    ctx.fillText('coin',ux,cy-r-45);
+    // nodes
+    [['Locked',lx],['Unlocked',ux]].forEach(([name,x])=>{
+      ctx.beginPath();ctx.arc(x,cy,r,0,Math.PI*2);
+      ctx.fillStyle = state===name ? '#f59e0b33' : '#1e293b';
+      ctx.fill();
+      ctx.strokeStyle = state===name ? '#f59e0b' : '#6366f1';
+      ctx.lineWidth = state===name ? 3 : 2;
+      ctx.stroke();
+      ctx.fillStyle = state===name ? '#f59e0b' : '#e2e8f0';
+      ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(name,x,cy);
+    });
+    // start arrow
+    ctx.beginPath();ctx.moveTo(lx-r-30,cy);ctx.lineTo(lx-r-2,cy);
+    ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    drawArrow(ctx,lx-r-5,cy,lx-r-2,cy,'#e2e8f0');
+    // input display
+    ctx.font='16px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    const sy=260;
+    ctx.fillStyle='#94a3b8';ctx.fillText('Input:',60,sy);
+    input.forEach((s,i)=>{
+      ctx.fillStyle = i<stepIdx ? '#475569' : i===stepIdx ? '#f59e0b' : '#e2e8f0';
+      ctx.font = i===stepIdx ? 'bold 16px monospace' : '16px monospace';
+      ctx.fillText(s,140+i*65,sy);
+    });
+  }
+  function drawArrow(c,fx,fy,tx,ty,col){
+    const a=Math.atan2(ty-fy,tx-fx);
+    c.beginPath();c.moveTo(tx,ty);
+    c.lineTo(tx-8*Math.cos(a-Math.PI/6),ty-8*Math.sin(a-Math.PI/6));
+    c.lineTo(tx-8*Math.cos(a+Math.PI/6),ty-8*Math.sin(a+Math.PI/6));
+    c.closePath();c.fillStyle=col;c.fill();
+  }
+  function log(msg){
+    const el=document.getElementById('s3Log');
+    el.innerHTML+='<div style="color:#cbd5e1">'+msg+'</div>';
+    el.scrollTop=el.scrollHeight;
+  }
+  window.s3Step=function(){
+    if(stepIdx>=steps.length)return;
+    const s=steps[stepIdx];
+    state=s.next;
+    log('δ('+s.prev+', '+s.sym+') = '+s.next);
+    stepIdx++;
+    if(stepIdx>=steps.length) log('<span style="color:#22c55e">✓ All input consumed. Final state: '+state+'</span>');
+    draw();
+  };
+  window.s3Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return}s3Step()},800);
+  };
+  window.s3Reset=function(){
+    if(timer){clearInterval(timer);timer=null}
+    stepIdx=0;state='Locked';
+    document.getElementById('s3Log').innerHTML='';
+    draw();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s3').classList.contains('active')){draw()}});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s4: FORMAL DEFINITION ==================== -->
+<div class="slide" id="s4">
+  <h1>Formal Definition: The 5-Tuple</h1>
+  <p class="subtitle">A DFA is defined as M = (Q, Σ, δ, q₀, F)</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS4" width="520" height="350" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>The 5 Components</h3>
+        <ul>
+          <li><b>Q</b> — finite set of states</li>
+          <li><b>Σ</b> (Sigma) — finite input alphabet</li>
+          <li><b>δ</b> (delta) — transition function: Q × Σ → Q</li>
+          <li><b>q₀</b> — start state (q₀ ∈ Q)</li>
+          <li><b>F</b> — set of accept/final states (F ⊆ Q)</li>
+        </ul>
+      </div>
+      <div class="warning">
+        <h3>δ must be a TOTAL function</h3>
+        <p>Every state must have <b>exactly one transition for every symbol</b>. If you can't think of where to go, add a <b>dead state</b> (trap state) that rejects.</p>
+      </div>
+      <p style="color:#94a3b8;font-size:.9em;margin-top:.5rem">Hover over the DFA diagram to see each component highlighted.</p>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS4');
+  const ctx=canvas.getContext('2d');
+  // Example DFA: accepts strings ending with 'ab' over {a,b}
+  const states=[
+    {id:'q0',x:100,y:175,accept:false},
+    {id:'q1',x:260,y:175,accept:false},
+    {id:'q2',x:420,y:175,accept:true}
+  ];
+  const edges=[
+    {from:'q0',to:'q1',label:'a',cx:180,cy:130},
+    {from:'q0',to:'q0',label:'b',cx:100,cy:80,self:true},
+    {from:'q1',to:'q2',label:'b',cx:340,cy:130},
+    {from:'q1',to:'q1',label:'a',cx:260,cy:80,self:true},
+    {from:'q2',to:'q1',label:'a',cx:340,cy:220},
+    {from:'q2',to:'q0',label:'b',cx:260,cy:280}
+  ];
+  function pos(id){return states.find(s=>s.id===id)}
+  function draw(){
+    ctx.clearRect(0,0,520,350);
+    // Title
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('DFA: accepts strings ending with "ab"', 260, 25);
+    ctx.fillText('Q = {q₀, q₁, q₂},  Σ = {a, b},  q₀ = start,  F = {q₂}', 260, 320);
+    // Edges
+    edges.forEach(e=>{
+      const f=pos(e.from),t=pos(e.to);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+      if(e.self){
+        ctx.beginPath();ctx.arc(f.x,f.y-40,18,0.4,Math.PI-0.4);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';
+        ctx.fillText(e.label,f.x,f.y-65);
+      } else {
+        ctx.beginPath();
+        ctx.quadraticCurveTo!=null;
+        ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.quadraticCurveTo(e.cx,e.cy,t.x,t.y);ctx.stroke();
+        // arrowhead
+        const t2=0.95;
+        const ax=(1-t2)*(1-t2)*f.x+2*(1-t2)*t2*e.cx+t2*t2*t.x;
+        const ay=(1-t2)*(1-t2)*f.y+2*(1-t2)*t2*e.cy+t2*t2*t.y;
+        const dx=t.x-ax,dy=t.y-ay;
+        const a=Math.atan2(dy,dx);
+        ctx.beginPath();ctx.moveTo(t.x-20*Math.cos(a),t.y-20*Math.sin(a));
+        ctx.lineTo(t.x-20*Math.cos(a)-8*Math.cos(a-Math.PI/6),t.y-20*Math.sin(a)-8*Math.sin(a-Math.PI/6));
+        ctx.lineTo(t.x-20*Math.cos(a)-8*Math.cos(a+Math.PI/6),t.y-20*Math.sin(a)-8*Math.sin(a+Math.PI/6));
+        ctx.closePath();ctx.fillStyle='#475569';ctx.fill();
+        // label
+        ctx.fillStyle='#cbd5e1';ctx.font='13px monospace';ctx.textAlign='center';
+        const mx=(f.x+4*e.cx+t.x)/6,my=(f.y+4*e.cy+t.y)/6;
+        ctx.fillText(e.label,mx,my-4);
+      }
+    });
+    // Start arrow
+    ctx.beginPath();ctx.moveTo(30,175);ctx.lineTo(75,175);
+    ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(75,175);ctx.lineTo(67,170);ctx.lineTo(67,180);ctx.closePath();
+    ctx.fillStyle='#e2e8f0';ctx.fill();
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.fillText('start',52,165);
+    // States
+    states.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,24,0,Math.PI*2);
+      ctx.fillStyle='#1e293b';ctx.fill();
+      ctx.strokeStyle=s.accept?'#22c55e':'#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(s.accept){
+        ctx.beginPath();ctx.arc(s.x,s.y,19,0,Math.PI*2);ctx.stroke();
+      }
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(s.id,s.x,s.y);
+    });
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s4').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s5: EXTENDED TRANSITION FUNCTION ==================== -->
+<div class="slide" id="s5">
+  <h1>Extended Transition Function δ̂</h1>
+  <p class="subtitle">Processing an entire string, one symbol at a time</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS5" width="520" height="320" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem">
+        <button class="btn btn-sm" onclick="s5Step()">Step</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+      <div id="s5Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.78rem;max-height:90px;overflow-y:auto;margin-top:.5rem;color:#94a3b8"></div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Recursive Definition</h3>
+        <p><b>Base:</b> δ̂(q, ε) = q</p>
+        <p><b>Inductive:</b> δ̂(q, wa) = δ(δ̂(q, w), a)</p>
+        <p style="margin-top:.5rem;color:#94a3b8">In plain English: process all of w first to get some state, then take one more step on symbol a.</p>
+      </div>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line" id="s5c0">δ̂(q₀, "aab")</div>
+<div class="line" id="s5c1">= δ(δ̂(q₀, "aa"), b)</div>
+<div class="line" id="s5c2">= δ(δ(δ̂(q₀, "a"), a), b)</div>
+<div class="line" id="s5c3">= δ(δ(δ(δ̂(q₀, ε), a), a), b)</div>
+<div class="line" id="s5c4">= δ(δ(δ(q₀, a), a), b)</div>
+<div class="line" id="s5c5">= δ(δ(q₁, a), b)</div>
+<div class="line" id="s5c6">= δ(q₁, b)</div>
+<div class="line" id="s5c7">= q₂  ∈ F  ✓ Accept!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS5');
+  const ctx=canvas.getContext('2d');
+  const states=[{id:'q0',x:100,y:160},{id:'q1',x:260,y:160},{id:'q2',x:420,y:160}];
+  const input='aab';
+  const trace=[
+    {state:'q0',sym:null,msg:'Start at q₀'},
+    {state:'q1',sym:'a',msg:'δ(q₀, a) = q₁'},
+    {state:'q1',sym:'a',msg:'δ(q₁, a) = q₁'},
+    {state:'q2',sym:'b',msg:'δ(q₁, b) = q₂ — Accept!'}
+  ];
+  let stepIdx=0,timer=null;
+  function pos(id){return states.find(s=>s.id===id)}
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    // edges (simplified)
+    const edgeData=[
+      ['q0','q1','a',180,110],['q1','q1','a',260,70,true],
+      ['q1','q2','b',340,110],['q0','q0','b',100,70,true],
+      ['q2','q1','a',340,210],['q2','q0','b',260,260]
+    ];
+    edgeData.forEach(([f,t,lab,cx,cy,self])=>{
+      const fp=pos(f),tp=pos(t);
+      ctx.strokeStyle='#334155';ctx.lineWidth=1.5;
+      if(self){
+        ctx.beginPath();ctx.arc(fp.x,fp.y-40,18,0.4,Math.PI-0.4);ctx.stroke();
+        ctx.fillStyle='#64748b';ctx.font='12px monospace';ctx.textAlign='center';
+        ctx.fillText(lab,fp.x,fp.y-65);
+      } else {
+        ctx.beginPath();ctx.moveTo(fp.x,fp.y);ctx.quadraticCurveTo(cx,cy,tp.x,tp.y);ctx.stroke();
+        ctx.fillStyle='#64748b';ctx.font='12px monospace';ctx.textAlign='center';
+        ctx.fillText(lab,(fp.x+4*cx+tp.x)/6,(fp.y+4*cy+tp.y)/6-4);
+      }
+    });
+    // start arrow
+    ctx.beginPath();ctx.moveTo(30,160);ctx.lineTo(72,160);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    // nodes
+    const cur=trace[Math.min(stepIdx,trace.length-1)].state;
+    states.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,24,0,Math.PI*2);
+      ctx.fillStyle=s.id===cur?'#f59e0b22':'#1e293b';ctx.fill();
+      ctx.strokeStyle=s.id===cur?'#f59e0b':s.id==='q2'?'#22c55e':'#6366f1';
+      ctx.lineWidth=s.id===cur?3:2;ctx.stroke();
+      if(s.id==='q2'){ctx.beginPath();ctx.arc(s.x,s.y,19,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle=s.id===cur?'#f59e0b':'#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(s.id,s.x,s.y);
+    });
+    // input display
+    ctx.font='15px monospace';ctx.textAlign='center';
+    ctx.fillStyle='#94a3b8';ctx.fillText('Input: "aab"',260,290);
+    for(let i=0;i<3;i++){
+      const consumed=stepIdx>i;const current=stepIdx===i+1;
+      ctx.fillStyle=consumed&&!current?'#475569':current?'#f59e0b':'#e2e8f0';
+      ctx.font=(current?'bold ':'')+'18px monospace';
+      ctx.fillText(input[i],230+i*30,260);
+    }
+  }
+  function log(msg){const el=document.getElementById('s5Log');el.innerHTML+='<div style="color:#cbd5e1">'+msg+'</div>';el.scrollTop=el.scrollHeight}
+  function syncCode(){
+    for(let i=0;i<8;i++){
+      const el=document.getElementById('s5c'+i);
+      el.className=i<=stepIdx+3&&i>=stepIdx?'line active':'line';
+    }
+  }
+  window.s5Step=function(){
+    if(stepIdx>=trace.length)return;
+    log(trace[stepIdx].msg);stepIdx++;draw();syncCode();
+  };
+  window.s5Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=trace.length){clearInterval(timer);timer=null;return}s5Step()},900)};
+  window.s5Reset=function(){if(timer){clearInterval(timer);timer=null}stepIdx=0;document.getElementById('s5Log').innerHTML='';for(let i=0;i<8;i++)document.getElementById('s5c'+i).className='line';draw()};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s5').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s6: EVEN 0s EXAMPLE ==================== -->
+<div class="slide" id="s6">
+  <h1>Example: Even Number of 0s</h1>
+  <p class="subtitle">The classic first DFA — accepts binary strings with an even count of 0s</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS6" width="520" height="300" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem">
+        <button class="btn btn-sm" onclick="s6Step()">Step</button>
+        <button class="btn btn-sm" onclick="s6Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Reset()">Reset</button>
+        <span style="color:#94a3b8;font-size:.82rem;align-self:center;margin-left:auto" id="s6Status">Input: 10010</span>
+      </div>
+      <div id="s6Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.78rem;max-height:80px;overflow-y:auto;margin-top:.5rem;color:#94a3b8"></div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Design Insight</h3>
+        <p>The DFA only needs to remember <b>one bit of information</b>: is the count of 0s seen so far even or odd?</p>
+        <ul>
+          <li><b>E (Even)</b> — seen even # of 0s → accept</li>
+          <li><b>O (Odd)</b> — seen odd # of 0s → reject</li>
+        </ul>
+      </div>
+      <div style="margin-top:.5rem">
+        <h3>Transition Table</h3>
+        <table style="font-size:.9em;margin-top:.3rem">
+          <tr><th>State</th><th>0</th><th>1</th></tr>
+          <tr><td><b>→ *E</b></td><td>O</td><td>E</td></tr>
+          <tr><td><b>O</b></td><td>E</td><td>O</td></tr>
+        </table>
+        <p style="color:#94a3b8;font-size:.85em;margin-top:.5rem">→ = start, * = accept. On 1, state unchanged (1 doesn't affect 0-count). On 0, state toggles.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS6');
+  const ctx=canvas.getContext('2d');
+  const input='10010';
+  let stepIdx=0,state='E',timer=null;
+  const trace=[];
+  let st='E';
+  for(const c of input){
+    const prev=st;
+    st=c==='0'?(st==='E'?'O':'E'):st;
+    trace.push({prev,sym:c,next:st});
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    const ex=160,ox=360,cy=130,r=40;
+    // self-loops
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(ex,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';ctx.fillText('1',ex,cy-r-42);
+    ctx.beginPath();ctx.arc(ox,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();
+    ctx.fillText('1',ox,cy-r-42);
+    // E->O top
+    ctx.beginPath();ctx.moveTo(ex+r,cy-10);ctx.quadraticCurveTo(260,cy-60,ox-r,cy-10);ctx.strokeStyle='#475569';ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.fillText('0',260,cy-45);
+    // O->E bottom
+    ctx.beginPath();ctx.moveTo(ox-r,cy+10);ctx.quadraticCurveTo(260,cy+60,ex+r,cy+10);ctx.stroke();
+    ctx.fillText('0',260,cy+50);
+    // arrowheads
+    function arrow(tx,ty,fx,fy,col){
+      const a=Math.atan2(ty-fy,tx-fx);
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-8*Math.cos(a-Math.PI/6),ty-8*Math.sin(a-Math.PI/6));
+      ctx.lineTo(tx-8*Math.cos(a+Math.PI/6),ty-8*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fillStyle=col;ctx.fill();
+    }
+    arrow(ox-r,cy-10,ox-r-10,cy-15,'#475569');
+    arrow(ex+r,cy+10,ex+r+10,cy+15,'#475569');
+    // start arrow
+    ctx.beginPath();ctx.moveTo(50,cy);ctx.lineTo(ex-r-2,cy);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    arrow(ex-r-2,cy,ex-r-10,cy,'#e2e8f0');
+    // nodes
+    [['E',ex,true],['O',ox,false]].forEach(([name,x,acc])=>{
+      ctx.beginPath();ctx.arc(x,cy,r,0,Math.PI*2);
+      ctx.fillStyle=state===name?'#f59e0b22':'#1e293b';ctx.fill();
+      ctx.strokeStyle=state===name?'#f59e0b':acc?'#22c55e':'#6366f1';
+      ctx.lineWidth=state===name?3:2;ctx.stroke();
+      if(acc){ctx.beginPath();ctx.arc(x,cy,r-5,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle=state===name?'#f59e0b':'#e2e8f0';
+      ctx.font='bold 18px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(name,x,cy);
+    });
+    // input
+    ctx.font='16px monospace';ctx.textAlign='center';
+    for(let i=0;i<input.length;i++){
+      ctx.fillStyle=i<stepIdx?'#475569':i===stepIdx?'#f59e0b':'#e2e8f0';
+      ctx.font=(i===stepIdx?'bold ':'')+'16px monospace';
+      ctx.fillText(input[i],170+i*40,240);
+    }
+    if(stepIdx>=trace.length){
+      ctx.fillStyle=state==='E'?'#22c55e':'#ef4444';ctx.font='bold 16px sans-serif';
+      ctx.fillText(state==='E'?'✓ ACCEPTED':'✗ REJECTED',260,275);
+    }
+  }
+  function log(msg){const el=document.getElementById('s6Log');el.innerHTML+='<div style="color:#cbd5e1">'+msg+'</div>';el.scrollTop=el.scrollHeight}
+  window.s6Step=function(){
+    if(stepIdx>=trace.length)return;
+    const t=trace[stepIdx];state=t.next;
+    log('δ('+t.prev+', '+t.sym+') = '+t.next);
+    stepIdx++;
+    if(stepIdx>=trace.length)log('<span style="color:'+(state==='E'?'#22c55e':'#ef4444')+'">'+(state==='E'?'✓ Accept! Even # of 0s':'✗ Reject! Odd # of 0s')+'</span>');
+    draw();
+  };
+  window.s6Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=trace.length){clearInterval(timer);timer=null;return}s6Step()},700)};
+  window.s6Reset=function(){if(timer){clearInterval(timer);timer=null}stepIdx=0;state='E';document.getElementById('s6Log').innerHTML='';draw()};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s6').classList.contains('active')){s6Reset();draw()}});
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s7: DFA SIMULATOR PLAYGROUND ==================== -->
+<div class="slide" id="s7">
+  <h1>DFA Simulator Playground</h1>
+  <p class="subtitle">Enter any binary string — watch the "even 0s" DFA process it live</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS7" width="520" height="280" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;align-items:center">
+        <input type="text" id="s7input" placeholder="e.g. 10010" value=""
+          style="padding:.4rem .6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;width:140px">
+        <button class="btn btn-sm" onclick="s7Step()">Step</button>
+        <button class="btn btn-sm" onclick="s7Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+      <div id="s7Status" style="color:#94a3b8;font-size:.85em;margin-top:.4rem">Enter a binary string and press Step.</div>
+      <div id="s7Verdict" style="display:none;font-size:1.1em;font-weight:700;text-align:center;margin-top:.5rem;padding:.6rem;border-radius:8px"></div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Try these strings</h3>
+        <ul>
+          <li><b>ε</b> (empty) — 0 zeros, that's even → Accept</li>
+          <li><b>1111</b> — 0 zeros → Accept</li>
+          <li><b>0</b> — 1 zero → Reject</li>
+          <li><b>00</b> — 2 zeros → Accept</li>
+          <li><b>10010</b> — 2 zeros → Accept</li>
+          <li><b>000</b> — 3 zeros → Reject</li>
+        </ul>
+      </div>
+      <div class="key-idea">
+        <h3>Why this works</h3>
+        <p>The DFA acts as a <b>parity checker</b>. Each 0 toggles between E and O. Each 1 stays put. After reading all input, if we're at E, the count was even.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS7');
+  const ctx=canvas.getContext('2d');
+  let state='E',pos=-1,str='',done=false,timer=null;
+  const delta={E:{0:'O',1:'E'},O:{0:'E',1:'O'}};
+  function draw(){
+    ctx.clearRect(0,0,520,280);
+    const ex=160,ox=360,cy=110,r=40;
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    // self-loops
+    ctx.beginPath();ctx.arc(ex,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';ctx.fillText('1',ex,cy-r-42);
+    ctx.beginPath();ctx.arc(ox,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('1',ox,cy-r-42);
+    // E->O, O->E
+    ctx.beginPath();ctx.moveTo(ex+r,cy-10);ctx.quadraticCurveTo(260,cy-60,ox-r,cy-10);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.fillText('0',260,cy-45);
+    ctx.beginPath();ctx.moveTo(ox-r,cy+10);ctx.quadraticCurveTo(260,cy+60,ex+r,cy+10);ctx.stroke();
+    ctx.fillText('0',260,cy+50);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(50,cy);ctx.lineTo(ex-r-2,cy);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    // nodes
+    [['E',ex,true],['O',ox,false]].forEach(([name,x,acc])=>{
+      const isCur=state===name;
+      const col=done?(state==='E'&&isCur?'#22c55e':state==='O'&&isCur?'#ef4444':isCur?'#f59e0b':'#6366f1'):isCur?'#f59e0b':acc?'#22c55e':'#6366f1';
+      ctx.beginPath();ctx.arc(x,cy,r,0,Math.PI*2);
+      ctx.fillStyle=isCur?col+'22':'#1e293b';ctx.fill();
+      ctx.strokeStyle=col;ctx.lineWidth=isCur?3:2;ctx.stroke();
+      if(acc){ctx.beginPath();ctx.arc(x,cy,r-5,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle=isCur?col:'#e2e8f0';ctx.font='bold 18px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(name,x,cy);
+    });
+    // input display
+    if(str.length>0){
+      ctx.font='16px monospace';ctx.textAlign='center';
+      const startX=260-(str.length*15)/2;
+      for(let i=0;i<str.length;i++){
+        ctx.fillStyle=i<pos?'#475569':i===pos?'#f59e0b':'#e2e8f0';
+        ctx.font=(i===pos?'bold ':'')+'16px monospace';
+        ctx.fillText(str[i],startX+i*30,220);
+      }
+    }
+  }
+  window.s7Step=function(){
+    if(done)return;
+    if(pos===-1){
+      const val=document.getElementById('s7input').value.trim();
+      if(val===''){ // empty string
+        str='';pos=0;state='E';done=true;
+        document.getElementById('s7Status').textContent='Empty string → stays at E';
+        showVerdict();draw();return;
+      }
+      if(!/^[01]+$/.test(val)){document.getElementById('s7Status').innerHTML='<span style="color:#ef4444">Only 0 and 1 allowed!</span>';return}
+      str=val;pos=0;state='E';
+      document.getElementById('s7input').disabled=true;
+      document.getElementById('s7Status').textContent='State: E — ready to read first symbol';
+      draw();return;
+    }
+    if(pos<str.length){
+      const sym=str[pos],prev=state;
+      state=delta[prev][sym];pos++;
+      document.getElementById('s7Status').textContent='δ('+prev+', '+sym+') = '+state+(pos>=str.length?' — all input consumed':'');
+      if(pos>=str.length){done=true;showVerdict()}
+      draw();
+    }
+  };
+  function showVerdict(){
+    const v=document.getElementById('s7Verdict');
+    v.style.display='block';
+    if(state==='E'){v.textContent='✓ ACCEPTED';v.style.color='#22c55e';v.style.background='rgba(34,197,94,.12)';v.style.border='2px solid #22c55e'}
+    else{v.textContent='✗ REJECTED';v.style.color='#ef4444';v.style.background='rgba(239,68,68,.12)';v.style.border='2px solid #ef4444'}
+  }
+  window.s7Auto=function(){if(timer||done)return;timer=setInterval(()=>{if(done){clearInterval(timer);timer=null;return}s7Step()},600)};
+  window.s7Reset=function(){
+    if(timer){clearInterval(timer);timer=null}
+    state='E';pos=-1;str='';done=false;
+    document.getElementById('s7input').disabled=false;
+    document.getElementById('s7Status').textContent='Enter a binary string and press Step.';
+    document.getElementById('s7Verdict').style.display='none';
+    draw();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s7').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s8: LANGUAGE OF A DFA ==================== -->
+<div class="slide" id="s8">
+  <h1>Language of a DFA</h1>
+  <p class="subtitle">L(A) = the set of all strings the DFA accepts</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS8" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Formal Definition</h3>
+        <p><b>L(A) = { w ∈ Σ* | δ̂(q₀, w) ∈ F }</b></p>
+        <p style="margin-top:.5rem">The language is all strings w such that, starting from q₀ and reading all of w, you end up in an accept state.</p>
+      </div>
+      <div style="margin-top:.75rem">
+        <h3>For the even-0s DFA:</h3>
+        <p><b>L(A) = { w ∈ {0,1}* | w has an even number of 0s }</b></p>
+        <ul style="margin-top:.4rem;font-size:.9em">
+          <li>ε ∈ L(A) — zero 0s is even</li>
+          <li>1, 11, 111, ... ∈ L(A) — zero 0s</li>
+          <li>00, 1001, 0110 ∈ L(A) — two 0s</li>
+          <li>0, 010, 000 ∉ L(A) — odd 0s</li>
+        </ul>
+      </div>
+      <div class="warning" style="margin-top:.75rem">
+        <h3>Regular Language</h3>
+        <p>A language is <b>regular</b> if and only if some DFA recognizes it. The class of regular languages equals the class of DFA-recognizable languages.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS8');
+  const ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    // Draw Venn-like diagram of Σ* with L(A) inside
+    ctx.strokeStyle='#475569';ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(30,20,460,300,16);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='13px sans-serif';ctx.textAlign='left';
+    ctx.fillText('Σ* = {0,1}* (all binary strings)',45,45);
+    // L(A) circle
+    ctx.beginPath();ctx.ellipse(220,180,140,110,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(34,197,94,.08)';ctx.fill();
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#22c55e';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText('L(A) — Accept',220,90);
+    // accepted strings
+    const accepted=['ε','11','00','1001','0110','1100','0000'];
+    accepted.forEach((s,i)=>{
+      const angle=i*Math.PI*2/accepted.length-Math.PI/2;
+      const rx=80+Math.random()*20,ry=60+Math.random()*15;
+      const x=220+rx*Math.cos(angle),y=180+ry*Math.sin(angle);
+      ctx.fillStyle='#22c55e';ctx.font='13px monospace';ctx.textAlign='center';
+      ctx.fillText(s,x,y);
+    });
+    // rejected strings (outside circle)
+    const rejected=['0','010','000','10','0010'];
+    ctx.fillStyle='#ef4444';ctx.font='13px monospace';
+    rejected.forEach((s,i)=>{
+      const x=400+Math.sin(i*1.2)*40, y=140+i*35;
+      ctx.textAlign='center';ctx.fillText(s,x,y);
+    });
+    ctx.fillStyle='#ef4444';ctx.font='bold 13px sans-serif';
+    ctx.fillText('Reject',420,120);
+    // arrow showing q0 processing
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('δ̂(q₀, w) ∈ F → w ∈ L(A)',260,330);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s9: DESIGNING DFAs ==================== -->
+<div class="slide" id="s9">
+  <h1>How to Design a DFA</h1>
+  <p class="subtitle">A systematic approach to building DFAs from scratch</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="key-idea">
+        <h3>The State = Memory Principle</h3>
+        <p>Ask yourself: <b>"What do I need to remember about the input so far?"</b> Each distinct "memory situation" becomes a state.</p>
+      </div>
+      <div style="margin-top:.75rem">
+        <h3>Step-by-Step Strategy</h3>
+        <ol style="padding-left:1.5rem">
+          <li style="margin-bottom:.4rem"><b>Identify what to track</b> — What property of the input determines acceptance?</li>
+          <li style="margin-bottom:.4rem"><b>List all possible memory states</b> — What are ALL the distinct situations?</li>
+          <li style="margin-bottom:.4rem"><b>Define transitions</b> — For each (state, symbol), where do you go?</li>
+          <li style="margin-bottom:.4rem"><b>Mark start and accept states</b> — Which memory state means "input seen so far is empty"? Which means "accept"?</li>
+          <li style="margin-bottom:.4rem"><b>Add a dead state if needed</b> — If some transitions have no natural target, add a trap state.</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Example: "ends with 01"</h3>
+        <p>What do I need to remember? The last 1-2 characters.</p>
+        <ul>
+          <li><b>q₀</b>: haven't seen useful suffix yet (or last char was 1 after non-0)</li>
+          <li><b>q₁</b>: last char was 0 (potential start of "01")</li>
+          <li><b>q₂</b>: last two chars were "01" → ACCEPT</li>
+        </ul>
+      </div>
+      <div class="warning">
+        <h3>Common Trap</h3>
+        <p>Don't try to remember the <b>entire input</b>. DFAs have finite memory. Focus on what <b>matters</b> for the acceptance condition.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s10: ENDS WITH 01 ==================== -->
+<div class="slide" id="s10">
+  <h1>Building "Ends with 01"</h1>
+  <p class="subtitle">Watch the DFA get constructed step by step</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS10" width="520" height="300" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.78rem;max-height:100px;overflow-y:auto;margin-top:.5rem;color:#94a3b8"></div>
+    </div>
+    <div>
+      <h3>Test it: input "1001"</h3>
+      <div id="s10Trace" style="margin-top:.5rem">
+        <div class="code-block"><div class="code-content">
+<div class="line" id="s10t0">q₀ —1→ q₀  (last char: 1)</div>
+<div class="line" id="s10t1">q₀ —0→ q₁  (last char: 0)</div>
+<div class="line" id="s10t2">q₁ —0→ q₁  (last char: 0)</div>
+<div class="line" id="s10t3">q₁ —1→ q₂  (ends with 01!)</div>
+<div class="line" id="s10t4">q₂ ∈ F → ACCEPT ✓</div>
+        </div></div>
+      </div>
+      <div class="key-idea" style="margin-top:.5rem">
+        <h3>State meanings</h3>
+        <p><b>q₀</b>: no useful suffix yet<br>
+        <b>q₁</b>: last char was 0<br>
+        <b>q₂</b>: last two chars were 01 (accept)</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS10');
+  const ctx=canvas.getContext('2d');
+  const buildSteps=[
+    {nodes:['q0'],edges:[],msg:'Start: create initial state q₀ (nothing seen yet)',active:'q0'},
+    {nodes:['q0','q1'],edges:[['q0','q1','0']],msg:'On 0 from q₀ → go to q₁ (saw a 0)',active:'q1'},
+    {nodes:['q0','q1'],edges:[['q0','q1','0'],['q0','q0','1']],msg:'On 1 from q₀ → stay at q₀ (no useful suffix)',active:'q0'},
+    {nodes:['q0','q1','q2'],edges:[['q0','q1','0'],['q0','q0','1'],['q1','q2','1']],msg:'On 1 from q₁ → go to q₂ (saw 01!)',active:'q2'},
+    {nodes:['q0','q1','q2'],edges:[['q0','q1','0'],['q0','q0','1'],['q1','q2','1'],['q1','q1','0']],msg:'On 0 from q₁ → stay at q₁ (still ends with 0)',active:'q1'},
+    {nodes:['q0','q1','q2'],edges:[['q0','q1','0'],['q0','q0','1'],['q1','q2','1'],['q1','q1','0'],['q2','q1','0']],msg:'On 0 from q₂ → go to q₁ (new potential 0 suffix)',active:'q1'},
+    {nodes:['q0','q1','q2'],edges:[['q0','q1','0'],['q0','q0','1'],['q1','q2','1'],['q1','q1','0'],['q2','q1','0'],['q2','q0','1']],msg:'On 1 from q₂ → go to q₀ (suffix broken). DFA complete!',active:'q0'}
+  ];
+  let stepIdx=0,timer=null;
+  const positions={q0:{x:100,y:150},q1:{x:260,y:150},q2:{x:420,y:150}};
+
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    const step=buildSteps[Math.min(stepIdx,buildSteps.length-1)];
+    // draw edges
+    step.edges.forEach(([f,t,lab])=>{
+      const fp=positions[f],tp=positions[t];
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+      if(f===t){
+        ctx.beginPath();ctx.arc(fp.x,fp.y-40,18,0.4,Math.PI-0.4);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';
+        ctx.fillText(lab,fp.x,fp.y-65);
+      } else {
+        const above=fp.y>=tp.y&&fp.x<tp.x;
+        const cy2=fp.x<tp.x?(fp.y>tp.y?fp.y+50:fp.y-50):fp.y;
+        // simple direct line for adjacent nodes
+        if(Math.abs(fp.x-tp.x)<=200){
+          const isTop = (f==='q0'&&t==='q1')||(f==='q1'&&t==='q2');
+          const isBot = (f==='q2'&&t==='q1')||(f==='q2'&&t==='q0');
+          const offY = isTop?-40:isBot?40:0;
+          ctx.beginPath();ctx.moveTo(fp.x,fp.y);ctx.quadraticCurveTo((fp.x+tp.x)/2,fp.y+offY,tp.x,tp.y);ctx.stroke();
+          ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';
+          ctx.fillText(lab,(fp.x+tp.x)/2,(fp.y+tp.y)/2+offY/2-8);
+          // arrowhead
+          const ang=Math.atan2(tp.y-(fp.y+offY),tp.x-(fp.x+tp.x)/2);
+          const ax=tp.x-22*Math.cos(ang),ay=tp.y-22*Math.sin(ang);
+          ctx.beginPath();ctx.moveTo(ax,ay);
+          ctx.lineTo(ax-7*Math.cos(ang-Math.PI/6),ay-7*Math.sin(ang-Math.PI/6));
+          ctx.lineTo(ax-7*Math.cos(ang+Math.PI/6),ay-7*Math.sin(ang+Math.PI/6));
+          ctx.closePath();ctx.fillStyle='#475569';ctx.fill();
+        } else {
+          ctx.beginPath();ctx.moveTo(fp.x,fp.y);ctx.quadraticCurveTo((fp.x+tp.x)/2,fp.y+60,tp.x,tp.y);ctx.stroke();
+          ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';
+          ctx.fillText(lab,(fp.x+tp.x)/2,fp.y+55);
+        }
+      }
+    });
+    // start arrow
+    if(step.nodes.includes('q0')){
+      ctx.beginPath();ctx.moveTo(30,150);ctx.lineTo(72,150);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(72,150);ctx.lineTo(64,145);ctx.lineTo(64,155);ctx.closePath();ctx.fillStyle='#e2e8f0';ctx.fill();
+    }
+    // nodes
+    step.nodes.forEach(id=>{
+      const p=positions[id];
+      const isActive=step.active===id;
+      const isAccept=id==='q2'&&stepIdx>=3;
+      ctx.beginPath();ctx.arc(p.x,p.y,26,0,Math.PI*2);
+      ctx.fillStyle=isActive?'#f59e0b22':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isActive?'#f59e0b':isAccept?'#22c55e':'#6366f1';
+      ctx.lineWidth=isActive?3:2;ctx.stroke();
+      if(isAccept){ctx.beginPath();ctx.arc(p.x,p.y,21,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle=isActive?'#f59e0b':'#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(id,p.x,p.y);
+    });
+  }
+  function log(msg){const el=document.getElementById('s10Log');el.innerHTML+='<div style="color:#cbd5e1">'+msg+'</div>';el.scrollTop=el.scrollHeight}
+
+  // Also sync code trace
+  function syncTrace(){
+    for(let i=0;i<5;i++){
+      const el=document.getElementById('s10t'+i);
+      if(el)el.className=stepIdx>=buildSteps.length&&i<5?'line active':'line';
+    }
+  }
+
+  window.s10Step=function(){
+    if(stepIdx>=buildSteps.length)return;
+    log(buildSteps[stepIdx].msg);
+    stepIdx++;draw();
+    if(stepIdx>=buildSteps.length){
+      // highlight trace
+      for(let i=0;i<5;i++){const el=document.getElementById('s10t'+i);if(el)el.className='line active'}
+    }
+  };
+  window.s10Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=buildSteps.length){clearInterval(timer);timer=null;return}s10Step()},1000)};
+  window.s10Reset=function(){if(timer){clearInterval(timer);timer=null}stepIdx=0;document.getElementById('s10Log').innerHTML='';for(let i=0;i<5;i++){const el=document.getElementById('s10t'+i);if(el)el.className='line'}draw()};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active')){draw()}});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s11: PRODUCT CONSTRUCTION ==================== -->
+<div class="slide" id="s11">
+  <h1>Product Construction</h1>
+  <p class="subtitle">Combining two DFAs to handle union and intersection</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS11" width="520" height="360" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem">
+        <button class="btn btn-sm" onclick="s11Toggle('union')">Union (∪)</button>
+        <button class="btn btn-sm" onclick="s11Toggle('inter')">Intersection (∩)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>How it works</h3>
+        <p>Given DFA₁ = (Q₁, Σ, δ₁, q₁, F₁) and DFA₂ = (Q₂, Σ, δ₂, q₂, F₂):</p>
+        <ul>
+          <li><b>States:</b> Q₁ × Q₂ (all pairs)</li>
+          <li><b>Start:</b> (q₁, q₂)</li>
+          <li><b>δ((p,q), a) = (δ₁(p,a), δ₂(q,a))</b></li>
+          <li><b>Union:</b> F = F₁ × Q₂ ∪ Q₁ × F₂</li>
+          <li><b>Intersection:</b> F = F₁ × F₂</li>
+        </ul>
+      </div>
+      <div class="analogy">
+        <h3>Running two DFAs in parallel</h3>
+        <p>Imagine running both DFAs simultaneously on the same input. Each state in the product tracks where <b>both</b> DFAs are. For union, accept if <b>either</b> accepts. For intersection, accept if <b>both</b> accept.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS11');
+  const ctx=canvas.getContext('2d');
+  // DFA1: accepts "has a 0" — states: A (no 0 seen), B (seen 0, accept)
+  // DFA2: accepts "has a 1" — states: X (no 1 seen), Y (seen 1, accept)
+  // Product: (A,X) (A,Y) (B,X) (B,Y)
+  let mode='none'; // 'union' or 'inter' or 'none'
+  const pStates=[
+    {id:'A,X',x:130,y:100},{id:'A,Y',x:390,y:100},
+    {id:'B,X',x:130,y:260},{id:'B,Y',x:390,y:260}
+  ];
+  function isAccept(id){
+    const [a,b]=id.split(',');
+    if(mode==='union')return a==='B'||b==='Y';
+    if(mode==='inter')return a==='B'&&b==='Y';
+    return false;
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,360);
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('DFA₁: "has a 0"  ×  DFA₂: "has a 1"',260,25);
+    if(mode!=='none'){
+      ctx.fillStyle='#38bdf8';ctx.font='bold 13px sans-serif';
+      ctx.fillText(mode==='union'?'Mode: UNION — accept if either has seen its symbol':'Mode: INTERSECTION — accept if both have seen their symbol',260,350);
+    }
+    // edges
+    const edges=[
+      ['A,X','B,X','0',-40],['A,X','A,Y','1',-40],
+      ['B,X','B,X','0',0,true],['B,X','B,Y','1',40],
+      ['A,Y','B,Y','0',40],['A,Y','A,Y','1',0,true],
+      ['B,Y','B,Y','0,1',0,true]
+    ];
+    edges.forEach(([f,t,lab,off,self])=>{
+      const fp=pStates.find(s=>s.id===f),tp=pStates.find(s=>s.id===t);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+      if(self){
+        const side=fp.x>260?1:-1;
+        ctx.beginPath();ctx.arc(fp.x+side*35,fp.y,16,side>0?Math.PI+0.4:0.4-Math.PI,side>0?-0.4:Math.PI-0.4);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+        ctx.fillText(lab,fp.x+side*58,fp.y-4);
+      } else {
+        const cx2=(fp.x+tp.x)/2+(off||0),cy2=(fp.y+tp.y)/2+(off||0);
+        ctx.beginPath();ctx.moveTo(fp.x,fp.y);ctx.lineTo(tp.x,tp.y);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+        const mx=(fp.x+tp.x)/2,my=(fp.y+tp.y)/2;
+        ctx.fillText(lab,mx+(off||0)/3,my-8);
+        // arrowhead
+        const ang=Math.atan2(tp.y-fp.y,tp.x-fp.x);
+        const ax=tp.x-28*Math.cos(ang),ay=tp.y-28*Math.sin(ang);
+        ctx.beginPath();ctx.moveTo(ax,ay);
+        ctx.lineTo(ax-7*Math.cos(ang-Math.PI/6),ay-7*Math.sin(ang-Math.PI/6));
+        ctx.lineTo(ax-7*Math.cos(ang+Math.PI/6),ay-7*Math.sin(ang+Math.PI/6));
+        ctx.closePath();ctx.fillStyle='#475569';ctx.fill();
+      }
+    });
+    // start arrow
+    ctx.beginPath();ctx.moveTo(50,100);ctx.lineTo(100,100);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    // nodes
+    pStates.forEach(s=>{
+      const acc=isAccept(s.id);
+      ctx.beginPath();ctx.arc(s.x,s.y,28,0,Math.PI*2);
+      ctx.fillStyle=acc?'rgba(34,197,94,.15)':'#1e293b';ctx.fill();
+      ctx.strokeStyle=acc?'#22c55e':'#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(acc){ctx.beginPath();ctx.arc(s.x,s.y,23,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(s.id,s.x,s.y);
+    });
+  }
+  window.s11Toggle=function(m){mode=m;draw()};
+  window.s11Reset=function(){mode='none';draw()};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCA: CHALLENGE A — TRACE/PREDICT ==================== -->
+<div class="slide" id="sCA">
+  <h1>Challenge A: Trace the DFA</h1>
+  <p class="subtitle">Given this DFA, predict whether each string is accepted or rejected</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cCA" width="520" height="260" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <p style="color:#94a3b8;font-size:.85em;margin-top:.4rem">DFA accepts strings over {a,b} that contain "ab" as a substring.</p>
+    </div>
+    <div>
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <div id="caQ1" style="background:#1e293b;padding:.6rem .8rem;border-radius:8px;border:1px solid #334155">
+          <p style="margin-bottom:.3rem"><b>1.</b> Input: "ba"</p>
+          <select id="caA1" style="padding:.3rem .5rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0">
+            <option value="">Choose...</option><option value="accept">Accept</option><option value="reject">Reject</option>
+          </select>
+        </div>
+        <div id="caQ2" style="background:#1e293b;padding:.6rem .8rem;border-radius:8px;border:1px solid #334155">
+          <p style="margin-bottom:.3rem"><b>2.</b> Input: "aab"</p>
+          <select id="caA2" style="padding:.3rem .5rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0">
+            <option value="">Choose...</option><option value="accept">Accept</option><option value="reject">Reject</option>
+          </select>
+        </div>
+        <div id="caQ3" style="background:#1e293b;padding:.6rem .8rem;border-radius:8px;border:1px solid #334155">
+          <p style="margin-bottom:.3rem"><b>3.</b> Input: "bbb"</p>
+          <select id="caA3" style="padding:.3rem .5rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0">
+            <option value="">Choose...</option><option value="accept">Accept</option><option value="reject">Reject</option>
+          </select>
+        </div>
+        <div id="caQ4" style="background:#1e293b;padding:.6rem .8rem;border-radius:8px;border:1px solid #334155">
+          <p style="margin-bottom:.3rem"><b>4.</b> Input: "abba"</p>
+          <select id="caA4" style="padding:.3rem .5rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0">
+            <option value="">Choose...</option><option value="accept">Accept</option><option value="reject">Reject</option>
+          </select>
+        </div>
+        <button class="btn" onclick="caCheck()">Check Answers</button>
+        <div id="caResult" style="display:none;padding:.5rem;border-radius:8px;font-size:.9em"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCA');
+  const ctx=canvas.getContext('2d');
+  // DFA: contains "ab". States: S (start), A (saw 'a'), F (saw 'ab', accept)
+  function draw(){
+    ctx.clearRect(0,0,520,260);
+    const nodes=[{id:'S',x:100,y:130},{id:'A',x:260,y:130},{id:'F',x:420,y:130}];
+    // edges
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    // S --a--> A
+    ctx.beginPath();ctx.moveTo(130,120);ctx.lineTo(230,120);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';ctx.fillText('a',180,112);
+    // S --b--> S (self-loop)
+    ctx.beginPath();ctx.arc(100,80,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('b',100,56);
+    // A --b--> F
+    ctx.beginPath();ctx.moveTo(290,120);ctx.lineTo(390,120);ctx.stroke();ctx.fillText('b',340,112);
+    // A --a--> A (self-loop)
+    ctx.beginPath();ctx.arc(260,80,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('a',260,56);
+    // F --a,b--> F (self-loop)
+    ctx.beginPath();ctx.arc(420,80,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('a,b',420,56);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(30,130);ctx.lineTo(70,130);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    // arrowheads on edges
+    [[230,120,'right'],[390,120,'right']].forEach(([x,y])=>{
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-7,y-5);ctx.lineTo(x-7,y+5);ctx.closePath();ctx.fillStyle='#475569';ctx.fill();
+    });
+    // nodes
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,26,0,Math.PI*2);
+      ctx.fillStyle='#1e293b';ctx.fill();
+      ctx.strokeStyle=n.id==='F'?'#22c55e':'#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(n.id==='F'){ctx.beginPath();ctx.arc(n.x,n.y,21,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+  const answers=['reject','accept','reject','accept']; // ba:no ab, aab:has ab, bbb:no ab, abba:has ab
+  window.caCheck=function(){
+    let score=0;
+    for(let i=1;i<=4;i++){
+      const sel=document.getElementById('caA'+i).value;
+      const correct=sel===answers[i-1];
+      if(correct)score++;
+      const el=document.getElementById('caQ'+i);
+      el.style.borderColor=sel===''?'#475569':correct?'#22c55e':'#ef4444';
+    }
+    const res=document.getElementById('caResult');
+    res.style.display='block';
+    res.textContent=score+'/4 correct'+(score===4?' — Perfect!':' — Trace each string through S→A→F carefully.');
+    res.style.color=score===4?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCA').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s12: COMPLEMENT ==================== -->
+<div class="slide" id="s12">
+  <h1>Complement of a DFA</h1>
+  <p class="subtitle">To complement, just swap accept and non-accept states</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS12" width="520" height="320" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem">
+        <button class="btn btn-sm" onclick="s12Toggle()">Toggle Complement</button>
+        <span id="s12Label" style="color:#94a3b8;font-size:.85em;align-self:center;margin-left:.5rem">Original: accepts even # of 0s</span>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Complement is trivial for DFAs</h3>
+        <p>Given DFA A = (Q, Σ, δ, q₀, F):<br>
+        <b>Complement: A' = (Q, Σ, δ, q₀, Q \ F)</b></p>
+        <p style="margin-top:.4rem">Same states, same transitions, same start. Just flip which states are accepting!</p>
+      </div>
+      <div class="warning">
+        <h3>Only works for DFAs!</h3>
+        <p>You <b>cannot</b> complement an NFA by swapping accept states. You must first convert to a DFA, then complement. This is a classic exam mistake.</p>
+      </div>
+      <div class="analogy">
+        <h3>Why it works</h3>
+        <p>Since δ is a total function, every string ends in <b>exactly one state</b>. If that state was accepting, it's now rejecting, and vice versa. Every string changes sides.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS12');
+  const ctx=canvas.getContext('2d');
+  let complemented=false;
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    const ex=160,ox=360,cy=140,r=40;
+    const eAcc=complemented?false:true;
+    const oAcc=complemented?true:false;
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText(complemented?'Complemented: accepts ODD # of 0s':'Original: accepts EVEN # of 0s',260,25);
+    // edges
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(ex,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.fillText('1',ex,cy-r-42);
+    ctx.beginPath();ctx.arc(ox,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('1',ox,cy-r-42);
+    ctx.beginPath();ctx.moveTo(ex+r,cy-10);ctx.quadraticCurveTo(260,cy-60,ox-r,cy-10);ctx.stroke();ctx.fillText('0',260,cy-45);
+    ctx.beginPath();ctx.moveTo(ox-r,cy+10);ctx.quadraticCurveTo(260,cy+60,ex+r,cy+10);ctx.stroke();ctx.fillText('0',260,cy+50);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(50,cy);ctx.lineTo(ex-r-2,cy);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    // nodes with swap animation
+    [['E',ex,eAcc],['O',ox,oAcc]].forEach(([name,x,acc])=>{
+      ctx.beginPath();ctx.arc(x,cy,r,0,Math.PI*2);
+      ctx.fillStyle=acc?'rgba(34,197,94,.1)':'#1e293b';ctx.fill();
+      ctx.strokeStyle=acc?'#22c55e':'#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(acc){ctx.beginPath();ctx.arc(x,cy,r-5,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 18px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(name,x,cy);
+    });
+    // visual comparison
+    ctx.font='13px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#94a3b8';
+    ctx.fillText('F = '+(complemented?'{O}':'{E}'),260,cy+r+50);
+    ctx.fillText('L(A) = { w | w has '+(complemented?'odd':'even')+' # of 0s }',260,cy+r+75);
+  }
+  window.s12Toggle=function(){
+    complemented=!complemented;
+    document.getElementById('s12Label').textContent=complemented?'Complemented: accepts odd # of 0s':'Original: accepts even # of 0s';
+    draw();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s13: TENNIS DFA ==================== -->
+<div class="slide" id="s13">
+  <h1>Real-World DFA: Tennis Scoring</h1>
+  <p class="subtitle">Model a tennis game as a DFA — who wins?</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS13" width="520" height="360" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;align-items:center">
+        <button class="btn btn-sm" onclick="s13Point('s')" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">Server Scores</button>
+        <button class="btn btn-sm" onclick="s13Point('o')" style="background:linear-gradient(135deg,#ef4444,#f59e0b)">Opponent Scores</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s13Status" style="background:#1e293b;border-radius:8px;padding:.8rem;border:1px solid #334155;margin-bottom:.75rem">
+        <p style="font-size:1.1em;color:#e2e8f0"><b>Score:</b> <span id="s13Score">Love-Love</span></p>
+        <p style="color:#94a3b8;margin-top:.3rem" id="s13State">State: 0-0</p>
+      </div>
+      <div class="key-idea">
+        <h3>Tennis as a DFA</h3>
+        <p><b>Σ = {s, o}</b> — server or opponent wins a point</p>
+        <p><b>States</b> = all possible score combinations</p>
+        <p><b>Accept</b> = "Server Wins"</p>
+        <p style="margin-top:.3rem;color:#94a3b8">Note the <b>deuce rule</b>: at 40-40, someone must win by 2 points.</p>
+      </div>
+      <div id="s13History" style="background:rgba(0,0,0,.25);border-radius:8px;padding:.5rem;font-family:monospace;font-size:.78rem;max-height:80px;overflow-y:auto;margin-top:.5rem;color:#94a3b8"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS13');
+  const ctx=canvas.getContext('2d');
+  const scoreNames=['Love','15','30','40'];
+  // States: [server_points, opp_points] but simplified
+  // Regular game: 0-0 through 3-3 (deuce), then Ad-S, Ad-O
+  let sPoints=0,oPoints=0,gameOver=false,winner='';
+  const stateMap={};
+
+  function getState(){
+    if(gameOver)return winner==='s'?'Server Wins':'Opp Wins';
+    if(sPoints>=3&&oPoints>=3){
+      if(sPoints===oPoints)return 'Deuce';
+      if(sPoints>oPoints)return 'Ad-Server';
+      return 'Ad-Opponent';
+    }
+    return scoreNames[sPoints]+'-'+scoreNames[oPoints];
+  }
+  function getScoreDisplay(){
+    if(gameOver)return winner==='s'?'Game — Server':'Game — Opponent';
+    if(sPoints>=3&&oPoints>=3){
+      if(sPoints===oPoints)return 'Deuce';
+      if(sPoints>oPoints)return 'Ad — Server';
+      return 'Ad — Opponent';
+    }
+    return scoreNames[sPoints]+'-'+scoreNames[oPoints];
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,520,360);
+    // Draw a simplified state diagram showing current path
+    // States arranged in grid
+    const positions={
+      '0-0':{x:80,y:80},'15-0':{x:180,y:50},'0-15':{x:80,y:170},
+      '30-0':{x:280,y:30},'15-15':{x:180,y:140},'0-30':{x:80,y:260},
+      '40-0':{x:380,y:30},'30-15':{x:280,y:110},'15-30':{x:180,y:230},'0-40':{x:80,y:340},
+      '40-15':{x:380,y:100},'30-30':{x:280,y:200},'15-40':{x:180,y:310},
+      '40-30':{x:380,y:180},'30-40':{x:280,y:290},
+      'Deuce':{x:380,y:260},'Ad-Server':{x:460,y:220},'Ad-Opponent':{x:380,y:330},
+      'Server Wins':{x:480,y:60},'Opp Wins':{x:180,y:340}
+    };
+    const curState=getState();
+    // Draw nodes
+    Object.entries(positions).forEach(([name,{x,y}])=>{
+      const isCur=name===curState;
+      const isWinS=name==='Server Wins';
+      const isWinO=name==='Opp Wins';
+      ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);
+      ctx.fillStyle=isCur?(isWinS?'#22c55e33':isWinO?'#ef444433':'#f59e0b33'):'#1e293b';
+      ctx.fill();
+      ctx.strokeStyle=isCur?'#f59e0b':isWinS?'#22c55e':isWinO?'#ef4444':'#334155';
+      ctx.lineWidth=isCur?2.5:1;ctx.stroke();
+      if(isWinS||isWinO){ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle=isCur?'#f59e0b':'#94a3b8';ctx.font=(isCur?'bold ':'')+'8px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      const short=name.replace('Server Wins','S✓').replace('Opp Wins','O✗').replace('Ad-Server','Ad-S').replace('Ad-Opponent','Ad-O');
+      ctx.fillText(short,x,y);
+    });
+  }
+
+  function logMsg(msg){
+    const el=document.getElementById('s13History');
+    el.innerHTML+='<div style="color:#cbd5e1">'+msg+'</div>';
+    el.scrollTop=el.scrollHeight;
+  }
+
+  window.s13Point=function(who){
+    if(gameOver)return;
+    const prevScore=getScoreDisplay();
+    if(who==='s'){
+      if(sPoints>=3&&oPoints>=3){
+        if(sPoints>oPoints){gameOver=true;winner='s'}
+        else if(sPoints===oPoints){sPoints++}
+        else{oPoints--} // was Ad-O, back to deuce
+      } else {
+        sPoints++;
+        if(sPoints>=4&&sPoints-oPoints>=2){gameOver=true;winner='s'}
+      }
+    } else {
+      if(sPoints>=3&&oPoints>=3){
+        if(oPoints>sPoints){gameOver=true;winner='o'}
+        else if(sPoints===oPoints){oPoints++}
+        else{sPoints--}
+      } else {
+        oPoints++;
+        if(oPoints>=4&&oPoints-sPoints>=2){gameOver=true;winner='o'}
+      }
+    }
+    const newScore=getScoreDisplay();
+    logMsg((who==='s'?'Server':'Opponent')+' scores: '+prevScore+' → '+newScore);
+    document.getElementById('s13Score').textContent=newScore;
+    document.getElementById('s13State').textContent='State: '+getState();
+    draw();
+  };
+  window.s13Reset=function(){
+    sPoints=0;oPoints=0;gameOver=false;winner='';
+    document.getElementById('s13Score').textContent='Love-Love';
+    document.getElementById('s13State').textContent='State: 0-0';
+    document.getElementById('s13History').innerHTML='';
+    draw();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCB: CHALLENGE B — FIX THE BUG ==================== -->
+<div class="slide" id="sCB">
+  <h1>Challenge B: Fix the Bug</h1>
+  <p class="subtitle">This DFA is supposed to accept strings with an even number of 1s, but it has a bug</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cCB" width="520" height="260" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div class="code-block" style="margin-top:.5rem">
+        <div class="code-content">
+<div class="line">Q = {E, O}</div>
+<div class="line">Σ = {0, 1}</div>
+<div class="line active" style="border-left-color:#ef4444">δ(E, 0) = O  ← BUG?</div>
+<div class="line">δ(E, 1) = O</div>
+<div class="line">δ(O, 0) = E</div>
+<div class="line">δ(O, 1) = E</div>
+<div class="line">q₀ = E,  F = {E}</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>What's wrong?</h3>
+      <select id="cbAnswer" style="padding:.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:.5rem;font-size:.95em">
+        <option value="">Choose the bug...</option>
+        <option value="a">δ(E, 0) should be E, not O — 0 doesn't change parity of 1s</option>
+        <option value="b">δ(O, 1) should be O, not E — stay in odd state</option>
+        <option value="c">F should be {O} instead of {E}</option>
+        <option value="d">q₀ should be O instead of E</option>
+      </select>
+      <button class="btn" onclick="cbCheck()" style="margin-top:.75rem">Check Answer</button>
+      <div id="cbResult" style="display:none;margin-top:.75rem;padding:.8rem;border-radius:8px;font-size:.95em"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cCB');
+  const ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,260);
+    const ex=160,ox=360,cy=120,r=38;
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Buggy DFA — supposed to accept even # of 1s',260,25);
+    // Both transitions go both ways for both symbols (the bug)
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(ex+r,cy-10);ctx.quadraticCurveTo(260,cy-55,ox-r,cy-10);ctx.stroke();
+    ctx.fillStyle='#ef4444';ctx.font='13px monospace';ctx.fillText('0, 1',260,cy-42);
+    ctx.beginPath();ctx.moveTo(ox-r,cy+10);ctx.quadraticCurveTo(260,cy+55,ex+r,cy+10);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.fillText('0, 1',260,cy+48);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(50,cy);ctx.lineTo(ex-r-2,cy);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    // nodes
+    [['E',ex,true],['O',ox,false]].forEach(([name,x,acc])=>{
+      ctx.beginPath();ctx.arc(x,cy,r,0,Math.PI*2);
+      ctx.fillStyle='#1e293b';ctx.fill();
+      ctx.strokeStyle=acc?'#22c55e':'#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(acc){ctx.beginPath();ctx.arc(x,cy,r-5,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(name,x,cy);
+    });
+  }
+  window.cbCheck=function(){
+    const ans=document.getElementById('cbAnswer').value;
+    const res=document.getElementById('cbResult');res.style.display='block';
+    if(ans==='a'){
+      res.style.background='rgba(34,197,94,.1)';res.style.borderLeft='4px solid #22c55e';
+      res.innerHTML='<b style="color:#22c55e">Correct!</b> The bug is δ(E, 0) = O. Reading a 0 should NOT change the parity of 1s, so δ(E, 0) should be E. Similarly δ(O, 0) should be O, not E. The current DFA actually counts ALL symbols, not just 1s.';
+    } else {
+      res.style.background='rgba(239,68,68,.1)';res.style.borderLeft='4px solid #ef4444';
+      res.innerHTML='<b style="color:#ef4444">Not quite.</b> Think about what reading a 0 does to the count of 1s. It shouldn\'t change it! But currently δ(E, 0) = O, which toggles state on a 0. The fix: 0 should keep you in the same state.';
+    }
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCB').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s14: TABLE-FILLING MINIMIZATION ==================== -->
+<div class="slide" id="s14">
+  <h1>DFA Minimization: Table-Filling</h1>
+  <p class="subtitle">Find equivalent states and merge them to get the smallest DFA</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS14" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <button class="btn btn-sm" onclick="s14Step()">Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+        <span id="s14Label" style="color:#94a3b8;font-size:.82rem;align-self:center;margin-left:auto">Step 0 / 10</span>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Algorithm</h3>
+        <ol style="padding-left:1.5rem;font-size:.9em">
+          <li><b>Base:</b> Mark all pairs (p,q) where one is accept and one isn't</li>
+          <li><b>Inductive:</b> For unmarked (p,q), check if (δ(p,a), δ(q,a)) is marked for any a ∈ Σ. If so, mark (p,q)</li>
+          <li><b>Repeat</b> until no new marks</li>
+          <li><b>Result:</b> Unmarked pairs are equivalent — merge them!</li>
+        </ol>
+      </div>
+      <div id="s14Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.75rem;max-height:120px;overflow-y:auto;margin-top:.5rem;color:#94a3b8"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS14');
+  const ctx=canvas.getContext('2d');
+  // 4-state DFA: A(start), B, C(accept), D
+  // δ: A-0->B, A-1->C, B-0->B, B-1->D, C-0->C, C-1->A, D-0->D, D-1->B
+  const states=['A','B','C','D'];
+  const pairs=['A_B','A_C','A_D','B_C','B_D','C_D'];
+  const steps=[
+    {type:'info',msg:'DFA: A(start), C(accept). Σ={0,1}'},
+    {type:'mark',pair:'A_C',msg:'Base: Mark (A,C) — A∉F, C∈F'},
+    {type:'mark',pair:'B_C',msg:'Base: Mark (B,C) — B∉F, C∈F'},
+    {type:'mark',pair:'C_D',msg:'Base: Mark (C,D) — C∈F, D∉F'},
+    {type:'check',pair:'A_B',msg:'Check (A,B): δ(A,1)=C, δ(B,1)=D → (C,D) is marked → Mark (A,B)!',mark:true},
+    {type:'check',pair:'A_D',msg:'Check (A,D): δ(A,0)=B, δ(D,0)=D → (B,D) not marked; δ(A,1)=C, δ(D,1)=B → (B,C) marked → Mark (A,D)!',mark:true},
+    {type:'check',pair:'B_D',msg:'Check (B,D): δ(B,0)=B, δ(D,0)=D → (B,D) itself, skip; δ(B,1)=D, δ(D,1)=B → (B,D) itself → No mark',mark:false},
+    {type:'done',msg:'No new marks — algorithm complete!'},
+    {type:'equiv',msg:'Unmarked: {B,D} are equivalent. Merge them!'},
+    {type:'result',msg:'Minimized DFA: 3 states {A, BD, C} instead of 4'}
+  ];
+  let stepIdx=0,timer=null;
+  const marked=new Set();
+  const checking=new Set();
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    // Draw the table (lower triangle)
+    const cellW=50,cellH=40,startX=100,startY=60;
+    // Column headers
+    ctx.fillStyle='#94a3b8';ctx.font='bold 13px monospace';ctx.textAlign='center';
+    for(let i=0;i<3;i++){
+      ctx.fillText(states[i],startX+i*cellW+cellW/2,startY-10);
+    }
+    // Row headers
+    for(let i=1;i<4;i++){
+      ctx.fillText(states[i],startX-25,startY+(i-1)*cellH+cellH/2+4);
+    }
+    // Cells
+    for(let r=1;r<4;r++){
+      for(let c=0;c<r;c++){
+        const pair=states[c]+'_'+states[r];
+        const x=startX+c*cellW,y=startY+(r-1)*cellH;
+        ctx.fillStyle=marked.has(pair)?'rgba(239,68,68,.15)':
+                      (stepIdx>=8&&!marked.has(pair))?'rgba(34,197,94,.15)':'#0f172a';
+        ctx.fillRect(x,y,cellW,cellH);
+        ctx.strokeStyle=checking.has(pair)?'#f59e0b':'#334155';
+        ctx.lineWidth=checking.has(pair)?2:1;
+        ctx.strokeRect(x,y,cellW,cellH);
+        if(marked.has(pair)){
+          ctx.fillStyle='#ef4444';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText('✗',x+cellW/2,y+cellH/2);
+        } else if(stepIdx>=8){
+          ctx.fillStyle='#22c55e';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText('≡',x+cellW/2,y+cellH/2);
+        }
+      }
+    }
+    // Draw the DFA diagram on the right
+    const nodes=[{id:'A',x:320,y:80},{id:'B',x:420,y:80},{id:'C',x:320,y:200},{id:'D',x:420,y:200}];
+    // Simplified — just draw nodes
+    nodes.forEach(n=>{
+      const equiv=stepIdx>=9&&(n.id==='B'||n.id==='D');
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=equiv?'rgba(99,102,241,.2)':'#1e293b';ctx.fill();
+      ctx.strokeStyle=n.id==='C'?'#22c55e':equiv?'#a78bfa':'#6366f1';
+      ctx.lineWidth=2;ctx.stroke();
+      if(n.id==='C'){ctx.beginPath();ctx.arc(n.x,n.y,16,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    if(stepIdx>=9){
+      ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.ellipse(370,140,65,85,0,0,Math.PI*2);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#a78bfa';ctx.font='11px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Merge B,D',370,250);
+    }
+    // start arrow
+    ctx.beginPath();ctx.moveTo(280,80);ctx.lineTo(298,80);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('start',290,72);
+  }
+  function log(msg){const el=document.getElementById('s14Log');el.innerHTML+='<div style="color:#cbd5e1">'+msg+'</div>';el.scrollTop=el.scrollHeight}
+
+  window.s14Step=function(){
+    if(stepIdx>=steps.length)return;
+    checking.clear();
+    const step=steps[stepIdx];
+    if(step.type==='mark'){marked.add(step.pair)}
+    else if(step.type==='check'){
+      checking.add(step.pair);
+      if(step.mark)marked.add(step.pair);
+    }
+    log(step.msg);
+    stepIdx++;
+    document.getElementById('s14Label').textContent='Step '+stepIdx+' / '+steps.length;
+    draw();
+  };
+  window.s14Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return}s14Step()},1200)};
+  window.s14Reset=function(){
+    if(timer){clearInterval(timer);timer=null}
+    stepIdx=0;marked.clear();checking.clear();
+    document.getElementById('s14Log').innerHTML='';
+    document.getElementById('s14Label').textContent='Step 0 / '+steps.length;
+    draw();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s15: MYHILL-NERODE ==================== -->
+<div class="slide" id="s15">
+  <h1>Myhill-Nerode Theorem</h1>
+  <p class="subtitle">The theoretical foundation for DFA minimization</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS15" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>The Theorem</h3>
+        <p>A language L is regular <b>if and only if</b> the relation ≡<sub>L</sub> has a <b>finite number of equivalence classes</b>.</p>
+        <p style="margin-top:.4rem"><b>Moreover:</b> the number of classes = the number of states in the minimum DFA.</p>
+      </div>
+      <div style="margin-top:.5rem">
+        <h3>The Equivalence Relation ≡<sub>L</sub></h3>
+        <p style="font-size:.95em"><b>x ≡<sub>L</sub> y</b> iff for ALL strings z: xz ∈ L ↔ yz ∈ L</p>
+        <p style="color:#94a3b8;font-size:.9em;margin-top:.3rem">Two strings are equivalent if no suffix z can tell them apart.</p>
+      </div>
+      <div class="analogy" style="margin-top:.5rem">
+        <h3>Example: even 0s</h3>
+        <p>Strings "10" and "0" are NOT equivalent: with z="0", "100" has 1 zero (reject) but "00" has 2 zeros (accept).</p>
+        <p style="margin-top:.3rem">But "10" and "110" ARE equivalent: both have exactly 1 zero, so same parity for any suffix.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS15');
+  const ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    ctx.fillStyle='#94a3b8';ctx.font='13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Equivalence classes for L = "even number of 0s"',260,25);
+    // Class 1: even 0s
+    ctx.beginPath();ctx.ellipse(160,170,120,120,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(34,197,94,.08)';ctx.fill();
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#22c55e';ctx.font='bold 14px sans-serif';ctx.fillText('Class 1: Even 0s',160,60);
+    ctx.font='13px monospace';ctx.fillStyle='#cbd5e1';
+    const even=['ε','1','11','00','100','001','0110'];
+    even.forEach((s,i)=>{
+      const a=i*Math.PI*2/even.length;
+      ctx.fillText(s,160+65*Math.cos(a),175+65*Math.sin(a));
+    });
+    // Class 2: odd 0s
+    ctx.beginPath();ctx.ellipse(380,170,100,120,0,0,Math.PI*2);
+    ctx.fillStyle='rgba(239,68,68,.08)';ctx.fill();
+    ctx.strokeStyle='#ef4444';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#ef4444';ctx.font='bold 14px sans-serif';ctx.fillText('Class 2: Odd 0s',380,60);
+    ctx.font='13px monospace';ctx.fillStyle='#cbd5e1';
+    const odd=['0','10','01','000','110','010'];
+    odd.forEach((s,i)=>{
+      const a=i*Math.PI*2/odd.length;
+      ctx.fillText(s,380+55*Math.cos(a),175+55*Math.sin(a));
+    });
+    // Bottom label
+    ctx.fillStyle='#38bdf8';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('2 equivalence classes → minimum DFA has 2 states',260,320);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s16: DESIGN PATTERNS ==================== -->
+<div class="slide" id="s16">
+  <h1>DFA Design Patterns</h1>
+  <p class="subtitle">Common patterns you'll use again and again</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS16" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <button class="btn btn-sm" onclick="s16Show(0)">At Least One</button>
+        <button class="btn btn-sm" onclick="s16Show(1)">Ends With</button>
+        <button class="btn btn-sm" onclick="s16Show(2)">Divisibility</button>
+        <button class="btn btn-sm" onclick="s16Show(3)">Contains</button>
+      </div>
+    </div>
+    <div id="s16Desc">
+      <div class="key-idea">
+        <h3>Pattern: "At Least One a"</h3>
+        <p>Two states: "not yet seen a" and "seen a". Once you see an 'a', stay in accept forever.</p>
+        <p style="margin-top:.3rem"><b>States needed:</b> 2</p>
+      </div>
+      <div class="analogy">
+        <h3>General Rule</h3>
+        <p>The number of states reflects <b>how much you need to remember</b>. "At least one" needs 1 bit. "Ends with xy" needs to track the last 2 chars. "Divisibility by n" needs n remainder states.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS16');
+  const ctx=canvas.getContext('2d');
+  let current=0;
+  const patterns=[
+    {name:'At Least One a',
+     nodes:[{id:'S',x:160,y:170,acc:false},{id:'T',x:360,y:170,acc:true}],
+     edges:[{f:'S',t:'T',label:'a',cy:120},{f:'S',t:'S',label:'b',self:true},{f:'T',t:'T',label:'a,b',self:true}],
+     desc:'<div class="key-idea"><h3>Pattern: "At Least One a"</h3><p>Two states: "not yet seen a" and "seen a". Once you see an \'a\', stay in accept forever.</p><p style="margin-top:.3rem"><b>States needed:</b> 2</p></div>'},
+    {name:'Ends With "01"',
+     nodes:[{id:'q0',x:100,y:170,acc:false},{id:'q1',x:260,y:170,acc:false},{id:'q2',x:420,y:170,acc:true}],
+     edges:[{f:'q0',t:'q0',label:'1',self:true},{f:'q0',t:'q1',label:'0',cy:120},{f:'q1',t:'q1',label:'0',self:true},{f:'q1',t:'q2',label:'1',cy:120},{f:'q2',t:'q1',label:'0',cy:220},{f:'q2',t:'q0',label:'1',cy:240}],
+     desc:'<div class="key-idea"><h3>Pattern: "Ends With"</h3><p>Track the last N characters as your state. For "ends with 01", you need 3 states tracking suffix progress.</p><p style="margin-top:.3rem"><b>States needed:</b> length of pattern + 1</p></div>'},
+    {name:'Divisible by 3 (binary)',
+     nodes:[{id:'0',x:260,y:80,acc:true},{id:'1',x:140,y:240,acc:false},{id:'2',x:380,y:240,acc:false}],
+     edges:[{f:'0',t:'0',label:'0',self:true},{f:'0',t:'1',label:'1',cy:120},{f:'1',t:'2',label:'0',cy:280},{f:'1',t:'0',label:'1',cy:120},{f:'2',t:'1',label:'0',cy:280},{f:'2',t:'2',label:'1',self:true}],
+     desc:'<div class="key-idea"><h3>Pattern: "Divisibility by n"</h3><p>States = remainders {0, 1, ..., n-1}. Transition: δ(r, d) = (r × base + d) mod n. Accept state = {0}.</p><p style="margin-top:.3rem"><b>States needed:</b> exactly n</p></div>'},
+    {name:'Contains "aba"',
+     nodes:[{id:'ε',x:80,y:170,acc:false},{id:'a',x:200,y:170,acc:false},{id:'ab',x:320,y:170,acc:false},{id:'aba',x:440,y:170,acc:true}],
+     edges:[{f:'ε',t:'a',label:'a',cy:120},{f:'ε',t:'ε',label:'b',self:true},{f:'a',t:'a',label:'a',self:true},{f:'a',t:'ab',label:'b',cy:120},{f:'ab',t:'aba',label:'a',cy:120},{f:'ab',t:'ε',label:'b',cy:240},{f:'aba',t:'aba',label:'a,b',self:true}],
+     desc:'<div class="key-idea"><h3>Pattern: "Contains substring"</h3><p>Build states for each prefix of the target. Once you find the full match, stay in accept. On mismatch, find the longest suffix that\'s still a prefix.</p><p style="margin-top:.3rem"><b>States needed:</b> length of pattern + 1</p></div>'}
+  ];
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    const p=patterns[current];
+    ctx.fillStyle='#38bdf8';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(p.name,260,30);
+    // edges
+    p.edges.forEach(e=>{
+      const fn=p.nodes.find(n=>n.id===e.f),tn=p.nodes.find(n=>n.id===e.t);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+      if(e.self){
+        ctx.beginPath();ctx.arc(fn.x,fn.y-32,14,0.4,Math.PI-0.4);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+        ctx.fillText(e.label,fn.x,fn.y-52);
+      } else {
+        const cy2=e.cy||((fn.y+tn.y)/2);
+        ctx.beginPath();ctx.moveTo(fn.x,fn.y);ctx.quadraticCurveTo((fn.x+tn.x)/2,cy2,tn.x,tn.y);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+        ctx.fillText(e.label,(fn.x+tn.x)/2,(fn.y+tn.y)/2+(cy2<fn.y?-25:20));
+        // arrow
+        const ang=Math.atan2(tn.y-cy2,tn.x-(fn.x+tn.x)/2);
+        const ax=tn.x-22*Math.cos(ang),ay=tn.y-22*Math.sin(ang);
+        ctx.beginPath();ctx.moveTo(ax,ay);
+        ctx.lineTo(ax-7*Math.cos(ang-Math.PI/6),ay-7*Math.sin(ang-Math.PI/6));
+        ctx.lineTo(ax-7*Math.cos(ang+Math.PI/6),ay-7*Math.sin(ang+Math.PI/6));
+        ctx.closePath();ctx.fillStyle='#475569';ctx.fill();
+      }
+    });
+    // start arrow
+    const sn=p.nodes[0];
+    ctx.beginPath();ctx.moveTo(sn.x-55,sn.y);ctx.lineTo(sn.x-25,sn.y);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    // nodes
+    p.nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=n.acc?'rgba(34,197,94,.1)':'#1e293b';ctx.fill();
+      ctx.strokeStyle=n.acc?'#22c55e':'#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(n.acc){ctx.beginPath();ctx.arc(n.x,n.y,17,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+  window.s16Show=function(idx){
+    current=idx;
+    document.getElementById('s16Desc').innerHTML=patterns[idx].desc+
+      '<div class="analogy"><h3>General Rule</h3><p>The number of states reflects <b>how much you need to remember</b>. "At least one" needs 1 bit. "Ends with xy" tracks last chars. "Divisibility by n" needs n states.</p></div>';
+    draw();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s16').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCC: CHALLENGE C — DECISION/SCENARIO ==================== -->
+<div class="slide" id="sCC">
+  <h1>Challenge C: Pick the Right DFA</h1>
+  <p class="subtitle">For each language, choose the correct number of states needed</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.5rem">
+    <div id="ccQ1" style="background:#1e293b;padding:.8rem;border-radius:8px;border:1px solid #334155">
+      <p><b>1.</b> L = { w ∈ {0,1}* | w has at least three 1s }</p>
+      <select id="ccA1" style="padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:.3rem">
+        <option value="">Choose...</option><option value="2">2 states</option><option value="3">3 states</option><option value="4">4 states</option><option value="5">5 states</option>
+      </select>
+    </div>
+    <div id="ccQ2" style="background:#1e293b;padding:.8rem;border-radius:8px;border:1px solid #334155">
+      <p><b>2.</b> L = { w ∈ {a,b}* | w ends with "aba" }</p>
+      <select id="ccA2" style="padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:.3rem">
+        <option value="">Choose...</option><option value="2">2 states</option><option value="3">3 states</option><option value="4">4 states</option><option value="5">5 states</option>
+      </select>
+    </div>
+    <div id="ccQ3" style="background:#1e293b;padding:.8rem;border-radius:8px;border:1px solid #334155">
+      <p><b>3.</b> L = { w ∈ {0,1}* | binary value of w is divisible by 5 }</p>
+      <select id="ccA3" style="padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:.3rem">
+        <option value="">Choose...</option><option value="3">3 states</option><option value="4">4 states</option><option value="5">5 states</option><option value="6">6 states</option>
+      </select>
+    </div>
+    <div id="ccQ4" style="background:#1e293b;padding:.8rem;border-radius:8px;border:1px solid #334155">
+      <p><b>4.</b> To complement a DFA, you need to:</p>
+      <select id="ccA4" style="padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;width:100%;margin-top:.3rem">
+        <option value="">Choose...</option><option value="a">Add new states</option><option value="b">Swap accept and non-accept states</option><option value="c">Reverse all transitions</option><option value="d">Convert to NFA first</option>
+      </select>
+    </div>
+  </div>
+  <div style="margin-top:.75rem;text-align:center">
+    <button class="btn" onclick="ccCheck()">Check All</button>
+    <div id="ccResult" style="display:none;margin-top:.5rem;padding:.5rem;border-radius:8px;font-size:.95em"></div>
+  </div>
+</div>
+<script>
+(function(){
+  const answers={ccA1:'4',ccA2:'4',ccA3:'5',ccA4:'b'};
+  const explanations={
+    ccA1:'4 states: count 0,1,2,3+ ones. Accept at "3+".',
+    ccA2:'4 states: track suffix progress ε→a→ab→aba. Need empty + 3 prefix states.',
+    ccA3:'5 states: remainders 0-4 mod 5. δ(r,d) = (2r+d) mod 5.',
+    ccA4:'Just swap F and Q\\F. Same machine, flip accept/reject.'
+  };
+  window.ccCheck=function(){
+    let score=0;
+    Object.keys(answers).forEach(id=>{
+      const sel=document.getElementById(id).value;
+      const correct=sel===answers[id];
+      if(correct)score++;
+      const qid=id.replace('ccA','ccQ');
+      document.getElementById(qid).style.borderColor=sel===''?'#475569':correct?'#22c55e':'#ef4444';
+    });
+    const res=document.getElementById('ccResult');res.style.display='block';
+    res.style.color=score===4?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+    let html=score+'/4 correct.';
+    if(score<4){
+      html+='<div style="text-align:left;margin-top:.5rem;font-size:.85em;color:#94a3b8">';
+      Object.keys(answers).forEach(id=>{
+        const sel=document.getElementById(id).value;
+        if(sel!==answers[id]){
+          const num=id.replace('ccA','');
+          html+='<p>Q'+num+': '+explanations[id]+'</p>';
+        }
+      });
+      html+='</div>';
+    }
+    res.innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== s17: COMMON MISTAKES ==================== -->
+<div class="slide" id="s17">
+  <h1>Common DFA Mistakes</h1>
+  <p class="subtitle">Pitfalls that cost points on exams</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="warning">
+        <h3>1. Missing Transitions</h3>
+        <p>Every state must have <b>exactly one transition per symbol</b>. If you forget one, it's not a valid DFA. Add a dead/trap state for unwanted transitions.</p>
+      </div>
+      <div class="warning">
+        <h3>2. Forgetting the Dead State</h3>
+        <p>When a path should reject, don't just "leave it hanging." Add a non-accepting state with self-loops on all symbols.</p>
+      </div>
+      <div class="warning">
+        <h3>3. Complementing an NFA</h3>
+        <p>You <b>cannot</b> swap accept states on an NFA to get the complement. You must first convert NFA → DFA, THEN complement. This is because NFAs can be in multiple states simultaneously.</p>
+      </div>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>4. Confusing State Count with Complexity</h3>
+        <p>Having more states doesn't mean the language is "harder." The minimum DFA state count is determined by the Myhill-Nerode equivalence classes.</p>
+      </div>
+      <div class="warning">
+        <h3>5. Incomplete 5-Tuple</h3>
+        <p>When defining a DFA formally, you must specify ALL five components: Q, Σ, δ, q₀, F. Missing any one makes the definition invalid.</p>
+      </div>
+      <div class="key-idea">
+        <h3>Quick Self-Check</h3>
+        <ul>
+          <li>Does every state have |Σ| outgoing transitions?</li>
+          <li>Is there exactly ONE start state?</li>
+          <li>Is δ a function (not a relation)?</li>
+          <li>Can every input string be processed to completion?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s18: SUMMARY & CHEAT SHEET ==================== -->
+<div class="slide" id="s18">
+  <h1>DFA Summary & Cheat Sheet</h1>
+  <p class="subtitle">Everything you need to know on one slide</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS18" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+    </div>
+    <div>
+      <div class="key-idea" style="font-size:.9em">
+        <h3>Core Facts</h3>
+        <ul>
+          <li><b>DFA = (Q, Σ, δ, q₀, F)</b></li>
+          <li>δ: Q × Σ → Q (total function)</li>
+          <li>Accepts w if δ̂(q₀, w) ∈ F</li>
+          <li>L(A) = { w | δ̂(q₀, w) ∈ F }</li>
+        </ul>
+      </div>
+      <div class="key-idea" style="font-size:.9em">
+        <h3>Closure Properties</h3>
+        <ul>
+          <li><b>Complement:</b> swap F and Q\F</li>
+          <li><b>Union:</b> product construction, accept if either</li>
+          <li><b>Intersection:</b> product construction, accept if both</li>
+        </ul>
+      </div>
+      <div class="key-idea" style="font-size:.9em">
+        <h3>Minimization</h3>
+        <ul>
+          <li><b>Table-filling:</b> mark distinguishable pairs</li>
+          <li><b>Myhill-Nerode:</b> # classes = # min DFA states</li>
+          <li>Minimum DFA is <b>unique</b> (up to renaming)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS18');
+  const ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    ctx.fillStyle='#38bdf8';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText('DFA in the Automata Landscape',260,25);
+    // Draw comparison table
+    const headers=['Model','Memory','Power'];
+    const rows=[
+      ['DFA','Finite states only','Regular langs',true],
+      ['NFA','Finite + nondeterminism','= DFA (same)',false],
+      ['PDA','Finite + stack','Context-free',false],
+      ['TM','Finite + infinite tape','All decidable',false]
+    ];
+    const colX=[80,230,400],y0=60,rowH=35;
+    // headers
+    ctx.fillStyle='#94a3b8';ctx.font='bold 12px sans-serif';
+    headers.forEach((h,i)=>{ctx.textAlign='center';ctx.fillText(h,colX[i],y0)});
+    // rows
+    rows.forEach((r,i)=>{
+      const y=y0+25+(i*rowH);
+      if(r[3]){
+        ctx.fillStyle='rgba(99,102,241,.1)';
+        ctx.fillRect(20,y-12,480,rowH-2);
+        ctx.strokeStyle='#6366f1';ctx.lineWidth=1;
+        ctx.strokeRect(20,y-12,480,rowH-2);
+      }
+      ctx.fillStyle=r[3]?'#e2e8f0':'#94a3b8';
+      ctx.font=r[3]?'bold 12px monospace':'12px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(r[0],colX[0],y+5);
+      ctx.font='12px sans-serif';
+      ctx.fillText(r[1],colX[1],y+5);
+      ctx.fillText(r[2],colX[2],y+5);
+    });
+    // Key takeaway
+    ctx.fillStyle='#f59e0b';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Key: DFA = NFA in power (subset construction)',260,230);
+    ctx.fillStyle='#a78bfa';
+    ctx.fillText('DFA < PDA < TM in language recognition',260,255);
+    // Design pattern summary
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';
+    const tips=['• "At least one X" → 2 states','• "Ends with pattern" → |pattern|+1 states',
+      '• "Divisible by n" → n states','• "Contains substring" → |substring|+1 states'];
+    tips.forEach((t,i)=>{
+      ctx.textAlign='left';ctx.fillText(t,60,290+i*18);
+    });
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s18').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sQ1: QUIZ — MULTIPLE CHOICE ==================== -->
+<div class="slide" id="sQ1">
+  <h1>Quiz 1: Multiple Choice</h1>
+  <p class="subtitle">Test your understanding of DFA fundamentals</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:.5rem">
+    <div style="background:#1e293b;padding:.8rem;border-radius:8px;border:1px solid #334155">
+      <p style="font-size:.9em;margin-bottom:.5rem"><b>Q1:</b> What makes a DFA "deterministic"?</p>
+      <div style="display:flex;flex-direction:column;gap:.3rem" id="q1opts">
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q1" value="a"> It always halts</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q1" value="b"> Exactly one transition per (state, symbol)</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q1" value="c"> It has no epsilon transitions</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q1" value="d"> It reads left to right</label>
+      </div>
+    </div>
+    <div style="background:#1e293b;padding:.8rem;border-radius:8px;border:1px solid #334155">
+      <p style="font-size:.9em;margin-bottom:.5rem"><b>Q2:</b> What is the minimum # of states for a DFA accepting {w | w has odd # of a's}?</p>
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q2" value="a"> 1</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q2" value="b"> 2</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q2" value="c"> 3</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q2" value="d"> 4</label>
+      </div>
+    </div>
+    <div style="background:#1e293b;padding:.8rem;border-radius:8px;border:1px solid #334155">
+      <p style="font-size:.9em;margin-bottom:.5rem"><b>Q3:</b> In the product construction for L₁ ∩ L₂, a state (p,q) is accepting when:</p>
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q3" value="a"> p ∈ F₁ OR q ∈ F₂</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q3" value="b"> p ∈ F₁ AND q ∈ F₂</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q3" value="c"> p ∈ F₁ XOR q ∈ F₂</label>
+        <label style="display:flex;gap:.4rem;align-items:start;cursor:pointer;font-size:.85em"><input type="radio" name="q3" value="d"> Neither p nor q is accepting</label>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:.75rem;text-align:center">
+    <button class="btn" onclick="q1Check()">Check Answers</button>
+    <div id="q1Result" style="display:none;margin-top:.5rem;font-size:1.1em;font-weight:600"></div>
+  </div>
+</div>
+<script>
+(function(){
+  const correct={q1:'b',q2:'b',q3:'b'};
+  window.q1Check=function(){
+    let score=0;
+    ['q1','q2','q3'].forEach(q=>{
+      const sel=document.querySelector('input[name="'+q+'"]:checked');
+      if(sel&&sel.value===correct[q])score++;
+    });
+    const res=document.getElementById('q1Result');res.style.display='block';
+    res.style.color=score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+    res.textContent=score+'/3'+(score===3?' — Perfect!':' — Review: Q1→deterministic means exactly one transition; Q2→parity needs 2 states; Q3→intersection = both accept.');
+  };
+})();
+</script>
+
+<!-- ==================== sQ2: QUIZ — TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h1>Quiz 2: Trace Exercise</h1>
+  <p class="subtitle">Given this DFA, trace the input and determine the result</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cQ2" width="520" height="300" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <p style="color:#94a3b8;font-size:.9em;margin-top:.4rem">DFA: divisible by 3 in binary. States = remainders {0, 1, 2}. Accept = {0}.</p>
+    </div>
+    <div>
+      <h3>Trace input "1010" (binary 10)</h3>
+      <p style="color:#94a3b8;font-size:.9em;margin-top:.3rem">Fill in each state transition:</p>
+      <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
+        <div style="display:flex;align-items:center;gap:.5rem;font-family:monospace;font-size:.95em">
+          <span style="color:#94a3b8">Start:</span>
+          <span style="color:#e2e8f0">q = 0</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;font-family:monospace;font-size:.95em">
+          <span style="color:#94a3b8">Read 1: δ(0,1) =</span>
+          <input type="text" id="q2a1" style="width:40px;padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center">
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;font-family:monospace;font-size:.95em">
+          <span style="color:#94a3b8">Read 0: δ(?,0) =</span>
+          <input type="text" id="q2a2" style="width:40px;padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center">
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;font-family:monospace;font-size:.95em">
+          <span style="color:#94a3b8">Read 1: δ(?,1) =</span>
+          <input type="text" id="q2a3" style="width:40px;padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center">
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;font-family:monospace;font-size:.95em">
+          <span style="color:#94a3b8">Read 0: δ(?,0) =</span>
+          <input type="text" id="q2a4" style="width:40px;padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;text-align:center">
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;font-family:monospace;font-size:.95em">
+          <span style="color:#94a3b8">Accept/Reject?</span>
+          <select id="q2a5" style="padding:.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0">
+            <option value="">Choose...</option><option value="accept">Accept</option><option value="reject">Reject</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" onclick="q2Check()" style="margin-top:.75rem">Check Trace</button>
+      <div id="q2Result" style="display:none;margin-top:.5rem;padding:.5rem;border-radius:8px;font-size:.9em"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cQ2');
+  const ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    // Div by 3: states 0,1,2. δ(r,d)=(2r+d)%3
+    const nodes=[{id:'0',x:260,y:80,acc:true},{id:'1',x:120,y:220,acc:false},{id:'2',x:400,y:220,acc:false}];
+    // edges: 0-0->0, 0-1->1, 1-0->2, 1-1->0, 2-0->1, 2-1->2
+    const edges=[
+      ['0','0','0',true],['0','1','1',false],
+      ['1','2','0',false],['1','0','1',false],
+      ['2','1','0',false],['2','2','1',true]
+    ];
+    edges.forEach(([f,t,lab,self])=>{
+      const fn=nodes.find(n=>n.id===f),tn=nodes.find(n=>n.id===t);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+      if(self){
+        const angle=f==='0'?-Math.PI/2:f==='2'?0:Math.PI;
+        ctx.beginPath();ctx.arc(fn.x+30*Math.cos(angle),fn.y+30*Math.sin(angle)-15,14,0.4,Math.PI-0.4);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+        ctx.fillText(lab,fn.x+30*Math.cos(angle),fn.y+30*Math.sin(angle)-36);
+      } else {
+        ctx.beginPath();ctx.moveTo(fn.x,fn.y);
+        const mx=(fn.x+tn.x)/2,my=(fn.y+tn.y)/2;
+        const offX=(tn.y-fn.y)*0.15,offY=-(tn.x-fn.x)*0.15;
+        ctx.quadraticCurveTo(mx+offX,my+offY,tn.x,tn.y);ctx.stroke();
+        ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+        ctx.fillText(lab,mx+offX*0.7,my+offY*0.7-4);
+        // arrow
+        const ang=Math.atan2(tn.y-(my+offY),tn.x-(mx+offX));
+        const ax=tn.x-22*Math.cos(ang),ay=tn.y-22*Math.sin(ang);
+        ctx.beginPath();ctx.moveTo(ax,ay);
+        ctx.lineTo(ax-7*Math.cos(ang-Math.PI/6),ay-7*Math.sin(ang-Math.PI/6));
+        ctx.lineTo(ax-7*Math.cos(ang+Math.PI/6),ay-7*Math.sin(ang+Math.PI/6));
+        ctx.closePath();ctx.fillStyle='#475569';ctx.fill();
+      }
+    });
+    // start arrow
+    ctx.beginPath();ctx.moveTo(260,20);ctx.lineTo(260,55);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('start',260,15);
+    // nodes
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=n.acc?'rgba(34,197,94,.1)':'#1e293b';ctx.fill();
+      ctx.strokeStyle=n.acc?'#22c55e':'#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(n.acc){ctx.beginPath();ctx.arc(n.x,n.y,17,0,Math.PI*2);ctx.stroke()}
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    // transition table
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.textAlign='left';
+    ctx.fillText('δ(r,d) = (2r+d) mod 3',20,280);
+  }
+  // 1010: 0->1->2->2->1. δ(0,1)=1, δ(1,0)=2, δ(2,1)=2, δ(2,0)=1. Not accept.
+  // Wait: (2*0+1)%3=1, (2*1+0)%3=2, (2*2+1)%3=2, (2*2+0)%3=1. Final=1. Reject (10 mod 3 = 1)
+  window.q2Check=function(){
+    const answers=['1','2','2','1','reject']; // corrected: δ(2,1)=(4+1)%3=2, δ(2,0)=(4+0)%3=1
+    let score=0;
+    for(let i=1;i<=5;i++){
+      const el=document.getElementById('q2a'+i);
+      const val=i<5?el.value.trim():el.value;
+      if(val===answers[i-1])score++;
+      if(i<5){el.style.borderColor=val===answers[i-1]?'#22c55e':'#ef4444'}
+    }
+    const res=document.getElementById('q2Result');res.style.display='block';
+    res.style.color=score===5?'#22c55e':score>=3?'#f59e0b':'#ef4444';
+    res.innerHTML=score+'/5 correct.'+(score<5?' Trace: 0→<b>1</b>→<b>2</b>→<b>2</b>→<b>1</b>. Since 1∉F, reject. (Binary 1010 = 10, and 10 mod 3 = 1 ≠ 0)':'');
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('sQ2').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sQ3: QUIZ — DESIGN ==================== -->
+<div class="slide" id="sQ3">
+  <h1>Quiz 3: Design a DFA</h1>
+  <p class="subtitle">Build the transition table for a DFA that accepts strings over {a,b} with an even number of a's AND an even number of b's</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="key-idea">
+        <h3>Hint</h3>
+        <p>You need to track the parity of BOTH a's and b's. Think product construction: one DFA for even a's × one DFA for even b's.</p>
+        <p style="margin-top:.3rem"><b>States:</b> (even-a, even-b), (even-a, odd-b), (odd-a, even-b), (odd-a, odd-b)</p>
+        <p style="margin-top:.3rem">Shorthand: <b>EE</b>, <b>EO</b>, <b>OE</b>, <b>OO</b></p>
+      </div>
+      <p style="color:#94a3b8;font-size:.9em;margin-top:.5rem">Start state: EE (0 a's and 0 b's — both even)<br>Accept state: EE</p>
+    </div>
+    <div>
+      <h3>Fill in the transitions:</h3>
+      <table style="font-size:.9em;margin-top:.5rem;width:100%">
+        <tr><th>State</th><th>on 'a'</th><th>on 'b'</th></tr>
+        <tr><td><b>EE</b> (start, accept)</td>
+          <td><select id="q3_ee_a" style="padding:.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0"><option value="">?</option><option>EE</option><option>EO</option><option>OE</option><option>OO</option></select></td>
+          <td><select id="q3_ee_b" style="padding:.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0"><option value="">?</option><option>EE</option><option>EO</option><option>OE</option><option>OO</option></select></td>
+        </tr>
+        <tr><td><b>EO</b></td>
+          <td><select id="q3_eo_a" style="padding:.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0"><option value="">?</option><option>EE</option><option>EO</option><option>OE</option><option>OO</option></select></td>
+          <td><select id="q3_eo_b" style="padding:.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0"><option value="">?</option><option>EE</option><option>EO</option><option>OE</option><option>OO</option></select></td>
+        </tr>
+        <tr><td><b>OE</b></td>
+          <td><select id="q3_oe_a" style="padding:.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0"><option value="">?</option><option>EE</option><option>EO</option><option>OE</option><option>OO</option></select></td>
+          <td><select id="q3_oe_b" style="padding:.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0"><option value="">?</option><option>EE</option><option>EO</option><option>OE</option><option>OO</option></select></td>
+        </tr>
+        <tr><td><b>OO</b></td>
+          <td><select id="q3_oo_a" style="padding:.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0"><option value="">?</option><option>EE</option><option>EO</option><option>OE</option><option>OO</option></select></td>
+          <td><select id="q3_oo_b" style="padding:.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0"><option value="">?</option><option>EE</option><option>EO</option><option>OE</option><option>OO</option></select></td>
+        </tr>
+      </table>
+      <button class="btn" onclick="q3Check()" style="margin-top:.75rem">Check Design</button>
+      <div id="q3Result" style="display:none;margin-top:.5rem;padding:.5rem;border-radius:8px;font-size:.9em"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  // 'a' toggles first component, 'b' toggles second component
+  const correct={
+    q3_ee_a:'OE',q3_ee_b:'EO',
+    q3_eo_a:'OO',q3_eo_b:'EE',
+    q3_oe_a:'EE',q3_oe_b:'OO',
+    q3_oo_a:'EO',q3_oo_b:'OE'
+  };
+  window.q3Check=function(){
+    let score=0,total=8;
+    Object.keys(correct).forEach(id=>{
+      const el=document.getElementById(id);
+      const val=el.value;
+      if(val===correct[id]){score++;el.style.borderColor='#22c55e'}
+      else if(val===''){el.style.borderColor='#475569'}
+      else{el.style.borderColor='#ef4444'}
+    });
+    const res=document.getElementById('q3Result');res.style.display='block';
+    res.style.color=score===total?'#22c55e':score>=5?'#f59e0b':'#ef4444';
+    res.innerHTML=score+'/'+total+(score===total?' — Perfect! Reading \'a\' toggles the a-parity, reading \'b\' toggles the b-parity.':' — Remember: \'a\' only affects the first letter (E↔O), \'b\' only affects the second.');
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','sCC','s17','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>
