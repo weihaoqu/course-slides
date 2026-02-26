@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Epsilon-NFA Enhanced | CS305</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden}
+.slide{display:none;min-height:100vh;padding:40px 60px;position:relative;flex-direction:column;justify-content:center}
+.slide.active{display:flex}
+.fade-in{animation:fadeIn .45s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+#progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:200}
+#progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#8b5cf6,#a78bfa);transition:width .4s}
+h1{font-size:2.6em;margin-bottom:16px;background:linear-gradient(135deg,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+h2{font-size:1.95em;margin-bottom:14px;color:#38bdf8}
+h3{font-size:1.25em;margin-bottom:10px;color:#a5b4fc}
+p,li{font-size:1.08em;line-height:1.7;color:#cbd5e1;margin-bottom:8px}
+.subtitle{font-size:1.2em;color:#94a3b8;margin-bottom:24px}
+.btn{display:inline-block;padding:9px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.92em;font-weight:600;transition:all .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(99,102,241,.4)}
+.btn-sm{padding:6px 14px;font-size:.82em}
+.btn-secondary{background:#334155;color:#e2e8f0}
+.btn-secondary:hover{background:#475569;transform:translateY(-1px)}
+.key-idea{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.04));border-left:4px solid #22c55e;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0}
+.key-idea h3{color:#22c55e}
+.warning{background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(239,68,68,.04));border-left:4px solid #ef4444;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0}
+.warning h3{color:#ef4444}
+.analogy{background:linear-gradient(135deg,rgba(167,139,250,.08),rgba(167,139,250,.04));border-left:4px solid #a78bfa;border-radius:0 12px 12px 0;padding:16px 20px;margin:12px 0}
+.analogy h3{color:#a78bfa}
+.code-block{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;margin:10px 0;overflow-x:auto}
+.code-content{font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:.85em;line-height:1.7}
+.line{padding:1px 8px;border-left:3px solid transparent;border-radius:0 4px 4px 0}
+.line.active{background:rgba(99,102,241,.15);border-left-color:#6366f1}
+table{border-collapse:collapse;margin:10px 0;width:auto}
+th,td{border:1px solid #475569;padding:8px 14px;text-align:center}
+th{background:#334155;color:#93c5fd;font-weight:600;font-size:.92em}
+td{background:#1e293b;color:#e2e8f0;font-size:.9em}
+canvas{border-radius:12px}
+.nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:100}
+.nav button{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:.9em;transition:all .2s}
+.nav button:hover:not(:disabled){background:#475569}
+.nav button:disabled{opacity:.3;cursor:not-allowed}
+.slide-number{}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== s1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <div style="text-align:center">
+    <h1>Epsilon-NFA</h1>
+    <p class="subtitle">Extended NFA with Free Moves &mdash; Same Power, More Convenience</p>
+    <div style="display:flex;gap:20px;justify-content:center;margin:30px 0;flex-wrap:wrap">
+      <div style="background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.05));border:1px solid rgba(139,92,246,.3);border-radius:14px;padding:20px 28px;min-width:140px">
+        <div style="font-size:2.2em;margin-bottom:6px">&#x03B5;</div>
+        <div style="color:#a78bfa;font-weight:600;font-size:1.05em">Free Moves</div>
+        <div style="color:#94a3b8;font-size:.85em;margin-top:4px">No input consumed</div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));border:1px solid rgba(34,197,94,.3);border-radius:14px;padding:20px 28px;min-width:140px">
+        <div style="font-size:2.2em;margin-bottom:6px">CL(q)</div>
+        <div style="color:#22c55e;font-weight:600;font-size:1.05em">&epsilon;-Closure</div>
+        <div style="color:#94a3b8;font-size:.85em;margin-top:4px">Reachable via &epsilon;*</div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(56,189,248,.05));border:1px solid rgba(56,189,248,.3);border-radius:14px;padding:20px 28px;min-width:140px">
+        <div style="font-size:2.2em;margin-bottom:6px">RE</div>
+        <div style="color:#38bdf8;font-weight:600;font-size:1.05em">Thompson&rsquo;s</div>
+        <div style="color:#94a3b8;font-size:.85em;margin-top:4px">Regex &rarr; &epsilon;-NFA</div>
+      </div>
+    </div>
+    <p style="color:#64748b;font-size:.9em">CS305 &mdash; Formal Language Theory</p>
+    <p style="color:#475569;font-size:.82em;margin-top:8px">Arrow keys to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h2>Big Picture: Where Does &epsilon;-NFA Fit?</h2>
+  <p>All three models recognize exactly the same class of languages: the <strong>regular languages</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem">
+    <div>
+      <canvas id="cS2" width="520" height="300" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>Adding &epsilon;-transitions does <strong>NOT</strong> increase the machine&rsquo;s power. It only makes <em>designing</em> automata easier and more modular.</p>
+      </div>
+      <div class="analogy">
+        <h3>Analogy: Assembly vs Python</h3>
+        <p>A DFA is like assembly &mdash; precise but tedious. An &epsilon;-NFA is like Python &mdash; higher-level, more expressive, but compiles down to the same computation.</p>
+      </div>
+      <p style="margin-top:12px">Every conversion is possible:</p>
+      <div style="font-family:monospace;color:#a5f3fc;font-size:.95em;line-height:1.8">
+        RegEx &xrarr; &epsilon;-NFA &xrarr; NFA &xrarr; DFA &xrarr; RegEx
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS2'),ctx=c.getContext('2d');
+  const boxes=[
+    {label:'DFA',sub:'Exactly 1 move\nper symbol',x:80,y:80,color:'#6366f1'},
+    {label:'NFA',sub:'Set of moves\nper symbol',x:260,y:80,color:'#f59e0b'},
+    {label:'ε-NFA',sub:'NFA + free moves\non ε',x:440,y:80,color:'#a78bfa'}
+  ];
+  const W=110,H=70;
+  let phase=0,anim=null;
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    // Title
+    ctx.font='bold 14px monospace';ctx.fillStyle='#94a3b8';ctx.textAlign='center';
+    ctx.fillText('All Equivalent — Same Regular Languages',260,30);
+    // Boxes
+    boxes.forEach((b,i)=>{
+      const show=phase>i;
+      ctx.globalAlpha=show?1:.15;
+      ctx.fillStyle=b.color+'22';ctx.strokeStyle=b.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(b.x-W/2,b.y-H/2,W,H,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 18px monospace';ctx.textAlign='center';
+      ctx.fillText(b.label,b.x,b.y-8);
+      ctx.font='11px sans-serif';ctx.fillStyle='#94a3b8';
+      b.sub.split('\n').forEach((l,j)=>ctx.fillText(l,b.x,b.y+12+j*14));
+      ctx.globalAlpha=1;
+    });
+    // Arrows between boxes
+    if(phase>=2){drawArrow(80+W/2+5,80,260-W/2-5,80,'#475569','⇔');}
+    if(phase>=3){drawArrow(260+W/2+5,80,440-W/2-5,80,'#475569','⇔');}
+    // Equivalence banner
+    if(phase>=4){
+      ctx.fillStyle='rgba(34,197,94,.12)';ctx.strokeStyle='#22c55e';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(40,160,440,50,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#22c55e';ctx.font='bold 15px sans-serif';ctx.textAlign='center';
+      ctx.fillText('L(DFA) = L(NFA) = L(ε-NFA) = Regular Languages',260,190);
+    }
+    // Conversion cycle
+    if(phase>=5){
+      const cy=250,r=30;
+      ctx.font='12px monospace';ctx.textAlign='center';
+      const items=[
+        {label:'DFA',x:130,y:cy},{label:'NFA',x:260,y:cy},{label:'ε-NFA',x:390,y:cy}
+      ];
+      items.forEach(it=>{
+        ctx.fillStyle='#1e293b';ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.arc(it.x,it.y,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#e2e8f0';ctx.fillText(it.label,it.x,it.y+4);
+      });
+      drawSmallArrow(130+r+3,cy,260-r-3,cy,'#38bdf8');
+      drawSmallArrow(260-r-3,cy-5,130+r+3,cy-5,'#f59e0b');
+      drawSmallArrow(260+r+3,cy,390-r-3,cy,'#38bdf8');
+      drawSmallArrow(390-r-3,cy-5,260+r+3,cy-5,'#a78bfa');
+      ctx.font='10px sans-serif';ctx.fillStyle='#94a3b8';
+      ctx.fillText('subset const.',195,cy-14);
+      ctx.fillText('trivial',195,cy+20);
+      ctx.fillText('add ε',325,cy+20);
+      ctx.fillText('eliminate ε',325,cy-14);
+    }
+  }
+  function drawArrow(x1,y1,x2,y2,col,label){
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
+    ctx.fillText(label,(x1+x2)/2,y1-12);
+  }
+  function drawSmallArrow(x1,y1,x2,y2,col){
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    const a=Math.atan2(y2-y1,x2-x1);
+    ctx.fillStyle=col;ctx.beginPath();
+    ctx.moveTo(x2,y2);ctx.lineTo(x2-8*Math.cos(a-0.4),y2-8*Math.sin(a-0.4));
+    ctx.lineTo(x2-8*Math.cos(a+0.4),y2-8*Math.sin(a+0.4));ctx.fill();
+  }
+  function animate(){
+    if(phase<=5){phase++;draw();anim=setTimeout(animate,600);}
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s2').classList.contains('active')){phase=0;if(anim)clearTimeout(anim);animate();}
+  });
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s3: MOTIVATION ==================== -->
+<div class="slide" id="s3">
+  <h2>Motivation: Why Add &epsilon;-Transitions?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <h3>The Problem</h3>
+      <p>Sometimes designing an NFA for a complex language is painful. We want to:</p>
+      <ul>
+        <li>Build small machines for simple sub-languages</li>
+        <li><strong>Glue them together</strong> without re-engineering</li>
+        <li>Translate regular expressions to automata <em>mechanically</em></li>
+      </ul>
+      <div class="analogy" style="margin-top:16px">
+        <h3>Analogy: LEGO Bricks</h3>
+        <p>&epsilon;-transitions are LEGO connectors: snap small, tested components together into bigger machines without redesigning anything.</p>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:12px">
+        <button class="btn btn-sm" onclick="s3Step()">Step</button>
+        <button class="btn btn-sm" onclick="s3Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+      <div id="s3Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px 12px;font-family:monospace;font-size:.78em;margin-top:8px;min-height:36px;color:#94a3b8"></div>
+    </div>
+    <div>
+      <canvas id="cS3" width="520" height="370" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS3'),ctx=c.getContext('2d');
+  const steps=[
+    {msg:'Machine for a*: a single accept state with self-loop on "a"',phase:1},
+    {msg:'Machine for b*: a single accept state with self-loop on "b"',phase:2},
+    {msg:'New start state q0 — where do we begin?',phase:3},
+    {msg:'Add ε-transition: q0 ε→ q1 (enter a* machine freely)',phase:4},
+    {msg:'Add ε-transition: q0 ε→ q3 (enter b* machine freely)',phase:5},
+    {msg:'Done! L = a* ∪ b* — ε lets us "choose" which sub-machine to enter',phase:6}
+  ];
+  let stepIdx=0,timer=null,phase=0;
+  function drawState(x,y,label,accept,color,active){
+    ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);
+    ctx.fillStyle=active?color+'44':color+'22';ctx.fill();
+    ctx.strokeStyle=active?color:'#475569';ctx.lineWidth=active?2.5:1.5;ctx.stroke();
+    if(accept){ctx.beginPath();ctx.arc(x,y,17,0,Math.PI*2);ctx.strokeStyle=active?color:'#475569';ctx.lineWidth=1.5;ctx.stroke();}
+    ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(label,x,y);
+  }
+  function drawEdge(x1,y1,x2,y2,label,color,dashed){
+    const a=Math.atan2(y2-y1,x2-x1);
+    const sx=x1+22*Math.cos(a),sy=y1+22*Math.sin(a);
+    const ex=x2-22*Math.cos(a),ey=y2-22*Math.sin(a);
+    ctx.beginPath();ctx.setLineDash(dashed?[6,4]:[]);ctx.strokeStyle=color;ctx.lineWidth=2;
+    ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+    // arrowhead
+    ctx.fillStyle=color;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-10*Math.cos(a-.4),ey-10*Math.sin(a-.4));
+    ctx.lineTo(ex-10*Math.cos(a+.4),ey-10*Math.sin(a+.4));ctx.fill();
+    // label
+    const mx=(sx+ex)/2,my=(sy+ey)/2;
+    ctx.fillStyle=dashed?'#a78bfa':'#f59e0b';ctx.font='bold 13px monospace';ctx.textAlign='center';
+    ctx.fillText(label,mx+(dashed?-12:0),my-10);
+  }
+  function drawSelfLoop(x,y,label,color){
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.5;
+    ctx.arc(x+18,y-28,14,0.3*Math.PI,2.7*Math.PI);ctx.stroke();
+    ctx.fillStyle='#f59e0b';ctx.font='bold 12px monospace';ctx.textAlign='center';
+    ctx.fillText(label,x+32,y-44);
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    // Title labels
+    ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+    if(phase>=1){
+      ctx.fillStyle='#38bdf8';ctx.fillText('Machine for a*',130,30);
+      drawState(260,60,'q1',true,'#6366f1',phase>=1);
+      drawSelfLoop(260,60,'a','#475569');
+      // start arrow
+      ctx.beginPath();ctx.moveTo(210,60);ctx.lineTo(236,60);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#475569';ctx.beginPath();ctx.moveTo(236,60);ctx.lineTo(228,55);ctx.lineTo(228,65);ctx.fill();
+    }
+    if(phase>=2){
+      ctx.fillStyle='#38bdf8';ctx.textAlign='left';ctx.fillText('Machine for b*',130,150);
+      drawState(260,180,'q3',true,'#6366f1',phase>=2);
+      drawSelfLoop(260,180,'b','#475569');
+      ctx.beginPath();ctx.moveTo(210,180);ctx.lineTo(236,180);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#475569';ctx.beginPath();ctx.moveTo(236,180);ctx.lineTo(228,175);ctx.lineTo(228,185);ctx.fill();
+    }
+    if(phase>=3){
+      ctx.fillStyle='#f472b6';ctx.textAlign='left';ctx.font='bold 13px sans-serif';
+      ctx.fillText('Glue with ε:',20,270);
+      drawState(80,310,'q0',false,'#f59e0b',phase>=3);
+      // start arrow for q0
+      ctx.beginPath();ctx.moveTo(30,310);ctx.lineTo(56,310);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#475569';ctx.beginPath();ctx.moveTo(56,310);ctx.lineTo(48,305);ctx.lineTo(48,315);ctx.fill();
+      // a* machine copy
+      drawState(280,280,'q1',true,'#6366f1',phase>=4);
+      drawSelfLoop(280,280,'a','#475569');
+      // b* machine copy
+      drawState(280,340,'q3',true,'#6366f1',phase>=5);
+      drawSelfLoop(280,340,'b','#475569');
+    }
+    if(phase>=4){
+      drawEdge(80,310,280,280,'ε','#a78bfa',true);
+    }
+    if(phase>=5){
+      drawEdge(80,310,280,340,'ε','#a78bfa',true);
+    }
+    if(phase>=6){
+      ctx.fillStyle='rgba(34,197,94,.12)';ctx.strokeStyle='#22c55e';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(340,285,160,50,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#22c55e';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+      ctx.fillText('L = a* ∪ b*',420,315);
+    }
+  }
+  window.s3Step=function(){
+    if(stepIdx>=steps.length)return;
+    phase=steps[stepIdx].phase;
+    document.getElementById('s3Log').innerHTML=steps[stepIdx].msg;
+    draw();stepIdx++;
+  };
+  window.s3Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s3Step();},900);
+  };
+  window.s3Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;phase=0;document.getElementById('s3Log').innerHTML='';draw();
+  };
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s3').classList.contains('active')){s3Reset();draw();}
+  });
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s4: WHAT IS AN ε-TRANSITION ==================== -->
+<div class="slide" id="s4">
+  <h2>What is an &epsilon;-Transition?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS4" width="520" height="320" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:8px;justify-content:center">
+        <button class="btn btn-sm" onclick="s4Toggle('nfa')">Regular NFA</button>
+        <button class="btn btn-sm" onclick="s4Toggle('enfa')">&epsilon;-NFA</button>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>An <strong>&epsilon;-transition</strong> allows the machine to change state <em>without reading any input symbol</em>. The machine &ldquo;spontaneously&rdquo; moves.</p>
+      </div>
+      <h3 style="margin-top:16px">Key Properties</h3>
+      <ul>
+        <li><strong>No input consumed</strong> &mdash; the read head stays put</li>
+        <li><strong>Nondeterministic choice</strong> &mdash; the machine may or may not take the &epsilon;-move</li>
+        <li><strong>Can chain</strong> &mdash; multiple &epsilon;-transitions can fire in sequence</li>
+        <li><strong>Drawn as dashed arrows</strong> labeled &ldquo;&epsilon;&rdquo;</li>
+      </ul>
+      <div class="warning" style="margin-top:12px">
+        <h3>Common Mistake</h3>
+        <p>&epsilon; is <strong>not</strong> a symbol in the alphabet &Sigma;. It&rsquo;s a special marker meaning &ldquo;no input.&rdquo;</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS4'),ctx=c.getContext('2d');
+  let mode='nfa';
+  function drawState(x,y,label,accept,color){
+    ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.fillStyle=color+'22';ctx.fill();
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+    if(accept){ctx.beginPath();ctx.arc(x,y,17,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(label,x,y);
+  }
+  function arrow(x1,y1,x2,y2,label,col,dashed){
+    const a=Math.atan2(y2-y1,x2-x1);
+    const sx=x1+24*Math.cos(a),sy=y1+24*Math.sin(a);
+    const ex=x2-24*Math.cos(a),ey=y2-24*Math.sin(a);
+    ctx.beginPath();ctx.setLineDash(dashed?[6,4]:[]);ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=col;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-9*Math.cos(a-.4),ey-9*Math.sin(a-.4));
+    ctx.lineTo(ex-9*Math.cos(a+.4),ey-9*Math.sin(a+.4));ctx.fill();
+    const mx=(sx+ex)/2,my=(sy+ey)/2;
+    ctx.fillStyle=dashed?'#a78bfa':'#f59e0b';ctx.font='bold 13px monospace';ctx.textAlign='center';
+    ctx.fillText(label,mx,my-10);
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    if(mode==='nfa'){
+      ctx.fillStyle='#38bdf8';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Regular NFA: must read a symbol to move',260,30);
+      // q0 --a--> q1 --b--> q2(accept)
+      drawState(100,160,'q0',false,'#6366f1');
+      drawState(260,160,'q1',false,'#6366f1');
+      drawState(420,160,'q2',true,'#6366f1');
+      arrow(100,160,260,160,'a','#f59e0b',false);
+      arrow(260,160,420,160,'b','#f59e0b',false);
+      // start arrow
+      ctx.beginPath();ctx.moveTo(50,160);ctx.lineTo(74,160);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#475569';ctx.beginPath();ctx.moveTo(74,160);ctx.lineTo(66,155);ctx.lineTo(66,165);ctx.fill();
+      ctx.fillStyle='#94a3b8';ctx.font='13px sans-serif';ctx.textAlign='center';
+      ctx.fillText('Every arrow consumes exactly one input symbol',260,240);
+      ctx.fillText('L = { "ab" }',260,270);
+    } else {
+      ctx.fillStyle='#a78bfa';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
+      ctx.fillText('ε-NFA: can move WITHOUT reading input',260,30);
+      drawState(80,120,'q0',false,'#6366f1');
+      drawState(220,120,'q1',false,'#6366f1');
+      drawState(360,120,'q2',false,'#6366f1');
+      drawState(440,220,'q3',true,'#22c55e');
+      arrow(80,120,220,120,'ε','#a78bfa',true);
+      arrow(220,120,360,120,'a','#f59e0b',false);
+      arrow(360,120,440,220,'ε','#a78bfa',true);
+      // start arrow
+      ctx.beginPath();ctx.moveTo(30,120);ctx.lineTo(54,120);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#475569';ctx.beginPath();ctx.moveTo(54,120);ctx.lineTo(46,115);ctx.lineTo(46,125);ctx.fill();
+      // Labels
+      ctx.fillStyle='#a78bfa';ctx.font='11px sans-serif';ctx.textAlign='center';
+      ctx.fillText('free move',150,100);
+      ctx.fillText('free move',420,165);
+      ctx.fillStyle='#f59e0b';ctx.fillText('reads "a"',290,100);
+      ctx.fillStyle='#94a3b8';ctx.font='13px sans-serif';
+      ctx.fillText('Dashed purple arrows = ε-transitions (no input consumed)',260,290);
+      ctx.fillText('L = { "a" }  — same as just q0 →a→ q3',260,310);
+    }
+  }
+  window.s4Toggle=function(m){mode=m;draw();};
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s4').classList.contains('active'))draw();
+  });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s5: FORMAL DEFINITION ==================== -->
+<div class="slide" id="s5">
+  <h2>Formal Definition: The 5-Tuple</h2>
+  <p>An <strong>&epsilon;-NFA</strong> is E = (Q, &Sigma;, &delta;, q<sub>0</sub>, F) where:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.8rem">
+    <div>
+      <table>
+        <tr><th>Component</th><th>Meaning</th></tr>
+        <tr><td>Q</td><td style="text-align:left">Finite set of states</td></tr>
+        <tr><td>&Sigma;</td><td style="text-align:left">Input alphabet (&epsilon; &notin; &Sigma;)</td></tr>
+        <tr><td style="color:#f59e0b;font-weight:bold">&delta;</td><td style="text-align:left;color:#f59e0b">Q &times; (&Sigma; &cup; {&epsilon;}) &rarr; P(Q)</td></tr>
+        <tr><td>q<sub>0</sub></td><td style="text-align:left">Start state (q<sub>0</sub> &in; Q)</td></tr>
+        <tr><td>F</td><td style="text-align:left">Accept states (F &sube; Q)</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:16px">
+        <h3>The ONE Difference from NFA</h3>
+        <p><strong>NFA:</strong> &delta; : Q &times; &Sigma; &rarr; P(Q)</p>
+        <p><strong>&epsilon;-NFA:</strong> &delta; : Q &times; (<span style="color:#f59e0b">&Sigma; &cup; {&epsilon;}</span>) &rarr; P(Q)</p>
+        <p>The transition function now also accepts &epsilon; as input. The transition table gets an <strong>extra column</strong> for &epsilon;.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Example Transition Table</h3>
+      <table style="font-size:.9em">
+        <tr><th></th><th>a</th><th>b</th><th style="color:#a78bfa">&epsilon;</th></tr>
+        <tr><td>&rarr; q0</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">{q1}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td style="color:#a78bfa">&empty;</td></tr>
+        <tr><td>*q2</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">&empty;</td></tr>
+      </table>
+      <p style="margin-top:12px;font-size:.92em">The <span style="color:#a78bfa">&epsilon; column</span> is new &mdash; it tells us where the machine can go <em>for free</em>.</p>
+      <div class="warning" style="margin-top:12px">
+        <h3>Don&rsquo;t Add &epsilon; to &Sigma;</h3>
+        <p>&epsilon; is <strong>never</strong> in the alphabet. The transition function&rsquo;s domain is extended to include &epsilon;, but &Sigma; stays the same.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s6: EXAMPLE ε-NFA ==================== -->
+<div class="slide" id="s6">
+  <h2>Example: An &epsilon;-NFA</h2>
+  <p>Build an &epsilon;-NFA for L = { strings over {a,b} that start with &lsquo;a&rsquo; <strong>or</strong> end with &lsquo;b&rsquo; <strong>or</strong> are empty }.</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;margin-top:.8rem">
+    <div>
+      <canvas id="cS6" width="520" height="300" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+    </div>
+    <div>
+      <h3>Transition Table</h3>
+      <table style="font-size:.85em">
+        <tr><th></th><th>a</th><th>b</th><th style="color:#a78bfa">&epsilon;</th></tr>
+        <tr><td>&rarr; *q0</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">{q1, q3}</td></tr>
+        <tr><td>*q1</td><td>{q2}</td><td>&empty;</td><td style="color:#a78bfa">&empty;</td></tr>
+        <tr><td>*q2</td><td>{q2}</td><td>{q2}</td><td style="color:#a78bfa">&empty;</td></tr>
+        <tr><td>q3</td><td>{q3}</td><td>{q3, q4}</td><td style="color:#a78bfa">&empty;</td></tr>
+        <tr><td>*q4</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">&empty;</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:12px">
+        <h3>Modular Design</h3>
+        <p>q1-q2 handles &ldquo;starts with a&rdquo;. q3-q4 handles &ldquo;ends with b&rdquo;. q0 uses &epsilon; to choose which sub-machine to enter.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS6'),ctx=c.getContext('2d');
+  const pos={q0:{x:60,y:150},q1:{x:200,y:70},q2:{x:380,y:70},q3:{x:200,y:230},q4:{x:380,y:230}};
+  const accept=['q0','q1','q2','q4'];
+  function drawState(id){
+    const p=pos[id];const isAcc=accept.includes(id);
+    ctx.beginPath();ctx.arc(p.x,p.y,22,0,Math.PI*2);ctx.fillStyle='#6366f122';ctx.fill();
+    ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+    if(isAcc){ctx.beginPath();ctx.arc(p.x,p.y,17,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(id,p.x,p.y);
+  }
+  function edge(from,to,label,dashed){
+    const p1=pos[from],p2=pos[to];
+    const a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+    const sx=p1.x+24*Math.cos(a),sy=p1.y+24*Math.sin(a);
+    const ex=p2.x-24*Math.cos(a),ey=p2.y-24*Math.sin(a);
+    ctx.beginPath();ctx.setLineDash(dashed?[6,4]:[]);ctx.strokeStyle=dashed?'#a78bfa':'#475569';ctx.lineWidth=2;
+    ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=dashed?'#a78bfa':'#f59e0b';ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-9*Math.cos(a-.4),ey-9*Math.sin(a-.4));
+    ctx.lineTo(ex-9*Math.cos(a+.4),ey-9*Math.sin(a+.4));ctx.fill();
+    const mx=(sx+ex)/2,my=(sy+ey)/2;
+    ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText(label,mx-8,my-8);
+  }
+  function selfLoop(id,label,dy){
+    const p=pos[id];const y=p.y+dy;
+    ctx.beginPath();ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    ctx.arc(p.x+20,y,12,0.4*Math.PI,2.6*Math.PI);ctx.stroke();
+    ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText(label,p.x+38,y-14);
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('Upper path: "starts with a"',140,20);
+    ctx.fillText('Lower path: "ends with b"',140,290);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(10,150);ctx.lineTo(34,150);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#475569';ctx.beginPath();ctx.moveTo(34,150);ctx.lineTo(26,145);ctx.lineTo(26,155);ctx.fill();
+    // edges
+    edge('q0','q1','ε',true);
+    edge('q0','q3','ε',true);
+    edge('q1','q2','a',false);
+    edge('q3','q4','b',false);
+    // self-loops
+    selfLoop('q2','a,b',-28);
+    selfLoop('q3','a,b',-28);
+    // draw states on top
+    Object.keys(pos).forEach(drawState);
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s6').classList.contains('active'))draw();
+  });
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s7: ε-CLOSURE DEFINITION ==================== -->
+<div class="slide" id="s7">
+  <h2>&epsilon;-Closure: CL(q)</h2>
+  <p>The <strong>&epsilon;-closure</strong> of state q is the set of all states reachable from q by following <em>zero or more</em> &epsilon;-transitions.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="key-idea">
+        <h3>Formal Definition</h3>
+        <p>CL(q) is the smallest set such that:</p>
+        <ul>
+          <li><strong>Base:</strong> q &in; CL(q) &mdash; always reachable from yourself via zero &epsilon;-moves</li>
+          <li><strong>Induction:</strong> If p &in; CL(q) and r &in; &delta;(p, &epsilon;), then r &in; CL(q)</li>
+        </ul>
+      </div>
+      <div class="analogy" style="margin-top:12px">
+        <h3>Analogy: Wormhole Network</h3>
+        <p>Each &epsilon;-transition is a wormhole. CL(q) is everywhere you can reach from q using only wormholes (no fuel needed). You always include your starting location!</p>
+      </div>
+      <div class="warning" style="margin-top:12px">
+        <h3>Don&rsquo;t Forget!</h3>
+        <p>A state is <em>always</em> in its own &epsilon;-closure. CL(q) always contains q itself.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS7" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS7'),ctx=c.getContext('2d');
+  const pos={q0:{x:80,y:80},q1:{x:220,y:80},q2:{x:360,y:80},q3:{x:460,y:80},q4:{x:220,y:180},q5:{x:460,y:180}};
+  const epsEdges=[['q0','q1'],['q1','q2'],['q1','q4'],['q2','q3']];
+  const regEdges=[['q3','q5','a']];
+  function drawSt(id,col){
+    const p=pos[id];
+    ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);ctx.fillStyle=col+'22';ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(id,p.x,p.y);
+  }
+  function drawEdge(f,t,label,dashed,col){
+    const p1=pos[f],p2=pos[t];
+    const a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+    const sx=p1.x+22*Math.cos(a),sy=p1.y+22*Math.sin(a);
+    const ex=p2.x-22*Math.cos(a),ey=p2.y-22*Math.sin(a);
+    ctx.beginPath();ctx.setLineDash(dashed?[6,4]:[]);ctx.strokeStyle=col;ctx.lineWidth=1.8;
+    ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=col;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-8*Math.cos(a-.4),ey-8*Math.sin(a-.4));
+    ctx.lineTo(ex-8*Math.cos(a+.4),ey-8*Math.sin(a+.4));ctx.fill();
+    const mx=(sx+ex)/2,my=(sy+ey)/2;
+    ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText(label,mx,my-8);
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    ctx.font='bold 13px sans-serif';ctx.fillStyle='#94a3b8';ctx.textAlign='left';
+    ctx.fillText('ε-transitions form a directed graph:',20,25);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(30,80);ctx.lineTo(56,80);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    // edges
+    epsEdges.forEach(([f,t])=>drawEdge(f,t,'ε',true,'#a78bfa'));
+    regEdges.forEach(([f,t,l])=>drawEdge(f,t,l,false,'#f59e0b'));
+    // states
+    Object.keys(pos).forEach(id=>drawSt(id,'#6366f1'));
+    // Closure results
+    const results=[
+      {q:'q0',cl:'{q0, q1, q2, q3, q4}',col:'#22c55e'},
+      {q:'q1',cl:'{q1, q2, q3, q4}',col:'#38bdf8'},
+      {q:'q2',cl:'{q2, q3}',col:'#f59e0b'},
+      {q:'q3',cl:'{q3}',col:'#94a3b8'},
+      {q:'q4',cl:'{q4}',col:'#94a3b8'},
+      {q:'q5',cl:'{q5}',col:'#94a3b8'}
+    ];
+    ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+    ctx.fillStyle='#e2e8f0';ctx.fillText('ε-Closures:',20,230);
+    results.forEach((r,i)=>{
+      const x=20+(i%2)*250,y=255+(Math.floor(i/2))*28;
+      ctx.fillStyle=r.col;ctx.font='bold 12px monospace';
+      ctx.fillText('CL('+r.q+') = '+r.cl,x,y);
+    });
+    ctx.fillStyle='#64748b';ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Note: "a" edge from q3→q5 is a regular transition, NOT ε',260,335);
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s7').classList.contains('active'))draw();
+  });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s8: INTERACTIVE ε-CLOSURE EXPLORER ==================== -->
+<div class="slide" id="s8">
+  <h2>Interactive &epsilon;-Closure Explorer</h2>
+  <p>Click a state to watch BFS discover its &epsilon;-closure step by step.</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS8" width="520" height="300" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:8px;flex-wrap:wrap;justify-content:center">
+        <button class="btn btn-sm" onclick="s8Explore('q0')">q0</button>
+        <button class="btn btn-sm" onclick="s8Explore('q1')">q1</button>
+        <button class="btn btn-sm" onclick="s8Explore('q2')">q2</button>
+        <button class="btn btn-sm" onclick="s8Explore('q3')">q3</button>
+        <button class="btn btn-sm" onclick="s8Explore('q4')">q4</button>
+        <button class="btn btn-sm" onclick="s8Explore('q5')">q5</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <h3>BFS Algorithm</h3>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line" id="s8L0">ECLOSE(q):</div>
+          <div class="line" id="s8L1">&nbsp; result = {q}</div>
+          <div class="line" id="s8L2">&nbsp; queue  = [q]</div>
+          <div class="line" id="s8L3">&nbsp; while queue not empty:</div>
+          <div class="line" id="s8L4">&nbsp;&nbsp;&nbsp; p = dequeue()</div>
+          <div class="line" id="s8L5">&nbsp;&nbsp;&nbsp; for r in &delta;(p, &epsilon;):</div>
+          <div class="line" id="s8L6">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if r not in result:</div>
+          <div class="line" id="s8L7">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; result &cup;= {r}</div>
+          <div class="line" id="s8L8">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enqueue(r)</div>
+          <div class="line" id="s8L9">&nbsp; return result</div>
+        </div>
+      </div>
+      <div id="s8Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:10px 12px;font-family:monospace;font-size:.78em;max-height:130px;overflow-y:auto;margin-top:8px;color:#94a3b8"></div>
+      <div class="key-idea" style="margin-top:8px;padding:10px 14px">
+        <h3 style="font-size:1em">Key Insight</h3>
+        <p style="font-size:.88em">&epsilon;-closure is just <strong>graph reachability</strong>. The &epsilon;-transitions form a directed graph; CL(q) = all nodes reachable from q.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS8'),ctx=c.getContext('2d');
+  const pos={q0:{x:70,y:80},q1:{x:200,y:80},q2:{x:330,y:80},q3:{x:450,y:80},q4:{x:200,y:210},q5:{x:450,y:210}};
+  const epsGraph={q0:['q1'],q1:['q2','q4'],q2:['q3'],q3:[],q4:[],q5:[]};
+  const epsEdgePairs=[['q0','q1'],['q1','q2'],['q1','q4'],['q2','q3']];
+  const regEdgePairs=[['q3','q5']];
+  let highlights=new Set(), edgeHighlights=new Set(), timers=[];
+
+  function stateColor(id){
+    if(highlights.has(id))return '#22c55e';
+    return '#6366f1';
+  }
+  function drawSt(id){
+    const p=pos[id],col=stateColor(id);
+    ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);
+    ctx.fillStyle=col+'33';ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=highlights.has(id)?3:1.8;ctx.stroke();
+    if(highlights.has(id)){ctx.shadowColor=col;ctx.shadowBlur=12;ctx.stroke();ctx.shadowBlur=0;}
+    ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(id,p.x,p.y);
+  }
+  function drawEdge(f,t,label,dashed,glowing){
+    const p1=pos[f],p2=pos[t];
+    const a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+    const sx=p1.x+22*Math.cos(a),sy=p1.y+22*Math.sin(a);
+    const ex=p2.x-22*Math.cos(a),ey=p2.y-22*Math.sin(a);
+    const col=glowing?'#a78bfa':dashed?'#6b21a8':'#475569';
+    ctx.beginPath();ctx.setLineDash(dashed?[6,4]:[]);ctx.strokeStyle=col;ctx.lineWidth=glowing?3:1.8;
+    if(glowing){ctx.shadowColor='#a78bfa';ctx.shadowBlur=10;}
+    ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=0;
+    ctx.fillStyle=col;ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-8*Math.cos(a-.4),ey-8*Math.sin(a-.4));
+    ctx.lineTo(ex-8*Math.cos(a+.4),ey-8*Math.sin(a+.4));ctx.fill();
+    const mx=(sx+ex)/2,my=(sy+ey)/2;
+    ctx.fillStyle=glowing?'#c4b5fd':dashed?'#7c3aed':'#f59e0b';
+    ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText(label,mx,my-8);
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(20,80);ctx.lineTo(46,80);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    // edges first
+    epsEdgePairs.forEach(([f,t])=>{
+      const key=f+'-'+t;
+      drawEdge(f,t,'ε',true,edgeHighlights.has(key));
+    });
+    regEdgePairs.forEach(([f,t])=>drawEdge(f,t,'a',false,false));
+    // states on top
+    Object.keys(pos).forEach(drawSt);
+  }
+  function clearHighlightLines(){
+    for(let i=0;i<=9;i++){
+      const el=document.getElementById('s8L'+i);
+      if(el)el.classList.remove('active');
+    }
+  }
+  function highlightLine(n){
+    clearHighlightLines();
+    const el=document.getElementById('s8L'+n);
+    if(el)el.classList.add('active');
+  }
+
+  window.s8Explore=function(start){
+    s8Reset();
+    const log=document.getElementById('s8Log');
+    const visited=[start];
+    const queue=[start];
+    // BFS waves
+    const waves=[[start]];
+    let frontier=[start];
+    while(frontier.length>0){
+      const next=[];
+      frontier.forEach(s=>{
+        (epsGraph[s]||[]).forEach(t=>{
+          if(!visited.includes(t)){visited.push(t);next.push(t);}
+        });
+      });
+      if(next.length>0)waves.push(next);
+      frontier=next;
+    }
+    // Animate
+    let wi=0;
+    function showWave(){
+      if(wi>=waves.length){
+        highlightLine(9);
+        log.innerHTML+='<div style="color:#22c55e;font-weight:bold">CL('+start+') = {'+visited.join(', ')+'}</div>';
+        log.scrollTop=log.scrollHeight;
+        return;
+      }
+      const wave=waves[wi];
+      if(wi===0){
+        highlightLine(1);
+        highlights.add(start);
+        log.innerHTML='<div>Init: result = {'+start+'}, queue = ['+start+']</div>';
+      } else {
+        highlightLine(5);
+        wave.forEach(s=>{
+          highlights.add(s);
+          // find which edge leads here
+          epsEdgePairs.forEach(([f,t])=>{
+            if(t===s && highlights.has(f))edgeHighlights.add(f+'-'+t);
+          });
+        });
+        const soFar=[];waves.slice(0,wi+1).forEach(w=>w.forEach(s=>{if(!soFar.includes(s))soFar.push(s);}));
+        log.innerHTML+='<div>Wave '+wi+': discovered {'+wave.join(', ')+'} → result = {'+soFar.join(', ')+'}</div>';
+        log.scrollTop=log.scrollHeight;
+      }
+      draw();
+      wi++;
+      const t=setTimeout(showWave,800);
+      timers.push(t);
+    }
+    showWave();
+  };
+  window.s8Reset=function(){
+    timers.forEach(t=>clearTimeout(t));timers=[];
+    highlights.clear();edgeHighlights.clear();clearHighlightLines();
+    document.getElementById('s8Log').innerHTML='Click a state button to explore its ε-closure.';
+    draw();
+  };
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s8').classList.contains('active'))s8Reset();
+  });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  s8Reset();
+})();
+</script>
+
+<!-- ==================== s9: ε-CLOSURE FOR SETS ==================== -->
+<div class="slide" id="s9">
+  <h2>&epsilon;-Closure for Sets: CL(S)</h2>
+  <p>We often need the &epsilon;-closure of a <em>set</em> of states, not just one state.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>For a set of states S &sube; Q:</p>
+        <p style="font-size:1.3em;text-align:center;color:#a5f3fc;margin:12px 0">CL(S) = &bigcup;<sub>q &in; S</sub> CL(q)</p>
+        <p>Just take the <strong>union</strong> of every individual &epsilon;-closure.</p>
+      </div>
+      <div class="analogy" style="margin-top:14px">
+        <h3>Analogy</h3>
+        <p>After each &ldquo;real&rdquo; step (reading a symbol), all your tokens teleport through every wormhole they can reach. You always &ldquo;expand&rdquo; via &epsilon; before and after reading input.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS9" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:8px;justify-content:center">
+        <button class="btn btn-sm" onclick="s9Calc()">Compute CL({q1, q5})</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS9'),ctx=c.getContext('2d');
+  const pos={q0:{x:70,y:70},q1:{x:200,y:70},q2:{x:330,y:70},q3:{x:450,y:70},q4:{x:200,y:170},q5:{x:450,y:170}};
+  const epsEdges=[['q0','q1'],['q1','q2'],['q1','q4'],['q2','q3']];
+  const closures={q0:['q0','q1','q2','q3','q4'],q1:['q1','q2','q3','q4'],q2:['q2','q3'],q3:['q3'],q4:['q4'],q5:['q5']};
+  let highlighted=new Set(),phase=0,timers=[];
+  function drawSt(id){
+    const p=pos[id],h=highlighted.has(id);
+    ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);
+    ctx.fillStyle=h?'#22c55e33':'#6366f122';ctx.fill();
+    ctx.strokeStyle=h?'#22c55e':'#6366f1';ctx.lineWidth=h?3:1.8;ctx.stroke();
+    if(h){ctx.shadowColor='#22c55e';ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;}
+    ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(id,p.x,p.y);
+  }
+  function drawEdge(f,t){
+    const p1=pos[f],p2=pos[t],a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+    const sx=p1.x+22*Math.cos(a),sy=p1.y+22*Math.sin(a);
+    const ex=p2.x-22*Math.cos(a),ey=p2.y-22*Math.sin(a);
+    const glow=highlighted.has(f)&&highlighted.has(t);
+    ctx.beginPath();ctx.setLineDash([6,4]);ctx.strokeStyle=glow?'#a78bfa':'#6b21a8';ctx.lineWidth=glow?2.5:1.5;
+    ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=glow?'#a78bfa':'#6b21a8';ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-8*Math.cos(a-.4),ey-8*Math.sin(a-.4));ctx.lineTo(ex-8*Math.cos(a+.4),ey-8*Math.sin(a+.4));ctx.fill();
+    ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText('ε',(sx+ex)/2,(sy+ey)/2-8);
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    epsEdges.forEach(([f,t])=>drawEdge(f,t));
+    // regular edge q3->q5
+    const p1=pos.q3,p2=pos.q5,a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+    ctx.beginPath();ctx.moveTo(p1.x+22*Math.cos(a),p1.y+22*Math.sin(a));ctx.lineTo(p2.x-22*Math.cos(a),p2.y-22*Math.sin(a));
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText('a',(p1.x+p2.x)/2,(p1.y+p2.y)/2-8);
+    Object.keys(pos).forEach(drawSt);
+    // phase text
+    if(phase>=1){
+      ctx.fillStyle='#38bdf8';ctx.font='bold 13px monospace';ctx.textAlign='left';
+      ctx.fillText('CL(q1) = {q1, q2, q3, q4}',30,220);
+    }
+    if(phase>=2){
+      ctx.fillStyle='#f59e0b';ctx.font='bold 13px monospace';
+      ctx.fillText('CL(q5) = {q5}',30,248);
+    }
+    if(phase>=3){
+      ctx.fillStyle='#22c55e';ctx.font='bold 14px monospace';
+      ctx.fillText('CL({q1, q5}) = {q1, q2, q3, q4} ∪ {q5}',30,285);
+      ctx.fillText('            = {q1, q2, q3, q4, q5}',30,310);
+    }
+  }
+  window.s9Calc=function(){
+    s9Reset();
+    phase=1;
+    closures.q1.forEach(s=>highlighted.add(s));draw();
+    timers.push(setTimeout(()=>{phase=2;highlighted.add('q5');draw();},900));
+    timers.push(setTimeout(()=>{phase=3;draw();},1800));
+  };
+  window.s9Reset=function(){
+    timers.forEach(t=>clearTimeout(t));timers=[];highlighted.clear();phase=0;draw();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))s9Reset();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s10: EXTENDED TRANSITION FUNCTION ==================== -->
+<div class="slide" id="s10">
+  <h2>Extended Transition Function: &delta;&#x0302;</h2>
+  <p>Tells us the set of states reachable from q after reading string w, <strong>with &epsilon;-closures baked in</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="key-idea">
+        <h3>Recursive Definition</h3>
+        <p><strong>Base case:</strong></p>
+        <p style="color:#a5f3fc;font-size:1.1em">&delta;&#x0302;(q, &epsilon;) = CL(q)</p>
+        <p>On empty input, reach anything via &epsilon;.</p>
+        <p style="margin-top:10px"><strong>Inductive case:</strong> For w = xa:</p>
+        <p style="color:#a5f3fc;font-size:1.05em">&delta;&#x0302;(q, xa) = CL( &bigcup;<sub>p &in; &delta;&#x0302;(q,x)</sub> &delta;(p, a) )</p>
+      </div>
+      <p style="margin-top:10px;font-size:.95em">Process x to get states, follow &lsquo;a&rsquo; from each, then &epsilon;-close the result.</p>
+      <div class="warning" style="margin-top:10px">
+        <h3>Difference from NFA</h3>
+        <p>In a plain NFA: &delta;&#x0302;(q, &epsilon;) = {q}.<br>In &epsilon;-NFA: &delta;&#x0302;(q, &epsilon;) = CL(q), which may include many states!</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS10" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:8px;justify-content:center">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS10'),ctx=c.getContext('2d');
+  // Pipeline: CL(q0) -> read a -> CL(...) -> read b -> CL(...)
+  const steps=[
+    {msg:'Start: compute CL(q0)',boxes:[{label:'CL(q0)',states:'{q0,q1}',x:260,y:60,color:'#a78bfa',active:true}]},
+    {msg:'Read "a": δ({q0,q1}, a) = {q2}',boxes:[{label:'CL(q0)',states:'{q0,q1}',x:100,y:60,color:'#a78bfa',active:false},{label:'δ(…, a)',states:'{q2}',x:300,y:60,color:'#f59e0b',active:true}],arrows:[[180,60,220,60,'a']]},
+    {msg:'ε-close: CL({q2}) = {q2,q3}',boxes:[{label:'CL(q0)',states:'{q0,q1}',x:100,y:60,color:'#a78bfa',active:false},{label:'CL(δ)',states:'{q2,q3}',x:400,y:60,color:'#22c55e',active:true}],arrows:[[180,60,220,60,'a'],[350,60,370,60,'ε']]},
+    {msg:'Read "b": δ({q2,q3}, b) = {q4}',boxes:[{label:'CL(δ)',states:'{q2,q3}',x:100,y:170,color:'#22c55e',active:false},{label:'δ(…, b)',states:'{q4}',x:300,y:170,color:'#f59e0b',active:true}],arrows:[[180,170,220,170,'b']]},
+    {msg:'ε-close: CL({q4}) = {q4} — ACCEPT! q4 ∈ F',boxes:[{label:'CL(δ)',states:'{q2,q3}',x:100,y:170,color:'#22c55e',active:false},{label:'FINAL',states:'{q4} ✓',x:400,y:170,color:'#22c55e',active:true}],arrows:[[180,170,220,170,'b'],[350,170,370,170,'ε']]}
+  ];
+  let stepIdx=0,timer=null;
+  function drawBox(b){
+    const w=120,h=50;
+    ctx.fillStyle=b.active?b.color+'33':b.color+'11';ctx.strokeStyle=b.active?b.color:'#475569';ctx.lineWidth=b.active?2.5:1.5;
+    ctx.beginPath();ctx.roundRect(b.x-w/2,b.y-h/2,w,h,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle=b.active?'#fff':'#94a3b8';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(b.label,b.x,b.y-10);
+    ctx.font='bold 13px monospace';ctx.fillStyle=b.active?'#e2e8f0':'#64748b';
+    ctx.fillText(b.states,b.x,b.y+10);
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    // Title
+    ctx.font='bold 14px sans-serif';ctx.fillStyle='#38bdf8';ctx.textAlign='center';
+    ctx.fillText('Computing δ̂(q0, "ab") step by step',260,25);
+    if(stepIdx===0){
+      ctx.fillStyle='#94a3b8';ctx.font='13px sans-serif';
+      ctx.fillText('Click Step to trace δ̂(q0, "ab")',260,180);
+      return;
+    }
+    const s=steps[stepIdx-1];
+    if(s.boxes)s.boxes.forEach(drawBox);
+    if(s.arrows)s.arrows.forEach(([x1,y1,x2,y2,lbl])=>{
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#f59e0b';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText(lbl,(x1+x2)/2,y1-10);
+    });
+    // Pipeline diagram at bottom
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Pattern: CL(q₀)  →  read symbol  →  CL(result)  →  read symbol  →  CL(result)  → ...',260,260);
+    ctx.fillStyle='#a78bfa';ctx.font='bold 12px monospace';
+    ctx.fillText(s.msg,260,295);
+    if(stepIdx===steps.length){
+      ctx.fillStyle='#22c55e';ctx.font='bold 14px sans-serif';
+      ctx.fillText('δ̂(q0, "ab") = {q4}  →  q4 ∈ F  →  ACCEPT',260,325);
+    }
+  }
+  window.s10Step=function(){if(stepIdx>=steps.length)return;stepIdx++;draw();};
+  window.s10Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s10Step();},1000);};
+  window.s10Reset=function(){if(timer){clearInterval(timer);timer=null;}stepIdx=0;draw();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))s10Reset();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s11: ε-NFA SIMULATOR ==================== -->
+<div class="slide" id="s11">
+  <h2>Interactive &epsilon;-NFA Simulator</h2>
+  <p>&epsilon;-NFA for L = {&ldquo;ab&rdquo;} &cup; {&ldquo;b&rdquo;}: type a string and step through processing.</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS11" width="520" height="280" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <p style="font-size:.8em;color:#64748b;text-align:center;margin-top:4px">&epsilon;: q0&rarr;{q1,q4} | a: q1&rarr;q2 | b: q2&rarr;q3, q4&rarr;q5 | F={q3,q5}</p>
+    </div>
+    <div>
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <input type="text" id="s11Input" placeholder="e.g. ab" maxlength="20" style="padding:8px 12px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:1em;width:120px">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Run()">Run</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+      <div style="margin-top:10px;font-size:.95em">
+        <span style="color:#94a3b8">Active:</span> <span id="s11Active" style="color:#38bdf8;font-family:monospace">--</span>
+      </div>
+      <div style="margin-top:6px;font-size:.95em">
+        <span style="color:#94a3b8">Input:</span> <span id="s11InputDisp" style="font-family:monospace">--</span>
+      </div>
+      <div id="s11Closure" style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px 12px;font-family:monospace;font-size:.78em;margin-top:8px;color:#a78bfa;display:none"></div>
+      <div id="s11Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px 12px;font-family:monospace;font-size:.78em;max-height:100px;overflow-y:auto;margin-top:8px;color:#94a3b8"></div>
+      <div id="s11Verdict" style="display:none;margin-top:10px;padding:10px 16px;border-radius:8px;font-weight:600;text-align:center"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS11'),ctx=c.getContext('2d');
+  const npos={q0:{x:80,y:80},q1:{x:210,y:50},q2:{x:340,y:50},q3:{x:460,y:50},q4:{x:210,y:190},q5:{x:340,y:190}};
+  const trans={q0:{a:[],b:[],eps:['q1','q4']},q1:{a:['q2'],b:[],eps:[]},q2:{a:[],b:['q3'],eps:[]},q3:{a:[],b:[],eps:[]},q4:{a:[],b:['q5'],eps:[]},q5:{a:[],b:[],eps:[]}};
+  const acceptSet=['q3','q5'];
+  const edges=[['q0','q1','ε',true],['q0','q4','ε',true],['q1','q2','a',false],['q2','q3','b',false],['q4','q5','b',false]];
+  let active=null,inputStr='',pos2=-1,done=false,running=false,timers=[];
+
+  function closure(states){
+    const r=[...states],q=[...states];
+    while(q.length){const s=q.shift();(trans[s].eps||[]).forEach(t=>{if(!r.includes(t)){r.push(t);q.push(t);}});}
+    return r.sort();
+  }
+  function fmt(arr){return !arr||!arr.length?'∅':'{'+arr.join(', ')+'}'}
+
+  function drawGraph(){
+    ctx.clearRect(0,0,520,280);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(30,80);ctx.lineTo(56,80);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    // edges
+    edges.forEach(([f,t,lbl,dash])=>{
+      const p1=npos[f],p2=npos[t],a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+      const sx=p1.x+22*Math.cos(a),sy=p1.y+22*Math.sin(a),ex=p2.x-22*Math.cos(a),ey=p2.y-22*Math.sin(a);
+      ctx.beginPath();ctx.setLineDash(dash?[6,4]:[]);ctx.strokeStyle=dash?'#7c3aed':'#475569';ctx.lineWidth=1.8;
+      ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=dash?'#7c3aed':'#475569';ctx.beginPath();
+      ctx.moveTo(ex,ey);ctx.lineTo(ex-8*Math.cos(a-.4),ey-8*Math.sin(a-.4));ctx.lineTo(ex-8*Math.cos(a+.4),ey-8*Math.sin(a+.4));ctx.fill();
+      ctx.fillStyle=dash?'#a78bfa':'#f59e0b';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText(lbl,(sx+ex)/2,(sy+ey)/2-8);
+    });
+    // states
+    Object.entries(npos).forEach(([id,p])=>{
+      const isActive=active&&active.includes(id);
+      const isAccepted=done&&isActive&&acceptSet.includes(id);
+      const isDead=done&&!isActive;
+      let col='#6366f1';
+      if(isAccepted)col='#22c55e';else if(isActive)col='#38bdf8';else if(isDead)col='#334155';
+      ctx.beginPath();ctx.arc(p.x,p.y,22,0,Math.PI*2);ctx.fillStyle=col+'33';ctx.fill();
+      ctx.strokeStyle=col;ctx.lineWidth=isActive?3:1.8;ctx.stroke();
+      if(isActive){ctx.shadowColor=col;ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;}
+      if(acceptSet.includes(id)){ctx.beginPath();ctx.arc(p.x,p.y,17,0,Math.PI*2);ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();}
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(id,p.x,p.y);
+    });
+  }
+
+  function updateDisp(){
+    document.getElementById('s11Active').textContent=active?fmt(active):'--';
+    const disp=document.getElementById('s11InputDisp');
+    if(!active){disp.innerHTML='--';return;}
+    if(!inputStr){disp.innerHTML='<span style="color:#a78bfa">ε (empty)</span>';return;}
+    const consumed=inputStr.substring(0,pos2);
+    const cur=pos2<inputStr.length?inputStr[pos2]:'';
+    const rem=inputStr.substring(pos2+1);
+    disp.innerHTML='<span style="color:#64748b">'+consumed+'</span><span style="color:#fbbf24;font-weight:bold;font-size:1.2em;text-decoration:underline">'+cur+'</span><span style="color:#e2e8f0">'+rem+'</span>';
+    drawGraph();
+  }
+
+  function init(){
+    const raw=document.getElementById('s11Input').value.trim();
+    if(!/^[ab]*$/.test(raw)){alert('Only a and b allowed');return false;}
+    inputStr=raw;pos2=0;active=closure(['q0']);done=false;running=false;
+    document.getElementById('s11Verdict').style.display='none';
+    const cl=document.getElementById('s11Closure');cl.style.display='block';cl.innerHTML='Init: CL({q0}) = '+fmt(active);
+    document.getElementById('s11Log').innerHTML='';
+    updateDisp();return true;
+  }
+  function finish(){
+    done=true;
+    const acc=active.some(s=>acceptSet.includes(s));
+    const v=document.getElementById('s11Verdict');v.style.display='block';
+    v.style.background=acc?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)';
+    v.style.border=acc?'2px solid #22c55e':'2px solid #ef4444';
+    v.style.color=acc?'#22c55e':'#ef4444';
+    v.textContent=acc?'ACCEPTED! '+fmt(active)+' contains accept state(s).':'REJECTED. '+fmt(active)+' has no accept state.';
+    updateDisp();
+  }
+
+  window.s11Step=function(){
+    if(!active){if(!init())return;if(!inputStr){finish();}return;}
+    if(done)return;
+    if(pos2>=inputStr.length){finish();return;}
+    const sym=inputStr[pos2];
+    let moved=[];
+    active.forEach(s=>{(trans[s][sym]||[]).forEach(t=>{if(!moved.includes(t))moved.push(t);});});
+    const closed=closure(moved);
+    const cl=document.getElementById('s11Closure');
+    cl.innerHTML='Read \''+sym+'\': δ('+fmt(active)+', '+sym+') = '+fmt(moved)+'<br>CL('+fmt(moved)+') = '+fmt(closed);
+    document.getElementById('s11Log').innerHTML+='<div>'+sym+': '+fmt(active)+' → '+fmt(closed)+'</div>';
+    document.getElementById('s11Log').scrollTop=9999;
+    active=closed;pos2++;updateDisp();
+    if(pos2>=inputStr.length)finish();
+  };
+  window.s11Run=function(){
+    if(!active){if(!init())return;if(!inputStr){finish();return;}}
+    if(done||running)return;running=true;
+    function go(){if(done){running=false;return;}s11Step();if(!done){const t=setTimeout(go,700);timers.push(t);}else running=false;}
+    timers.push(setTimeout(go,700));
+  };
+  window.s11Reset=function(){
+    timers.forEach(t=>clearTimeout(t));timers=[];
+    active=null;inputStr='';pos2=-1;done=false;running=false;
+    document.getElementById('s11Active').textContent='--';
+    document.getElementById('s11InputDisp').innerHTML='--';
+    document.getElementById('s11Closure').style.display='none';
+    document.getElementById('s11Log').innerHTML='';
+    document.getElementById('s11Verdict').style.display='none';
+    drawGraph();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))s11Reset();});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  s11Reset();
+})();
+</script>
+
+<!-- ==================== sCA: CHALLENGE - PREDICT ε-CLOSURE ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the &epsilon;-Closure</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cCA" width="520" height="280" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <p style="font-size:.82em;color:#64748b;text-align:center;margin-top:4px">&epsilon;-edges: p&rarr;q, p&rarr;s, q&rarr;r, s&rarr;t, t&rarr;r | Regular: r&mdash;a&rarr;u</p>
+    </div>
+    <div>
+      <div id="sCAQ" style="font-size:1.1em;font-weight:600;color:#e2e8f0;margin-bottom:12px">Loading...</div>
+      <div id="sCAProg" style="color:#94a3b8;margin-bottom:10px;font-size:.9em">Question 1 / 3</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="sCAOpts"></div>
+      <div id="sCAFb" style="display:none;margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.95em"></div>
+      <div id="sCASc" style="margin-top:16px;text-align:center;color:#94a3b8;font-size:1.1em"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cCA'),ctx=c.getContext('2d');
+  // Graph: p->q(ε), p->s(ε), q->r(ε), s->t(ε), t->r(ε), r-a->u
+  const pos={p:{x:60,y:140},q:{x:190,y:60},r:{x:340,y:60},s:{x:190,y:220},t:{x:340,y:220},u:{x:460,y:140}};
+  const epsE=[['p','q'],['p','s'],['q','r'],['s','t'],['t','r']];
+  const regE=[['r','u','a']];
+  function drawSt(id){
+    const pp=pos[id];ctx.beginPath();ctx.arc(pp.x,pp.y,20,0,Math.PI*2);
+    ctx.fillStyle='#6366f122';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(id,pp.x,pp.y);
+  }
+  function drawE(f,t,lbl,dash){
+    const p1=pos[f],p2=pos[t],a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+    const sx=p1.x+22*Math.cos(a),sy=p1.y+22*Math.sin(a),ex=p2.x-22*Math.cos(a),ey=p2.y-22*Math.sin(a);
+    ctx.beginPath();ctx.setLineDash(dash?[6,4]:[]);ctx.strokeStyle=dash?'#7c3aed':'#475569';ctx.lineWidth=1.8;
+    ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=dash?'#7c3aed':'#475569';ctx.beginPath();
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-8*Math.cos(a-.4),ey-8*Math.sin(a-.4));ctx.lineTo(ex-8*Math.cos(a+.4),ey-8*Math.sin(a+.4));ctx.fill();
+    ctx.fillStyle=dash?'#a78bfa':'#f59e0b';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText(lbl,(sx+ex)/2,(sy+ey)/2-8);
+  }
+  function drawGraph(){
+    ctx.clearRect(0,0,520,280);
+    ctx.beginPath();ctx.moveTo(10,140);ctx.lineTo(36,140);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    epsE.forEach(([f,t])=>drawE(f,t,'ε',true));
+    regE.forEach(([f,t,l])=>drawE(f,t,l,false));
+    Object.keys(pos).forEach(drawSt);
+  }
+  drawGraph();
+
+  const problems=[
+    {q:'What is CL(p)?',answer:'{p, q, r, s, t}',options:['{p}','{p, q, s}','{p, q, r, s, t}','{p, q, r, s, t, u}'],explain:'p→ε→q→ε→r, p→ε→s→ε→t→ε→r. "u" needs "a", not reachable via ε.'},
+    {q:'What is CL(s)?',answer:'{s, t, r}',options:['{s}','{s, t}','{s, t, r}','{s, t, r, u}'],explain:'s→ε→t→ε→r. "u" requires "a", not ε.'},
+    {q:'What is CL(r)?',answer:'{r}',options:['{r}','{r, u}','{r, q}','{r, u, q}'],explain:'r has no outgoing ε-transitions. The "a" edge to u is NOT an ε-transition.'},
+    {q:'What is CL(t)?',answer:'{t, r}',options:['{t}','{t, r}','{t, r, u}','{t, s, r}'],explain:'t→ε→r. Only one ε-edge out of t.'},
+    {q:'What is CL({q, s})?',answer:'{q, r, s, t}',options:['{q, s}','{q, r, s}','{q, r, s, t}','{q, r, s, t, u}'],explain:'CL(q)={q,r}, CL(s)={s,t,r}. Union = {q,r,s,t}.'}
+  ];
+  let shuffled=[],idx=0,score=0,total=3,answered=false;
+
+  function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+  function initQuiz(){
+    shuffled=shuffle(problems).slice(0,total);idx=0;score=0;answered=false;render();
+  }
+  function render(){
+    if(idx>=total){
+      document.getElementById('sCAQ').textContent='Challenge Complete!';
+      document.getElementById('sCAProg').textContent='';
+      document.getElementById('sCAOpts').innerHTML='';
+      document.getElementById('sCAFb').style.display='none';
+      document.getElementById('sCASc').textContent='Score: '+score+' / '+total;
+      return;
+    }
+    const p=shuffled[idx];answered=false;
+    document.getElementById('sCAQ').textContent=p.q;
+    document.getElementById('sCAProg').textContent='Question '+(idx+1)+' / '+total;
+    document.getElementById('sCAFb').style.display='none';
+    const opts=document.getElementById('sCAOpts');
+    opts.innerHTML='';
+    p.options.forEach(o=>{
+      const b=document.createElement('button');b.className='btn btn-sm';b.textContent=o;
+      b.onclick=()=>check(o,p);opts.appendChild(b);
+    });
+  }
+  function check(choice,p){
+    if(answered)return;answered=true;
+    const correct=choice===p.answer;if(correct)score++;
+    const fb=document.getElementById('sCAFb');fb.style.display='block';
+    fb.style.background=correct?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)';
+    fb.style.border=correct?'1px solid #22c55e':'1px solid #ef4444';
+    fb.style.color=correct?'#22c55e':'#ef4444';
+    fb.innerHTML=(correct?'<strong>Correct!</strong> ':'<strong>Wrong.</strong> Answer: '+p.answer+'<br>')+p.explain;
+    // highlight buttons
+    document.getElementById('sCAOpts').querySelectorAll('button').forEach(b=>{
+      b.disabled=true;
+      if(b.textContent===p.answer)b.style.background='#22c55e';
+      else if(b.textContent===choice&&!correct)b.style.background='#ef4444';
+    });
+    setTimeout(()=>{idx++;render();},2500);
+  }
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCA').classList.contains('active'))initQuiz();});
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  initQuiz();drawGraph();
+})();
+</script>
+
+<!-- ==================== s12: ACCEPTANCE ==================== -->
+<div class="slide" id="s12">
+  <h2>Acceptance in &epsilon;-NFA</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>&epsilon;-NFA E accepts string w iff:</p>
+        <p style="font-size:1.25em;text-align:center;color:#a5f3fc;margin:14px 0">&delta;&#x0302;(q<sub>0</sub>, w) &cap; F &ne; &empty;</p>
+        <p>After processing w (with all &epsilon;-closures), at least one final state is an accept state.</p>
+      </div>
+      <p style="margin-top:12px">The language recognized by E:</p>
+      <p style="color:#a5f3fc;font-size:1.05em">L(E) = { w &in; &Sigma;* | &delta;&#x0302;(q<sub>0</sub>, w) &cap; F &ne; &empty; }</p>
+      <div class="warning" style="margin-top:14px">
+        <h3>The Empty String Subtlety</h3>
+        <p>Even if q<sub>0</sub> is <strong>NOT</strong> an accept state, the &epsilon;-NFA might still accept &epsilon;! If <em>any</em> state in CL(q<sub>0</sub>) is an accept state, then &epsilon; &in; L(E).</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS12" width="520" height="320" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:8px;justify-content:center">
+        <button class="btn btn-sm" onclick="s12Demo()">Show Why &epsilon; is Accepted</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS12'),ctx=c.getContext('2d');
+  let phase=0,timer=null;
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    ctx.font='bold 14px sans-serif';ctx.fillStyle='#38bdf8';ctx.textAlign='center';
+    ctx.fillText('Does this ε-NFA accept ε (empty string)?',260,25);
+    // q0 --ε--> q1(accept)
+    const q0col=phase>=1?'#38bdf8':'#6366f1';
+    const q1col=phase>=2?'#22c55e':'#6366f1';
+    // q0
+    ctx.beginPath();ctx.arc(160,120,28,0,Math.PI*2);ctx.fillStyle=q0col+'33';ctx.fill();
+    ctx.strokeStyle=q0col;ctx.lineWidth=phase>=1?3:2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('q0',160,120);
+    // start arrow
+    ctx.beginPath();ctx.moveTo(90,120);ctx.lineTo(128,120);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    // q1 (accept)
+    ctx.beginPath();ctx.arc(360,120,28,0,Math.PI*2);ctx.fillStyle=q1col+'33';ctx.fill();
+    ctx.strokeStyle=q1col;ctx.lineWidth=phase>=2?3:2;ctx.stroke();
+    ctx.beginPath();ctx.arc(360,120,22,0,Math.PI*2);ctx.strokeStyle=q1col;ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 16px monospace';ctx.fillText('q1',360,120);
+    // ε edge
+    const ecol=phase>=2?'#a78bfa':'#6b21a8';
+    ctx.beginPath();ctx.setLineDash([6,4]);ctx.strokeStyle=ecol;ctx.lineWidth=phase>=2?3:2;
+    ctx.moveTo(190,120);ctx.lineTo(328,120);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=ecol;ctx.beginPath();ctx.moveTo(328,120);ctx.lineTo(318,114);ctx.lineTo(318,126);ctx.fill();
+    ctx.fillStyle='#a78bfa';ctx.font='bold 16px monospace';ctx.fillText('ε',260,105);
+    // Labels
+    ctx.fillStyle='#94a3b8';ctx.font='13px sans-serif';
+    ctx.fillText('q0 is NOT an accept state',160,175);
+    ctx.fillText('q1 IS an accept state',360,175);
+    // Steps
+    if(phase>=1){
+      ctx.fillStyle='#38bdf8';ctx.font='bold 13px monospace';ctx.textAlign='left';
+      ctx.fillText('Step 1: δ̂(q0, ε) = CL(q0)',60,220);
+      ctx.fillText('        CL(q0) = {q0, q1}',60,245);
+    }
+    if(phase>=2){
+      ctx.fillStyle='#22c55e';ctx.font='bold 13px monospace';
+      ctx.fillText('Step 2: CL(q0) ∩ F = {q0,q1} ∩ {q1} = {q1} ≠ ∅',60,275);
+    }
+    if(phase>=3){
+      ctx.fillStyle='#22c55e';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
+      ctx.fillText('✓  ε IS ACCEPTED  —  even though q0 ∉ F!',260,310);
+    }
+  }
+  window.s12Demo=function(){
+    s12Reset();
+    phase=1;draw();
+    timer=setTimeout(()=>{phase=2;draw();timer=setTimeout(()=>{phase=3;draw();},1000);},1000);
+  };
+  window.s12Reset=function(){if(timer){clearTimeout(timer);timer=null;}phase=0;draw();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active'))s12Reset();});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s13: ε-NFA → NFA CONVERSION ==================== -->
+<div class="slide" id="s13">
+  <h2>Converting &epsilon;-NFA to Ordinary NFA</h2>
+  <p>We can <strong>eliminate</strong> all &epsilon;-transitions to get an equivalent ordinary NFA.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="key-idea">
+        <h3>The Algorithm</h3>
+        <p>Given &epsilon;-NFA E = (Q, &Sigma;, &delta;<sub>E</sub>, q<sub>0</sub>, F), build NFA N = (Q, &Sigma;, &delta;<sub>N</sub>, q<sub>0</sub>, F&prime;):</p>
+        <ol style="margin-top:8px">
+          <li style="margin-bottom:10px"><strong>New transitions:</strong> For each q, a:<br>
+            <span style="color:#a5f3fc">&delta;<sub>N</sub>(q, a) = CL( &delta;<sub>E</sub>( CL(q), a ) )</span><br>
+            <span style="font-size:.9em;color:#94a3b8">ε-close q → follow a → ε-close result</span></li>
+          <li style="margin-bottom:10px"><strong>New accept states:</strong><br>
+            <span style="color:#a5f3fc">F&prime; = { q &in; Q | CL(q) &cap; F &ne; &empty; }</span><br>
+            <span style="font-size:.9em;color:#94a3b8">Any state whose ε-closure touches F</span></li>
+          <li><strong>Same start state:</strong> q<sub>0</sub></li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS13" width="520" height="320" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS13'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    // Before
+    ctx.font='bold 14px sans-serif';ctx.fillStyle='#f59e0b';ctx.textAlign='center';
+    ctx.fillText('BEFORE (ε-NFA):',150,25);
+    // q0 --ε--> q1 --a--> q2 --ε--> q3(accept)
+    const bStates=[{id:'q0',x:50,y:70},{id:'q1',x:150,y:70},{id:'q2',x:250,y:70},{id:'q3',x:350,y:70,acc:true}];
+    bStates.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,18,0,Math.PI*2);ctx.fillStyle='#6366f122';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=1.8;ctx.stroke();
+      if(s.acc){ctx.beginPath();ctx.arc(s.x,s.y,14,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.id,s.x,s.y);
+    });
+    // edges
+    [[50,70,150,70,'ε',true],[150,70,250,70,'a',false],[250,70,350,70,'ε',true]].forEach(([x1,y1,x2,y2,l,d])=>{
+      ctx.beginPath();ctx.setLineDash(d?[5,3]:[]);ctx.strokeStyle=d?'#7c3aed':'#475569';ctx.lineWidth=1.5;
+      ctx.moveTo(x1+20,y1);ctx.lineTo(x2-20,y2);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=d?'#a78bfa':'#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText(l,(x1+x2)/2,y1-12);
+    });
+    // After
+    ctx.font='bold 14px sans-serif';ctx.fillStyle='#22c55e';ctx.textAlign='center';
+    ctx.fillText('AFTER (NFA — no ε):',150,140);
+    const aStates=[{id:'q0',x:80,y:180,acc:false},{id:'q3',x:300,y:180,acc:true}];
+    aStates.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,18,0,Math.PI*2);ctx.fillStyle='#22c55e22';ctx.fill();ctx.strokeStyle='#22c55e';ctx.lineWidth=1.8;ctx.stroke();
+      if(s.acc){ctx.beginPath();ctx.arc(s.x,s.y,14,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.id,s.x,s.y);
+    });
+    ctx.beginPath();ctx.moveTo(100,180);ctx.lineTo(278,180);ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#22c55e';ctx.beginPath();ctx.moveTo(278,180);ctx.lineTo(268,174);ctx.lineTo(268,186);ctx.fill();
+    ctx.fillStyle='#f59e0b';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('a',190,168);
+    // Explanation
+    ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('The "a" from q0 in the NFA bakes in:',50,230);
+    ctx.fillStyle='#a78bfa';ctx.font='12px monospace';
+    ctx.fillText('ε to q1  →  a to q2  →  ε to q3',70,252);
+    ctx.fillStyle='#f59e0b';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('δ_N(q0, a) = CL( δ_E( CL(q0), a ) )',50,282);
+    ctx.fillStyle='#94a3b8';ctx.font='12px monospace';
+    ctx.fillText('= CL( δ_E({q0,q1}, a) ) = CL({q2}) = {q2,q3}',50,302);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCB: CHALLENGE - FIX THE BUG ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug in This Conversion</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <h3>&epsilon;-NFA Reference</h3>
+      <canvas id="cCB" width="520" height="180" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <table style="font-size:.82em;margin-top:8px">
+        <tr><th></th><th>a</th><th>b</th><th style="color:#a78bfa">&epsilon;</th></tr>
+        <tr><td>&rarr; q0</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">{q1}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td style="color:#a78bfa">&empty;</td></tr>
+        <tr><td>q2</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">{q3}</td></tr>
+        <tr><td>*q3</td><td>&empty;</td><td>{q4}</td><td style="color:#a78bfa">&empty;</td></tr>
+        <tr><td>q4</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">&empty;</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Student&rsquo;s NFA (has ONE bug)</h3>
+      <table style="font-size:.82em" id="sCBTable">
+        <tr><th></th><th>a</th><th>b</th></tr>
+        <tr><td>&rarr; q0</td><td id="sCBc00" style="cursor:pointer" onclick="sCBCheck(0,0)">{q2,q3}</td><td id="sCBc01" style="cursor:pointer" onclick="sCBCheck(0,1)">&empty;</td></tr>
+        <tr><td>q1</td><td id="sCBc10" style="cursor:pointer" onclick="sCBCheck(1,0)">{q2,q3}</td><td id="sCBc11" style="cursor:pointer" onclick="sCBCheck(1,1)">&empty;</td></tr>
+        <tr><td>*q2</td><td id="sCBc20" style="cursor:pointer" onclick="sCBCheck(2,0)">&empty;</td><td id="sCBc21" style="cursor:pointer" onclick="sCBCheck(2,1)">{q4}</td></tr>
+        <tr><td>*q3</td><td id="sCBc30" style="cursor:pointer" onclick="sCBCheck(3,0)">&empty;</td><td id="sCBc31" style="cursor:pointer" onclick="sCBCheck(3,1)">{q4}</td></tr>
+        <tr><td>q4</td><td id="sCBc40" style="cursor:pointer" onclick="sCBCheck(4,0)">&empty;</td><td id="sCBc41" style="cursor:pointer" onclick="sCBCheck(4,1)">&empty;</td></tr>
+      </table>
+      <p style="font-size:.9em;color:#94a3b8;margin-top:6px">Student also marked F&prime; = {q2, q3}.</p>
+      <p style="font-size:.95em;color:#e2e8f0;margin-top:10px"><strong>Click the buggy cell</strong> in the table above.</p>
+      <div id="sCBFb" style="display:none;margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.92em"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cCB'),ctx=c.getContext('2d');
+  // q0 --ε--> q1 --a--> q2 --ε--> q3 --b--> q4
+  const st=[{id:'q0',x:50,y:90},{id:'q1',x:150,y:90},{id:'q2',x:260,y:90},{id:'q3',x:370,y:90,acc:true},{id:'q4',x:470,y:90}];
+  const ed=[[0,1,'ε',true],[1,2,'a',false],[2,3,'ε',true],[3,4,'b',false]];
+  function draw(){
+    ctx.clearRect(0,0,520,180);
+    ctx.beginPath();ctx.moveTo(5,90);ctx.lineTo(28,90);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    ed.forEach(([i,j,l,d])=>{
+      const s=st[i],e=st[j];
+      ctx.beginPath();ctx.setLineDash(d?[6,4]:[]);ctx.strokeStyle=d?'#7c3aed':'#475569';ctx.lineWidth=1.8;
+      ctx.moveTo(s.x+22,s.y);ctx.lineTo(e.x-22,e.y);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=d?'#a78bfa':'#f59e0b';ctx.font='bold 12px monospace';ctx.textAlign='center';
+      ctx.fillText(l,(s.x+e.x)/2,s.y-14);
+    });
+    st.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,20,0,Math.PI*2);ctx.fillStyle='#6366f122';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(s.acc){ctx.beginPath();ctx.arc(s.x,s.y,15,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle='#fff';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.id,s.x,s.y);
+    });
+  }
+  draw();
+
+  // The bug: cell (2,1) = δ_N(q2, b) should be {q4} but actually:
+  // CL(q2) = {q2,q3}, δ_E({q2,q3}, b) = {q4}, CL({q4}) = {q4} → correct
+  // Actually the bug is cell (0,1): δ_N(q0, b) = CL(δ_E(CL(q0), b))
+  // CL(q0) = {q0,q1}, δ_E({q0,q1}, b) = ∅ → correct ∅
+  // Real bug: F' should include q0 since CL(q0)={q0,q1} doesn't touch F={q3}.
+  // Wait, let me reconsider. CL(q0)={q0,q1}. CL(q0)∩F = {q0,q1}∩{q3} = ∅. So q0 NOT in F'.
+  // CL(q2)={q2,q3}. CL(q2)∩F = {q2,q3}∩{q3} = {q3} ≠ ∅. So q2 ∈ F'. Correct.
+  // Bug: δ_N(q2, b). CL(q2)={q2,q3}. δ_E({q2,q3}, b)={q4}. CL({q4})={q4}. So {q4} is correct.
+  // Let me make the bug in cell (0,0): δ_N(q0, a) should be:
+  // CL(q0)={q0,q1}. δ_E({q0,q1}, a)={q2}. CL({q2})={q2,q3}. Answer={q2,q3}. That's correct in table.
+  // I need an actual bug. Let me set cell (2,1) = ∅ as the bug (student forgot CL(q2)={q2,q3} includes q3 which has b-transition)
+  // Actually the table shows {q4} which is correct. Let me redesign: the bug is in sCBc21 which shows {q4} but should... no that's right.
+  // OK: the real bug is that F' is wrong. CL(q0)={q0,q1}, no accept. CL(q1)={q1}, no. CL(q2)={q2,q3}, yes. CL(q3)={q3}, yes. CL(q4)={q4}, no.
+  // So F'={q2,q3} is correct! Let me change: make the bug cell (0,1). Student wrote ∅ for δ_N(q0, b).
+  // CL(q0)={q0,q1}. δ_E({q0,q1}, b)=∅. CL(∅)=∅. So ∅ is correct!
+  // I'll make the bug in the displayed values. Let me change sCBc20 to {q3} instead of ∅.
+  // Actually easiest: make the bug that sCBc01 should not be ∅. Wait, it IS ∅.
+  // Let me just make the F' the bug — student forgot q0 or something. No, F' is correct.
+  // Simplest approach: swap the bug to be in sCBc21. Student wrote {q4} but it should be {q4} (correct).
+  // OK I'll change the problem. The buggy cell is (2,1) δ_N(q2, b):
+  // Student wrote {q4} but the CORRECT answer is also {q4}. That's not a bug.
+  // Let me change the table content. I'll make cell (0,0) show just {q2} (missing q3 from closure).
+  // BUG: cell (0,0) shows {q2} but correct is {q2,q3}.
+
+  let answered2=false;
+  window.sCBCheck=function(row,col){
+    if(answered2)return;
+    const fb=document.getElementById('sCBFb');
+    // Bug is at row 0, col 0 — which shows {q2} but should be {q2,q3}
+    // But I set it to {q2,q3} above... let me fix the HTML via DOM
+    if(row===0&&col===0){
+      answered2=true;
+      document.getElementById('sCBc00').style.background='#ef444444';document.getElementById('sCBc00').style.color='#ef4444';
+      fb.style.display='block';fb.style.background='rgba(34,197,94,.12)';fb.style.border='1px solid #22c55e';fb.style.color='#22c55e';
+      fb.innerHTML='<strong>Correct!</strong> The student forgot to ε-close the result.<br>δ_N(q0, a) = CL(δ_E(CL(q0), a)) = CL(δ_E({q0,q1}, a)) = CL({q2}) = <strong>{q2, q3}</strong>, not {q2}.<br>The student skipped the final CL() step!';
+    } else {
+      fb.style.display='block';fb.style.background='rgba(239,68,68,.12)';fb.style.border='1px solid #ef4444';fb.style.color='#ef4444';
+      fb.innerHTML='Not that cell. Hint: check where the student might have forgotten the final ε-closure step.';
+      setTimeout(()=>{fb.style.display='none';},2000);
+    }
+  };
+  // Fix the displayed bug cell to show {q2} instead of {q2,q3}
+  document.getElementById('sCBc00').textContent='{q2}';
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sCB').classList.contains('active')){
+      answered2=false;document.getElementById('sCBFb').style.display='none';
+      document.getElementById('sCBc00').textContent='{q2}';
+      document.getElementById('sCBc00').style.background='';document.getElementById('sCBc00').style.color='';
+      draw();
+    }
+  });
+  obs.observe(document.getElementById('sCB'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s14: INTERACTIVE ε-NFA → NFA CONVERSION ==================== -->
+<div class="slide" id="s14">
+  <h2>Interactive: &epsilon;-NFA &rarr; NFA Conversion</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.5rem">
+    <div>
+      <h3>&epsilon;-NFA: accepts &ldquo;ab&rdquo; or &ldquo;b&rdquo;</h3>
+      <canvas id="cS14" width="500" height="160" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <table style="font-size:.78em;margin-top:6px">
+        <tr><th></th><th>a</th><th>b</th><th style="color:#a78bfa">&epsilon;</th></tr>
+        <tr><td>&rarr; q0</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">{q1, q4}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>q2</td><td>&empty;</td><td>{q3}</td><td>&empty;</td></tr>
+        <tr><td>*q3</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>q4</td><td>&empty;</td><td>{q5}</td><td>&empty;</td></tr>
+        <tr><td>*q5</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>NFA Being Built</h3>
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn btn-sm" onclick="s14Step()">Next Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+        <span id="s14StepN" style="color:#94a3b8;font-size:.85em">Step 0</span>
+      </div>
+      <table style="font-size:.78em" id="s14Table">
+        <tr><th></th><th>a</th><th>b</th></tr>
+        <tr id="s14R0"><td>&rarr; q0</td><td>--</td><td>--</td></tr>
+        <tr id="s14R1"><td>q1</td><td>--</td><td>--</td></tr>
+        <tr id="s14R2"><td>q2</td><td>--</td><td>--</td></tr>
+        <tr id="s14R3"><td>*q3</td><td>--</td><td>--</td></tr>
+        <tr id="s14R4"><td>q4</td><td>--</td><td>--</td></tr>
+        <tr id="s14R5"><td>*q5</td><td>--</td><td>--</td></tr>
+      </table>
+      <div id="s14Accept" style="font-size:.85em;color:#94a3b8;margin-top:6px"></div>
+      <div id="s14Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;font-family:monospace;font-size:.72em;max-height:80px;overflow-y:auto;margin-top:6px;color:#94a3b8"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS14'),ctx=c.getContext('2d');
+  const npos={q0:{x:50,y:80},q1:{x:150,y:45},q2:{x:270,y:45},q3:{x:390,y:45},q4:{x:150,y:125},q5:{x:270,y:125}};
+  const edgs=[[0,1,'ε',true],[0,4,'ε',true],[1,2,'a',false],[2,3,'b',false],[4,5,'b',false]];
+  const stArr=['q0','q1','q2','q3','q4','q5'];
+  const accSet=['q3','q5'];
+  function drawRef(){
+    ctx.clearRect(0,0,500,160);
+    ctx.beginPath();ctx.moveTo(5,80);ctx.lineTo(26,80);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    edgs.forEach(([i,j,l,d])=>{
+      const s=npos[stArr[i]],e=npos[stArr[j]];
+      const a=Math.atan2(e.y-s.y,e.x-s.x);
+      const sx=s.x+18*Math.cos(a),sy=s.y+18*Math.sin(a),ex=e.x-18*Math.cos(a),ey=e.y-18*Math.sin(a);
+      ctx.beginPath();ctx.setLineDash(d?[5,3]:[]);ctx.strokeStyle=d?'#7c3aed':'#475569';ctx.lineWidth=1.5;
+      ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=d?'#a78bfa':'#f59e0b';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(l,(sx+ex)/2,(sy+ey)/2-7);
+    });
+    stArr.forEach(id=>{
+      const p=npos[id];ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);ctx.fillStyle='#6366f122';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=1.5;ctx.stroke();
+      if(accSet.includes(id)){ctx.beginPath();ctx.arc(p.x,p.y,12,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(id,p.x,p.y);
+    });
+  }
+  drawRef();
+
+  // Closures: CL(q0)={q0,q1,q4}, CL(q1)={q1}, CL(q2)={q2}, CL(q3)={q3}, CL(q4)={q4}, CL(q5)={q5}
+  const steps=[
+    {t:'info',msg:'Closures: CL(q0)={q0,q1,q4}, others = {self}'},
+    {t:'fill',r:0,c:1,v:'{q2}',msg:'δ_N(q0,a)=CL(δ_E({q0,q1,q4},a))=CL({q2})={q2}'},
+    {t:'fill',r:0,c:2,v:'{q3,q5}',msg:'δ_N(q0,b)=CL(δ_E({q0,q1,q4},b))=CL({q3,q5})={q3,q5}'},
+    {t:'fill',r:1,c:1,v:'{q2}',msg:'δ_N(q1,a)=CL(δ_E({q1},a))=CL({q2})={q2}'},
+    {t:'fill',r:1,c:2,v:'∅',msg:'δ_N(q1,b)=CL(δ_E({q1},b))=CL(∅)=∅'},
+    {t:'fill',r:2,c:1,v:'∅',msg:'δ_N(q2,a)=∅'},
+    {t:'fill',r:2,c:2,v:'{q3}',msg:'δ_N(q2,b)=CL(δ_E({q2},b))=CL({q3})={q3}'},
+    {t:'fill',r:3,c:1,v:'∅',msg:'δ_N(q3,a)=∅'},
+    {t:'fill',r:3,c:2,v:'∅',msg:'δ_N(q3,b)=∅'},
+    {t:'fill',r:4,c:1,v:'∅',msg:'δ_N(q4,a)=∅'},
+    {t:'fill',r:4,c:2,v:'{q5}',msg:'δ_N(q4,b)=CL(δ_E({q4},b))=CL({q5})={q5}'},
+    {t:'fill',r:5,c:1,v:'∅',msg:'δ_N(q5,a)=∅'},
+    {t:'fill',r:5,c:2,v:'∅',msg:'δ_N(q5,b)=∅'},
+    {t:'done',msg:'F\'={q3,q5} (same as before — CL(q0)∩F=∅, so q0 stays non-accepting)'}
+  ];
+  let si=0,timer=null;
+  window.s14Step=function(){
+    if(si>=steps.length)return;
+    const s=steps[si];
+    document.getElementById('s14StepN').textContent='Step '+(si+1)+'/'+steps.length;
+    const log=document.getElementById('s14Log');
+    log.innerHTML+='<div>'+s.msg+'</div>';log.scrollTop=9999;
+    if(s.t==='fill'){
+      const row=document.getElementById('s14R'+s.r);
+      if(row){row.cells[s.c].textContent=s.v;row.style.background='rgba(99,102,241,.15)';
+        setTimeout(()=>{row.style.background='';},500);}
+    }else if(s.t==='done'){
+      document.getElementById('s14Accept').innerHTML='<strong style="color:#22c55e">Done!</strong> F\'={q3, q5}. NFA has no ε-column.';
+    }
+    si++;
+  };
+  window.s14Auto=function(){if(timer)return;timer=setInterval(()=>{if(si>=steps.length){clearInterval(timer);timer=null;return;}s14Step();},700);};
+  window.s14Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}si=0;
+    document.getElementById('s14StepN').textContent='Step 0';
+    document.getElementById('s14Log').innerHTML='';
+    document.getElementById('s14Accept').innerHTML='';
+    for(let r=0;r<6;r++){const row=document.getElementById('s14R'+r);if(row){row.cells[1].textContent='--';row.cells[2].textContent='--';row.style.background='';}}
+    drawRef();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))s14Reset();});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s15: ε-NFA → DFA DIRECT ==================== -->
+<div class="slide" id="s15">
+  <h2>Converting &epsilon;-NFA Directly to DFA</h2>
+  <p>Skip the intermediate NFA &mdash; go straight from &epsilon;-NFA to DFA using <strong>modified subset construction</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="key-idea">
+        <h3>Modified Subset Construction</h3>
+        <ol style="margin-top:8px">
+          <li style="margin-bottom:10px"><strong>Start state:</strong> CL(q<sub>0</sub>) &mdash; not just {q<sub>0</sub>}!</li>
+          <li style="margin-bottom:10px"><strong>For each DFA state S and symbol a:</strong><br>
+            <span style="color:#a5f3fc">&delta;<sub>DFA</sub>(S, a) = CL( &bigcup;<sub>q &in; S</sub> &delta;(q, a) )</span><br>
+            <span style="font-size:.88em;color:#94a3b8">Move on a, then &epsilon;-close</span></li>
+          <li style="margin-bottom:10px"><strong>Accept states:</strong> Any S where S &cap; F &ne; &empty;</li>
+          <li>Repeat until no new DFA states appear</li>
+        </ol>
+      </div>
+      <div class="analogy" style="margin-top:12px">
+        <h3>Same Old Subset Construction</h3>
+        <p>It&rsquo;s the algorithm you already know from NFA &rarr; DFA, except you wrap every intermediate result in CL(). Think: &ldquo;subset construction wearing &epsilon;-closure glasses.&rdquo;</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS15" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS15'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    ctx.font='bold 14px sans-serif';ctx.fillStyle='#38bdf8';ctx.textAlign='center';
+    ctx.fillText('The Process:',260,25);
+    const steps=[
+      {y:60,label:'Step 1',text:'DFA start = CL(q\u2080)',color:'#a78bfa'},
+      {y:110,label:'Step 2',text:'For each DFA state S, each symbol a:',color:'#f59e0b'},
+      {y:145,label:'',text:'  Compute \u222A \u03b4(q, a) for q \u2208 S',color:'#94a3b8'},
+      {y:175,label:'',text:'  Then CL(result) = new DFA state',color:'#22c55e'},
+      {y:225,label:'Step 3',text:'Repeat for all new DFA states',color:'#f59e0b'},
+      {y:275,label:'Step 4',text:'Mark accepting: any S where S \u2229 F \u2260 \u2205',color:'#ef4444'}
+    ];
+    steps.forEach(s=>{
+      ctx.fillStyle=s.color;ctx.font=s.label?'bold 13px sans-serif':'12px monospace';ctx.textAlign='left';
+      if(s.label){ctx.fillText(s.label+':',40,s.y);ctx.fillText(s.text,120,s.y);}
+      else ctx.fillText(s.text,60,s.y);
+    });
+    ctx.fillStyle='#475569';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,300);ctx.lineTo(480,300);ctx.stroke();
+    ctx.font='11px sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#64748b';ctx.fillText('NFA\u2192DFA: subset construction',160,325);
+    ctx.fillStyle='#a78bfa';ctx.fillText('\u03b5-NFA\u2192DFA: subset construction + CL() everywhere',370,325);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s16: INTERACTIVE ε-NFA → DFA SUBSET CONSTRUCTION ==================== -->
+<div class="slide" id="s16">
+  <h2>Interactive: &epsilon;-NFA &rarr; DFA Subset Construction</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.5rem">
+    <div>
+      <h3>&epsilon;-NFA: accepts &ldquo;ab&rdquo;</h3>
+      <canvas id="cS16ref" width="500" height="120" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <table style="font-size:.76em;margin-top:4px">
+        <tr><th></th><th>a</th><th>b</th><th style="color:#a78bfa">&epsilon;</th></tr>
+        <tr><td>&rarr; q0</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">{q1}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>&empty;</td><td>&empty;</td></tr>
+        <tr><td>q2</td><td>&empty;</td><td>{q3}</td><td>&empty;</td></tr>
+        <tr><td>*q3</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+      <div id="s16Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:6px 10px;font-family:monospace;font-size:.7em;max-height:70px;overflow-y:auto;margin-top:4px;color:#94a3b8"></div>
+    </div>
+    <div>
+      <h3>DFA Being Built</h3>
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn btn-sm" onclick="s16Step()">Next Step</button>
+        <button class="btn btn-sm" onclick="s16Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+        <span id="s16StepN" style="color:#94a3b8;font-size:.82em">Step 0</span>
+      </div>
+      <table style="font-size:.76em" id="s16Table">
+        <tr><th>DFA State</th><th>&epsilon;-NFA States</th><th>a</th><th>b</th><th>Accept?</th></tr>
+      </table>
+      <div id="s16Done" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;background:rgba(34,197,94,.12);border:1px solid #22c55e;color:#22c55e;font-weight:600;font-size:.92em"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS16ref'),ctx=c.getContext('2d');
+  const st=[{id:'q0',x:60,y:60},{id:'q1',x:180,y:60},{id:'q2',x:300,y:60},{id:'q3',x:420,y:60,acc:true}];
+  const ed=[[0,1,'\u03b5',true],[1,2,'a',false],[2,3,'b',false]];
+  function drawRef(){
+    ctx.clearRect(0,0,500,120);
+    ctx.beginPath();ctx.moveTo(15,60);ctx.lineTo(38,60);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    ed.forEach(([i,j,l,d])=>{
+      const s=st[i],e=st[j];
+      ctx.beginPath();ctx.setLineDash(d?[5,3]:[]);ctx.strokeStyle=d?'#7c3aed':'#475569';ctx.lineWidth=1.5;
+      ctx.moveTo(s.x+18,s.y);ctx.lineTo(e.x-18,e.y);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=d?'#a78bfa':'#f59e0b';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(l,(s.x+e.x)/2,s.y-12);
+    });
+    st.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,16,0,Math.PI*2);ctx.fillStyle='#6366f122';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=1.5;ctx.stroke();
+      if(s.acc){ctx.beginPath();ctx.arc(s.x,s.y,12,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.id,s.x,s.y);
+    });
+  }
+  drawRef();
+
+  const steps=[
+    {t:'row',name:'\u2192 A',states:'{q0,q1}',a:'--',b:'--',acc:'No',msg:'Start: CL(q0)={q0,q1} \u2192 DFA state A'},
+    {t:'fill',r:0,c:'a',v:'B',msg:'\u03b4(A,a): \u03b4({q0,q1},a)={q2}, CL={q2} \u2192 B (NEW)',nr:{name:'B',states:'{q2}',a:'--',b:'--',acc:'No'}},
+    {t:'fill',r:0,c:'b',v:'DEAD',msg:'\u03b4(A,b): \u03b4({q0,q1},b)=\u2205 \u2192 DEAD (NEW)',nr:{name:'DEAD',states:'\u2205',a:'--',b:'--',acc:'No'}},
+    {t:'fill',r:1,c:'a',v:'DEAD',msg:'\u03b4(B,a): \u03b4({q2},a)=\u2205 \u2192 DEAD (seen)'},
+    {t:'fill',r:1,c:'b',v:'C',msg:'\u03b4(B,b): \u03b4({q2},b)={q3}, CL={q3} \u2192 C (NEW, ACCEPT)',nr:{name:'*C',states:'{q3}',a:'--',b:'--',acc:'Yes'}},
+    {t:'fill',r:2,c:'a',v:'DEAD',msg:'\u03b4(DEAD,a): \u2205 \u2192 DEAD'},
+    {t:'fill',r:2,c:'b',v:'DEAD',msg:'\u03b4(DEAD,b): \u2205 \u2192 DEAD'},
+    {t:'fill',r:3,c:'a',v:'DEAD',msg:'\u03b4(C,a): \u03b4({q3},a)=\u2205 \u2192 DEAD'},
+    {t:'fill',r:3,c:'b',v:'DEAD',msg:'\u03b4(C,b): \u03b4({q3},b)=\u2205 \u2192 DEAD'},
+    {t:'done',msg:'Done! DFA has 4 states. L = {"ab"}. Accept: {C}'}
+  ];
+  let si=0,timer=null;
+  window.s16Step=function(){
+    if(si>=steps.length)return;
+    const s=steps[si];
+    document.getElementById('s16StepN').textContent='Step '+(si+1)+'/'+steps.length;
+    const log=document.getElementById('s16Log');
+    log.innerHTML+='<div>'+s.msg+'</div>';log.scrollTop=9999;
+    const table=document.getElementById('s16Table');
+    if(s.t==='row'){
+      const tr=table.insertRow(-1);
+      tr.innerHTML='<td>'+s.name+'</td><td>'+s.states+'</td><td>'+s.a+'</td><td>'+s.b+'</td><td>'+s.acc+'</td>';
+      tr.style.background='rgba(99,102,241,.15)';setTimeout(()=>{tr.style.background='';},500);
+    }else if(s.t==='fill'){
+      const ci=s.c==='a'?2:3;
+      const rows=table.rows;const dr=rows[s.r+1];
+      if(dr){dr.cells[ci].textContent=s.v;dr.style.background='rgba(99,102,241,.1)';setTimeout(()=>{dr.style.background='';},500);}
+      if(s.nr){
+        const tr=table.insertRow(-1);
+        tr.innerHTML='<td>'+s.nr.name+'</td><td>'+s.nr.states+'</td><td>'+s.nr.a+'</td><td>'+s.nr.b+'</td><td>'+s.nr.acc+'</td>';
+        tr.style.background='rgba(34,197,94,.15)';setTimeout(()=>{tr.style.background='';},500);
+      }
+    }else if(s.t==='done'){
+      const d=document.getElementById('s16Done');d.style.display='block';d.textContent='Subset construction complete! L = {"ab"}';
+    }
+    si++;
+  };
+  window.s16Auto=function(){if(timer)return;timer=setInterval(()=>{if(si>=steps.length){clearInterval(timer);timer=null;return;}s16Step();},800);};
+  window.s16Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}si=0;
+    document.getElementById('s16StepN').textContent='Step 0';
+    document.getElementById('s16Log').innerHTML='';
+    document.getElementById('s16Done').style.display='none';
+    const table=document.getElementById('s16Table');
+    while(table.rows.length>1)table.deleteRow(1);
+    drawRef();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s16').classList.contains('active'))s16Reset();});
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s17: THOMPSON'S CONSTRUCTION ==================== -->
+<div class="slide" id="s17">
+  <h2>Why &epsilon;-NFA Matters: Thompson&rsquo;s Construction</h2>
+  <p>Every regex operator maps to an &epsilon;-NFA pattern. This is how <code>grep</code>, <code>lex</code>, and regex engines work.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS17" width="520" height="370" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:8px;justify-content:center">
+        <button class="btn btn-sm" onclick="s17Show('union')">Union (a|b)</button>
+        <button class="btn btn-sm" onclick="s17Show('concat')">Concat (ab)</button>
+        <button class="btn btn-sm" onclick="s17Show('star')">Star (a*)</button>
+      </div>
+    </div>
+    <div>
+      <h3>The Three Patterns</h3>
+      <div class="key-idea" style="padding:12px 16px">
+        <h3 style="font-size:1em">Union: R<sub>1</sub> | R<sub>2</sub></h3>
+        <p style="font-size:.88em">New start &xrarr; &epsilon; to both sub-machines. Both final states &xrarr; &epsilon; to new accept.</p>
+      </div>
+      <div class="key-idea" style="padding:12px 16px;border-left-color:#f59e0b">
+        <h3 style="font-size:1em;color:#f59e0b">Concatenation: R<sub>1</sub> R<sub>2</sub></h3>
+        <p style="font-size:.88em">Final of R<sub>1</sub> &xrarr; &epsilon; to start of R<sub>2</sub>. Chain them together.</p>
+      </div>
+      <div class="key-idea" style="padding:12px 16px;border-left-color:#a78bfa">
+        <h3 style="font-size:1em;color:#a78bfa">Kleene Star: R*</h3>
+        <p style="font-size:.88em">New start (also accept) &xrarr; &epsilon; to R. Final of R &xrarr; &epsilon; back to start. Handles zero repetitions.</p>
+      </div>
+      <div class="analogy" style="margin-top:12px">
+        <h3>The Big Win</h3>
+        <p>&epsilon;-transitions let us compose automata like functions. Build small, test small, combine freely. This is the foundation of practical regex engines.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS17'),ctx=c.getContext('2d');
+  let mode='union';
+  function drawSt(x,y,label,accept,col){
+    ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fillStyle=col+'22';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+    if(accept){ctx.beginPath();ctx.arc(x,y,13,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,x,y);
+  }
+  function arr(x1,y1,x2,y2,label,col,dashed){
+    const a=Math.atan2(y2-y1,x2-x1);
+    const sx=x1+20*Math.cos(a),sy=y1+20*Math.sin(a),ex=x2-20*Math.cos(a),ey=y2-20*Math.sin(a);
+    ctx.beginPath();ctx.setLineDash(dashed?[5,3]:[]);ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex-8*Math.cos(a-.4),ey-8*Math.sin(a-.4));ctx.lineTo(ex-8*Math.cos(a+.4),ey-8*Math.sin(a+.4));ctx.fill();
+    const mx=(sx+ex)/2,my=(sy+ey)/2;
+    ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText(label,mx,my-9);
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    ctx.font='bold 16px sans-serif';ctx.fillStyle='#38bdf8';ctx.textAlign='center';
+    if(mode==='union'){
+      ctx.fillText('Thompson: Union  (a | b)',260,30);
+      drawSt(60,185,'S',false,'#f59e0b');
+      drawSt(180,100,'q1',false,'#6366f1');drawSt(320,100,'q2',false,'#6366f1');
+      drawSt(180,270,'q3',false,'#6366f1');drawSt(320,270,'q4',false,'#6366f1');
+      drawSt(440,185,'F',true,'#22c55e');
+      arr(60,185,180,100,'\u03b5','#a78bfa',true);arr(60,185,180,270,'\u03b5','#a78bfa',true);
+      arr(180,100,320,100,'a','#f59e0b',false);arr(180,270,320,270,'b','#f59e0b',false);
+      arr(320,100,440,185,'\u03b5','#a78bfa',true);arr(320,270,440,185,'\u03b5','#a78bfa',true);
+      ctx.beginPath();ctx.moveTo(15,185);ctx.lineTo(38,185);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('\u03b5-transitions let us "choose" which path',260,345);
+    }else if(mode==='concat'){
+      ctx.fillText('Thompson: Concatenation  (a \u00b7 b)',260,30);
+      drawSt(60,185,'S',false,'#f59e0b');drawSt(170,185,'q1',false,'#6366f1');
+      drawSt(280,185,'q2',false,'#6366f1');drawSt(390,185,'F',true,'#22c55e');
+      arr(60,185,170,185,'a','#f59e0b',false);arr(170,185,280,185,'\u03b5','#a78bfa',true);arr(280,185,390,185,'b','#f59e0b',false);
+      ctx.beginPath();ctx.moveTo(15,185);ctx.lineTo(38,185);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('\u03b5 glues the end of machine 1 to the start of machine 2',260,260);
+    }else{
+      ctx.fillText('Thompson: Kleene Star  (a*)',260,30);
+      drawSt(60,185,'S',true,'#22c55e');drawSt(190,185,'q1',false,'#6366f1');drawSt(340,185,'q2',false,'#6366f1');
+      arr(60,185,190,185,'\u03b5','#a78bfa',true);arr(190,185,340,185,'a','#f59e0b',false);
+      ctx.beginPath();ctx.setLineDash([5,3]);ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;
+      ctx.moveTo(340,167);ctx.quadraticCurveTo(265,80,190,167);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#a78bfa';ctx.beginPath();ctx.moveTo(190,167);ctx.lineTo(194,177);ctx.lineTo(183,173);ctx.fill();
+      ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText('\u03b5',265,90);
+      ctx.beginPath();ctx.moveTo(15,185);ctx.lineTo(38,185);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('S is both start AND accept \u2192 handles \u03b5 (zero repetitions)',260,270);
+      ctx.fillText('Loop-back \u03b5 lets the machine repeat "a" any number of times',260,295);
+    }
+  }
+  window.s17Show=function(m){mode=m;draw();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s17').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s17'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCC: CHALLENGE - WHICH CONVERSION? ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Which Conversion Path?</h2>
+  <p>For each scenario, pick the best conversion approach.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px" id="sCCcard0">
+      <h3 style="font-size:1em;color:#f59e0b">Scenario 1</h3>
+      <p style="font-size:.88em">&ldquo;I have an &epsilon;-NFA and need a DFA for a hardware implementation.&rdquo;</p>
+      <select id="sCCsel0" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.88em;margin-top:8px">
+        <option value="">Choose...</option>
+        <option value="a">&epsilon;-NFA &rarr; NFA &rarr; DFA</option>
+        <option value="b">&epsilon;-NFA &rarr; DFA directly</option>
+        <option value="c">Keep the &epsilon;-NFA as is</option>
+      </select>
+    </div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px" id="sCCcard1">
+      <h3 style="font-size:1em;color:#38bdf8">Scenario 2</h3>
+      <p style="font-size:.88em">&ldquo;I need to prove that (a|b)*a accepts the same strings as my DFA.&rdquo;</p>
+      <select id="sCCsel1" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.88em;margin-top:8px">
+        <option value="">Choose...</option>
+        <option value="a">Thompson: regex &rarr; &epsilon;-NFA &rarr; DFA, compare</option>
+        <option value="b">Skip &epsilon;-NFA, build NFA directly</option>
+        <option value="c">Use the pumping lemma</option>
+      </select>
+    </div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px" id="sCCcard2">
+      <h3 style="font-size:1em;color:#a78bfa">Scenario 3</h3>
+      <p style="font-size:.88em">&ldquo;I want to combine three separate NFAs for L1, L2, L3 into one machine for L1&cup;L2&cup;L3.&rdquo;</p>
+      <select id="sCCsel2" style="width:100%;padding:6px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.88em;margin-top:8px">
+        <option value="">Choose...</option>
+        <option value="a">Merge state sets and relabel</option>
+        <option value="b">New start state with &epsilon;-transitions to each NFA&rsquo;s start</option>
+        <option value="c">Convert all to DFAs first, then product construction</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:16px">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCFb" style="display:none;margin-top:12px;padding:14px 20px;border-radius:10px;font-size:.92em;max-width:700px;margin-left:auto;margin-right:auto"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers=['b','a','b'];
+  const explain=[
+    'Direct \u03b5-NFA\u2192DFA is more efficient \u2014 one step instead of two. Both give the same result, but direct skips the intermediate NFA.',
+    'Thompson\'s construction is the standard mechanical way to convert regex\u2192\u03b5-NFA. Then convert to DFA and compare with the given DFA.',
+    'This is exactly what \u03b5-transitions are for! A new start with \u03b5-arrows to each sub-machine\'s start gives you the union with zero redesign.'
+  ];
+  window.sCCCheck=function(){
+    let score=0;
+    for(let i=0;i<3;i++){
+      const sel=document.getElementById('sCCsel'+i);
+      const card=document.getElementById('sCCcard'+i);
+      const correct=sel.value===answers[i];
+      if(correct)score++;
+      card.style.borderColor=correct?'#22c55e':'#ef4444';
+    }
+    const fb=document.getElementById('sCCFb');fb.style.display='block';
+    fb.style.background=score===3?'rgba(34,197,94,.12)':'rgba(245,158,11,.12)';
+    fb.style.border=score===3?'1px solid #22c55e':'1px solid #f59e0b';
+    fb.style.color='#e2e8f0';
+    let html='<strong>Score: '+score+'/3</strong><br>';
+    explain.forEach((e,i)=>{html+='<div style="margin-top:8px;font-size:.88em"><span style="color:'+(document.getElementById('sCCsel'+i).value===answers[i]?'#22c55e':'#ef4444')+'">Q'+(i+1)+':</span> '+e+'</div>';});
+    fb.innerHTML=html;
+  };
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sCC').classList.contains('active')){
+      for(let i=0;i<3;i++){document.getElementById('sCCsel'+i).value='';document.getElementById('sCCcard'+i).style.borderColor='#334155';}
+      document.getElementById('sCCFb').style.display='none';
+    }
+  });
+  obs.observe(document.getElementById('sCC'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s18: SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <h3>Core Concepts</h3>
+      <table style="font-size:.82em">
+        <tr><th>Concept</th><th>Definition</th></tr>
+        <tr><td>&epsilon;-transition</td><td style="text-align:left">Move without consuming input</td></tr>
+        <tr><td>CL(q)</td><td style="text-align:left">All states reachable from q via &epsilon;*</td></tr>
+        <tr><td>CL(S)</td><td style="text-align:left">&cup; CL(q) for all q in S</td></tr>
+        <tr><td>&delta;&#x0302;(q,&epsilon;)</td><td style="text-align:left">= CL(q)</td></tr>
+        <tr><td>&delta;&#x0302;(q,xa)</td><td style="text-align:left">= CL( &delta;( &delta;&#x0302;(q,x), a ) )</td></tr>
+        <tr><td>Accepts w</td><td style="text-align:left">&delta;&#x0302;(q<sub>0</sub>,w) &cap; F &ne; &empty;</td></tr>
+      </table>
+      <h3 style="margin-top:14px">Conversion Cheat Sheet</h3>
+      <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:.8em;color:#a5f3fc;line-height:1.8">
+        &epsilon;-NFA &rarr; NFA:<br>
+        &nbsp; &delta;_N(q,a) = CL( &delta;_E( CL(q), a ) )<br>
+        &nbsp; F' = { q | CL(q) &cap; F &ne; &empty; }<br><br>
+        &epsilon;-NFA &rarr; DFA (direct):<br>
+        &nbsp; Start = CL(q0)<br>
+        &nbsp; &delta;_DFA(S,a) = CL( &cup; &delta;(q,a) for q&in;S )<br>
+        &nbsp; Accept if S &cap; F &ne; &empty;
+      </div>
+    </div>
+    <div>
+      <canvas id="cS18" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS18'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    ctx.font='bold 14px sans-serif';ctx.fillStyle='#38bdf8';ctx.textAlign='center';
+    ctx.fillText('Equivalence Chain',260,25);
+    const nodes=[
+      {label:'DFA',x:130,y:90,col:'#6366f1'},
+      {label:'NFA',x:390,y:90,col:'#f59e0b'},
+      {label:'\u03b5-NFA',x:390,y:220,col:'#a78bfa'},
+      {label:'RegEx',x:130,y:220,col:'#22c55e'}
+    ];
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.roundRect(n.x-50,n.y-22,100,44,12);ctx.fillStyle=n.col+'22';ctx.fill();ctx.strokeStyle=n.col;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 15px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.label,n.x,n.y);
+    });
+    function drawArr(x1,y1,x2,y2,label,col){
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+      const a=Math.atan2(y2-y1,x2-x1);
+      ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-10*Math.cos(a-.35),y2-10*Math.sin(a-.35));ctx.lineTo(x2-10*Math.cos(a+.35),y2-10*Math.sin(a+.35));ctx.fill();
+      ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';ctx.textAlign='center';
+      const mx=(x1+x2)/2,my=(y1+y2)/2;
+      ctx.fillText(label,mx+(y1===y2?0:(x1<x2?12:-12)),my+(y1===y2?-12:0));
+    }
+    drawArr(182,90,338,90,'trivial','#475569');
+    drawArr(390,114,390,196,'add \u03b5','#475569');
+    drawArr(345,225,178,95,'subset+CL()','#a78bfa');
+    drawArr(182,220,338,220,'Thompson','#22c55e');
+    drawArr(130,114,130,196,'state elim.','#475569');
+    drawArr(338,82,182,82,'subset const.','#f59e0b');
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('Key Takeaways:',30,275);
+    const tips=['\u2022 \u03b5-transitions add NO extra power \u2014 just convenience',
+      '\u2022 Always compute CL() before AND after reading symbols',
+      '\u2022 CL(q) always includes q itself',
+      '\u2022 \u03b5 is NOT in the alphabet \u03a3'];
+    ctx.font='11px sans-serif';ctx.fillStyle='#94a3b8';
+    tips.forEach((t,i)=>ctx.fillText(t,30,295+i*17));
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s18').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sQ1: QUIZ - MULTIPLE CHOICE ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Multiple Choice</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem">
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px">
+      <h3 style="font-size:.95em;color:#f59e0b">Q1: Complexity</h3>
+      <p style="font-size:.85em">Converting an &epsilon;-NFA with n states to a DFA can produce at most how many states?</p>
+      <div id="sQ1q1" style="margin-top:8px">
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1a" value="a"> n</label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1a" value="b"> n&sup2;</label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1a" value="c"> 2<sup>n</sup></label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1a" value="d"> n!</label>
+      </div>
+    </div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px">
+      <h3 style="font-size:.95em;color:#38bdf8">Q2: Acceptance</h3>
+      <p style="font-size:.85em">An &epsilon;-NFA has q<sub>0</sub> &notin; F but CL(q<sub>0</sub>) &cap; F &ne; &empty;. Does it accept &epsilon;?</p>
+      <div id="sQ1q2" style="margin-top:8px">
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1b" value="a"> Yes</label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1b" value="b"> No</label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1b" value="c"> Only if &Sigma; = &empty;</label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1b" value="d"> Depends on &delta;</label>
+      </div>
+    </div>
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px">
+      <h3 style="font-size:.95em;color:#a78bfa">Q3: &epsilon;-Closure</h3>
+      <p style="font-size:.85em">If &delta;(q, &epsilon;) = &empty; for all states q, what is every CL(q)?</p>
+      <div id="sQ1q3" style="margin-top:8px">
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1c" value="a"> &empty;</label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1c" value="b"> {q}</label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1c" value="c"> Q</label>
+        <label style="display:block;padding:4px 0;font-size:.88em;cursor:pointer"><input type="radio" name="q1c" value="d"> Undefined</label>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:16px">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:16px;font-size:1.1em;font-weight:600;color:#94a3b8"></span>
+  </div>
+  <div id="sQ1Fb" style="display:none;margin-top:12px;grid-template-columns:1fr 1fr 1fr;gap:.5rem;font-size:.82em"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const ans={q1a:'c',q1b:'a',q1c:'b'};
+  const expl=[
+    'Each DFA state is a subset of the n \u03b5-NFA states \u2192 up to 2\u207f subsets.',
+    'Yes! \u03b4\u0302(q\u2080, \u03b5) = CL(q\u2080). If CL(q\u2080) \u2229 F \u2260 \u2205, then \u03b5 is accepted.',
+    '{q} \u2014 with no \u03b5-transitions, every state can only reach itself via zero \u03b5-moves.'
+  ];
+  window.sQ1Check=function(){
+    let score=0;const names=['q1a','q1b','q1c'];
+    const fb=document.getElementById('sQ1Fb');fb.style.display='grid';fb.innerHTML='';
+    names.forEach((n,i)=>{
+      const sel=document.querySelector('input[name="'+n+'"]:checked');
+      const correct=sel&&sel.value===ans[n];
+      if(correct)score++;
+      const d=document.createElement('div');
+      d.style.cssText='padding:8px 10px;border-radius:8px;background:'+(correct?'rgba(34,197,94,.1)':'rgba(239,68,68,.1)')+';border:1px solid '+(correct?'#22c55e':'#ef4444')+';color:'+(correct?'#22c55e':'#ef4444');
+      d.innerHTML=(correct?'\u2713 ':'\u2717 ')+expl[i];
+      fb.appendChild(d);
+    });
+    document.getElementById('sQ1Score').textContent='Score: '+score+'/3';
+    document.getElementById('sQ1Score').style.color=score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+  };
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('sQ1').classList.contains('active')){
+      ['q1a','q1b','q1c'].forEach(n=>{document.querySelectorAll('input[name="'+n+'"]').forEach(r=>r.checked=false);});
+      document.getElementById('sQ1Score').textContent='';document.getElementById('sQ1Fb').style.display='none';document.getElementById('sQ1Fb').innerHTML='';
+    }
+  });
+  obs.observe(document.getElementById('sQ1'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== sQ2: QUIZ - TRACE EXERCISE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace &delta;&#x0302;(q<sub>0</sub>, &ldquo;ab&rdquo;)</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <h3>&epsilon;-NFA</h3>
+      <canvas id="cQ2" width="520" height="220" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <table style="font-size:.8em;margin-top:6px">
+        <tr><th></th><th>a</th><th>b</th><th style="color:#a78bfa">&epsilon;</th></tr>
+        <tr><td>&rarr; q0</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">{q1}</td></tr>
+        <tr><td>q1</td><td>{q2}</td><td>{q3}</td><td>&empty;</td></tr>
+        <tr><td>q2</td><td>&empty;</td><td>&empty;</td><td style="color:#a78bfa">{q3}</td></tr>
+        <tr><td>*q3</td><td>&empty;</td><td>&empty;</td><td>&empty;</td></tr>
+      </table>
+    </div>
+    <div>
+      <p style="font-size:.95em">Fill in each step of &delta;&#x0302;(q<sub>0</sub>, &ldquo;ab&rdquo;):</p>
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px;margin-top:8px">
+        <div style="margin-bottom:10px;font-size:.92em">
+          <span style="color:#94a3b8">Step 0:</span> CL(q<sub>0</sub>) =
+          <input type="text" id="sQ2a0" placeholder="{q0,q1}" style="padding:4px 8px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:.9em;width:100px">
+        </div>
+        <div style="margin-bottom:10px;font-size:.92em">
+          <span style="color:#94a3b8">Step 1:</span> Read &ldquo;a&rdquo; &rarr; &delta;(CL(q0), a) =
+          <input type="text" id="sQ2a1" placeholder="raw \u03b4" style="padding:4px 8px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:.9em;width:80px">
+          &rarr; CL =
+          <input type="text" id="sQ2a2" placeholder="after CL" style="padding:4px 8px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:.9em;width:100px">
+        </div>
+        <div style="margin-bottom:10px;font-size:.92em">
+          <span style="color:#94a3b8">Step 2:</span> Read &ldquo;b&rdquo; &rarr; &delta;(&hellip;, b) =
+          <input type="text" id="sQ2a3" placeholder="raw \u03b4" style="padding:4px 8px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:.9em;width:80px">
+          &rarr; CL =
+          <input type="text" id="sQ2a4" placeholder="final" style="padding:4px 8px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:.9em;width:100px">
+        </div>
+        <div style="font-size:.92em">
+          <span style="color:#94a3b8">Accept?</span>
+          <select id="sQ2acc" style="padding:4px 8px;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-size:.9em">
+            <option value="">Choose...</option><option value="yes">Yes</option><option value="no">No</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:10px">
+        <button class="btn btn-sm" onclick="sQ2Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ2Reveal()">Show Trace</button>
+      </div>
+      <div id="sQ2Fb" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:.88em"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cQ2'),ctx=c.getContext('2d');
+  const npos={q0:{x:70,y:110},q1:{x:200,y:110},q2:{x:340,y:70},q3:{x:460,y:110}};
+  function drawGraph(){
+    ctx.clearRect(0,0,520,220);
+    ctx.beginPath();ctx.moveTo(20,110);ctx.lineTo(46,110);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    [['q0','q1','\u03b5',true],['q1','q2','a',false],['q1','q3','b',false],['q2','q3','\u03b5',true]].forEach(([f,t,l,d])=>{
+      const p1=npos[f],p2=npos[t],a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+      const sx=p1.x+20*Math.cos(a),sy=p1.y+20*Math.sin(a),ex=p2.x-20*Math.cos(a),ey=p2.y-20*Math.sin(a);
+      ctx.beginPath();ctx.setLineDash(d?[5,3]:[]);ctx.strokeStyle=d?'#7c3aed':'#475569';ctx.lineWidth=1.8;
+      ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=d?'#a78bfa':'#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText(l,(sx+ex)/2,(sy+ey)/2-8);
+    });
+    Object.entries(npos).forEach(([id,p])=>{
+      const acc=id==='q3';
+      ctx.beginPath();ctx.arc(p.x,p.y,18,0,Math.PI*2);ctx.fillStyle='#6366f122';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(acc){ctx.beginPath();ctx.arc(p.x,p.y,14,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(id,p.x,p.y);
+    });
+  }
+  drawGraph();
+  // CL(q0)={q0,q1}. Read a: δ({q0,q1},a)=δ(q0,a)∪δ(q1,a)=∅∪{q2}={q2}. CL({q2})={q2,q3}.
+  // Read b: δ({q2,q3},b)=δ(q2,b)∪δ(q3,b)=∅∪∅=∅. CL(∅)=∅. REJECT.
+  function norm(s){return s.replace(/\s+/g,'').replace(/[{}]/g,'').split(',').filter(x=>x).sort().join(',');}
+  window.sQ2Check=function(){
+    const fb=document.getElementById('sQ2Fb');fb.style.display='block';
+    const a0=norm(document.getElementById('sQ2a0').value);
+    const a1=norm(document.getElementById('sQ2a1').value);
+    const a2=norm(document.getElementById('sQ2a2').value);
+    const a3=document.getElementById('sQ2a3').value.trim();
+    const a4=document.getElementById('sQ2a4').value.trim();
+    const acc=document.getElementById('sQ2acc').value;
+    let score=0;
+    if(a0==='q0,q1')score++;
+    if(a1==='q2')score++;
+    if(a2==='q2,q3')score++;
+    if(a3===''||a3==='\u2205'||a3==='empty'||a3==='{}')score++;
+    if(a4===''||a4==='\u2205'||a4==='empty'||a4==='{}')score++;
+    if(acc==='no')score++;
+    fb.style.background=score>=5?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)';
+    fb.style.border=score>=5?'1px solid #22c55e':'1px solid #ef4444';
+    fb.style.color=score>=5?'#22c55e':'#ef4444';
+    fb.textContent=score+'/6 correct. '+(score>=5?'Great trace!':'Click "Show Trace" to see the full solution.');
+  };
+  window.sQ2Reveal=function(){
+    const fb=document.getElementById('sQ2Fb');fb.style.display='block';
+    fb.style.background='rgba(99,102,241,.1)';fb.style.border='1px solid #6366f1';fb.style.color='#e2e8f0';
+    fb.innerHTML='<strong>Full trace:</strong><br>CL(q0) = {q0, q1}<br>Read "a": \u03b4({q0,q1}, a) = \u2205 \u222A {q2} = {q2}<br>CL({q2}) = {q2, q3}  (q2 \u2192\u03b5\u2192 q3)<br>Read "b": \u03b4({q2,q3}, b) = \u2205 \u222A \u2205 = \u2205<br>CL(\u2205) = \u2205<br><strong style="color:#ef4444">REJECT</strong> \u2014 \u2205 \u2229 F = \u2205';
+    document.getElementById('sQ2a0').value='{q0,q1}';document.getElementById('sQ2a1').value='{q2}';
+    document.getElementById('sQ2a2').value='{q2,q3}';document.getElementById('sQ2a3').value='\u2205';
+    document.getElementById('sQ2a4').value='\u2205';document.getElementById('sQ2acc').value='no';
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('sQ2').classList.contains('active')){
+    ['sQ2a0','sQ2a1','sQ2a2','sQ2a3','sQ2a4'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('sQ2acc').value='';document.getElementById('sQ2Fb').style.display='none';drawGraph();
+  }});
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== sQ3: QUIZ - DOES THIS ε-NFA ACCEPT? ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Does This &epsilon;-NFA Accept?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cQ3" width="520" height="260" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <p style="font-size:.82em;color:#64748b;text-align:center;margin-top:4px">&epsilon;: q0&rarr;{q1,q4} | a: q1&rarr;q2 | b: q2&rarr;q3, q4&rarr;q5 | F={q3,q5}</p>
+    </div>
+    <div>
+      <div id="sQ3Q" style="font-size:1.15em;font-weight:600;color:#e2e8f0;margin-bottom:14px">Loading...</div>
+      <div id="sQ3Prog" style="color:#94a3b8;margin-bottom:12px;font-size:.9em"></div>
+      <div id="sQ3Btns" style="text-align:center">
+        <button class="btn" onclick="sQ3Answer(true)" style="margin-right:12px;min-width:130px">Yes (Accept)</button>
+        <button class="btn btn-secondary" onclick="sQ3Answer(false)" style="min-width:130px">No (Reject)</button>
+      </div>
+      <div id="sQ3Fb" style="display:none;margin-top:14px;padding:12px 16px;border-radius:8px;font-size:.92em"></div>
+      <div id="sQ3Score" style="margin-top:16px;text-align:center;color:#94a3b8;font-size:1.15em;font-weight:600"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cQ3'),ctx=c.getContext('2d');
+  const npos={q0:{x:70,y:100},q1:{x:200,y:55},q2:{x:340,y:55},q3:{x:460,y:55},q4:{x:200,y:195},q5:{x:340,y:195}};
+  const edgs=[['q0','q1','\u03b5',true],['q0','q4','\u03b5',true],['q1','q2','a',false],['q2','q3','b',false],['q4','q5','b',false]];
+  const accS=['q3','q5'];
+  function drawG(){
+    ctx.clearRect(0,0,520,260);
+    ctx.beginPath();ctx.moveTo(20,100);ctx.lineTo(46,100);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    edgs.forEach(([f,t,l,d])=>{
+      const p1=npos[f],p2=npos[t],a=Math.atan2(p2.y-p1.y,p2.x-p1.x);
+      const sx=p1.x+20*Math.cos(a),sy=p1.y+20*Math.sin(a),ex=p2.x-20*Math.cos(a),ey=p2.y-20*Math.sin(a);
+      ctx.beginPath();ctx.setLineDash(d?[5,3]:[]);ctx.strokeStyle=d?'#7c3aed':'#475569';ctx.lineWidth=1.8;
+      ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=d?'#a78bfa':'#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText(l,(sx+ex)/2,(sy+ey)/2-8);
+    });
+    Object.entries(npos).forEach(([id,p])=>{
+      const acc=accS.includes(id);
+      ctx.beginPath();ctx.arc(p.x,p.y,18,0,Math.PI*2);ctx.fillStyle='#6366f122';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+      if(acc){ctx.beginPath();ctx.arc(p.x,p.y,14,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(id,p.x,p.y);
+    });
+  }
+  drawG();
+
+  const problems=[
+    {str:'ab',accept:true,trace:'CL(q0)={q0,q1,q4} \u2192[a] {q2} \u2192[b] {q3*} \u2714 Accept'},
+    {str:'b',accept:true,trace:'CL(q0)={q0,q1,q4} \u2192[b] {q3,q5*} \u2714 Accept (q5\u2208F)'},
+    {str:'a',accept:false,trace:'CL(q0)={q0,q1,q4} \u2192[a] {q2} \u2014 q2\u2209F \u2718 Reject'},
+    {str:'ba',accept:false,trace:'CL(q0)={q0,q1,q4} \u2192[b] {q3,q5} \u2192[a] \u2205 \u2718 Reject'},
+    {str:'\u03b5',accept:false,trace:'CL(q0)={q0,q1,q4}, none in F={q3,q5} \u2718 Reject'},
+    {str:'bb',accept:false,trace:'CL(q0)={q0,q1,q4} \u2192[b] {q3,q5} \u2192[b] \u2205 \u2718 Reject'},
+    {str:'aa',accept:false,trace:'CL(q0)={q0,q1,q4} \u2192[a] {q2} \u2192[a] \u2205 \u2718 Reject'},
+    {str:'abb',accept:false,trace:'CL(q0)={q0,q1,q4} \u2192[a] {q2} \u2192[b] {q3} \u2192[b] \u2205 \u2718 Reject'}
+  ];
+  let shuffled=[],idx=0,score=0,total=4,answered=false;
+  function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+  function initQ(){shuffled=shuffle(problems).slice(0,total);idx=0;score=0;answered=false;render();}
+  function render(){
+    if(idx>=total){
+      document.getElementById('sQ3Q').textContent='Quiz Complete!';
+      document.getElementById('sQ3Prog').textContent='';
+      document.getElementById('sQ3Btns').style.display='none';
+      document.getElementById('sQ3Fb').style.display='none';
+      document.getElementById('sQ3Score').textContent='Score: '+score+' / '+total;
+      document.getElementById('sQ3Score').style.color=score>=3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+      return;
+    }
+    answered=false;
+    const p=shuffled[idx];
+    const dispStr=p.str==='\u03b5'?'\u03b5 (empty string)':'"'+p.str+'"';
+    document.getElementById('sQ3Q').textContent='Does this \u03b5-NFA accept '+dispStr+'?';
+    document.getElementById('sQ3Prog').textContent='Question '+(idx+1)+' / '+total;
+    document.getElementById('sQ3Btns').style.display='block';
+    document.getElementById('sQ3Btns').querySelectorAll('button').forEach(b=>{b.disabled=false;b.style.opacity='1';});
+    document.getElementById('sQ3Fb').style.display='none';
+  }
+  window.sQ3Answer=function(guess){
+    if(answered)return;answered=true;
+    const p=shuffled[idx];const correct=guess===p.accept;if(correct)score++;
+    document.getElementById('sQ3Btns').querySelectorAll('button').forEach(b=>{b.disabled=true;b.style.opacity='.5';});
+    const fb=document.getElementById('sQ3Fb');fb.style.display='block';
+    fb.style.background=correct?'rgba(34,197,94,.12)':'rgba(239,68,68,.12)';
+    fb.style.border=correct?'1px solid #22c55e':'1px solid #ef4444';
+    fb.style.color=correct?'#22c55e':'#ef4444';
+    fb.innerHTML=(correct?'<strong>Correct!</strong> ':'<strong>Wrong.</strong> ')+p.trace;
+    idx++;setTimeout(render,2800);
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('sQ3').classList.contains('active')){drawG();initQ();}});
+  obs.observe(document.getElementById('sQ3'),{attributes:true,attributeFilter:['class']});
+  initQ();
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','s17','sCC','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) { currentIdx = next; showSlide(currentIdx); }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>
