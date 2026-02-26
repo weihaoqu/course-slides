@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context-Free Grammars - Enhanced Interactive</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.05); z-index: 200; }
+#progress { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #38bdf8; }
+h3 { font-size: 1.3em; margin-bottom: 10px; color: #a5b4fc; }
+p, li { font-size: 1.1em; line-height: 1.7; color: #cbd5e1; margin-bottom: 8px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 24px; }
+code { background: rgba(99,102,241,0.15); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono','Fira Code',monospace; color: #a5b4fc; font-size: 0.95em; }
+.btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 6px 14px; font-size: 0.85em; }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+.key-idea { background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.1)); border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.key-idea h3 { color: #4ade80; margin-bottom: 6px; }
+.warning { background: rgba(239,68,68,0.08); border-left: 4px solid #ef4444; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.warning h3 { color: #f87171; margin-bottom: 6px; }
+.analogy { background: rgba(168,85,247,0.08); border-left: 4px solid #a78bfa; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.analogy h3 { color: #c4b5fd; margin-bottom: 6px; }
+.code-block { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin: 10px 0; overflow-x: auto; }
+.code-content { font-family: 'SF Mono','Fira Code',monospace; font-size: 0.9em; line-height: 1.8; }
+.line { padding: 1px 8px; border-left: 3px solid transparent; transition: all 0.3s; white-space: pre; }
+.line.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+table { border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #475569; padding: 8px 14px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; font-size: 0.95em; }
+td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.challenge-box { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(234,88,12,0.1)); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 12px 0; }
+.challenge-box h3 { color: #fbbf24; }
+.quiz-option { background: #334155; border: 2px solid #475569; color: #e2e8f0; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-size: 1em; transition: all 0.3s; min-width: 140px; }
+.quiz-option:hover { background: #475569; }
+.quiz-option.correct { background: rgba(16,185,129,0.3); border-color: #10b981; color: #34d399; }
+.quiz-option.wrong { background: rgba(239,68,68,0.3); border-color: #ef4444; color: #f87171; }
+.quiz-option:disabled { cursor: default; }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <div style="text-align:center;">
+    <h1>Context-Free Grammars (CFG)</h1>
+    <p class="subtitle">CS305 -- Formal Language Theory</p>
+    <canvas id="cS1" width="600" height="200" style="width:100%;max-width:600px;background:rgba(0,0,0,0.2);border-radius:12px;margin:20px auto;display:block;"></canvas>
+    <p style="color:#64748b;font-size:0.9em;">Use &larr; &rarr; arrows to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS1');
+  const ctx = canvas.getContext('2d');
+  let animId = null;
+  let frame = 0;
+  const derivation = ['S','aSb','aaSbb','aaaSbbb','aaa\u03B5bbb','aaabbb'];
+  let currentDeriv = 0;
+  let timer = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, 600, 200);
+    timer++;
+    if (timer % 90 === 0) currentDeriv = (currentDeriv + 1) % derivation.length;
+
+    const str = derivation[currentDeriv];
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (let i = 0; i < str.length; i++) {
+      const ch = str[i];
+      const x = 300 + (i - str.length/2) * 32 + 16;
+      const y = 100 + Math.sin(frame * 0.03 + i * 0.5) * 8;
+      if (ch === 'S') { ctx.fillStyle = '#f472b6'; }
+      else if (ch === '\u03B5') { ctx.fillStyle = '#64748b'; }
+      else if (ch === 'a') { ctx.fillStyle = '#3b82f6'; }
+      else if (ch === 'b') { ctx.fillStyle = '#8b5cf6'; }
+      else { ctx.fillStyle = '#e2e8f0'; }
+      ctx.fillText(ch, x, y);
+    }
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px system-ui';
+    ctx.fillText('S \u2192 aSb | \u03B5', 300, 30);
+
+    const step = currentDeriv < derivation.length - 1 ? '\u21D2' : '\u2713 Done!';
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '16px system-ui';
+    ctx.fillText(step, 300, 170);
+
+    frame++;
+    animId = requestAnimationFrame(draw);
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s1').classList.contains('active')) { if (!animId) draw(); }
+    else if (animId) { cancelAnimationFrame(animId); animId = null; }
+  });
+  obs.observe(document.getElementById('s1'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: CHOMSKY HIERARCHY ==================== -->
+<div class="slide" id="s2">
+  <h2>The Big Picture: Chomsky Hierarchy</h2>
+  <p>Where do context-free grammars fit? Hover over each level to explore.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS2" width="480" height="360" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div>
+      <div id="s2info" style="min-height:120px;">
+        <div class="key-idea">
+          <h3>Key Idea</h3>
+          <p>Each level is <strong>strictly more powerful</strong> than the one inside it. Today we jump from Type 3 (regular) to Type 2 (context-free). The new superpower: <strong>recursive production rules</strong>.</p>
+        </div>
+      </div>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy</h3>
+        <p>Think of nested boxes like Russian dolls -- each outer doll contains everything the inner ones can do, plus more.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS2');
+  const ctx = canvas.getContext('2d');
+  let hovered = -1;
+
+  const levels = [
+    {x:20,y:20,w:440,h:320,color:'#ef4444',label:'Type 0: Recursively Enumerable',desc:'<strong>Type 0</strong>: Recognized by Turing Machines. No restrictions on productions. Can describe any language a TM can accept.', examples:'Halting problem descriptions'},
+    {x:50,y:55,w:380,h:250,color:'#f59e0b',label:'Type 1: Context-Sensitive',desc:'<strong>Type 1</strong>: Recognized by Linear Bounded Automata. Productions: \u03B1A\u03B2 \u2192 \u03B1\u03B3\u03B2. Context matters!', examples:'a\u207Fb\u207Fc\u207F'},
+    {x:80,y:90,w:320,h:185,color:'#3b82f6',label:'Type 2: Context-Free (CFG)',desc:'<strong>Type 2</strong>: Recognized by Pushdown Automata. Productions: A \u2192 \u03B3 (single variable on left). This is today\'s topic!', examples:'a\u207Fb\u207F, balanced parens, palindromes'},
+    {x:110,y:130,w:260,h:110,color:'#22c55e',label:'Type 3: Regular',desc:'<strong>Type 3</strong>: Recognized by Finite Automata. Productions: A \u2192 aB or A \u2192 a. No recursion in the middle!', examples:'a*, (a|b)*, ab+'}
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 360);
+    levels.forEach((lv, i) => {
+      ctx.beginPath();
+      ctx.roundRect(lv.x, lv.y, lv.w, lv.h, 12);
+      const alpha = hovered === i ? 0.3 : 0.12;
+      ctx.fillStyle = lv.color + (hovered === i ? '4D' : '1F');
+      ctx.fill();
+      ctx.strokeStyle = lv.color;
+      ctx.lineWidth = hovered === i ? 3 : 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = lv.color;
+      ctx.font = (hovered === i ? 'bold ' : '') + '13px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText(lv.label, lv.x + 12, lv.y + 18);
+    });
+
+    // Examples inside innermost
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('a*, (a|b)*', 240, 175);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px system-ui';
+    ctx.fillText('a\u207Fb\u207F, balanced parens', 240, 255);
+    ctx.fillText('a\u207Fb\u207Fc\u207F', 240, 290);
+  }
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const sx = 480 / rect.width;
+    const mx = (e.clientX - rect.left) * sx;
+    const my = (e.clientY - rect.top) * sx;
+    let hit = -1;
+    for (let i = levels.length - 1; i >= 0; i--) {
+      const lv = levels[i];
+      if (mx >= lv.x && mx <= lv.x + lv.w && my >= lv.y && my <= lv.y + lv.h) { hit = i; break; }
+    }
+    if (hit !== hovered) {
+      hovered = hit;
+      draw();
+      if (hit >= 0) {
+        document.getElementById('s2info').innerHTML = '<div class="key-idea"><h3>' + levels[hit].label + '</h3><p>' + levels[hit].desc + '</p><p style="margin-top:6px;color:#94a3b8;font-size:0.9em;">Examples: ' + levels[hit].examples + '</p></div>';
+      }
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => { hovered = -1; draw(); });
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s2').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s2'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: MOTIVATION ==================== -->
+<div class="slide" id="s3">
+  <h2>Motivation: Why DFAs Can't Count</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3>What DFAs/NFAs CAN'T do</h3>
+      <p>The Pumping Lemma showed us these are NOT regular:</p>
+      <ul>
+        <li><strong>{ a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }</strong> -- equal a's then b's</li>
+        <li><strong>Balanced parentheses</strong> -- (()(())), not (()(</li>
+        <li><strong>Palindromes</strong> -- reads same forwards and backwards</li>
+      </ul>
+      <div class="warning">
+        <h3>Why DFAs fail</h3>
+        <p>Finite automata have <strong>finite memory</strong> (just the current state). They can't "count" unboundedly or "match" things seen earlier.</p>
+      </div>
+      <div style="margin-top:10px;">
+        <p style="color:#94a3b8;font-size:0.9em;">Try it -- enter a string of a's and b's:</p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="s3input" placeholder="e.g. aaabbb" style="padding:6px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;width:140px;">
+          <button class="btn btn-sm" onclick="s3Test()">Test a^n b^n</button>
+          <span id="s3result" style="font-weight:600;font-size:0.9em;"></span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS3" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy</h3>
+        <p>A DFA is like counting on your fingers -- you run out. A CFG is like having a <strong>notepad</strong>: write down what to remember and check it later.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s3Test = function() {
+    const val = document.getElementById('s3input').value;
+    const res = document.getElementById('s3result');
+    if (/^a*b*$/.test(val)) {
+      const aCount = (val.match(/a/g) || []).length;
+      const bCount = (val.match(/b/g) || []).length;
+      if (aCount === bCount) {
+        res.textContent = '\u2713 In a^n b^n (n=' + aCount + ')';
+        res.style.color = '#22c55e';
+      } else {
+        res.textContent = '\u2717 Not equal: ' + aCount + ' a\'s, ' + bCount + ' b\'s';
+        res.style.color = '#ef4444';
+      }
+    } else {
+      res.textContent = '\u2717 Must be a*b* form';
+      res.style.color = '#ef4444';
+    }
+  };
+
+  const canvas = document.getElementById('cS3');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 300);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Nesting patterns that need memory:', 220, 25);
+
+    // a^n b^n illustration
+    ctx.font = 'bold 18px monospace';
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillText('a a a b b b', 220, 70);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,3]);
+    [[68,170],[108,148],[148,128]].forEach(([x1,x2]) => {
+      ctx.beginPath(); ctx.moveTo(x1, 78); ctx.quadraticCurveTo((x1+440-x1)/2, 100, 440-x1, 78); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // Balanced parens
+    ctx.font = 'bold 16px monospace';
+    ctx.fillStyle = '#a78bfa';
+    ctx.fillText('( ( ) ( ( ) ) )', 220, 150);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px system-ui';
+    ctx.fillText('Every open paren must match a close paren', 220, 175);
+
+    // Palindrome
+    ctx.font = 'bold 18px monospace';
+    ctx.fillStyle = '#22c55e';
+    ctx.fillText('a b c b a', 220, 220);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(140, 228); ctx.quadraticCurveTo(220, 260, 300, 228); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(165, 228); ctx.quadraticCurveTo(220, 248, 275, 228); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px system-ui';
+    ctx.fillText('Mirror structure requires memory', 220, 275);
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s3').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s3'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: WHAT IS A GRAMMAR ==================== -->
+<div class="slide" id="s4">
+  <h2>What is a Grammar?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3>Intuition: Grammars as Recipes</h3>
+      <p>A grammar is a set of <strong>rewriting rules</strong> that tell you how to build strings step by step.</p>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line">Recipe for a SENTENCE:</div>
+<div class="line"></div>
+<div class="line">  SENTENCE  &rarr;  SUBJECT VERB OBJECT</div>
+<div class="line">  SUBJECT   &rarr;  "the dog" | "a cat"</div>
+<div class="line">  VERB      &rarr;  "chased"  | "ate"</div>
+<div class="line">  OBJECT    &rarr;  "the ball" | "a fish"</div>
+        </div>
+      </div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Think of variables as <strong>categories</strong> in a recipe book. "DESSERT" isn't food -- it expands into "chocolate cake" or "apple pie." Terminals are the actual food!</p>
+      </div>
+    </div>
+    <div>
+      <h3>Key Terminology</h3>
+      <ul>
+        <li><strong>Variables</strong> (non-terminals): Placeholders that get replaced. UPPERCASE: S, A, B</li>
+        <li><strong>Terminals</strong>: Actual characters in the final string. lowercase: a, b, 0, 1</li>
+        <li><strong>Productions</strong>: Rewriting rules. "A &rarr; w" means "replace A with w"</li>
+        <li><strong>Start symbol</strong>: Where every derivation begins (usually S)</li>
+      </ul>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Context-Free means:</h3>
+        <p>Every production has a <strong>single variable</strong> on the left: A &rarr; w. Variable A can be replaced <strong>regardless of what's around it</strong>. The context doesn't matter!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 5: FORMAL DEFINITION ==================== -->
+<div class="slide" id="s5">
+  <h2>Formal Definition of a CFG</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>A context-free grammar is a 4-tuple <strong>G = (V, T, P, S)</strong></p>
+      </div>
+      <table style="width:100%;margin-top:10px;">
+        <tr><th>Component</th><th>Description</th></tr>
+        <tr><td><strong>V</strong></td><td style="text-align:left;">Finite set of <em>variables</em></td></tr>
+        <tr><td><strong>T</strong></td><td style="text-align:left;">Finite set of <em>terminals</em></td></tr>
+        <tr><td><strong>P</strong></td><td style="text-align:left;">Productions: A &rarr; w, where A &isin; V</td></tr>
+        <tr><td><strong>S</strong></td><td style="text-align:left;">Start symbol, S &isin; V</td></tr>
+      </table>
+      <div class="warning" style="margin-top:12px;">
+        <h3>Why "Context-Free"?</h3>
+        <p>Left side is always a <strong>single variable</strong>. In context-<em>sensitive</em> grammars, surrounding symbols also matter: &alpha;A&beta; &rarr; &alpha;&gamma;&beta;.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Interactive Explorer: { a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }</h3>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line">G = (V, T, P, S)</div>
+<div class="line">V = { S }</div>
+<div class="line">T = { a, b }</div>
+<div class="line">P = { S &rarr; aSb, S &rarr; &epsilon; }</div>
+<div class="line">Start = S</div>
+        </div>
+      </div>
+      <p style="font-size:0.9em;color:#94a3b8;">Enter n to generate a<sup>n</sup>b<sup>n</sup>:</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <input type="number" id="s5n" value="3" min="0" max="8" style="padding:6px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;width:60px;">
+        <button class="btn btn-sm" onclick="s5Generate()">Derive</button>
+      </div>
+      <div id="s5output" style="font-family:monospace;color:#a5f3fc;font-size:0.95em;line-height:1.8;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px;min-height:80px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s5Generate = function() {
+    const n = parseInt(document.getElementById('s5n').value) || 0;
+    const out = document.getElementById('s5output');
+    let lines = [];
+    let current = 'S';
+    lines.push('<span style="color:#f59e0b;">\u2192</span> ' + current);
+    for (let i = 0; i < n; i++) {
+      const a = 'a'.repeat(i+1);
+      const b = 'b'.repeat(i+1);
+      current = a + 'S' + b;
+      lines.push('<span style="color:#f59e0b;">\u21D2</span> ' + '<span style="color:#3b82f6;">' + a + '</span><span style="color:#f472b6;">S</span><span style="color:#8b5cf6;">' + b + '</span>  <span style="color:#64748b;">(S \u2192 aSb)</span>');
+    }
+    const finalA = 'a'.repeat(n);
+    const finalB = 'b'.repeat(n);
+    const finalStr = n > 0 ? finalA + finalB : '\u03B5';
+    lines.push('<span style="color:#f59e0b;">\u21D2</span> <span style="color:#3b82f6;">' + finalA + '</span><span style="color:#8b5cf6;">' + finalB + '</span>  <span style="color:#64748b;">(S \u2192 \u03B5)</span>');
+    lines.push('<span style="color:#22c55e;font-weight:bold;">\u2713 Result: ' + finalStr + '</span>');
+    out.innerHTML = lines.join('<br>');
+  };
+  window.s5Generate();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: DERIVATIONS ==================== -->
+<div class="slide" id="s6">
+  <h2>Derivations: Leftmost vs. Rightmost</h2>
+  <p>A <strong>derivation</strong> transforms S into a terminal string. Pick a mode and step through <strong>"aabb"</strong>.</p>
+  <div class="code-block" style="display:inline-block;margin-bottom:8px;">
+    <span class="code-content">Grammar: S &rarr; AB, &nbsp; A &rarr; aA | a, &nbsp; B &rarr; bB | b</span>
+  </div>
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin:8px 0;">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <button class="btn btn-sm" id="s6leftBtn" onclick="s6Select('left')">Leftmost</button>
+      <button class="btn btn-sm" id="s6rightBtn" onclick="s6Select('right')">Rightmost</button>
+      <span style="color:#475569;">|</span>
+      <button class="btn btn-sm btn-secondary" id="s6nextBtn" onclick="s6Next()" disabled>Next Step</button>
+      <button class="btn btn-sm btn-secondary" onclick="s6Reset()">Reset</button>
+    </div>
+    <div id="s6current" style="font-family:monospace;font-size:1.3em;color:#a5f3fc;padding:8px 0;">Current: <span style="color:#f59e0b;">S</span> &nbsp; <span style="color:#64748b;">(select a mode)</span></div>
+    <div id="s6rule" style="color:#94a3b8;font-size:0.95em;margin-top:4px;"></div>
+    <div id="s6log" style="display:none;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px;max-height:140px;overflow-y:auto;font-family:monospace;font-size:0.85em;line-height:1.8;margin-top:12px;"></div>
+  </div>
+  <div class="key-idea">
+    <h3>Key Idea</h3>
+    <p>For an <strong>unambiguous</strong> grammar, different derivation orders produce the <strong>same parse tree</strong>. The order is just how you traverse the tree -- the tree itself is what matters.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var mode = null, step = 0, steps = [];
+  var leftSteps = [
+    {form:'S', hl:'<span style="color:#f472b6;font-weight:700;text-decoration:underline;">S</span>', rule:null},
+    {form:'AB', hl:'<span style="color:#f472b6;font-weight:700;text-decoration:underline;">A</span>B', rule:'S \u2192 AB'},
+    {form:'aAB', hl:'<span style="color:#f472b6;font-weight:700;text-decoration:underline;">a</span><span style="color:#f472b6;font-weight:700;text-decoration:underline;">A</span>B', rule:'A \u2192 aA'},
+    {form:'aaB', hl:'a<span style="color:#f472b6;font-weight:700;text-decoration:underline;">a</span>B', rule:'A \u2192 a'},
+    {form:'aabB', hl:'aa<span style="color:#f472b6;font-weight:700;text-decoration:underline;">b</span><span style="color:#f472b6;font-weight:700;text-decoration:underline;">B</span>', rule:'B \u2192 bB'},
+    {form:'aabb', hl:'aab<span style="color:#f472b6;font-weight:700;text-decoration:underline;">b</span>', rule:'B \u2192 b'}
+  ];
+  var rightSteps = [
+    {form:'S', hl:'<span style="color:#34d399;font-weight:700;text-decoration:underline;">S</span>', rule:null},
+    {form:'AB', hl:'A<span style="color:#34d399;font-weight:700;text-decoration:underline;">B</span>', rule:'S \u2192 AB'},
+    {form:'AbB', hl:'A<span style="color:#34d399;font-weight:700;text-decoration:underline;">b</span><span style="color:#34d399;font-weight:700;text-decoration:underline;">B</span>', rule:'B \u2192 bB'},
+    {form:'Abb', hl:'A<span style="color:#34d399;font-weight:700;text-decoration:underline;">b</span>b', rule:'B \u2192 b'},
+    {form:'aAbb', hl:'<span style="color:#34d399;font-weight:700;text-decoration:underline;">a</span><span style="color:#34d399;font-weight:700;text-decoration:underline;">A</span>bb', rule:'A \u2192 aA'},
+    {form:'aabb', hl:'<span style="color:#34d399;font-weight:700;text-decoration:underline;">a</span>abb', rule:'A \u2192 a'}
+  ];
+
+  function render() {
+    var s = steps[step];
+    document.getElementById('s6current').innerHTML = 'Current: ' + s.hl;
+    document.getElementById('s6rule').textContent = s.rule ? 'Rule: ' + s.rule : '';
+    var log = document.getElementById('s6log');
+    var html = '';
+    for (var i = 0; i <= step; i++) {
+      var cls = i < step ? 'color:#34d399' : 'color:#f59e0b;font-weight:600';
+      var pre = i < step ? '\u2713 ' : '\u2192 ';
+      var r = steps[i].rule ? '  (' + steps[i].rule + ')' : '';
+      html += '<div style="' + cls + '">' + pre + steps[i].form + r + '</div>';
+    }
+    log.innerHTML = html;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  window.s6Select = function(m) {
+    mode = m; step = 0;
+    steps = m === 'left' ? leftSteps : rightSteps;
+    document.getElementById('s6leftBtn').style.opacity = m === 'left' ? '1' : '0.5';
+    document.getElementById('s6rightBtn').style.opacity = m === 'right' ? '1' : '0.5';
+    document.getElementById('s6nextBtn').disabled = false;
+    document.getElementById('s6log').style.display = 'block';
+    render();
+  };
+  window.s6Next = function() {
+    if (!mode || step >= steps.length - 1) return;
+    step++;
+    render();
+    if (step >= steps.length - 1) document.getElementById('s6nextBtn').disabled = true;
+  };
+  window.s6Reset = function() {
+    mode = null; step = 0; steps = [];
+    document.getElementById('s6leftBtn').style.opacity = '1';
+    document.getElementById('s6rightBtn').style.opacity = '1';
+    document.getElementById('s6nextBtn').disabled = true;
+    document.getElementById('s6current').innerHTML = 'Current: <span style="color:#f59e0b;">S</span> &nbsp; <span style="color:#64748b;">(select a mode)</span>';
+    document.getElementById('s6rule').textContent = '';
+    document.getElementById('s6log').style.display = 'none';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 7: ARITHMETIC GRAMMAR ==================== -->
+<div class="slide" id="s7">
+  <h2>Classic: Arithmetic Grammar</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line">Grammar for Arithmetic:</div>
+<div class="line"></div>
+<div class="line">  E &rarr; E + T  |  T</div>
+<div class="line">  T &rarr; T * F  |  F</div>
+<div class="line">  F &rarr; ( E )  |  id</div>
+        </div>
+      </div>
+      <p><strong>E</strong> = Expression, <strong>T</strong> = Term, <strong>F</strong> = Factor</p>
+      <p>This grammar encodes <strong>precedence</strong>:</p>
+      <ul>
+        <li><strong>*</strong> binds tighter than <strong>+</strong></li>
+        <li>Both are <strong>left-associative</strong></li>
+        <li>Parentheses override everything</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>E, T, F are layers of binding strength. F is tightest (atoms and parens). T groups multiplications. E groups additions. Like layers of an onion -- inner layers bind first.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Derive: id + id * id</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.85em;">
+<div class="line"><span style="color:#f472b6;">E</span></div>
+<div class="line">&rArr; <span style="color:#f472b6;">E</span> + T &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(E &rarr; E + T)</div>
+<div class="line">&rArr; <span style="color:#f472b6;">T</span> + T &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(E &rarr; T)</div>
+<div class="line">&rArr; <span style="color:#f472b6;">F</span> + T &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(T &rarr; F)</div>
+<div class="line">&rArr; <span style="color:#f472b6;">id</span> + T &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(F &rarr; id)</div>
+<div class="line">&rArr; id + <span style="color:#f472b6;">T</span> * F &nbsp;&nbsp;&nbsp;(T &rarr; T * F)</div>
+<div class="line">&rArr; id + <span style="color:#f472b6;">F</span> * F &nbsp;&nbsp;&nbsp;(T &rarr; F)</div>
+<div class="line">&rArr; id + <span style="color:#f472b6;">id</span> * F &nbsp;&nbsp;(F &rarr; id)</div>
+<div class="line">&rArr; id + id * <span style="color:#f472b6;">id</span> (F &rarr; id)</div>
+        </div>
+      </div>
+      <div class="key-idea">
+        <h3>Notice!</h3>
+        <p>The grammar <strong>forces</strong> "id * id" under T, while "+" connects at the E level. This gives * <strong>higher precedence</strong> than +.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 8: PARSE TREES ==================== -->
+<div class="slide" id="s8">
+  <h2>Parse Trees</h2>
+  <p>A parse tree visualizes derivation structure. Watch it grow for <strong>aabb</strong> using S &rarr; aSb | &epsilon;.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS8" width="400" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-sm" id="s8nextBtn" onclick="s8Next()">Next Step</button>
+        <button class="btn btn-sm btn-secondary" id="s8autoBtn" onclick="s8Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+        <span id="s8label" style="color:#94a3b8;font-size:0.85em;margin-left:auto;line-height:2;">Step 0 / 3</span>
+      </div>
+    </div>
+    <div>
+      <h3>Rules for Parse Trees</h3>
+      <ul>
+        <li><strong>Root</strong> = start symbol S</li>
+        <li><strong>Internal nodes</strong> = variables</li>
+        <li><strong>Leaves</strong> = terminals (left-to-right = the string)</li>
+        <li>Each node + children = one production</li>
+      </ul>
+      <div class="analogy">
+        <h3>Family Tree Analogy</h3>
+        <p>S is the ancestor. Each production is "parent has these children." Terminals at the bottom are the youngest generation -- the actual string!</p>
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The tree shows <strong>nesting</strong>. Outer S wraps a...b around inner S. This recursive structure is what DFAs cannot capture.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+  let step = 0, timer = null;
+
+  function drawNode(x, y, label, color) {
+    ctx.beginPath();
+    ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function drawEdge(x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1 + 18);
+    ctx.lineTo(x2, y2 - 18);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 400, 320);
+    // Step 0: just S
+    if (step >= 0) drawNode(200, 40, 'S', '#f472b6');
+    // Step 1: S -> a S b (outer)
+    if (step >= 1) {
+      drawEdge(200, 40, 100, 110); drawEdge(200, 40, 200, 110); drawEdge(200, 40, 300, 110);
+      drawNode(100, 110, 'a', '#3b82f6');
+      drawNode(200, 110, 'S', '#f472b6');
+      drawNode(300, 110, 'b', '#8b5cf6');
+    }
+    // Step 2: inner S -> a S b
+    if (step >= 2) {
+      drawEdge(200, 110, 140, 190); drawEdge(200, 110, 200, 190); drawEdge(200, 110, 260, 190);
+      drawNode(140, 190, 'a', '#3b82f6');
+      drawNode(200, 190, 'S', '#f472b6');
+      drawNode(260, 190, 'b', '#8b5cf6');
+    }
+    // Step 3: innermost S -> epsilon
+    if (step >= 3) {
+      drawEdge(200, 190, 200, 260);
+      drawNode(200, 260, '\u03B5', '#64748b');
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 13px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('Leaves L\u2192R: a a \u03B5 b b = aabb', 200, 305);
+    }
+  }
+
+  window.s8Next = function() {
+    if (step >= 3) return;
+    step++;
+    draw();
+    document.getElementById('s8label').textContent = 'Step ' + step + ' / 3';
+    if (step >= 3) document.getElementById('s8nextBtn').disabled = true;
+  };
+  window.s8Auto = function() {
+    if (timer) { clearInterval(timer); timer = null; document.getElementById('s8autoBtn').textContent = 'Auto Play'; return; }
+    document.getElementById('s8autoBtn').textContent = 'Pause';
+    timer = setInterval(function() {
+      if (step >= 3) { clearInterval(timer); timer = null; document.getElementById('s8autoBtn').textContent = 'Auto Play'; return; }
+      window.s8Next();
+    }, 800);
+  };
+  window.s8Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    step = 0;
+    document.getElementById('s8autoBtn').textContent = 'Auto Play';
+    document.getElementById('s8nextBtn').disabled = false;
+    document.getElementById('s8label').textContent = 'Step 0 / 3';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s8').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s8'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: PARSE TREE BUILDER ==================== -->
+<div class="slide" id="s9">
+  <h2>Parse Tree Builder: id + id * id</h2>
+  <p>Grammar: E &rarr; E+T | T, &nbsp; T &rarr; T*F | F, &nbsp; F &rarr; (E) | id. Watch the tree grow step by step.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+    <div>
+      <canvas id="cS9" width="440" height="360" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm" id="s9nextBtn" onclick="s9Next()">Next Step</button>
+        <button class="btn btn-sm btn-secondary" id="s9autoBtn" onclick="s9Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+        <span id="s9label" style="color:#94a3b8;font-size:0.85em;margin-left:auto;line-height:2;">Step 0 / 8</span>
+      </div>
+      <div id="s9log" style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px;font-family:monospace;font-size:0.85em;line-height:1.8;min-height:120px;"></div>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Why This Tree is Correct</h3>
+        <p><strong>*</strong> sits deeper (under T) so evaluates first. <strong>+</strong> is at the top (under E), evaluates last: id + (id * id).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  let step = 0, timer = null;
+  const totalSteps = 8;
+  const descs = ['','E (root)','E \u2192 E + T','E \u2192 T (left)','T \u2192 F (left)','F \u2192 id (left leaf)','T \u2192 T * F (right)','T \u2192 F \u2192 id (mid leaf)','F \u2192 id (right leaf)'];
+
+  const nodes = [
+    {id:'E0', x:220, y:30, label:'E', color:'#f472b6', step:1},
+    {id:'E1', x:120, y:90, label:'E', color:'#f472b6', step:2},
+    {id:'plus', x:220, y:90, label:'+', color:'#f59e0b', step:2},
+    {id:'T0', x:320, y:90, label:'T', color:'#38bdf8', step:2},
+    {id:'T1', x:120, y:155, label:'T', color:'#38bdf8', step:3},
+    {id:'F0', x:120, y:220, label:'F', color:'#a78bfa', step:4},
+    {id:'id0', x:120, y:285, label:'id', color:'#22c55e', step:5},
+    {id:'T2', x:260, y:155, label:'T', color:'#38bdf8', step:6},
+    {id:'star', x:320, y:155, label:'*', color:'#f59e0b', step:6},
+    {id:'F1', x:380, y:155, label:'F', color:'#a78bfa', step:6},
+    {id:'F2', x:260, y:220, label:'F', color:'#a78bfa', step:7},
+    {id:'id1', x:260, y:285, label:'id', color:'#22c55e', step:7},
+    {id:'id2', x:380, y:220, label:'id', color:'#22c55e', step:8}
+  ];
+  const edges = [
+    ['E0','E1',2],['E0','plus',2],['E0','T0',2],
+    ['E1','T1',3],['T1','F0',4],['F0','id0',5],
+    ['T0','T2',6],['T0','star',6],['T0','F1',6],
+    ['T2','F2',7],['F2','id1',7],['F1','id2',8]
+  ];
+
+  function getNode(id) { return nodes.find(n => n.id === id); }
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 360);
+    edges.forEach(([fromId, toId, s]) => {
+      if (s > step) return;
+      const f = getNode(fromId), t = getNode(toId);
+      ctx.beginPath(); ctx.moveTo(f.x, f.y + 16); ctx.lineTo(t.x, t.y - 16);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+    nodes.forEach(n => {
+      if (n.step > step) return;
+      ctx.beginPath(); ctx.arc(n.x, n.y, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b'; ctx.fill();
+      ctx.strokeStyle = n.step === step ? '#fff' : n.color;
+      ctx.lineWidth = n.step === step ? 2.5 : 2; ctx.stroke();
+      ctx.fillStyle = n.color;
+      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+  }
+
+  function updateLog() {
+    var html = '';
+    for (var i = 1; i <= step; i++) {
+      var c = i < step ? 'color:#34d399' : 'color:#f59e0b;font-weight:600';
+      var p = i < step ? '\u2713 ' : '\u2192 ';
+      html += '<div style="' + c + '">' + p + descs[i] + '</div>';
+    }
+    document.getElementById('s9log').innerHTML = html;
+  }
+
+  window.s9Next = function() {
+    if (step >= totalSteps) return;
+    step++; draw(); updateLog();
+    document.getElementById('s9label').textContent = 'Step ' + step + ' / ' + totalSteps;
+    if (step >= totalSteps) document.getElementById('s9nextBtn').disabled = true;
+  };
+  window.s9Auto = function() {
+    if (timer) { clearInterval(timer); timer = null; document.getElementById('s9autoBtn').textContent = 'Auto Play'; return; }
+    document.getElementById('s9autoBtn').textContent = 'Pause';
+    timer = setInterval(function() {
+      if (step >= totalSteps) { clearInterval(timer); timer = null; document.getElementById('s9autoBtn').textContent = 'Auto Play'; return; }
+      window.s9Next();
+    }, 800);
+  };
+  window.s9Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    step = 0; document.getElementById('s9autoBtn').textContent = 'Auto Play';
+    document.getElementById('s9nextBtn').disabled = false;
+    document.getElementById('s9label').textContent = 'Step 0 / ' + totalSteps;
+    document.getElementById('s9log').innerHTML = '';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s9').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s9'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: AMBIGUITY ==================== -->
+<div class="slide" id="s10">
+  <h2>Ambiguity: Two Parse Trees for id + id * id</h2>
+  <p>Ambiguous grammar <strong>E &rarr; E+E | E*E | (E) | id</strong> produces two different trees!</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+    <div>
+      <canvas id="cS10a" width="280" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;border:2px solid #ef4444;"></canvas>
+      <p style="text-align:center;color:#ef4444;font-weight:600;margin-top:6px;">Tree 1: (id+id)*id = 20</p>
+    </div>
+    <div>
+      <canvas id="cS10b" width="280" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;border:2px solid #22c55e;"></canvas>
+      <p style="text-align:center;color:#22c55e;font-weight:600;margin-top:6px;">Tree 2: id+(id*id) = 14</p>
+    </div>
+  </div>
+  <div class="warning" style="margin-top:10px;">
+    <h3>Ambiguity is dangerous!</h3>
+    <p>Different trees = different meanings. A compiler that picks Tree 1 computes (2+3)*4=20 instead of 2+(3*4)=14. Ambiguity is a property of the <strong>grammar</strong>, not the language. Fix: <strong>rewrite the grammar</strong>.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  function drawTree(canvasId, nodesData, edgesData) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    function render() {
+      ctx.clearRect(0, 0, 280, 280);
+      edgesData.forEach(([fi, ti]) => {
+        const f = nodesData[fi], t = nodesData[ti];
+        ctx.beginPath(); ctx.moveTo(f.x, f.y+14); ctx.lineTo(t.x, t.y-14);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+      });
+      nodesData.forEach(n => {
+        ctx.beginPath(); ctx.arc(n.x, n.y, 14, 0, Math.PI*2);
+        ctx.fillStyle = '#1e293b'; ctx.fill();
+        ctx.strokeStyle = n.c; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = n.c; ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(n.l, n.x, n.y);
+      });
+    }
+    const obs = new MutationObserver(() => {
+      if (document.getElementById('s10').classList.contains('active')) render();
+    });
+    obs.observe(document.getElementById('s10'), {attributes: true, attributeFilter: ['class']});
+    render();
+  }
+
+  // Tree 1: (id+id)*id -- * at root
+  drawTree('cS10a', [
+    {x:140,y:30,l:'E',c:'#f472b6'},
+    {x:70,y:90,l:'E',c:'#f472b6'},{x:140,y:90,l:'*',c:'#f59e0b'},{x:210,y:90,l:'E',c:'#f472b6'},
+    {x:35,y:155,l:'E',c:'#f472b6'},{x:70,y:155,l:'+',c:'#f59e0b'},{x:105,y:155,l:'E',c:'#f472b6'},
+    {x:210,y:155,l:'id',c:'#22c55e'},
+    {x:35,y:220,l:'id',c:'#22c55e'},{x:105,y:220,l:'id',c:'#22c55e'}
+  ],[
+    [0,1],[0,2],[0,3],[1,4],[1,5],[1,6],[3,7-1],[6,9-1],[4,8-1]
+  ].map(([a,b])=>[a,b]));
+
+  // Manually redo with correct indices
+  const c10a = document.getElementById('cS10a');
+  const x10a = c10a.getContext('2d');
+  function drawTreeA() {
+    x10a.clearRect(0,0,280,280);
+    const N = [
+      {x:140,y:28,l:'E',c:'#f472b6'},       //0
+      {x:75,y:85,l:'E',c:'#f472b6'},         //1
+      {x:140,y:85,l:'*',c:'#f59e0b'},        //2
+      {x:210,y:85,l:'E',c:'#f472b6'},        //3
+      {x:40,y:145,l:'E',c:'#f472b6'},        //4
+      {x:75,y:145,l:'+',c:'#f59e0b'},        //5
+      {x:110,y:145,l:'E',c:'#f472b6'},       //6
+      {x:210,y:145,l:'id',c:'#22c55e'},      //7
+      {x:40,y:210,l:'id',c:'#22c55e'},       //8
+      {x:110,y:210,l:'id',c:'#22c55e'}       //9
+    ];
+    const E = [[0,1],[0,2],[0,3],[1,4],[1,5],[1,6],[3,7],[4,8],[6,9]];
+    E.forEach(([a,b])=>{
+      x10a.beginPath(); x10a.moveTo(N[a].x,N[a].y+14); x10a.lineTo(N[b].x,N[b].y-14);
+      x10a.strokeStyle='#475569'; x10a.lineWidth=1.5; x10a.stroke();
+    });
+    N.forEach(n=>{
+      x10a.beginPath(); x10a.arc(n.x,n.y,14,0,Math.PI*2);
+      x10a.fillStyle='#1e293b'; x10a.fill();
+      x10a.strokeStyle=n.c; x10a.lineWidth=2; x10a.stroke();
+      x10a.fillStyle=n.c; x10a.font='bold 11px monospace';
+      x10a.textAlign='center'; x10a.textBaseline='middle';
+      x10a.fillText(n.l,n.x,n.y);
+    });
+    x10a.fillStyle='#ef4444'; x10a.font='bold 12px system-ui'; x10a.textAlign='center';
+    x10a.fillText('Root op: * \u2192 (id+id)*id',140,260);
+  }
+
+  const c10b = document.getElementById('cS10b');
+  const x10b = c10b.getContext('2d');
+  function drawTreeB() {
+    x10b.clearRect(0,0,280,280);
+    const N = [
+      {x:140,y:28,l:'E',c:'#f472b6'},       //0
+      {x:70,y:85,l:'E',c:'#f472b6'},         //1
+      {x:140,y:85,l:'+',c:'#f59e0b'},        //2
+      {x:210,y:85,l:'E',c:'#f472b6'},        //3
+      {x:70,y:145,l:'id',c:'#22c55e'},       //4
+      {x:175,y:145,l:'E',c:'#f472b6'},       //5
+      {x:210,y:145,l:'*',c:'#f59e0b'},       //6
+      {x:245,y:145,l:'E',c:'#f472b6'},       //7
+      {x:175,y:210,l:'id',c:'#22c55e'},      //8
+      {x:245,y:210,l:'id',c:'#22c55e'}       //9
+    ];
+    const E = [[0,1],[0,2],[0,3],[1,4],[3,5],[3,6],[3,7],[5,8],[7,9]];
+    E.forEach(([a,b])=>{
+      x10b.beginPath(); x10b.moveTo(N[a].x,N[a].y+14); x10b.lineTo(N[b].x,N[b].y-14);
+      x10b.strokeStyle='#475569'; x10b.lineWidth=1.5; x10b.stroke();
+    });
+    N.forEach(n=>{
+      x10b.beginPath(); x10b.arc(n.x,n.y,14,0,Math.PI*2);
+      x10b.fillStyle='#1e293b'; x10b.fill();
+      x10b.strokeStyle=n.c; x10b.lineWidth=2; x10b.stroke();
+      x10b.fillStyle=n.c; x10b.font='bold 11px monospace';
+      x10b.textAlign='center'; x10b.textBaseline='middle';
+      x10b.fillText(n.l,n.x,n.y);
+    });
+    x10b.fillStyle='#22c55e'; x10b.font='bold 12px system-ui'; x10b.textAlign='center';
+    x10b.fillText('Root op: + \u2192 id+(id*id)',140,260);
+  }
+
+  const obs10 = new MutationObserver(() => {
+    if (document.getElementById('s10').classList.contains('active')) { drawTreeA(); drawTreeB(); }
+  });
+  obs10.observe(document.getElementById('s10'), {attributes: true, attributeFilter: ['class']});
+  drawTreeA(); drawTreeB();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: ELIMINATING AMBIGUITY ==================== -->
+<div class="slide" id="s11">
+  <h2>Eliminating Ambiguity</h2>
+  <p>Pick an expression to compare the ambiguous vs unambiguous grammar (id=2, id=3, id=4):</p>
+  <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;">
+    <button class="btn btn-sm" onclick="s11Pick(0)">id + id * id</button>
+    <button class="btn btn-sm" onclick="s11Pick(1)">id * id + id</button>
+    <button class="btn btn-sm" onclick="s11Pick(2)">id + id + id</button>
+  </div>
+  <div id="s11display" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+    <div style="background:#0f172a;border:2px solid #f59e0b;border-radius:12px;padding:16px;text-align:center;">
+      <h3 style="color:#fbbf24;">Ambiguous: E &rarr; E+E | E*E | id</h3>
+      <p style="color:#94a3b8;">Click an expression above</p>
+    </div>
+    <div style="background:#0f172a;border:2px solid #22c55e;border-radius:12px;padding:16px;text-align:center;">
+      <h3 style="color:#34d399;">Unambiguous: E&rarr;E+T|T, T&rarr;T*F|F, F&rarr;id</h3>
+      <p style="color:#94a3b8;">Click an expression above</p>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:10px;">
+    <h3>Recipe for Eliminating Ambiguity</h3>
+    <p>1. One variable per <strong>precedence level</strong>. 2. Lowest precedence at top. 3. Each level references next tighter. 4. Left-recursive = <strong>left-associative</strong>.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const data = [
+    {expr:'id + id * id',
+     ambT1:'(id+id)*id = (2+3)*4 = 20', ambV1:'\u2717 WRONG',
+     ambT2:'id+(id*id) = 2+(3*4) = 14', ambV2:'\u2713 Correct',
+     unamb:'id+(id*id) = 2+(3*4) = 14', unambV:'\u2713 Only one tree'},
+    {expr:'id * id + id',
+     ambT1:'(id*id)+id = (2*3)+4 = 10', ambV1:'\u2713 Correct',
+     ambT2:'id*(id+id) = 2*(3+4) = 14', ambV2:'\u2717 WRONG',
+     unamb:'(id*id)+id = (2*3)+4 = 10', unambV:'\u2713 Only one tree'},
+    {expr:'id + id + id',
+     ambT1:'(id+id)+id = (2+3)+4 = 9', ambV1:'\u2713 Left-assoc',
+     ambT2:'id+(id+id) = 2+(3+4) = 9', ambV2:'\u2713 Right-assoc',
+     unamb:'(id+id)+id = (2+3)+4 = 9', unambV:'\u2713 Left-assoc forced',
+     note:'Same value for +, but different structure! For subtraction (5-3-1), left=1, right=3.'}
+  ];
+
+  window.s11Pick = function(i) {
+    const d = data[i];
+    let html = '<div style="background:#0f172a;border:2px solid #f59e0b;border-radius:12px;padding:16px;">';
+    html += '<h3 style="color:#fbbf24;">Ambiguous Grammar</h3>';
+    html += '<p style="color:#94a3b8;font-size:0.85em;">E \u2192 E+E | E*E | (E) | id</p>';
+    html += '<p style="color:#fbbf24;font-size:0.9em;">TWO parse trees!</p>';
+    html += '<div style="background:#1e293b;border-radius:8px;padding:10px;margin:6px 0;">';
+    html += '<p style="font-family:monospace;font-size:0.9em;color:' + (d.ambV1.startsWith('\u2713') ? '#34d399' : '#f87171') + ';">Tree A: ' + d.ambT1 + ' ' + d.ambV1 + '</p>';
+    html += '<p style="font-family:monospace;font-size:0.9em;color:' + (d.ambV2.startsWith('\u2713') ? '#34d399' : '#f87171') + ';">Tree B: ' + d.ambT2 + ' ' + d.ambV2 + '</p>';
+    html += '</div>';
+    if (d.note) html += '<p style="color:#fbbf24;font-size:0.85em;">' + d.note + '</p>';
+    html += '</div>';
+    html += '<div style="background:#0f172a;border:2px solid #22c55e;border-radius:12px;padding:16px;">';
+    html += '<h3 style="color:#34d399;">Unambiguous Grammar</h3>';
+    html += '<p style="color:#94a3b8;font-size:0.85em;">E\u2192E+T|T, T\u2192T*F|F, F\u2192(E)|id</p>';
+    html += '<p style="color:#34d399;font-size:0.9em;">Only ONE tree:</p>';
+    html += '<div style="background:#1e293b;border-radius:8px;padding:10px;margin:6px 0;">';
+    html += '<p style="font-family:monospace;font-size:0.9em;color:#34d399;">' + d.unamb + ' ' + d.unambV + '</p>';
+    html += '</div></div>';
+    document.getElementById('s11display').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE CA: CHALLENGE - PREDICT PARSE TREE ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the Parse Tree</h2>
+  <div class="challenge-box">
+    <h3>Given the unambiguous grammar:</h3>
+    <p style="font-family:monospace;color:#a5f3fc;">E &rarr; E + T | T &nbsp;&nbsp; T &rarr; T * F | F &nbsp;&nbsp; F &rarr; (E) | id</p>
+    <p style="margin-top:10px;">Which operation is at the <strong>root</strong> of the parse tree for <code>id * id + id * id</code>?</p>
+    <div style="display:flex;gap:12px;margin-top:16px;justify-content:center;flex-wrap:wrap;">
+      <button class="quiz-option" onclick="sCACheck(this,0)">* (multiplication)</button>
+      <button class="quiz-option" onclick="sCACheck(this,1)">+ (addition)</button>
+      <button class="quiz-option" onclick="sCACheck(this,2)">Cannot determine</button>
+    </div>
+    <div id="sCAresult" style="margin-top:12px;font-size:1em;color:#94a3b8;opacity:0;transition:opacity 0.4s;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var answered = false;
+  window.sCACheck = function(btn, choice) {
+    if (answered) return;
+    answered = true;
+    var btns = btn.parentElement.querySelectorAll('.quiz-option');
+    btns.forEach(function(b){b.disabled=true;});
+    if (choice === 1) {
+      btn.classList.add('correct');
+      document.getElementById('sCAresult').innerHTML = '<span style="color:#22c55e;font-weight:600;">\u2713 Correct!</span> The + is at the root because addition has <strong>lower precedence</strong>. The tree is E \u2192 E + T, where each E/T subtree handles one multiplication.';
+    } else {
+      btn.classList.add('wrong');
+      btns[1].classList.add('correct');
+      document.getElementById('sCAresult').innerHTML = '<span style="color:#ef4444;font-weight:600;">\u2717 Not quite.</span> Since + has <strong>lower precedence</strong>, it sits at the root of the tree. The grammar forces E \u2192 E + T, so multiplications are grouped under T nodes.';
+    }
+    document.getElementById('sCAresult').style.opacity = '1';
+  };
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCA').classList.contains('active') && !document.getElementById('sCA').dataset.init) {
+      answered = false;
+      document.getElementById('sCA').dataset.init = '1';
+    }
+  });
+  obs.observe(document.getElementById('sCA'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 12: CNF DEFINITION ==================== -->
+<div class="slide" id="s12">
+  <h2>Chomsky Normal Form (CNF)</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <div class="key-idea">
+        <h3>CNF Rules</h3>
+        <p>Every production must be one of exactly two forms:</p>
+        <ul>
+          <li><strong>A &rarr; BC</strong> (two variables, no terminals)</li>
+          <li><strong>A &rarr; a</strong> (exactly one terminal)</li>
+        </ul>
+        <p style="margin-top:8px;">Plus optionally: <strong>S &rarr; &epsilon;</strong> (start symbol only, if &epsilon; &isin; L)</p>
+      </div>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line" style="color:#22c55e;">CNF:             <span style="color:#ef4444;">NOT CNF:</span></div>
+<div class="line" style="color:#22c55e;">S &rarr; AB          <span style="color:#ef4444;">S &rarr; AaB</span></div>
+<div class="line" style="color:#22c55e;">A &rarr; BC          <span style="color:#ef4444;">A &rarr; BCD</span></div>
+<div class="line" style="color:#22c55e;">A &rarr; a           <span style="color:#ef4444;">A &rarr; B</span></div>
+<div class="line" style="color:#22c55e;">B &rarr; b           <span style="color:#ef4444;">A &rarr; aB</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Why CNF Matters</h3>
+      <ul>
+        <li><strong>CYK Algorithm</strong>: O(n&sup3;) parsing requires CNF</li>
+        <li><strong>Proofs</strong>: Restricted form makes proofs easier</li>
+        <li><strong>Binary trees</strong>: Every parse tree is binary</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>CNF is like putting equations in "standard form." It doesn't change what the grammar describes -- just reorganizes it into a form that's easier to work with systematically.</p>
+      </div>
+      <div class="warning">
+        <h3>4-Step Conversion Recipe</h3>
+        <p>1. Remove &epsilon;-productions. 2. Remove unit productions (A&rarr;B). 3. Break long productions. 4. Fix terminal mixing. <strong>Order matters!</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 13: CNF CONVERSION STEP-THROUGH ==================== -->
+<div class="slide" id="s13">
+  <h2>CNF Conversion: Step-Through</h2>
+  <p>Convert: <strong>S &rarr; ASB | &epsilon;, &nbsp; A &rarr; aAS | a, &nbsp; B &rarr; SbS | A | bb</strong></p>
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin:8px 0;">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <button class="btn btn-sm" id="s13nextBtn" onclick="s13Next()">Next Step</button>
+      <button class="btn btn-sm btn-secondary" id="s13autoBtn" onclick="s13Auto()">Auto Play</button>
+      <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      <span id="s13label" style="color:#94a3b8;font-size:0.85em;margin-left:auto;">Step 0 / 9</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start;">
+      <div id="s13before" style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;font-family:monospace;font-size:0.88em;line-height:1.8;color:#a5f3fc;white-space:pre-wrap;">Press "Next Step" to begin.</div>
+      <div style="color:#f59e0b;font-size:1.5em;display:flex;align-items:center;">&rArr;</div>
+      <div id="s13after" style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;font-family:monospace;font-size:0.88em;line-height:1.8;color:#a5f3fc;white-space:pre-wrap;"></div>
+    </div>
+    <div id="s13desc" style="color:#94a3b8;margin-top:10px;font-size:0.95em;"></div>
+  </div>
+  <div class="key-idea">
+    <h3>Result</h3>
+    <p>Every production becomes A &rarr; BC or A &rarr; a. The grammar is in CNF, ready for CYK!</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var step = 0, timer = null, total = 9;
+  var data = [
+    {title:'Original Grammar', before:'S \u2192 ASB | \u03B5\nA \u2192 aAS | a\nB \u2192 SbS | A | bb', after:'(starting point)', desc:'This is the grammar we want to convert to CNF.'},
+    {title:'Step 1a: Find nullables', before:'S \u2192 ASB | \u03B5\nA \u2192 aAS | a\nB \u2192 SbS | A | bb', after:'Nullable: { S }\n\nS \u2192 \u03B5 directly,\nso S is nullable.', desc:'A variable is nullable if it can derive \u03B5.'},
+    {title:'Step 1b: Add nullable variants', before:'S \u2192 ASB | \u03B5\nA \u2192 aAS | a\nB \u2192 SbS | A | bb', after:'S \u2192 ASB | AB | AS | SB\n     | A | B | S\nA \u2192 aAS | aA | aS | a\nB \u2192 SbS | bS | Sb | b\n     | A | bb', desc:'For each production with nullable S, add with/without S.'},
+    {title:'Step 1c: Remove \u03B5-prods', before:'S \u2192 ASB | AB | AS | SB\n     | A | B | S | \u03B5\nA \u2192 aAS | aA | aS | a\nB \u2192 SbS | bS | Sb | b\n     | A | bb', after:'S\u2080 \u2192 S | \u03B5\nS \u2192 ASB | AB | AS | SB\n     | A | B | S\nA \u2192 aAS | aA | aS | a\nB \u2192 SbS | bS | Sb | b\n     | A | bb', desc:'Remove S \u2192 \u03B5. Add new start S\u2080 \u2192 S | \u03B5.'},
+    {title:'Step 2a: Find unit prods', before:'Unit productions:\n\nS \u2192 A\nS \u2192 B\nS \u2192 S\nB \u2192 A', after:'These must be\nremoved by\nsubstituting the\nright-hand side.', desc:'A unit production is A \u2192 B (single variable).'},
+    {title:'Step 2b: Substitute units', before:'S \u2192 A \u21D2 S gets A\'s prods\nS \u2192 B \u21D2 S gets B\'s prods\nS \u2192 S \u21D2 remove (trivial)\nB \u2192 A \u21D2 B gets A\'s prods', after:'S\u2080 \u2192 S | \u03B5\nS \u2192 ASB | AB | AS | SB\n     | aAS | aA | aS | a\n     | SbS | bS | Sb | b | bb\nA \u2192 aAS | aA | aS | a\nB \u2192 SbS | bS | Sb | b | bb\n     | aAS | aA | aS | a', desc:'Replace each unit production with target\'s productions.'},
+    {title:'Step 3: Break long prods', before:'S \u2192 ASB (length 3)\nS \u2192 aAS (length 3)\nS \u2192 SbS (length 3)\n...similar in A, B', after:'S \u2192 AC\u2081, C\u2081 \u2192 SB\nS \u2192 T\u2090C\u2082, C\u2082 \u2192 AS\nS \u2192 SC\u2083, C\u2083 \u2192 T\u2087S\n(similar for A, B)', desc:'Break >2 symbols into pairs using new variables.'},
+    {title:'Step 4: Fix terminal mixing', before:'S \u2192 aA (terminal+var)\nS \u2192 aS (terminal+var)\nS \u2192 bS (terminal+var)\nS \u2192 bb (two terminals)', after:'S \u2192 T\u2090A\nS \u2192 T\u2090S\nS \u2192 T\u2087S\nS \u2192 T\u2087T\u2087\n\nAdd: T\u2090 \u2192 a, T\u2087 \u2192 b', desc:'Replace bare terminals in multi-symbol prods.'},
+    {title:'Done! In CNF', before:'Every production is now:\n\nA \u2192 BC (two variables)\n  or\nA \u2192 a  (one terminal)\n  or\nS\u2080 \u2192 \u03B5 (start only)', after:'Ready for CYK\nparsing algorithm!\n\nO(n\u00B3) parsing\nguaranteed.', desc:'Grammar is in Chomsky Normal Form. Every parse tree is binary.'}
+  ];
+
+  function render() {
+    var d = data[step-1];
+    document.getElementById('s13before').textContent = d.before;
+    document.getElementById('s13after').textContent = d.after;
+    document.getElementById('s13desc').textContent = d.desc;
+    document.getElementById('s13label').textContent = 'Step ' + step + ' / ' + total;
+  }
+
+  window.s13Next = function() {
+    if (step >= total) return;
+    step++; render();
+    if (step >= total) document.getElementById('s13nextBtn').disabled = true;
+  };
+  window.s13Auto = function() {
+    if (timer) { clearInterval(timer); timer = null; document.getElementById('s13autoBtn').textContent = 'Auto Play'; return; }
+    document.getElementById('s13autoBtn').textContent = 'Pause';
+    timer = setInterval(function() {
+      if (step >= total) { clearInterval(timer); timer = null; document.getElementById('s13autoBtn').textContent = 'Auto Play'; return; }
+      window.s13Next();
+    }, 2000);
+  };
+  window.s13Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    step = 0;
+    document.getElementById('s13autoBtn').textContent = 'Auto Play';
+    document.getElementById('s13nextBtn').disabled = false;
+    document.getElementById('s13label').textContent = 'Step 0 / ' + total;
+    document.getElementById('s13before').textContent = 'Press "Next Step" to begin.';
+    document.getElementById('s13after').textContent = '';
+    document.getElementById('s13desc').textContent = '';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE CB: CHALLENGE - FIX THE GRAMMAR BUG ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Grammar Bug</h2>
+  <div class="challenge-box">
+    <h3>A student wrote this grammar for balanced parentheses:</h3>
+    <p style="font-family:monospace;color:#a5f3fc;font-size:1.1em;margin:10px 0;">S &rarr; (S) | SS | &epsilon;</p>
+    <p>They tried to convert to CNF but got stuck at Step 4. Which production below is the <strong>correct</strong> CNF form of S &rarr; (S)?</p>
+    <div style="display:flex;gap:12px;margin-top:16px;justify-content:center;flex-wrap:wrap;">
+      <button class="quiz-option" onclick="sCBCheck(this,0)">S &rarr; T<sub>(</sub> S T<sub>)</sub></button>
+      <button class="quiz-option" onclick="sCBCheck(this,1)">S &rarr; T<sub>(</sub> C, C &rarr; S T<sub>)</sub></button>
+      <button class="quiz-option" onclick="sCBCheck(this,2)">S &rarr; ( C, C &rarr; S )</button>
+    </div>
+    <div id="sCBresult" style="margin-top:12px;font-size:1em;color:#94a3b8;opacity:0;transition:opacity 0.4s;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var answered = false;
+  window.sCBCheck = function(btn, choice) {
+    if (answered) return;
+    answered = true;
+    btn.parentElement.querySelectorAll('.quiz-option').forEach(function(b){b.disabled=true;});
+    if (choice === 1) {
+      btn.classList.add('correct');
+      document.getElementById('sCBresult').innerHTML = '<span style="color:#22c55e;font-weight:600;">\u2713 Correct!</span> CNF requires: (1) Replace terminals with variables: T<sub>(</sub> \u2192 (, T<sub>)</sub> \u2192 ). (2) Break 3-symbol T<sub>(</sub>ST<sub>)</sub> into S \u2192 T<sub>(</sub>C and C \u2192 ST<sub>)</sub>. Both steps are needed!';
+    } else {
+      btn.classList.add('wrong');
+      btn.parentElement.querySelectorAll('.quiz-option')[1].classList.add('correct');
+      if (choice === 0) {
+        document.getElementById('sCBresult').innerHTML = '<span style="color:#ef4444;font-weight:600;">\u2717 Almost!</span> S \u2192 T<sub>(</sub>ST<sub>)</sub> has 3 symbols -- CNF allows at most 2. You need to also break it into pairs.';
+      } else {
+        document.getElementById('sCBresult').innerHTML = '<span style="color:#ef4444;font-weight:600;">\u2717 Not quite.</span> ( and ) are terminals -- CNF only allows terminals alone (A \u2192 a), not mixed with variables. Replace them with T<sub>(</sub> and T<sub>)</sub> first.';
+      }
+    }
+    document.getElementById('sCBresult').style.opacity = '1';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 14: CFL PROPERTIES ==================== -->
+<div class="slide" id="s14">
+  <h2>Properties of Context-Free Languages</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3>Closure Properties</h3>
+      <table style="width:100%;">
+        <tr><th>Operation</th><th>Closed?</th><th>Proof idea</th></tr>
+        <tr><td>Union</td><td style="color:#22c55e;">YES</td><td style="font-size:0.85em;text-align:left;">S &rarr; S<sub>1</sub> | S<sub>2</sub></td></tr>
+        <tr><td>Concatenation</td><td style="color:#22c55e;">YES</td><td style="font-size:0.85em;text-align:left;">S &rarr; S<sub>1</sub> S<sub>2</sub></td></tr>
+        <tr><td>Kleene Star</td><td style="color:#22c55e;">YES</td><td style="font-size:0.85em;text-align:left;">S &rarr; S<sub>1</sub> S | &epsilon;</td></tr>
+        <tr><td>Intersection</td><td style="color:#ef4444;">NO</td><td style="font-size:0.85em;text-align:left;">Counterexample below</td></tr>
+        <tr><td>Complement</td><td style="color:#ef4444;">NO</td><td style="font-size:0.85em;text-align:left;">Would imply &cap; closed</td></tr>
+        <tr><td>&cap; with Regular</td><td style="color:#22c55e;">YES</td><td style="font-size:0.85em;text-align:left;">Product construction</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>NOT Closed Under Intersection</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.88em;">
+<div class="line">L1 = { a<sup>n</sup> b<sup>n</sup> c<sup>m</sup> } -- CFL!</div>
+<div class="line">L2 = { a<sup>m</sup> b<sup>n</sup> c<sup>n</sup> } -- CFL!</div>
+<div class="line"></div>
+<div class="line" style="color:#ef4444;">L1 &cap; L2 = { a<sup>n</sup> b<sup>n</sup> c<sup>n</sup> }</div>
+<div class="line" style="color:#ef4444;">This is NOT context-free!</div>
+        </div>
+      </div>
+      <div class="warning">
+        <h3>Consequence</h3>
+        <p>Since CFLs are closed under union but NOT complement: closure under complement would imply closure under intersection (De Morgan). So <strong>both must fail</strong>!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 15: INHERENTLY AMBIGUOUS ==================== -->
+<div class="slide" id="s15">
+  <h2>Inherently Ambiguous Languages</h2>
+  <p>Some CFLs are so "tangled" that <strong>every possible grammar</strong> for them is ambiguous.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <div class="key-idea">
+        <h3>Definition</h3>
+        <p>A CFL L is <strong>inherently ambiguous</strong> if every CFG generating L is ambiguous. The ambiguity is built into the language itself.</p>
+      </div>
+      <h3>Classic Example</h3>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line">L = { a<sup>i</sup> b<sup>j</sup> c<sup>k</sup> |</div>
+<div class="line">       i=j  OR  j=k }</div>
+<div class="line"></div>
+<div class="line">Either a's match b's,</div>
+<div class="line">OR b's match c's (or both).</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Why it's inherently ambiguous</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.88em;">
+<div class="line">Consider: a<sup>n</sup> b<sup>n</sup> c<sup>n</sup></div>
+<div class="line"></div>
+<div class="line">This string is in L because:</div>
+<div class="line" style="color:#3b82f6;">  i=j=n (a's match b's) YES</div>
+<div class="line" style="color:#8b5cf6;">  j=k=n (b's match c's) YES</div>
+<div class="line"></div>
+<div class="line">Any grammar must handle BOTH</div>
+<div class="line">reasons separately, giving</div>
+<div class="line">two parse trees for a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>.</div>
+        </div>
+      </div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Like a Venn diagram overlap: two overlapping "reasons" a string belongs. When both apply, any grammar must pick one path or the other -- giving two trees.</p>
+      </div>
+      <div class="warning">
+        <h3>Important Distinction</h3>
+        <p>An ambiguous <strong>grammar</strong> might be fixable. An inherently ambiguous <strong>language</strong> cannot.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 16: CFG VS REGULAR ==================== -->
+<div class="slide" id="s16">
+  <h2>CFG vs. Regular: Head-to-Head</h2>
+  <div style="display:grid;grid-template-columns:1fr auto;gap:1.5rem;">
+    <table style="width:100%;margin-top:6px;">
+      <tr><th style="width:22%;">Feature</th><th style="width:38%;">Regular Languages</th><th style="width:40%;">Context-Free Languages</th></tr>
+      <tr><td><strong>Machine</strong></td><td>DFA / NFA</td><td>Pushdown Automaton (PDA)</td></tr>
+      <tr><td><strong>Memory</strong></td><td>Finite (states only)</td><td>Infinite stack</td></tr>
+      <tr><td><strong>Described by</strong></td><td>Regular expressions</td><td>Context-free grammars</td></tr>
+      <tr><td><strong>Closure</strong></td><td>&cup;, &cap;, *, complement</td><td>&cup;, *, concat (NOT &cap;, compl.)</td></tr>
+      <tr><td><strong>Parsing</strong></td><td>O(n) linear</td><td>O(n&sup3;) CYK</td></tr>
+      <tr><td><strong>Pumping</strong></td><td>xy<sup>k</sup>z</td><td>uv<sup>k</sup>xy<sup>k</sup>z (two pumps)</td></tr>
+      <tr><td><strong>Can do</strong></td><td>a*b*, (ab)*</td><td>a<sup>n</sup>b<sup>n</sup>, parens, palindromes</td></tr>
+      <tr><td><strong>Can't do</strong></td><td>a<sup>n</sup>b<sup>n</sup>, counting</td><td>a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>, cross-serial</td></tr>
+      <tr style="background:rgba(59,130,246,0.15);"><td colspan="3" style="text-align:center;"><strong>Every regular language is context-free, but NOT vice versa</strong></td></tr>
+    </table>
+    <div style="min-width:160px;">
+      <canvas id="cS16" width="160" height="280" style="width:160px;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:8px;">
+    <h3>Key Idea</h3>
+    <p>Regular languages are a <strong>proper subset</strong> of CFLs. A DFA is a PDA that never uses its stack.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0, 0, 160, 280);
+    ctx.beginPath(); ctx.roundRect(10, 10, 140, 260, 10);
+    ctx.fillStyle = 'rgba(59,130,246,0.1)'; ctx.fill();
+    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(30, 100, 100, 140, 10);
+    ctx.fillStyle = 'rgba(34,197,94,0.1)'; ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#3b82f6'; ctx.font = 'bold 13px system-ui';
+    ctx.textAlign = 'center'; ctx.fillText('CFL', 80, 55);
+    ctx.font = '10px system-ui'; ctx.fillText('a\u207Fb\u207F, parens', 80, 75);
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 13px system-ui';
+    ctx.fillText('Regular', 80, 155);
+    ctx.font = '10px system-ui'; ctx.fillText('a*, (a|b)*', 80, 175);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui';
+    ctx.fillText('Regular \u2282 CFL', 80, 260);
+  }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s16').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s16'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 17: APPLICATIONS ==================== -->
+<div class="slide" id="s17">
+  <h2>Real-World Applications of CFGs</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3>Compilers &amp; Programming Languages</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.85em;">
+<div class="line">Source: if (x > 0) { y = x + 1; }</div>
+<div class="line"></div>
+<div class="line">      STATEMENT</div>
+<div class="line">      /   |   \</div>
+<div class="line">    IF   COND  BLOCK</div>
+<div class="line">     |   / \     |</div>
+<div class="line">    if  x>0   ASSIGN</div>
+<div class="line">             / | \</div>
+<div class="line">            y  =  EXPR</div>
+        </div>
+      </div>
+      <p>Every programming language has a CFG defining valid syntax. Compilers use <strong>parsers</strong> (LL, LR, LALR) to build parse trees.</p>
+      <h3>XML / HTML</h3>
+      <p>Nested tags are inherently context-free:</p>
+      <div class="code-block"><span class="code-content">&lt;div&gt;&lt;p&gt;Hello &lt;b&gt;world&lt;/b&gt;&lt;/p&gt;&lt;/div&gt;</span></div>
+    </div>
+    <div>
+      <h3>Natural Language Processing</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.85em;">
+<div class="line">       SENTENCE</div>
+<div class="line">        / \</div>
+<div class="line">      NP    VP</div>
+<div class="line">      |    / \</div>
+<div class="line">     Det  V   NP</div>
+<div class="line">      |   |   / \</div>
+<div class="line">    "the" | Det  N</div>
+<div class="line">        "ate" |    |</div>
+<div class="line">            "a" "fish"</div>
+        </div>
+      </div>
+      <h3>Other Applications</h3>
+      <ul>
+        <li><strong>JSON / YAML</strong> -- nested data formats</li>
+        <li><strong>Math expressions</strong> -- calculators, CAS</li>
+        <li><strong>DNA/RNA</strong> -- folding via stochastic CFGs</li>
+        <li><strong>Protocols</strong> -- BNF grammars in RFCs</li>
+      </ul>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>CFGs are the <strong>blueprints</strong> of structured languages. Wherever you see nesting, hierarchy, or recursion, there's likely a CFG underneath.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE CC: CHALLENGE - MATCH LANGUAGE TO GRAMMAR ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Match Language to Grammar</h2>
+  <div class="challenge-box">
+    <h3>Match each language to its grammar:</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
+      <div>
+        <p style="color:#38bdf8;font-weight:600;">Languages:</p>
+        <ol style="color:#a5f3fc;font-family:monospace;">
+          <li>{ a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }</li>
+          <li>{ ww<sup>R</sup> | w &isin; {a,b}* }</li>
+          <li>Balanced parentheses</li>
+        </ol>
+      </div>
+      <div>
+        <p style="color:#38bdf8;font-weight:600;">Grammars:</p>
+        <p style="font-family:monospace;color:#cbd5e1;">A: S &rarr; SS | (S) | &epsilon;</p>
+        <p style="font-family:monospace;color:#cbd5e1;">B: S &rarr; aSa | bSb | &epsilon;</p>
+        <p style="font-family:monospace;color:#cbd5e1;">C: S &rarr; aSb | &epsilon;</p>
+      </div>
+    </div>
+    <p style="margin-top:12px;">Correct matching is:</p>
+    <div style="display:flex;gap:12px;margin-top:8px;justify-content:center;flex-wrap:wrap;">
+      <button class="quiz-option" onclick="sCCCheck(this,0)">1-C, 2-B, 3-A</button>
+      <button class="quiz-option" onclick="sCCCheck(this,1)">1-B, 2-C, 3-A</button>
+      <button class="quiz-option" onclick="sCCCheck(this,2)">1-C, 2-A, 3-B</button>
+    </div>
+    <div id="sCCresult" style="margin-top:12px;font-size:1em;color:#94a3b8;opacity:0;transition:opacity 0.4s;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var answered = false;
+  window.sCCCheck = function(btn, choice) {
+    if (answered) return;
+    answered = true;
+    btn.parentElement.querySelectorAll('.quiz-option').forEach(function(b){b.disabled=true;});
+    if (choice === 0) {
+      btn.classList.add('correct');
+      document.getElementById('sCCresult').innerHTML = '<span style="color:#22c55e;font-weight:600;">\u2713 Correct!</span> Grammar C (S\u2192aSb|\u03B5) wraps a/b pairs for a\u207Fb\u207F. Grammar B (S\u2192aSa|bSb|\u03B5) mirrors characters for palindromes. Grammar A (S\u2192SS|(S)|\u03B5) nests and concatenates parentheses.';
+    } else {
+      btn.classList.add('wrong');
+      btn.parentElement.querySelectorAll('.quiz-option')[0].classList.add('correct');
+      document.getElementById('sCCresult').innerHTML = '<span style="color:#ef4444;font-weight:600;">\u2717 Not quite.</span> The correct matching is 1-C, 2-B, 3-A. S\u2192aSb|\u03B5 generates equal a\'s then b\'s. S\u2192aSa|bSb|\u03B5 generates palindromes (mirrors). S\u2192SS|(S)|\u03B5 generates balanced parens.';
+    }
+    document.getElementById('sCCresult').style.opacity = '1';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 18: SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3>The Big Ideas</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.88em;">
+<div class="line">CFG = (V, T, P, S)</div>
+<div class="line">V = variables (non-terminals)</div>
+<div class="line">T = terminals (alphabet)</div>
+<div class="line">P = productions (rewrite rules)</div>
+<div class="line">S = start symbol</div>
+<div class="line"></div>
+<div class="line">"Context-free" means:</div>
+<div class="line"> Left side = SINGLE variable.</div>
+<div class="line"></div>
+<div class="line">Power: Regular &sub; CFL</div>
+<div class="line">Machine: DFA &sub; PDA (+ stack)</div>
+        </div>
+      </div>
+      <h3>What to Remember</h3>
+      <ul style="font-size:0.95em;">
+        <li>CFGs express <strong>nesting</strong> and <strong>matching</strong></li>
+        <li><strong>Parse trees</strong> show derivation structure</li>
+        <li><strong>Ambiguity</strong> = multiple parse trees</li>
+        <li><strong>CNF</strong>: A &rarr; BC | a (for CYK)</li>
+        <li>Closed under &cup;, concat, * but <strong>NOT</strong> &cap; or complement</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Common Grammar Patterns</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.88em;">
+<div class="line">a<sup>n</sup>b<sup>n</sup>:       S &rarr; aSb | &epsilon;</div>
+<div class="line">palindromes: S &rarr; aSa | bSb | a | b | &epsilon;</div>
+<div class="line">bal. parens: S &rarr; SS | (S) | &epsilon;</div>
+<div class="line">arithmetic:  E &rarr; E+T | T</div>
+<div class="line">             T &rarr; T*F | F</div>
+<div class="line">             F &rarr; (E) | id</div>
+        </div>
+      </div>
+      <h3>CNF Conversion Steps</h3>
+      <div class="code-block">
+        <div class="code-content" style="font-size:0.88em;">
+<div class="line">1. Remove &epsilon;-productions</div>
+<div class="line">2. Remove unit productions</div>
+<div class="line">3. Break long productions</div>
+<div class="line">4. Fix terminal mixing</div>
+        </div>
+      </div>
+      <div class="key-idea">
+        <h3>Coming Next</h3>
+        <p>Pushdown Automata (PDA) -- the machine model for CFGs. An NFA with a stack. PDAs and CFGs recognize exactly the same class of languages.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE Q1: QUIZ MC ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Multiple Choice (3 Questions)</h2>
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;margin:8px 0;">
+    <div id="q1progress" style="color:#64748b;font-size:0.9em;margin-bottom:12px;"></div>
+    <div id="q1question" style="font-size:1.2em;color:#e2e8f0;margin-bottom:16px;line-height:1.6;"></div>
+    <div id="q1options" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;"></div>
+    <div id="q1explain" style="margin-top:14px;font-size:0.95em;color:#94a3b8;opacity:0;transition:opacity 0.4s;"></div>
+    <div id="q1score" style="font-size:1.4em;color:#93c5fd;margin-top:16px;text-align:center;"></div>
+  </div>
+  <div style="text-align:center;margin-top:10px;">
+    <button class="btn" onclick="q1Init()">Restart Quiz</button>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var pool = [
+    {q:'What language does S \u2192 aSb | \u03B5 generate?', opts:['{a\u207Fb\u207F | n\u22650}','{a\u207Fb\u1D50 | n,m\u22650}'], correct:0, exp:'Each S \u2192 aSb adds one a on left and one b on right, keeping counts equal.'},
+    {q:'Is E \u2192 E+E | E*E | id ambiguous?', opts:['Yes','No'], correct:0, exp:'id+id*id has two parse trees: one grouping (id+id)*id, another id+(id*id).'},
+    {q:'Is A \u2192 BC a valid CNF production?', opts:['Yes','No'], correct:0, exp:'CNF allows A \u2192 BC (two variables) and A \u2192 a (one terminal). A \u2192 BC fits.'},
+    {q:'Are CFLs closed under intersection?', opts:['No','Yes'], correct:0, exp:'L1 \u2229 L2 can produce a\u207Fb\u207Fc\u207F which is not context-free.'},
+    {q:'Is A \u2192 aBC in CNF?', opts:['No','Yes'], correct:0, exp:'It mixes terminal a with variables. Must replace a with T_a first, then break length.'},
+    {q:'Can every ambiguous grammar be made unambiguous?', opts:['Not always','Yes always'], correct:0, exp:'Inherently ambiguous languages have no unambiguous grammar.'}
+  ];
+  var selected, qIdx, score, answered;
+
+  function shuffle(arr) {
+    for (var i = arr.length-1; i > 0; i--) {
+      var j = Math.floor(Math.random()*(i+1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  window.q1Init = function() {
+    var indices = []; for (var i = 0; i < pool.length; i++) indices.push(i);
+    shuffle(indices);
+    selected = indices.slice(0, 3);
+    qIdx = 0; score = 0; answered = false;
+    document.getElementById('q1score').textContent = '';
+    render();
+  };
+
+  function render() {
+    if (qIdx >= 3) {
+      document.getElementById('q1progress').textContent = '';
+      document.getElementById('q1question').textContent = 'Quiz Complete!';
+      document.getElementById('q1options').innerHTML = '';
+      document.getElementById('q1explain').style.opacity = '0';
+      document.getElementById('q1score').textContent = 'Score: ' + score + ' / 3';
+      return;
+    }
+    var q = pool[selected[qIdx]];
+    document.getElementById('q1progress').textContent = 'Question ' + (qIdx+1) + ' of 3';
+    document.getElementById('q1question').textContent = q.q;
+    document.getElementById('q1explain').style.opacity = '0';
+    document.getElementById('q1explain').textContent = '';
+    answered = false;
+    var html = '';
+    for (var i = 0; i < q.opts.length; i++) {
+      html += '<button class="quiz-option" onclick="q1Check(' + i + ')" id="q1opt' + i + '">' + q.opts[i] + '</button>';
+    }
+    document.getElementById('q1options').innerHTML = html;
+  }
+
+  window.q1Check = function(choice) {
+    if (answered) return;
+    answered = true;
+    var q = pool[selected[qIdx]];
+    var btns = document.getElementById('q1options').querySelectorAll('button');
+    btns.forEach(function(b){b.disabled=true;});
+    if (choice === q.correct) {
+      score++;
+      document.getElementById('q1opt'+choice).classList.add('correct');
+    } else {
+      document.getElementById('q1opt'+choice).classList.add('wrong');
+      document.getElementById('q1opt'+q.correct).classList.add('correct');
+    }
+    var exp = document.getElementById('q1explain');
+    exp.textContent = q.exp;
+    exp.style.opacity = '1';
+    setTimeout(function(){ qIdx++; render(); }, 2500);
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sQ1').classList.contains('active') && !document.getElementById('sQ1').dataset.init) {
+      document.getElementById('sQ1').dataset.init = '1';
+      q1Init();
+    }
+  });
+  obs.observe(document.getElementById('sQ1'), {attributes: true, attributeFilter: ['class']});
+  q1Init();
+})();
+</script>
+
+<!-- ==================== SLIDE Q2: QUIZ DERIVATION ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace the Derivation</h2>
+  <div class="challenge-box">
+    <h3>Given: S &rarr; aSb | &epsilon;</h3>
+    <p>What is the <strong>leftmost derivation</strong> that produces <strong>aaabbb</strong>?</p>
+    <p style="margin-top:8px;">How many times is S &rarr; aSb applied before S &rarr; &epsilon;?</p>
+    <div style="display:flex;gap:12px;margin-top:16px;justify-content:center;flex-wrap:wrap;">
+      <button class="quiz-option" onclick="q2Check(this,0)">2 times</button>
+      <button class="quiz-option" onclick="q2Check(this,1)">3 times</button>
+      <button class="quiz-option" onclick="q2Check(this,2)">4 times</button>
+    </div>
+    <div id="q2result" style="margin-top:14px;font-size:0.95em;color:#94a3b8;opacity:0;transition:opacity 0.4s;"></div>
+  </div>
+  <div class="key-idea" style="margin-top:12px;">
+    <h3>Derivation Pattern</h3>
+    <p>For a<sup>n</sup>b<sup>n</sup>, apply S &rarr; aSb exactly <strong>n times</strong>, then S &rarr; &epsilon; once. Each application adds one a on the left and one b on the right.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var answered = false;
+  window.q2Check = function(btn, choice) {
+    if (answered) return;
+    answered = true;
+    btn.parentElement.querySelectorAll('.quiz-option').forEach(function(b){b.disabled=true;});
+    if (choice === 1) {
+      btn.classList.add('correct');
+      document.getElementById('q2result').innerHTML = '<span style="color:#22c55e;font-weight:600;">\u2713 Correct!</span> S \u21D2 aSb \u21D2 aaSbb \u21D2 aaaSbbb \u21D2 aaa\u03B5bbb = aaabbb. Three applications of S \u2192 aSb, then S \u2192 \u03B5.';
+    } else {
+      btn.classList.add('wrong');
+      btn.parentElement.querySelectorAll('.quiz-option')[1].classList.add('correct');
+      document.getElementById('q2result').innerHTML = '<span style="color:#ef4444;font-weight:600;">\u2717 Not quite.</span> aaabbb has 3 a\'s and 3 b\'s, so n=3. Apply S \u2192 aSb three times: S \u21D2 aSb \u21D2 aaSbb \u21D2 aaaSbbb, then S \u2192 \u03B5.';
+    }
+    document.getElementById('q2result').style.opacity = '1';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE Q3: QUIZ BUILD GRAMMAR ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Build a Grammar</h2>
+  <div class="challenge-box">
+    <h3>Build a CFG for: { a<sup>n</sup>b<sup>m</sup> | n &ge; m &ge; 0 }</h3>
+    <p>Strings where the number of a's is <strong>at least</strong> the number of b's. Examples: aaa, aab, aabb, a, &epsilon;</p>
+    <p style="margin-top:10px;">Which grammar generates exactly this language?</p>
+    <div style="display:flex;gap:12px;margin-top:16px;justify-content:center;flex-wrap:wrap;">
+      <button class="quiz-option" style="font-family:monospace;font-size:0.9em;" onclick="q3Check(this,0)">S &rarr; aSb | aS | &epsilon;</button>
+      <button class="quiz-option" style="font-family:monospace;font-size:0.9em;" onclick="q3Check(this,1)">S &rarr; aSb | &epsilon;</button>
+      <button class="quiz-option" style="font-family:monospace;font-size:0.9em;" onclick="q3Check(this,2)">S &rarr; aS | Sb | &epsilon;</button>
+    </div>
+    <div id="q3result" style="margin-top:14px;font-size:0.95em;color:#94a3b8;opacity:0;transition:opacity 0.4s;"></div>
+  </div>
+  <div class="key-idea" style="margin-top:12px;">
+    <h3>Grammar Design Strategy</h3>
+    <p>Think about what "extra" the language needs beyond a simpler base case. a<sup>n</sup>b<sup>n</sup> uses S &rarr; aSb. For n &ge; m, we also need to generate <strong>extra a's</strong> that aren't matched to b's.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var answered = false;
+  window.q3Check = function(btn, choice) {
+    if (answered) return;
+    answered = true;
+    btn.parentElement.querySelectorAll('.quiz-option').forEach(function(b){b.disabled=true;});
+    if (choice === 0) {
+      btn.classList.add('correct');
+      document.getElementById('q3result').innerHTML = '<span style="color:#22c55e;font-weight:600;">\u2713 Correct!</span> S \u2192 aSb matches a\'s with b\'s (n=m part). S \u2192 aS generates extra unmatched a\'s (n>m part). S \u2192 \u03B5 terminates. Together: all strings a<sup>n</sup>b<sup>m</sup> where n \u2265 m.';
+    } else if (choice === 1) {
+      btn.classList.add('wrong');
+      btn.parentElement.querySelectorAll('.quiz-option')[0].classList.add('correct');
+      document.getElementById('q3result').innerHTML = '<span style="color:#ef4444;font-weight:600;">\u2717 Close, but</span> S \u2192 aSb | \u03B5 only generates a<sup>n</sup>b<sup>n</sup> (equal counts). We need S \u2192 aS to also produce <strong>extra a\'s</strong>.';
+    } else {
+      btn.classList.add('wrong');
+      btn.parentElement.querySelectorAll('.quiz-option')[0].classList.add('correct');
+      document.getElementById('q3result').innerHTML = '<span style="color:#ef4444;font-weight:600;">\u2717 Not quite.</span> S \u2192 Sb would let you add b\'s anywhere, generating strings like "ba" which aren\'t in a<sup>n</sup>b<sup>m</sup> form. All a\'s must come before b\'s.';
+    }
+    document.getElementById('q3result').style.opacity = '1';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','s17','sCC','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>
