@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCaml Enhanced — Interactive Functional Programming</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden}
+  .slide{display:none;min-height:100vh;padding:2.5rem 3.5rem;position:relative;flex-direction:column;justify-content:center}
+  .slide.active{display:flex}
+  .fade-in{animation:fadeIn .4s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:200}
+  #progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#a78bfa);transition:width .3s}
+  h1{font-size:2.4em;margin-bottom:.5rem;background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+  h2{font-size:1.7em;color:#38bdf8;margin-bottom:.5rem}
+  h3{font-size:1.2em;color:#a5b4fc;margin-bottom:.4rem}
+  p,li{font-size:1.05em;line-height:1.7;color:#cbd5e1}
+  .subtitle{font-size:1.15em;color:#94a3b8;margin-bottom:1.2rem}
+  .nav{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);display:flex;gap:.75rem;z-index:100}
+  .nav button{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:.5rem 1.4rem;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+  .nav button:hover{background:#475569}
+  .nav button:disabled{opacity:.3;cursor:not-allowed}
+  .btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+  .btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+  .btn-sm{padding:.35rem .8rem;font-size:.82rem}
+  .btn-secondary{background:#334155;color:#e2e8f0;border:1px solid #475569}
+  .btn-secondary:hover{background:#475569}
+  .key-idea{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(16,185,129,.1));border-left:4px solid #22c55e;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .warning{background:rgba(239,68,68,.08);border-left:4px solid #ef4444;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .analogy{background:rgba(139,92,246,.08);border-left:4px solid #a78bfa;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .code-block{background:rgba(0,0,0,.3);border:1px solid #334155;border-radius:10px;padding:.8rem 1rem;margin:.5rem 0;overflow-x:auto}
+  .code-content{font-family:'SF Mono','Fira Code',monospace;font-size:.85rem;line-height:1.7}
+  .line{padding:1px 6px;border-left:3px solid transparent;border-radius:0 4px 4px 0;white-space:pre}
+  .line.active{background:rgba(99,102,241,.15);border-left-color:#6366f1}
+  code{font-family:'SF Mono','Fira Code',monospace;background:#1e293b;padding:2px 7px;border-radius:4px;font-size:.9em;color:#a5f3fc}
+  .slide-number{position:absolute;bottom:1rem;right:2rem;color:#475569;font-size:.8rem}
+  ul{padding-left:1.5rem}
+  ul li{margin-bottom:.4rem}
+  canvas{border-radius:12px}
+  .repl{background:#0a0e1a;border:1px solid #334155;border-radius:10px;padding:.6rem .8rem;font-family:'SF Mono',monospace;font-size:.82rem;color:#a5f3fc}
+  .repl-prompt{color:#f59e0b}
+  .repl-output{color:#22c55e}
+  .repl-type{color:#94a3b8}
+  .repl-error{color:#ef4444}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== s1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div style="text-align:center">
+    <h1 style="font-size:3em">OCaml</h1>
+    <p class="subtitle" style="font-size:1.3em">A Functional Programming Crash Course</p>
+    <div style="margin-top:1.5rem;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap">
+      <span style="background:#1e293b;padding:.5rem 1rem;border-radius:8px;border:1px solid #334155;color:#94a3b8">Type Inference</span>
+      <span style="background:#1e293b;padding:.5rem 1rem;border-radius:8px;border:1px solid #334155;color:#94a3b8">Pattern Matching</span>
+      <span style="background:#1e293b;padding:.5rem 1rem;border-radius:8px;border:1px solid #334155;color:#94a3b8">Algebraic Types</span>
+      <span style="background:#1e293b;padding:.5rem 1rem;border-radius:8px;border:1px solid #334155;color:#94a3b8">Higher-Order Functions</span>
+    </div>
+    <div class="code-block" style="display:inline-block;margin-top:1.5rem;text-align:left">
+      <div class="code-content">
+<div class="line"><span style="color:#c084fc">let rec</span> <span style="color:#38bdf8">factorial</span> n =</div>
+<div class="line">  <span style="color:#c084fc">if</span> n = 0 <span style="color:#c084fc">then</span> 1</div>
+<div class="line">  <span style="color:#c084fc">else</span> n * factorial (n - 1)</div>
+      </div>
+    </div>
+    <p style="margin-top:2rem;color:#64748b;font-size:.9em">Use <b>Arrow Keys</b> to navigate &bull; Interactive playgrounds throughout</p>
+  </div>
+</div>
+
+<!-- ==================== s2: WHY OCAML ==================== -->
+<div class="slide" id="s2">
+  <h1>Why OCaml for Theory?</h1>
+  <p class="subtitle">Functional programming mirrors mathematical reasoning</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS2" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Perfect match for CS theory</h3>
+        <ul>
+          <li><b>Immutability</b> — like math, values don't change</li>
+          <li><b>Pattern matching</b> — natural for defining automata transitions</li>
+          <li><b>Algebraic types</b> — model grammars, trees, and ASTs directly</li>
+          <li><b>Recursion</b> — the primary looping mechanism, just like inductive proofs</li>
+        </ul>
+      </div>
+      <div class="analogy">
+        <h3>Think of it this way</h3>
+        <p>In Java/Python, you write <b>instructions</b>. In OCaml, you write <b>definitions</b> — just like math. <code>let f x = x + 1</code> reads like "f(x) = x + 1".</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS2');
+  const ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    ctx.fillStyle='#38bdf8';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText('OCaml vs Imperative Languages',260,25);
+    const rows=[
+      ['Feature','OCaml','Java/Python'],
+      ['Variables','Immutable by default','Mutable'],
+      ['Loops','Recursion','for/while'],
+      ['Branching','Pattern match','if/switch'],
+      ['Data','Algebraic types','Classes/structs'],
+      ['Types','Inferred','Declared (mostly)'],
+      ['Side effects','Discouraged','Everywhere'],
+      ['Functions','First-class values','Special syntax']
+    ];
+    const colX=[60,220,400],y0=55,rh=34;
+    rows.forEach((r,i)=>{
+      const y=y0+i*rh;
+      if(i===0){
+        ctx.fillStyle='#334155';ctx.fillRect(10,y-14,500,rh);
+        ctx.fillStyle='#94a3b8';ctx.font='bold 12px sans-serif';
+      } else {
+        ctx.fillStyle=i%2===0?'rgba(30,41,59,.5)':'transparent';
+        ctx.fillRect(10,y-14,500,rh);
+        ctx.fillStyle=i===0?'#94a3b8':'#e2e8f0';ctx.font='12px sans-serif';
+      }
+      ctx.textAlign='left';ctx.fillText(r[0],colX[0],y+4);
+      ctx.fillStyle=i===0?'#94a3b8':'#a5f3fc';ctx.fillText(r[1],colX[1],y+4);
+      ctx.fillStyle=i===0?'#94a3b8':'#f472b6';ctx.fillText(r[2],colX[2],y+4);
+    });
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s2').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s3: GETTING STARTED ==================== -->
+<div class="slide" id="s3">
+  <h1>Getting Started: The REPL</h1>
+  <p class="subtitle">OCaml has an interactive toplevel — type expressions, see results instantly</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="repl" id="s3Repl" style="min-height:240px;max-height:300px;overflow-y:auto">
+        <div><span class="repl-prompt"># </span><span class="repl-type">Welcome to the OCaml REPL simulator!</span></div>
+        <div><span class="repl-type">Type an expression and press Enter.</span></div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <input type="text" id="s3Input" placeholder="e.g. 3 + 4;;" style="flex:1;padding:.4rem .6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace">
+        <button class="btn btn-sm" onclick="s3Eval()">Eval</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Clear()">Clear</button>
+      </div>
+      <div style="display:flex;gap:.3rem;margin-top:.4rem;flex-wrap:wrap">
+        <button class="btn-secondary btn-sm" onclick="s3Try('3 + 4;;')" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:.2rem .5rem;border-radius:4px;cursor:pointer;font-size:.75rem">3 + 4;;</button>
+        <button class="btn-secondary btn-sm" onclick="s3Try('&quot;hello&quot; ^ &quot; world&quot;;;')" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:.2rem .5rem;border-radius:4px;cursor:pointer;font-size:.75rem">"hello" ^ " world";;</button>
+        <button class="btn-secondary btn-sm" onclick="s3Try('true && false;;')" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:.2rem .5rem;border-radius:4px;cursor:pointer;font-size:.75rem">true && false;;</button>
+        <button class="btn-secondary btn-sm" onclick="s3Try('let x = 42;;')" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:.2rem .5rem;border-radius:4px;cursor:pointer;font-size:.75rem">let x = 42;;</button>
+        <button class="btn-secondary btn-sm" onclick="s3Try('float_of_int 7;;')" style="background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:.2rem .5rem;border-radius:4px;cursor:pointer;font-size:.75rem">float_of_int 7;;</button>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>The ;; matters!</h3>
+        <p>In the REPL, <code>;;</code> tells OCaml "evaluate this now." In files, it's optional (and usually omitted).</p>
+      </div>
+      <div class="warning">
+        <h3>No implicit conversions</h3>
+        <p>OCaml won't convert <code>int</code> to <code>float</code> automatically. Use <code>float_of_int</code>, <code>int_of_float</code>, etc.</p>
+        <p style="margin-top:.3rem">Even arithmetic differs: <code>+</code> for ints, <code>+.</code> for floats!</p>
+      </div>
+      <div style="margin-top:.5rem">
+        <h3>Try these expressions:</h3>
+        <ul style="font-size:.9em">
+          <li><code>3 + 4;;</code> → int arithmetic</li>
+          <li><code>"hello" ^ " world";;</code> → string concat</li>
+          <li><code>true && false;;</code> → boolean logic</li>
+          <li><code>let x = 42;;</code> → binding</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const env={};
+  const evalExpr=function(input){
+    const s=input.replace(/;;$/,'').trim();
+    if(!s) return null;
+    // let binding
+    const letMatch=s.match(/^let\s+(\w+)\s*=\s*(.+)$/);
+    if(letMatch){
+      const name=letMatch[1],valExpr=letMatch[2].trim();
+      const v=evaluate(valExpr);
+      if(v.error)return v;
+      env[name]=v;
+      return{val:v.val,type:v.type,binding:name};
+    }
+    return evaluate(s);
+  };
+  function evaluate(s){
+    s=s.trim();
+    // string
+    if(/^"[^"]*"\s*\^\s*"[^"]*"$/.test(s)){
+      const parts=s.split('^').map(p=>p.trim().replace(/^"|"$/g,''));
+      return{val:'"'+parts.join('')+'"',type:'string'};
+    }
+    if(/^"[^"]*"$/.test(s))return{val:s,type:'string'};
+    // bool
+    if(s==='true')return{val:'true',type:'bool'};
+    if(s==='false')return{val:'false',type:'bool'};
+    if(/^(true|false)\s*&&\s*(true|false)$/.test(s)){
+      const r=eval(s);return{val:String(r),type:'bool'};
+    }
+    if(/^(true|false)\s*\|\|\s*(true|false)$/.test(s)){
+      const r=eval(s);return{val:String(r),type:'bool'};
+    }
+    if(s==='not true')return{val:'false',type:'bool'};
+    if(s==='not false')return{val:'true',type:'bool'};
+    // float_of_int
+    const foi=s.match(/^float_of_int\s+(\d+)$/);
+    if(foi)return{val:foi[1]+'.',type:'float'};
+    // int_of_float
+    const iof=s.match(/^int_of_float\s+([\d.]+)$/);
+    if(iof)return{val:String(Math.floor(parseFloat(iof[1]))),type:'int'};
+    // int arithmetic
+    if(/^[\d\s+\-*/()]+$/.test(s)){
+      try{const r=eval(s);if(Number.isInteger(r))return{val:String(r),type:'int'}}catch(e){}
+    }
+    // float arithmetic
+    if(/^[\d.\s+\-*/()]+$/.test(s)&&s.includes('.')){
+      try{const r=eval(s.replace(/\+\./g,'+').replace(/-\./g,'-').replace(/\*\./g,'*').replace(/\/\./g,'/'));return{val:String(r),type:'float'}}catch(e){}
+    }
+    // variable lookup
+    if(env[s])return env[s];
+    // char
+    if(/^'.'$/.test(s))return{val:s,type:'char'};
+    return{error:'Unrecognized expression: '+s};
+  }
+  function addLine(html){
+    const el=document.getElementById('s3Repl');
+    el.innerHTML+='<div>'+html+'</div>';
+    el.scrollTop=el.scrollHeight;
+  }
+  window.s3Eval=function(){
+    const input=document.getElementById('s3Input').value.trim();
+    if(!input)return;
+    addLine('<span class="repl-prompt"># </span>'+input);
+    const r=evalExpr(input);
+    if(!r)return;
+    if(r.error){addLine('<span class="repl-error">Error: '+r.error+'</span>')}
+    else if(r.binding){addLine('<span class="repl-output">val '+r.binding+' : '+r.type+' = '+r.val+'</span>')}
+    else{addLine('<span class="repl-output">- : '+r.type+' = '+r.val+'</span>')}
+    document.getElementById('s3Input').value='';
+  };
+  window.s3Try=function(expr){document.getElementById('s3Input').value=expr;s3Eval()};
+  window.s3Clear=function(){
+    document.getElementById('s3Repl').innerHTML='<div><span class="repl-prompt"># </span><span class="repl-type">REPL cleared.</span></div>';
+  };
+  document.getElementById('s3Input').addEventListener('keydown',e=>{if(e.key==='Enter')s3Eval()});
+})();
+</script>
+
+<!-- ==================== s4: BASIC TYPES ==================== -->
+<div class="slide" id="s4">
+  <h1>Basic Types and Values</h1>
+  <p class="subtitle">OCaml is statically typed — every expression has a type known at compile time</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS4" width="520" height="340" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Core Types</h3>
+        <table style="font-size:.88em;width:100%">
+          <tr><th>Type</th><th>Example</th><th>Operations</th></tr>
+          <tr><td><code>int</code></td><td>42, -7, 0</td><td>+, -, *, /, mod</td></tr>
+          <tr><td><code>float</code></td><td>3.14, 2.0</td><td>+., -., *., /.</td></tr>
+          <tr><td><code>bool</code></td><td>true, false</td><td>&&, ||, not</td></tr>
+          <tr><td><code>char</code></td><td>'a', 'Z'</td><td>Char.code</td></tr>
+          <tr><td><code>string</code></td><td>"hello"</td><td>^, String.length</td></tr>
+          <tr><td><code>unit</code></td><td>()</td><td>(side effects)</td></tr>
+        </table>
+      </div>
+      <div class="warning">
+        <h3>int vs float — separate operators!</h3>
+        <p><code>3 + 4</code> is int addition. <code>3.0 +. 4.0</code> is float addition. Mixing them is a <b>type error</b>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS4');
+  const ctx=canvas.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    ctx.fillStyle='#38bdf8';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText('OCaml Type System',260,25);
+    // Draw type boxes
+    const types=[
+      {name:'int',color:'#6366f1',x:60,y:70,ex:'42'},
+      {name:'float',color:'#8b5cf6',x:200,y:70,ex:'3.14'},
+      {name:'bool',color:'#22c55e',x:340,y:70,ex:'true'},
+      {name:'char',color:'#f59e0b',x:60,y:170,ex:"'a'"},
+      {name:'string',color:'#f472b6',x:200,y:170,ex:'"hello"'},
+      {name:'unit',color:'#64748b',x:340,y:170,ex:'()'}
+    ];
+    types.forEach(t=>{
+      ctx.fillStyle=t.color+'22';
+      ctx.strokeStyle=t.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(t.x,t.y,120,70,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 16px monospace';ctx.textAlign='center';
+      ctx.fillText(t.name,t.x+60,t.y+28);
+      ctx.fillStyle='#94a3b8';ctx.font='13px monospace';
+      ctx.fillText(t.ex,t.x+60,t.y+52);
+    });
+    // No implicit conversion arrow
+    ctx.strokeStyle='#ef4444';ctx.lineWidth=2;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(160,105);ctx.lineTo(200,105);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ef4444';ctx.font='bold 20px sans-serif';ctx.textAlign='center';
+    ctx.fillText('✗',180,100);
+    // label
+    ctx.fillStyle='#ef4444';ctx.font='11px sans-serif';
+    ctx.fillText('no auto-convert!',180,125);
+    // Compound types
+    ctx.fillStyle='#94a3b8';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Compound Types (coming up)',260,270);
+    const compound=[
+      {name:'tuple',ex:'(1, "a")',x:50},
+      {name:'list',ex:'[1;2;3]',x:170},
+      {name:'option',ex:'Some 42',x:290},
+      {name:'variant',ex:'Red | Blue',x:410}
+    ];
+    compound.forEach(t=>{
+      ctx.fillStyle='#334155';ctx.beginPath();ctx.roundRect(t.x,285,100,40,8);ctx.fill();
+      ctx.fillStyle='#a5b4fc';ctx.font='12px monospace';ctx.textAlign='center';
+      ctx.fillText(t.name,t.x+50,302);
+      ctx.fillStyle='#64748b';ctx.font='10px monospace';
+      ctx.fillText(t.ex,t.x+50,320);
+    });
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s4').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s5: LET BINDINGS ==================== -->
+<div class="slide" id="s5">
+  <h1>Let Bindings</h1>
+  <p class="subtitle">Binding names to values — NOT variable assignment!</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line" id="s5c0"><span style="color:#c084fc">let</span> x = 10</div>
+<div class="line" id="s5c1"><span style="color:#c084fc">let</span> y = x + 5       <span style="color:#64748b">(* y = 15 *)</span></div>
+<div class="line" id="s5c2"><span style="color:#c084fc">let</span> x = 20          <span style="color:#64748b">(* new binding, NOT mutation! *)</span></div>
+<div class="line" id="s5c3"><span style="color:#c084fc">let</span> z = x + y       <span style="color:#64748b">(* z = 35 *)</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <button class="btn btn-sm" onclick="s5Step()">Step</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+      <div id="s5Env" style="background:rgba(0,0,0,.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.82rem;margin-top:.5rem;color:#94a3b8;min-height:60px">
+        <div style="color:#64748b">Environment: { }</div>
+      </div>
+      <div class="code-block" style="margin-top:.5rem">
+        <div class="code-content">
+<div class="line"><span style="color:#64748b">(* let ... in for local scope *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> result =</div>
+<div class="line">  <span style="color:#c084fc">let</span> a = 5 <span style="color:#c084fc">in</span></div>
+<div class="line">  <span style="color:#c084fc">let</span> b = a * 2 <span style="color:#c084fc">in</span></div>
+<div class="line">  a + b          <span style="color:#64748b">(* = 15 *)</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Bindings, not variables</h3>
+        <p><code>let x = 10</code> means "x <b>is</b> 10" — not "store 10 in a box called x." You're creating a new name in the environment.</p>
+      </div>
+      <div class="warning">
+        <h3>Shadowing ≠ Mutation</h3>
+        <p>When you write <code>let x = 20</code> after <code>let x = 10</code>, the old x still exists — it's just hidden ("shadowed"). Any code that captured the old x still sees 10.</p>
+      </div>
+      <div class="analogy">
+        <h3>let ... in = local scope</h3>
+        <p><code>let a = 5 in a + 1</code> means "in the expression a+1, let a be 5." The binding only lives inside the <code>in</code> expression.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const steps=[
+    {line:0,env:{x:10},msg:'x → 10'},
+    {line:1,env:{x:10,y:15},msg:'x → 10, y → 15'},
+    {line:2,env:{x:20,y:15},msg:'x → 20 (shadows old x), y → 15'},
+    {line:3,env:{x:20,y:15,z:35},msg:'x → 20, y → 15, z → 35'}
+  ];
+  let stepIdx=0,timer=null;
+  function syncUI(){
+    for(let i=0;i<4;i++){
+      const el=document.getElementById('s5c'+i);
+      el.className=i===steps[Math.min(stepIdx,steps.length-1)].line?'line active':'line';
+    }
+    if(stepIdx>0){
+      const s=steps[stepIdx-1];
+      document.getElementById('s5Env').innerHTML='<div style="color:#22c55e">Environment: { '+s.msg+' }</div>';
+    } else {
+      document.getElementById('s5Env').innerHTML='<div style="color:#64748b">Environment: { }</div>';
+    }
+  }
+  window.s5Step=function(){if(stepIdx>=steps.length)return;stepIdx++;syncUI()};
+  window.s5Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return}s5Step()},1000)};
+  window.s5Reset=function(){if(timer){clearInterval(timer);timer=null}stepIdx=0;syncUI()};
+  syncUI();
+})();
+</script>
+
+<!-- ==================== s6: FUNCTIONS ==================== -->
+<div class="slide" id="s6">
+  <h1>Functions</h1>
+  <p class="subtitle">Functions are values — define them, pass them, return them</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line"><span style="color:#64748b">(* Named function *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> <span style="color:#38bdf8">double</span> x = x * 2</div>
+<div class="line"></div>
+<div class="line"><span style="color:#64748b">(* Anonymous function (lambda) *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> <span style="color:#38bdf8">double</span> = <span style="color:#c084fc">fun</span> x -> x * 2</div>
+<div class="line"></div>
+<div class="line"><span style="color:#64748b">(* Multi-argument = curried *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> <span style="color:#38bdf8">add</span> x y = x + y</div>
+<div class="line"><span style="color:#64748b">(* Same as: let add = fun x -> fun y -> x + y *)</span></div>
+<div class="line"></div>
+<div class="line"><span style="color:#64748b">(* Partial application *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> <span style="color:#38bdf8">add5</span> = add 5</div>
+<div class="line"><span style="color:#64748b">(* add5 10 = 15 *)</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>All functions take exactly ONE argument</h3>
+        <p><code>let add x y = x + y</code> is actually syntactic sugar for a function that takes x and returns <b>another function</b> that takes y.</p>
+        <p style="margin-top:.3rem">Type: <code>int -> int -> int</code> = <code>int -> (int -> int)</code></p>
+      </div>
+      <div class="analogy">
+        <h3>Currying</h3>
+        <p>Named after Haskell Curry. A 2-argument function is really a 1-argument function that returns a 1-argument function. This enables <b>partial application</b>.</p>
+      </div>
+      <div class="warning">
+        <h3>No parentheses needed!</h3>
+        <p><code>f x y</code> not <code>f(x, y)</code>. Parentheses are only for grouping: <code>f (g x)</code> means "apply g to x, then apply f to the result."</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s7: TYPE INFERENCE ==================== -->
+<div class="slide" id="s7">
+  <h1>Type Inference</h1>
+  <p class="subtitle">OCaml figures out the types — you rarely write them</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS7" width="520" height="300" style="width:100%;background:rgba(0,0,0,.2);border-radius:12px"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <button class="btn btn-sm" onclick="s7Step()">Step</button>
+        <button class="btn btn-sm" onclick="s7Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Hindley-Milner Algorithm</h3>
+        <p>OCaml uses <b>constraint-based inference</b>. It looks at how values are used and deduces their types. No annotations needed!</p>
+      </div>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line"><span style="color:#64748b">(* OCaml infers all of these *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> x = 42          <span style="color:#64748b">(* int *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> f x = x + 1     <span style="color:#64748b">(* int -> int *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> g x y = x ^ y   <span style="color:#64748b">(* string -> string -> string *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> id x = x         <span style="color:#64748b">(* 'a -> 'a  (polymorphic!) *)</span></div>
+        </div>
+      </div>
+      <div class="analogy">
+        <h3>'a = type variable (polymorphic)</h3>
+        <p><code>'a -> 'a</code> means "takes any type, returns the same type." Like Java generics but inferred automatically.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS7');
+  const ctx=canvas.getContext('2d');
+  const steps=[
+    {code:'let add x y = x + y',clues:[],inferred:'',msg:'Start: what is the type of add?'},
+    {code:'let add x y = x + y',clues:['(+) works on int'],inferred:'... -> ... -> int',msg:'The result of + is int, so return type is int'},
+    {code:'let add x y = x + y',clues:['(+) works on int','x is used with +'],inferred:'int -> ... -> int',msg:'x is an argument to (+), so x : int'},
+    {code:'let add x y = x + y',clues:['(+) works on int','x is used with +','y is used with +'],inferred:'int -> int -> int',msg:'y is also an argument to (+), so y : int. Done!'}
+  ];
+  let stepIdx=0,timer=null;
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    const s=steps[Math.min(stepIdx,steps.length-1)];
+    // Code display
+    ctx.fillStyle='#1e293b';ctx.beginPath();ctx.roundRect(20,15,480,45,8);ctx.fill();
+    ctx.font='16px monospace';ctx.textAlign='left';ctx.fillStyle='#a5f3fc';
+    ctx.fillText(s.code,35,43);
+    // Clues
+    ctx.fillStyle='#94a3b8';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+    ctx.fillText('Clues gathered:',30,85);
+    s.clues.forEach((c,i)=>{
+      ctx.fillStyle='#22c55e';ctx.font='12px sans-serif';
+      ctx.fillText('✓ '+c,45,105+i*22);
+    });
+    // Inferred type
+    if(s.inferred){
+      ctx.fillStyle='#1e293b';ctx.beginPath();ctx.roundRect(20,190,480,45,8);ctx.fill();
+      ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#38bdf8';ctx.font='bold 14px monospace';ctx.textAlign='center';
+      ctx.fillText('add : '+s.inferred,260,218);
+    }
+    // Message
+    ctx.fillStyle='#f59e0b';ctx.font='13px sans-serif';ctx.textAlign='center';
+    ctx.fillText(s.msg,260,270);
+  }
+  window.s7Step=function(){if(stepIdx>=steps.length)return;stepIdx++;draw()};
+  window.s7Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return}s7Step()},1200)};
+  window.s7Reset=function(){if(timer){clearInterval(timer);timer=null}stepIdx=0;draw()};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s7').classList.contains('active'))draw()});
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s8: IF-THEN-ELSE ==================== -->
+<div class="slide" id="s8">
+  <h1>If-Then-Else as Expressions</h1>
+  <p class="subtitle">In OCaml, if-then-else RETURNS a value — it's an expression, not a statement</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+<div class="line"><span style="color:#64748b">(* This RETURNS a value *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> abs_val x =</div>
+<div class="line">  <span style="color:#c084fc">if</span> x >= 0 <span style="color:#c084fc">then</span> x</div>
+<div class="line">  <span style="color:#c084fc">else</span> -x</div>
+<div class="line"></div>
+<div class="line"><span style="color:#64748b">(* Can be used anywhere an expression goes *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> msg = "value is " ^ (<span style="color:#c084fc">if</span> x > 0 <span style="color:#c084fc">then</span> "positive" <span style="color:#c084fc">else</span> "non-positive")</div>
+<div class="line"></div>
+<div class="line"><span style="color:#64748b">(* Both branches MUST have the same type *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> bad x =</div>
+<div class="line">  <span style="color:#c084fc">if</span> x > 0 <span style="color:#c084fc">then</span> "yes"</div>
+<div class="line">  <span style="color:#c084fc">else</span> 42         <span style="color:#ef4444">(* TYPE ERROR! *)</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Everything is an expression</h3>
+        <p>Unlike Java/Python where <code>if</code> is a statement, in OCaml it's an <b>expression that produces a value</b>. Like the ternary <code>? :</code> in Java, but this is the ONLY if.</p>
+      </div>
+      <div class="warning">
+        <h3>Both branches must match</h3>
+        <p>If the <code>then</code> branch is <code>string</code>, the <code>else</code> branch must also be <code>string</code>. OCaml enforces this at compile time.</p>
+      </div>
+      <div class="analogy">
+        <h3>Compare to Java</h3>
+        <div class="code-block" style="font-size:.8em">
+          <div class="code-content">
+<div class="line"><span style="color:#64748b">// Java: statement</span></div>
+<div class="line"><span style="color:#c084fc">if</span> (x > 0) result = "yes";</div>
+<div class="line"><span style="color:#c084fc">else</span> result = "no";</div>
+<div class="line"></div>
+<div class="line"><span style="color:#64748b">(* OCaml: expression *)</span></div>
+<div class="line"><span style="color:#c084fc">let</span> result = <span style="color:#c084fc">if</span> x > 0 <span style="color:#c084fc">then</span> "yes" <span style="color:#c084fc">else</span> "no"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 9: RECURSION ==================== -->
+<div class="slide" id="s9">
+  <h2>Recursion — Loops Don't Exist</h2>
+  <p class="subtitle">In functional programming, recursion replaces iteration entirely</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>Factorial Step-Through</h3>
+      <canvas id="cS9" width="480" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s9Step()">Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+        <select id="s9func" onchange="s9Reset()" style="padding:.3rem .5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:.82rem;">
+          <option value="fact">factorial 5</option>
+          <option value="fib">fibonacci 5</option>
+          <option value="sum">sum_list [1;2;3;4]</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s9code"></div>
+      </div>
+      <div style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.78rem;max-height:140px;overflow-y:auto;" id="s9Log">
+        <span style="color:#94a3b8;">Click Step to trace the recursion...</span>
+      </div>
+      <div class="key-idea" style="margin-top:.6rem;">
+        <strong>Key Pattern:</strong> Every recursive function needs a <strong>base case</strong> and a <strong>recursive case</strong> that moves toward it.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  const funcs = {
+    fact: {
+      code: ['let rec factorial n =','  if n <= 1 then 1','  else n * factorial (n - 1)','','(* factorial 5 *)'],
+      name: 'factorial', arg: 5,
+      genSteps: function() {
+        const steps = [];
+        for (let i = 5; i >= 1; i--) {
+          steps.push({type:'call', n:i, depth:5-i, desc:`factorial ${i} called`});
+        }
+        steps.push({type:'base', n:1, depth:4, desc:'Base case: factorial 1 = 1', val:1});
+        let val = 1;
+        for (let i = 2; i <= 5; i++) {
+          val *= i;
+          steps.push({type:'return', n:i, depth:5-i, desc:`factorial ${i} = ${i} × ${val/i} = ${val}`, val:val});
+        }
+        return steps;
+      }
+    },
+    fib: {
+      code: ['let rec fib n =','  if n <= 1 then n','  else fib (n-1) + fib (n-2)','','(* fib 5 *)'],
+      name: 'fib', arg: 5,
+      genSteps: function() {
+        const steps = [];
+        const calls = [];
+        function trace(n, d) {
+          calls.push({type:'call', n, depth:d, desc:`fib ${n} called`});
+          if (n <= 1) { calls.push({type:'base', n, depth:d, desc:`Base: fib ${n} = ${n}`, val:n}); return n; }
+          const a = trace(n-1, d+1);
+          const b = trace(n-2, d+1);
+          const r = a+b;
+          calls.push({type:'return', n, depth:d, desc:`fib ${n} = ${a} + ${b} = ${r}`, val:r});
+          return r;
+        }
+        trace(5, 0);
+        return calls;
+      }
+    },
+    sum: {
+      code: ['let rec sum_list lst =','  match lst with','  | [] -> 0','  | h :: t -> h + sum_list t','','(* sum_list [1;2;3;4] *)'],
+      name: 'sum_list', arg: '[1;2;3;4]',
+      genSteps: function() {
+        const items = [1,2,3,4];
+        const steps = [];
+        for (let i = 0; i < items.length; i++) {
+          const rest = items.slice(i).join(';');
+          steps.push({type:'call', n:rest, depth:i, desc:`sum_list [${rest}] — h=${items[i]}, t=[${items.slice(i+1).join(';')}]`});
+        }
+        steps.push({type:'base', n:'[]', depth:4, desc:'Base case: sum_list [] = 0', val:0});
+        let val = 0;
+        for (let i = items.length-1; i >= 0; i--) {
+          val += items[i];
+          steps.push({type:'return', n:items.slice(i).join(';'), depth:i, desc:`sum_list [${items.slice(i).join(';')}] = ${items[i]} + ${val-items[i]} = ${val}`, val});
+        }
+        return steps;
+      }
+    }
+  };
+  let steps, stepIdx, timer;
+  function getFunc() { return funcs[document.getElementById('s9func').value]; }
+  function drawCode(f) {
+    const el = document.getElementById('s9code');
+    el.innerHTML = f.code.map((ln,i) => {
+      const highlight = (stepIdx > 0 && steps[stepIdx-1]) ? getHighlight(steps[stepIdx-1], i, f) : false;
+      return `<div class="line${highlight?' active':''}">${ln || ' '}</div>`;
+    }).join('');
+  }
+  function getHighlight(step, lineIdx, f) {
+    if (f === funcs.fact) {
+      if (step.type === 'base' && lineIdx === 1) return true;
+      if (step.type === 'call' && lineIdx === 2) return true;
+      if (step.type === 'return' && lineIdx === 2) return true;
+    } else if (f === funcs.fib) {
+      if (step.type === 'base' && lineIdx === 1) return true;
+      if ((step.type === 'call' || step.type === 'return') && lineIdx === 2) return true;
+    } else {
+      if (step.type === 'base' && lineIdx === 2) return true;
+      if (step.type === 'call' && lineIdx === 3) return true;
+      if (step.type === 'return' && lineIdx === 3) return true;
+    }
+    return false;
+  }
+  function drawStack() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Call Stack', canvas.width/2, 20);
+    const active = [];
+    for (let i = 0; i < stepIdx && i < steps.length; i++) {
+      const s = steps[i];
+      if (s.type === 'call') active.push({...s, returned: false});
+      else if (s.type === 'base') { if (active.length) active[active.length-1].returned = true; active[active.length-1].val = s.val; }
+      else if (s.type === 'return') {
+        for (let j = active.length-1; j >= 0; j--) {
+          if (!active[j].returned) { active[j].returned = true; active[j].val = s.val; break; }
+        }
+      }
+    }
+    const bw = 200, bh = 36, startY = 38;
+    active.forEach((frame, i) => {
+      const x = (canvas.width - bw)/2;
+      const y = startY + i * (bh + 4);
+      ctx.fillStyle = frame.returned ? 'rgba(34,197,94,0.2)' : 'rgba(99,102,241,0.2)';
+      ctx.strokeStyle = frame.returned ? '#22c55e' : '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(x, y, bw, bh, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = frame.returned ? '#86efac' : '#e2e8f0';
+      ctx.font = '13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      let label = `${getFunc().name} ${frame.n}`;
+      if (frame.returned) label += ` → ${frame.val}`;
+      ctx.fillText(label, x + bw/2, y + bh/2);
+    });
+  }
+  function init() {
+    const f = getFunc();
+    steps = f.genSteps();
+    stepIdx = 0; timer = null;
+    drawCode(f);
+    drawStack();
+    document.getElementById('s9Log').innerHTML = '<span style="color:#94a3b8;">Click Step to trace the recursion...</span>';
+  }
+  window.s9Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    stepIdx++;
+    drawStack();
+    drawCode(getFunc());
+    const log = document.getElementById('s9Log');
+    const color = s.type === 'call' ? '#818cf8' : s.type === 'base' ? '#f59e0b' : '#22c55e';
+    log.innerHTML += `<div style="color:${color}">→ ${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+  };
+  window.s9Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => { if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; } s9Step(); }, 600);
+  };
+  window.s9Reset = function() {
+    if (timer) clearInterval(timer); timer = null;
+    init();
+  };
+  const obs = new MutationObserver(() => { if (document.getElementById('s9').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s9'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: TUPLES & RECORDS ==================== -->
+<div class="slide" id="s10">
+  <h2>Tuples & Records</h2>
+  <p class="subtitle">Grouping related values together</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>Tuples — Fixed-size, Heterogeneous</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">(* Tuples: use * in types *)</div>
+<div class="line active">let pair = (3, "hello")        (* int * string *)</div>
+<div class="line">let triple = (1, 2.0, true)    (* int * float * bool *)</div>
+<div class="line"> </div>
+<div class="line">(* Destructure with pattern matching *)</div>
+<div class="line active">let (x, y) = pair              (* x=3, y="hello" *)</div>
+<div class="line">let (a, _, c) = triple         (* a=1, c=true, ignore 2nd *)</div>
+<div class="line"> </div>
+<div class="line">(* Function returning a tuple *)</div>
+<div class="line">let min_max lst =</div>
+<div class="line">  (List.fold_left min max_int lst,</div>
+<div class="line">   List.fold_left max min_int lst)</div>
+      </div></div>
+      <div class="analogy" style="margin-top:.5rem;">
+        <strong>Analogy:</strong> Tuples are like coordinates — <code>(3, 7)</code> is a point. The position matters, the name doesn't.
+      </div>
+    </div>
+    <div>
+      <h3>Records — Named Fields</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">(* Define a record type *)</div>
+<div class="line active">type student = {</div>
+<div class="line active">  name : string;</div>
+<div class="line active">  gpa  : float;</div>
+<div class="line active">  year : int</div>
+<div class="line active">}</div>
+<div class="line"> </div>
+<div class="line">(* Create a record *)</div>
+<div class="line">let s = { name = "Alice"; gpa = 3.8; year = 3 }</div>
+<div class="line"> </div>
+<div class="line">(* Access fields with dot notation *)</div>
+<div class="line">let n = s.name                 (* "Alice" *)</div>
+<div class="line"> </div>
+<div class="line">(* Functional update (copy with changes) *)</div>
+<div class="line active">let s2 = { s with year = 4 }   (* new record! *)</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Immutable by default:</strong> <code>{ s with year = 4 }</code> creates a <em>new</em> record — <code>s</code> is unchanged. This is how functional programming avoids side effects.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 11: LISTS ==================== -->
+<div class="slide" id="s11">
+  <h2>Lists — The Core Data Structure</h2>
+  <p class="subtitle">Singly-linked, immutable, homogeneous</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS11" width="480" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s11Show('build')">Build List</button>
+        <button class="btn btn-sm" onclick="s11Show('cons')">Cons (::)</button>
+        <button class="btn btn-sm" onclick="s11Show('match')">Pattern Match</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Show('share')">Sharing</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" id="s11code">
+<div class="line">(* Three ways to write the same list *)</div>
+<div class="line active">let a = [1; 2; 3]</div>
+<div class="line active">let b = 1 :: 2 :: 3 :: []</div>
+<div class="line active">let c = 1 :: (2 :: (3 :: []))</div>
+<div class="line"> </div>
+<div class="line">(* :: is "cons" — prepend O(1) *)</div>
+<div class="line">let d = 0 :: a   (* [0;1;2;3] *)</div>
+<div class="line"> </div>
+<div class="line">(* Pattern matching on lists *)</div>
+<div class="line">let head_or_zero lst =</div>
+<div class="line">  match lst with</div>
+<div class="line">  | [] -> 0</div>
+<div class="line">  | h :: _ -> h</div>
+      </div></div>
+      <div id="s11desc" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.82rem;color:#94a3b8;">
+        Click a button to see the visualization
+      </div>
+      <div class="warning" style="margin-top:.5rem;">
+        <strong>No random access!</strong> Lists are linked — accessing the nth element is O(n). Use arrays if you need index-based access.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+  let mode = 'build';
+  function drawNode(x, y, val, color) {
+    ctx.fillStyle = color || '#6366f1';
+    ctx.beginPath(); ctx.roundRect(x-25, y-18, 50, 36, 8); ctx.fill();
+    ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x-25, y-18, 50, 36, 8); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(val, x, y);
+  }
+  function drawArrow(x1, y1, x2, y2, color) {
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    const angle = Math.atan2(y2-y1, x2-x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - 10*Math.cos(angle-0.4), y2 - 10*Math.sin(angle-0.4));
+    ctx.lineTo(x2 - 10*Math.cos(angle+0.4), y2 - 10*Math.sin(angle+0.4));
+    ctx.closePath(); ctx.fillStyle = color || '#475569'; ctx.fill();
+  }
+  function drawNil(x, y) {
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x-8, y-8); ctx.lineTo(x+8, y+8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+8, y-8); ctx.lineTo(x-8, y+8); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('[]', x, y+22);
+  }
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const desc = document.getElementById('s11desc');
+    if (mode === 'build') {
+      ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('[1; 2; 3] is sugar for:', 20, 30);
+      ctx.fillText('1 :: 2 :: 3 :: []', 20, 50);
+      const y = 110, gap = 90;
+      drawNode(80, y, '1', '#6366f1');
+      drawArrow(105, y, 145, y, '#818cf8');
+      drawNode(170, y, '2', '#6366f1');
+      drawArrow(195, y, 235, y, '#818cf8');
+      drawNode(260, y, '3', '#6366f1');
+      drawArrow(285, y, 325, y, '#818cf8');
+      drawNil(340, y);
+      ctx.fillStyle = '#f59e0b'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('head', 80, y+35);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('tail = [2;3]', 215, y+35);
+      // Memory layout below
+      ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('Memory: each node is (value, pointer)', 20, 180);
+      for (let i = 0; i < 3; i++) {
+        const x = 50 + i * 140, ny = 220;
+        ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(x, ny, 110, 40, 6); ctx.fill();
+        ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(x, ny, 110, 40, 6); ctx.stroke();
+        ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.moveTo(x+55, ny); ctx.lineTo(x+55, ny+40); ctx.stroke();
+        ctx.fillStyle = '#e2e8f0'; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(i+1+'', x+28, ny+24);
+        if (i < 2) {
+          ctx.fillStyle = '#818cf8'; ctx.fillText('→', x+83, ny+24);
+          drawArrow(x+110, ny+20, x+140, ny+20, '#475569');
+        } else {
+          ctx.fillStyle = '#ef4444'; ctx.fillText('∅', x+83, ny+24);
+        }
+      }
+      desc.innerHTML = '<span style="color:#38bdf8">[1; 2; 3]</span> is a singly-linked list. Each cell holds a value and a pointer to the next cell.';
+    } else if (mode === 'cons') {
+      ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('let a = [1; 2; 3]', 20, 30);
+      ctx.fillText('let d = 0 :: a', 20, 50);
+      // Original list
+      const y1 = 110;
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('a', 140, y1-30);
+      drawNode(140, y1, '1'); drawArrow(165, y1, 205, y1); drawNode(230, y1, '2'); drawArrow(255, y1, 295, y1); drawNode(320, y1, '3'); drawArrow(345, y1, 385, y1); drawNil(400, y1);
+      // New cons
+      drawNode(50, y1+70, '0', '#22c55e');
+      drawArrow(75, y1+70, 117, y1+18, '#22c55e');
+      ctx.fillStyle = '#22c55e'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('d', 50, y1+70-30);
+      ctx.fillText('O(1)!', 80, y1+52);
+      // Emphasis
+      ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('0 :: a  reuses a — no copying!', 20, 260);
+      desc.innerHTML = '<span style="color:#22c55e">Cons (::)</span> prepends in O(1) by creating one new node pointing to the existing list. The original list <code>a</code> is unchanged.';
+    } else if (mode === 'match') {
+      ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('match lst with', 20, 30);
+      ctx.fillText('| [] -> ...          (* empty *)', 20, 55);
+      ctx.fillText('| h :: t -> ...      (* head :: tail *)', 20, 80);
+      const y = 150;
+      drawNode(80, y, '1', '#f59e0b');
+      drawArrow(105, y, 145, y); drawNode(170, y, '2'); drawArrow(195, y, 235, y); drawNode(260, y, '3'); drawArrow(285, y, 325, y); drawNil(340, y);
+      // Labels
+      ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('h', 80, y-30);
+      ctx.strokeStyle = '#818cf8'; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(142, y-25, 195, 50, 8); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#818cf8'; ctx.font = 'bold 14px monospace';
+      ctx.fillText('t', 240, y-30);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('h binds to 1  (the head)', 20, y+60);
+      ctx.fillText('t binds to [2; 3]  (the tail)', 20, y+82);
+      desc.innerHTML = '<span style="color:#f59e0b">Pattern matching</span> on <code>h :: t</code> destructures the list into its head element and remaining tail.';
+    } else if (mode === 'share') {
+      ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('Structural Sharing — Why Immutability Works', 20, 25);
+      ctx.fillText('let a = [1; 2; 3]', 20, 55);
+      ctx.fillText('let b = 0 :: a', 20, 75);
+      ctx.fillText('let c = 9 :: a', 20, 95);
+      // Shared tail
+      const sx = 220, sy = 200;
+      drawNode(sx, sy, '1'); drawArrow(sx+25, sy, sx+65, sy); drawNode(sx+90, sy, '2'); drawArrow(sx+115, sy, sx+155, sy); drawNode(sx+180, sy, '3'); drawArrow(sx+205, sy, sx+245, sy); drawNil(sx+260, sy);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('a', sx+90, sy+35);
+      // b branch
+      drawNode(100, 150, '0', '#22c55e');
+      drawArrow(125, 155, sx-28, sy-5, '#22c55e');
+      ctx.fillStyle = '#22c55e'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('b', 100, 133);
+      // c branch
+      drawNode(100, 250, '9', '#f472b6');
+      drawArrow(125, 245, sx-28, sy+5, '#f472b6');
+      ctx.fillStyle = '#f472b6'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('c', 100, 273);
+      desc.innerHTML = '<span style="color:#a78bfa">Structural sharing:</span> b and c both point to the same list a in memory. No data is copied. This makes immutable lists memory-efficient.';
+    }
+  }
+  window.s11Show = function(m) { mode = m; draw(); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s11').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s11'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: CHALLENGE A ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A — Predict the Output</h2>
+  <p class="subtitle">Test your understanding of recursion and lists</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <h3>What does this evaluate to?</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">let rec mystery lst =</div>
+<div class="line">  match lst with</div>
+<div class="line">  | [] -> []</div>
+<div class="line">  | h :: t -> mystery t @ [h]</div>
+<div class="line"> </div>
+<div class="line">let result = mystery [1; 2; 3; 4]</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">Your answer:</label><br>
+        <input type="text" id="sCAinput" placeholder="e.g., [4; 3; 2; 1]" style="width:100%;padding:.5rem .7rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:.95rem;margin-top:.3rem;">
+        <div style="display:flex;gap:.5rem;margin-top:.6rem;">
+          <button class="btn" onclick="sCACheck()">Check Answer</button>
+          <button class="btn btn-secondary" onclick="sCATrace()">Step Through</button>
+        </div>
+      </div>
+      <div id="sCAfeedback" style="margin-top:.6rem;"></div>
+    </div>
+    <div>
+      <h3>Trace</h3>
+      <div id="sCAlog" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:.8rem;font-family:monospace;font-size:.82rem;min-height:200px;max-height:300px;overflow-y:auto;color:#94a3b8;">
+        Click "Step Through" to see the trace...
+      </div>
+      <div class="key-idea" style="margin-top:.6rem;">
+        <strong>Hint:</strong> The <code>@</code> operator appends two lists. What does placing <code>h</code> at the end of the recursive result do?
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const steps = [
+    {desc:'mystery [1;2;3;4]', detail:'h=1, t=[2;3;4] → mystery [2;3;4] @ [1]'},
+    {desc:'  mystery [2;3;4]', detail:'h=2, t=[3;4] → mystery [3;4] @ [2]'},
+    {desc:'    mystery [3;4]', detail:'h=3, t=[4] → mystery [4] @ [3]'},
+    {desc:'      mystery [4]', detail:'h=4, t=[] → mystery [] @ [4]'},
+    {desc:'        mystery []', detail:'Base case → []'},
+    {desc:'      = [] @ [4]', detail:'= [4]'},
+    {desc:'    = [4] @ [3]', detail:'= [4;3]'},
+    {desc:'  = [4;3] @ [2]', detail:'= [4;3;2]'},
+    {desc:'= [4;3;2] @ [1]', detail:'= [4;3;2;1]'},
+  ];
+  let traceIdx = 0;
+  window.sCACheck = function() {
+    const input = document.getElementById('sCAinput').value.trim().replace(/\s+/g,'');
+    const fb = document.getElementById('sCAfeedback');
+    if (input === '[4;3;2;1]' || input === '[4,3,2,1]' || input === '[4;3;2;1]') {
+      fb.innerHTML = '<div style="color:#22c55e;font-weight:600;">✓ Correct! <code>mystery</code> reverses the list by appending each head to the end of the recursive result.</div>';
+    } else {
+      fb.innerHTML = '<div style="color:#ef4444;font-weight:600;">✗ Not quite. Try tracing through step by step — what does @ [h] do to each element?</div>';
+    }
+  };
+  window.sCATrace = function() {
+    const log = document.getElementById('sCAlog');
+    if (traceIdx === 0) log.innerHTML = '';
+    if (traceIdx >= steps.length) { traceIdx = 0; log.innerHTML = ''; return; }
+    const s = steps[traceIdx];
+    const color = traceIdx < 5 ? '#818cf8' : '#22c55e';
+    log.innerHTML += `<div style="color:${color}">${s.desc}</div><div style="color:#94a3b8;margin-left:1rem;margin-bottom:.3rem;font-size:.78rem;">${s.detail}</div>`;
+    log.scrollTop = log.scrollHeight;
+    traceIdx++;
+  };
+  const obs = new MutationObserver(() => { if (document.getElementById('sCA').classList.contains('active')) { traceIdx = 0; }});
+  obs.observe(document.getElementById('sCA'), {attributes:true, attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 12: PATTERN MATCHING ==================== -->
+<div class="slide" id="s12">
+  <h2>Pattern Matching — OCaml's Superpower</h2>
+  <p class="subtitle">Destructure data and branch in one elegant construct</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>Interactive Pattern Matcher</h3>
+      <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s12Show('basic')">Basic</button>
+        <button class="btn btn-sm" onclick="s12Show('tuple')">Tuples</button>
+        <button class="btn btn-sm" onclick="s12Show('nested')">Nested</button>
+        <button class="btn btn-sm" onclick="s12Show('guard')">Guards</button>
+      </div>
+      <div class="code-block"><div class="code-content" id="s12code"></div></div>
+      <div id="s12desc" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.82rem;color:#94a3b8;"></div>
+    </div>
+    <div>
+      <canvas id="cS12" width="460" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Exhaustiveness:</strong> OCaml checks that your patterns cover ALL cases at compile time. Missing a case? You get a warning — not a runtime crash.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+  const examples = {
+    basic: {
+      code: [
+        'let describe_number n =',
+        '  match n with',
+        '  | 0 -> "zero"',
+        '  | 1 -> "one"',
+        '  | 2 -> "two"',
+        '  | _ -> "many"',
+        '',
+        '(* _ is the wildcard — matches anything *)'
+      ],
+      desc: '<span style="color:#38bdf8">Basic matching</span> compares a value against literal patterns. The <code>_</code> wildcard is the catch-all.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('match n with ...', canvas.width/2, 25);
+        const vals = [{v:'0',arm:'"zero"',c:'#6366f1'},{v:'1',arm:'"one"',c:'#8b5cf6'},{v:'2',arm:'"two"',c:'#a78bfa'},{v:'_',arm:'"many"',c:'#f59e0b'}];
+        // Input node
+        ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(180, 50, 100, 36, 8); ctx.fill();
+        ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(180, 50, 100, 36, 8); ctx.stroke();
+        ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('n', 230, 72);
+        vals.forEach((item, i) => {
+          const x = 40 + i * 105, y = 140;
+          // Arrow from input
+          ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(230, 86); ctx.lineTo(x+40, y); ctx.stroke();
+          // Pattern box
+          ctx.fillStyle = item.c; ctx.beginPath(); ctx.roundRect(x, y, 80, 32, 6); ctx.fill();
+          ctx.fillStyle = '#fff'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(item.v, x+40, y+20);
+          // Result
+          ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(x-5, y+55, 90, 28, 6); ctx.fill();
+          ctx.fillStyle = '#0f172a'; ctx.font = '12px monospace';
+          ctx.fillText(item.arm, x+40, y+73);
+          // Arrow down
+          ctx.strokeStyle = item.c; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(x+40, y+32); ctx.lineTo(x+40, y+55); ctx.stroke();
+        });
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Patterns tried top to bottom', canvas.width/2, 270);
+        ctx.fillText('First match wins!', canvas.width/2, 290);
+      }
+    },
+    tuple: {
+      code: [
+        'let classify_point (x, y) =',
+        '  match (x, y) with',
+        '  | (0, 0) -> "origin"',
+        '  | (x, 0) -> "x-axis"',
+        '  | (0, y) -> "y-axis"',
+        '  | _      -> "other"'
+      ],
+      desc: '<span style="color:#38bdf8">Tuple patterns</span> destructure multiple values simultaneously. Variables in patterns capture the matched value.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Matching (x, y) tuples', canvas.width/2, 25);
+        // Coordinate grid
+        const cx = 230, cy = 180, scale = 30;
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+        for (let i = -4; i <= 4; i++) {
+          ctx.beginPath(); ctx.moveTo(cx + i*scale, cy - 4*scale); ctx.lineTo(cx + i*scale, cy + 4*scale); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cx - 4*scale, cy + i*scale); ctx.lineTo(cx + 4*scale, cy + i*scale); ctx.stroke();
+        }
+        // Axes
+        ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx - 4*scale, cy); ctx.lineTo(cx + 4*scale, cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, cy - 4*scale); ctx.lineTo(cx, cy + 4*scale); ctx.stroke();
+        // Labels
+        ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI*2); ctx.fillStyle = '#f59e0b'; ctx.fill();
+        ctx.fillStyle = '#f59e0b'; ctx.fillText('"origin"', cx, cy-15);
+        ctx.fillStyle = '#22c55e'; ctx.fillText('"x-axis"', cx + 3.5*scale, cy-10);
+        ctx.fillStyle = '#a78bfa'; ctx.fillText('"y-axis"', cx+35, cy - 3.5*scale);
+        ctx.fillStyle = '#94a3b8'; ctx.fillText('"other"', cx + 2.5*scale, cy - 2.5*scale);
+      }
+    },
+    nested: {
+      code: [
+        'let describe_list lst =',
+        '  match lst with',
+        '  | []         -> "empty"',
+        '  | [x]        -> "singleton: " ^ string_of_int x',
+        '  | [x; y]     -> "pair"',
+        '  | x :: y :: _ -> "long, starts with "',
+        '                   ^ string_of_int x'
+      ],
+      desc: '<span style="color:#38bdf8">Nested patterns</span> match on list structure. <code>[x]</code> matches exactly one element, <code>x :: y :: _</code> matches two or more.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('List patterns match structure', canvas.width/2, 25);
+        const cases = [
+          {pattern: '[]', example: '[ ]', result: '"empty"', color: '#ef4444'},
+          {pattern: '[x]', example: '[5]', result: '"singleton: 5"', color: '#f59e0b'},
+          {pattern: '[x;y]', example: '[3;7]', result: '"pair"', color: '#22c55e'},
+          {pattern: 'x::y::_', example: '[1;2;3;...]', result: '"long..."', color: '#6366f1'},
+        ];
+        cases.forEach((c, i) => {
+          const y = 55 + i * 70;
+          ctx.fillStyle = c.color; ctx.globalAlpha = 0.15;
+          ctx.beginPath(); ctx.roundRect(20, y, canvas.width-40, 55, 8); ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = c.color; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(20, y, canvas.width-40, 55, 8); ctx.stroke();
+          ctx.fillStyle = c.color; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'left';
+          ctx.fillText(c.pattern, 35, y+22);
+          ctx.fillStyle = '#94a3b8'; ctx.font = '13px monospace';
+          ctx.fillText(c.example, 170, y+22);
+          ctx.fillStyle = '#22c55e'; ctx.font = '13px monospace'; ctx.textAlign = 'right';
+          ctx.fillText(c.result, canvas.width-35, y+22);
+          ctx.fillStyle = '#475569'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+          const notes = ['Matches empty list','Matches list with exactly 1 element','Matches list with exactly 2 elements','Matches list with 2+ elements'];
+          ctx.fillText(notes[i], 35, y+42);
+        });
+      }
+    },
+    guard: {
+      code: [
+        'let grade score =',
+        '  match score with',
+        '  | s when s >= 90 -> "A"',
+        '  | s when s >= 80 -> "B"',
+        '  | s when s >= 70 -> "C"',
+        '  | s when s >= 60 -> "D"',
+        '  | _ -> "F"',
+        '',
+        '(* when adds extra conditions *)'
+      ],
+      desc: '<span style="color:#38bdf8">Guards</span> (<code>when</code>) add boolean conditions to patterns. The pattern matches only if the guard is also true.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Guards filter matches with conditions', canvas.width/2, 25);
+        const ranges = [
+          {label:'A', min:90, max:100, color:'#22c55e'},
+          {label:'B', min:80, max:89, color:'#38bdf8'},
+          {label:'C', min:70, max:79, color:'#f59e0b'},
+          {label:'D', min:60, max:69, color:'#f97316'},
+          {label:'F', min:0, max:59, color:'#ef4444'},
+        ];
+        const barY = 80, barH = 40, totalW = canvas.width - 60;
+        ranges.forEach((r) => {
+          const x = 30 + (r.min / 100) * totalW;
+          const w = ((r.max - r.min + 1) / 100) * totalW;
+          ctx.fillStyle = r.color; ctx.globalAlpha = 0.3;
+          ctx.fillRect(x, barY, w, barH);
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = r.color; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(r.label, x + w/2, barY + 26);
+          ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace';
+          ctx.fillText(`${r.min}-${r.max}`, x + w/2, barY + barH + 14);
+        });
+        // Decision tree
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Decision flow:', canvas.width/2, 160);
+        const decisions = ['s≥90?','s≥80?','s≥70?','s≥60?','else'];
+        const results = ['A','B','C','D','F'];
+        const colors = ['#22c55e','#38bdf8','#f59e0b','#f97316','#ef4444'];
+        decisions.forEach((d, i) => {
+          const x = 40 + i * 85, y = 185;
+          ctx.fillStyle = colors[i]; ctx.globalAlpha = 0.2;
+          ctx.beginPath(); ctx.roundRect(x, y, 75, 50, 6); ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = '#e2e8f0'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(d, x+37, y+20);
+          ctx.fillStyle = colors[i]; ctx.font = 'bold 14px monospace';
+          ctx.fillText(results[i], x+37, y+40);
+          if (i < 4) {
+            ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(x+75, y+25); ctx.lineTo(x+85, y+25); ctx.stroke();
+            ctx.fillStyle = '#ef4444'; ctx.font = '9px monospace';
+            ctx.fillText('no', x+80, y+18);
+          }
+        });
+      }
+    }
+  };
+  let current = 'basic';
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const ex = examples[current];
+    document.getElementById('s12code').innerHTML = ex.code.map(ln => `<div class="line">${ln || ' '}</div>`).join('');
+    document.getElementById('s12desc').innerHTML = ex.desc;
+    ex.draw();
+  }
+  window.s12Show = function(m) { current = m; draw(); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s12').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s12'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: ALGEBRAIC DATA TYPES ==================== -->
+<div class="slide" id="s13">
+  <h2>Algebraic Data Types (Variants)</h2>
+  <p class="subtitle">Define your own types with multiple cases — OCaml's killer feature</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">(* Enumeration variant *)</div>
+<div class="line active">type color = Red | Green | Blue</div>
+<div class="line"> </div>
+<div class="line">(* Variant with data *)</div>
+<div class="line active">type shape =</div>
+<div class="line active">  | Circle of float</div>
+<div class="line active">  | Rect of float * float</div>
+<div class="line active">  | Triangle of float * float * float</div>
+<div class="line"> </div>
+<div class="line">(* Pattern match to handle each case *)</div>
+<div class="line">let area s =</div>
+<div class="line">  match s with</div>
+<div class="line">  | Circle r -> Float.pi *. r *. r</div>
+<div class="line">  | Rect (w,h) -> w *. h</div>
+<div class="line">  | Triangle (a,b,c) -></div>
+<div class="line">      let s = (a+.b+.c)/.2. in</div>
+<div class="line">      sqrt(s*.(s-.a)*.(s-.b)*.(s-.c))</div>
+      </div></div>
+      <div class="analogy" style="margin-top:.5rem;">
+        <strong>Analogy:</strong> Variants are tagged unions — like a package that says "I'm a Circle with radius 5" or "I'm a Rect with width 3, height 4". The tag tells you which case it is, and the data rides along.
+      </div>
+    </div>
+    <div>
+      <canvas id="cS13" width="460" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s13Draw('circle')">Circle 5.0</button>
+        <button class="btn btn-sm" onclick="s13Draw('rect')">Rect (3,4)</button>
+        <button class="btn btn-sm" onclick="s13Draw('tri')">Triangle (3,4,5)</button>
+      </div>
+      <div id="s13result" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.85rem;color:#22c55e;">
+        Click a shape to see the area calculation
+      </div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Why this matters:</strong> If you add a new variant case (e.g., <code>Pentagon</code>), the compiler will warn you about every <code>match</code> that doesn't handle it. No forgotten cases, no null pointer exceptions.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS13');
+  const ctx = canvas.getContext('2d');
+  function draw(shape) {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const cx = canvas.width/2, cy = 130;
+    const result = document.getElementById('s13result');
+    if (shape === 'circle') {
+      const r = 80;
+      ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = 'rgba(99,102,241,0.1)'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx+r, cy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('r=5.0', cx+r/2, cy-10);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace';
+      ctx.fillText('Circle of float', cx, cy+r+25);
+      result.innerHTML = 'Circle 5.0 → π × 5² = <span style="color:#f59e0b">' + (Math.PI*25).toFixed(4) + '</span>';
+    } else if (shape === 'rect') {
+      const w = 160, h = 120;
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.rect(cx-w/2, cy-h/2, w, h); ctx.stroke();
+      ctx.fillStyle = 'rgba(34,197,94,0.1)'; ctx.fillRect(cx-w/2, cy-h/2, w, h);
+      ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('w=3', cx, cy+h/2+20);
+      ctx.save(); ctx.translate(cx-w/2-15, cy); ctx.rotate(-Math.PI/2);
+      ctx.fillText('h=4', 0, 0);
+      ctx.restore();
+      ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('Rect of float * float', cx, cy+h/2+40);
+      result.innerHTML = 'Rect (3,4) → 3 × 4 = <span style="color:#f59e0b">12.0</span>';
+    } else {
+      ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy-80); ctx.lineTo(cx-90, cy+50); ctx.lineTo(cx+90, cy+50);
+      ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = 'rgba(167,139,250,0.1)';
+      ctx.beginPath(); ctx.moveTo(cx, cy-80); ctx.lineTo(cx-90, cy+50); ctx.lineTo(cx+90, cy+50); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('a=3', cx-55, cy-20);
+      ctx.fillText('b=4', cx+55, cy-20);
+      ctx.fillText('c=5', cx, cy+68);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace';
+      ctx.fillText('Triangle of float * float * float', cx, cy+90);
+      result.innerHTML = 'Triangle (3,4,5) → Heron\'s: s=6, √(6×3×2×1) = <span style="color:#f59e0b">6.0</span>';
+    }
+  }
+  window.s13Draw = function(s) { draw(s); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s13').classList.contains('active')) draw('circle'); });
+  obs.observe(document.getElementById('s13'), {attributes:true, attributeFilter:['class']});
+  draw('circle');
+})();
+</script>
+
+<!-- ==================== SLIDE sCB: CHALLENGE B ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B — Fix the Bug</h2>
+  <p class="subtitle">This function has a subtle pattern matching error</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <h3>Buggy Code</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">(* Should return the second element, or 0 *)</div>
+<div class="line">let second lst =</div>
+<div class="line">  match lst with</div>
+<div class="line">  | [] -> 0</div>
+<div class="line" style="background:rgba(239,68,68,0.15);border-left-color:#ef4444;">  | h :: t -> t</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">What's wrong?</label>
+        <select id="sCBanswer" style="width:100%;padding:.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:.9rem;margin-top:.3rem;">
+          <option value="">-- Select the bug --</option>
+          <option value="a">The wildcard _ should be used instead of h</option>
+          <option value="b">t is the tail (a list), not the second element</option>
+          <option value="c">The base case should return [] instead of 0</option>
+          <option value="d">match should use "with" not "in"</option>
+        </select>
+        <button class="btn" onclick="sCBCheck()" style="margin-top:.5rem;">Check</button>
+      </div>
+      <div id="sCBfeedback" style="margin-top:.6rem;"></div>
+    </div>
+    <div>
+      <h3>The Fix</h3>
+      <div id="sCBfix" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:1rem;font-family:monospace;font-size:.85rem;min-height:200px;color:#94a3b8;">
+        Select the bug and click Check to see the corrected code...
+      </div>
+      <div class="warning" style="margin-top:.6rem;">
+        <strong>Common trap:</strong> In <code>h :: t</code>, <code>h</code> is the first element (a value) but <code>t</code> is the rest of the list (still a list!). They have different types.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCBCheck = function() {
+    const ans = document.getElementById('sCBanswer').value;
+    const fb = document.getElementById('sCBfeedback');
+    const fix = document.getElementById('sCBfix');
+    if (ans === 'b') {
+      fb.innerHTML = '<div style="color:#22c55e;font-weight:600;">✓ Correct! <code>t</code> is the tail list, not a single element.</div>';
+      fix.innerHTML = `<div style="color:#22c55e;margin-bottom:.5rem;">✓ Fixed version:</div>
+<div class="code-block"><div class="code-content">
+<div class="line">let second lst =</div>
+<div class="line">  match lst with</div>
+<div class="line">  | [] -> 0</div>
+<div class="line">  | [_] -> 0  (* only one element *)</div>
+<div class="line active">  | _ :: x :: _ -> x  (* skip first, take second *)</div>
+</div></div>
+<div style="color:#94a3b8;margin-top:.5rem;font-size:.82rem;">
+<strong>Key insight:</strong> <code>_ :: x :: _</code> matches a list with at least 2 elements. The first <code>_</code> ignores the head, <code>x</code> captures the second element, and the trailing <code>_</code> ignores the rest.</div>`;
+    } else if (ans === '') {
+      fb.innerHTML = '<div style="color:#f59e0b;">Please select an option.</div>';
+    } else {
+      fb.innerHTML = '<div style="color:#ef4444;font-weight:600;">✗ Not quite. Think about what <code>h :: t</code> actually destructures into — what type is <code>t</code>?</div>';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 14: OPTION TYPE ==================== -->
+<div class="slide" id="s14">
+  <h2>The Option Type — No More Null</h2>
+  <p class="subtitle">OCaml's elegant solution to the "billion-dollar mistake"</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">(* Built-in variant type *)</div>
+<div class="line active">type 'a option = None | Some of 'a</div>
+<div class="line"> </div>
+<div class="line">(* Safe division — no exceptions! *)</div>
+<div class="line">let safe_div a b =</div>
+<div class="line">  if b = 0 then None</div>
+<div class="line">  else Some (a / b)</div>
+<div class="line"> </div>
+<div class="line">(* Must handle both cases *)</div>
+<div class="line">let result =</div>
+<div class="line">  match safe_div 10 3 with</div>
+<div class="line">  | None   -> "undefined"</div>
+<div class="line">  | Some v -> string_of_int v</div>
+      </div></div>
+      <div class="code-block" style="margin-top:.5rem;"><div class="code-content">
+<div class="line">(* Find in a list *)</div>
+<div class="line">let rec find_first pred lst =</div>
+<div class="line">  match lst with</div>
+<div class="line">  | [] -> None</div>
+<div class="line">  | h :: t -></div>
+<div class="line">      if pred h then Some h</div>
+<div class="line">      else find_first pred t</div>
+      </div></div>
+    </div>
+    <div>
+      <canvas id="cS14" width="460" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="key-idea" style="margin-top:.6rem;">
+        <strong>Why Option beats null:</strong> You <em>cannot</em> forget to check. The compiler forces you to handle <code>None</code>. In Java, you can call <code>.toString()</code> on null and get a runtime crash. In OCaml, that's a compile error.
+      </div>
+      <div class="warning" style="margin-top:.4rem;">
+        <strong>Rule:</strong> Never use exceptions for expected failures (missing keys, division by zero). Use <code>option</code> instead — it makes failure explicit in the type.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS14');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Option type visualization
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText("'a option", canvas.width/2, 25);
+    // None branch
+    const lx = 130, rx = 330, y = 80;
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(canvas.width/2, 35); ctx.lineTo(lx, y-15); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(canvas.width/2, 35); ctx.lineTo(rx, y-15); ctx.stroke();
+    // None box
+    ctx.fillStyle = 'rgba(239,68,68,0.15)'; ctx.beginPath(); ctx.roundRect(lx-55, y-15, 110, 45, 8); ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.beginPath(); ctx.roundRect(lx-55, y-15, 110, 45, 8); ctx.stroke();
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('None', lx, y+10);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+    ctx.fillText('No value', lx, y+38);
+    // Some box
+    ctx.fillStyle = 'rgba(34,197,94,0.15)'; ctx.beginPath(); ctx.roundRect(rx-55, y-15, 110, 45, 8); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(rx-55, y-15, 110, 45, 8); ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Some v', rx, y+10);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+    ctx.fillText('Carries a value', rx, y+38);
+    // Comparison
+    ctx.fillStyle = '#475569'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Java: null → NullPointerException 💥    OCaml: None → compiler forces you to handle it ✓', canvas.width/2, 165);
+  }
+  const obs = new MutationObserver(() => { if (document.getElementById('s14').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s14'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 15: HIGHER-ORDER FUNCTIONS ==================== -->
+<div class="slide" id="s15">
+  <h2>Higher-Order Functions</h2>
+  <p class="subtitle">Functions that take functions as arguments or return functions</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">(* A function that takes a function *)</div>
+<div class="line active">let apply_twice f x = f (f x)</div>
+<div class="line"> </div>
+<div class="line">(* apply_twice : ('a -> 'a) -> 'a -> 'a *)</div>
+<div class="line"> </div>
+<div class="line">let add1 x = x + 1</div>
+<div class="line">let double x = x * 2</div>
+<div class="line"> </div>
+<div class="line">apply_twice add1 5     (* = 7 *)</div>
+<div class="line">apply_twice double 3   (* = 12 *)</div>
+<div class="line"> </div>
+<div class="line">(* Anonymous functions with fun *)</div>
+<div class="line active">apply_twice (fun x -> x * x) 2  (* = 16 *)</div>
+      </div></div>
+      <div class="analogy" style="margin-top:.5rem;">
+        <strong>Analogy:</strong> A higher-order function is like a recipe that says "do <em>something</em> to the chicken" — the "something" (grill, fry, bake) is a parameter you fill in.
+      </div>
+    </div>
+    <div>
+      <h3>Step Through: apply_twice</h3>
+      <canvas id="cS15" width="460" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s15Run('add1',5)">add1, 5</button>
+        <button class="btn btn-sm" onclick="s15Run('double',3)">double, 3</button>
+        <button class="btn btn-sm" onclick="s15Run('square',2)">(fun x→x*x), 2</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Functions are values:</strong> In OCaml, <code>add1</code> is a value just like <code>42</code>. You can pass it around, store it, return it.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+  let animSteps = [], animIdx = 0, timer = null;
+  const fns = {
+    add1: {label:'add1', fn: x => x+1, expr: x => `${x} + 1`},
+    double: {label:'double', fn: x => x*2, expr: x => `${x} × 2`},
+    square: {label:'x→x*x', fn: x => x*x, expr: x => `${x} × ${x}`}
+  };
+  function drawState(steps, idx) {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('apply_twice f x = f (f x)', canvas.width/2, 22);
+    if (idx === 0) {
+      ctx.fillStyle = '#475569'; ctx.font = '14px monospace';
+      ctx.fillText('Click a function to trace', canvas.width/2, 140);
+      return;
+    }
+    steps.forEach((s, i) => {
+      if (i >= idx) return;
+      const y = 50 + i * 60;
+      const isActive = (i === idx - 1);
+      // Box
+      ctx.fillStyle = isActive ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.1)';
+      ctx.strokeStyle = isActive ? '#f59e0b' : '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(30, y, canvas.width-60, 48, 8); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(30, y, canvas.width-60, 48, 8); ctx.stroke();
+      // Step label
+      ctx.fillStyle = isActive ? '#f59e0b' : '#818cf8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(s.label, 45, y+20);
+      // Expression
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(s.expr, canvas.width/2, y+20);
+      // Result
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'right';
+      ctx.fillText('= ' + s.result, canvas.width-45, y+20);
+      // Arrow
+      if (i < steps.length - 1 && i < idx - 1) {
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(canvas.width/2, y+48); ctx.lineTo(canvas.width/2, y+60); ctx.stroke();
+      }
+    });
+  }
+  window.s15Run = function(fnName, x) {
+    if (timer) clearInterval(timer); timer = null;
+    const f = fns[fnName];
+    const v1 = f.fn(x);
+    const v2 = f.fn(v1);
+    animSteps = [
+      {label:'Input:', expr:`f = ${f.label}, x = ${x}`, result: x},
+      {label:'Step 1:', expr:`f(${x}) = ${f.expr(x)}`, result: v1},
+      {label:'Step 2:', expr:`f(${v1}) = ${f.expr(v1)}`, result: v2},
+      {label:'Result:', expr:`apply_twice ${f.label} ${x}`, result: v2}
+    ];
+    animIdx = 0;
+    timer = setInterval(() => {
+      animIdx++;
+      drawState(animSteps, animIdx);
+      if (animIdx >= animSteps.length) { clearInterval(timer); timer = null; }
+    }, 700);
+  };
+  window.s15Reset = function() { if (timer) clearInterval(timer); timer = null; animIdx = 0; drawState([], 0); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s15').classList.contains('active')) { s15Reset(); }});
+  obs.observe(document.getElementById('s15'), {attributes:true, attributeFilter:['class']});
+  drawState([], 0);
+})();
+</script>
+
+<!-- ==================== SLIDE 16: MAP, FILTER, FOLD ==================== -->
+<div class="slide" id="s16">
+  <h2>Map, Filter, Fold — The Big Three</h2>
+  <p class="subtitle">Three higher-order functions that replace most loops</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS16" width="460" height="350" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s16Show('map')">Map</button>
+        <button class="btn btn-sm" onclick="s16Show('filter')">Filter</button>
+        <button class="btn btn-sm" onclick="s16Show('fold')">Fold</button>
+        <button class="btn btn-sm" onclick="s16Show('pipe')">Pipeline</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" id="s16code"></div></div>
+      <div id="s16desc" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.82rem;color:#94a3b8;"></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>The power of composition:</strong> These three functions + the pipe operator <code>|></code> let you express complex data transformations as clear, readable pipelines — no mutable variables, no loop counters.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+  let mode = 'map';
+  function drawBox(x, y, w, h, val, color, highlight) {
+    ctx.fillStyle = highlight ? color : 'rgba(0,0,0,0.2)';
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(val, x+w/2, y+h/2);
+  }
+  function drawArrow(x1,y1,x2,y2,color) {
+    ctx.strokeStyle = color || '#475569'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    const a = Math.atan2(y2-y1,x2-x1);
+    ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-8*Math.cos(a-.4),y2-8*Math.sin(a-.4)); ctx.lineTo(x2-8*Math.cos(a+.4),y2-8*Math.sin(a+.4)); ctx.closePath(); ctx.fillStyle = color||'#475569'; ctx.fill();
+  }
+  const examples = {
+    map: {
+      code: ['(* List.map : (\'a -> \'b) -> \'a list -> \'b list *)','','List.map (fun x -> x * x) [1; 2; 3; 4]','(* = [1; 4; 9; 16] *)','','(* Apply a function to every element *)'],
+      desc: '<span style="color:#6366f1">Map</span> transforms each element with a function, producing a new list of the same length.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('List.map (fun x → x²) [1; 2; 3; 4]', canvas.width/2, 25);
+        const input = [1,2,3,4], output = [1,4,9,16];
+        const bw = 55, bh = 40, gap = 15, startX = (canvas.width - 4*(bw+gap))/2;
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+        ctx.fillText('Input:', 15, 70);
+        ctx.fillText('f(x)=x²', 15, 155);
+        ctx.fillText('Output:', 15, 240);
+        input.forEach((v,i) => {
+          const x = startX + i*(bw+gap);
+          drawBox(x, 50, bw, bh, v, '#6366f1', false);
+          drawArrow(x+bw/2, 90, x+bw/2, 125, '#f59e0b');
+          // Function box
+          ctx.fillStyle = 'rgba(245,158,11,0.1)'; ctx.beginPath(); ctx.roundRect(x+5, 128, bw-10, 28, 4); ctx.fill();
+          ctx.fillStyle = '#f59e0b'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(`${v}²`, x+bw/2, 146);
+          drawArrow(x+bw/2, 158, x+bw/2, 195, '#22c55e');
+          drawBox(x, 198, bw, bh, output[i], '#22c55e', false);
+        });
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Same length — 1:1 transformation', canvas.width/2, 275);
+      }
+    },
+    filter: {
+      code: ['(* List.filter : (\'a -> bool) -> \'a list -> \'a list *)','','List.filter (fun x -> x mod 2 = 0) [1;2;3;4;5;6]','(* = [2; 4; 6] *)','','(* Keep only elements where predicate is true *)'],
+      desc: '<span style="color:#22c55e">Filter</span> keeps elements that pass a test, discarding the rest.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('List.filter (fun x → x mod 2 = 0) [1;2;3;4;5;6]', canvas.width/2, 25);
+        const vals = [1,2,3,4,5,6], keep = [false,true,false,true,false,true];
+        const bw = 48, bh = 40, gap = 10, startX = (canvas.width - 6*(bw+gap))/2;
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+        ctx.fillText('Input:', 15, 70);
+        ctx.fillText('even?', 15, 145);
+        vals.forEach((v,i) => {
+          const x = startX + i*(bw+gap);
+          drawBox(x, 50, bw, bh, v, '#6366f1', false);
+          // Check mark or X
+          const pass = keep[i];
+          ctx.fillStyle = pass ? '#22c55e' : '#ef4444';
+          ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText(pass ? '✓' : '✗', x+bw/2, 125);
+          if (!pass) {
+            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+            ctx.beginPath(); ctx.moveTo(x, 50); ctx.lineTo(x+bw, 50+bh); ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        });
+        // Output
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+        ctx.fillText('Output:', 15, 210);
+        const outVals = [2,4,6];
+        const outStart = (canvas.width - 3*(bw+gap))/2;
+        outVals.forEach((v,i) => {
+          drawBox(outStart + i*(bw+gap), 190, bw, bh, v, '#22c55e', false);
+        });
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Shorter list — only matching elements kept', canvas.width/2, 260);
+      }
+    },
+    fold: {
+      code: ['(* List.fold_left : (\'a -> \'b -> \'a) -> \'a -> \'b list -> \'a *)','','List.fold_left (+) 0 [1; 2; 3; 4]','(* = 10 *)','','(* Reduce a list to a single value *)','(* fold_left f init [a;b;c] = f (f (f init a) b) c *)'],
+      desc: '<span style="color:#f59e0b">Fold</span> reduces a list to a single value by applying a function with an accumulator.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('List.fold_left (+) 0 [1; 2; 3; 4]', canvas.width/2, 25);
+        const vals = [1,2,3,4], accs = [0,1,3,6,10];
+        const bw = 50, startX = 60;
+        // Accumulator chain
+        for (let i = 0; i <= vals.length; i++) {
+          const x = startX + i * 85, y = 80;
+          // Accumulator
+          ctx.fillStyle = i === vals.length ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.2)';
+          ctx.strokeStyle = i === vals.length ? '#22c55e' : '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(x-20, y, 45, 35, 6); ctx.fill();
+          ctx.beginPath(); ctx.roundRect(x-20, y, 45, 35, 6); ctx.stroke();
+          ctx.fillStyle = i === vals.length ? '#22c55e' : '#f59e0b';
+          ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(accs[i], x+3, y+22);
+          if (i < vals.length) {
+            // Arrow to next
+            drawArrow(x+25, y+17, x+65, y+17, '#475569');
+            // Element being folded in
+            ctx.fillStyle = '#6366f1';
+            ctx.beginPath(); ctx.arc(x+45, y-15, 16, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 13px monospace';
+            ctx.fillText(vals[i], x+45, y-14);
+            // + label
+            ctx.fillStyle = '#818cf8'; ctx.font = '11px monospace';
+            ctx.fillText('+', x+45, y+5);
+          }
+          // Labels
+          if (i === 0) { ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.textAlign = 'center'; ctx.fillText('init', x+3, y+50); }
+          if (i === vals.length) { ctx.fillText('result', x+3, y+50); }
+        }
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('0 → (+) 0 1 = 1 → (+) 1 2 = 3 → (+) 3 3 = 6 → (+) 6 4 = 10', canvas.width/2, 200);
+        ctx.fillText('Accumulator carries the running result through each step', canvas.width/2, 230);
+      }
+    },
+    pipe: {
+      code: ['(* The pipe operator |> chains operations *)','','[1; 2; 3; 4; 5; 6; 7; 8; 9; 10]','|> List.filter (fun x -> x mod 2 = 0)','|> List.map (fun x -> x * x)','|> List.fold_left (+) 0','(* = 220 *)','','(* Read top-to-bottom: filter → map → fold *)'],
+      desc: '<span style="color:#a78bfa">Pipe</span> <code>|></code> passes the result of the left side as the last argument to the right. It makes data transformations read naturally.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Pipeline: filter → map → fold', canvas.width/2, 25);
+        const stages = [
+          {label:'Input', vals:'[1..10]', color:'#6366f1', y:50},
+          {label:'Filter (even)', vals:'[2;4;6;8;10]', color:'#22c55e', y:120},
+          {label:'Map (x²)', vals:'[4;16;36;64;100]', color:'#f59e0b', y:190},
+          {label:'Fold (+)', vals:'220', color:'#a78bfa', y:260},
+        ];
+        stages.forEach((s,i) => {
+          ctx.fillStyle = s.color; ctx.globalAlpha = 0.15;
+          ctx.beginPath(); ctx.roundRect(50, s.y, canvas.width-100, 50, 8); ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = s.color; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(50, s.y, canvas.width-100, 50, 8); ctx.stroke();
+          ctx.fillStyle = s.color; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left';
+          ctx.fillText(s.label, 65, s.y+20);
+          ctx.fillStyle = '#e2e8f0'; ctx.font = '13px monospace'; ctx.textAlign = 'right';
+          ctx.fillText(s.vals, canvas.width-65, s.y+20);
+          if (i > 0) {
+            ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+            ctx.fillText('|>', canvas.width/2, s.y-10);
+          }
+          if (i < stages.length-1) {
+            drawArrow(canvas.width/2, s.y+50, canvas.width/2, s.y+60, '#475569');
+          }
+        });
+      }
+    }
+  };
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const ex = examples[mode];
+    document.getElementById('s16code').innerHTML = ex.code.map(ln => `<div class="line">${ln || ' '}</div>`).join('');
+    document.getElementById('s16desc').innerHTML = ex.desc;
+    ex.draw();
+  }
+  window.s16Show = function(m) { mode = m; draw(); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s16').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s16'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCC: CHALLENGE C ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C — Pick the Right HOF</h2>
+  <p class="subtitle">Which higher-order function should you use?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">1. Double every element</h3>
+      <p style="font-size:.9rem;color:#94a3b8;margin:.5rem 0;">"Given [1;2;3], produce [2;4;6]"</p>
+      <select id="sCC1" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <option value="">-- Pick --</option>
+        <option value="map">List.map</option>
+        <option value="filter">List.filter</option>
+        <option value="fold">List.fold_left</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">2. Sum of all elements</h3>
+      <p style="font-size:.9rem;color:#94a3b8;margin:.5rem 0;">"Given [1;2;3;4], produce 10"</p>
+      <select id="sCC2" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <option value="">-- Pick --</option>
+        <option value="map">List.map</option>
+        <option value="filter">List.filter</option>
+        <option value="fold">List.fold_left</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">3. Keep only positives</h3>
+      <p style="font-size:.9rem;color:#94a3b8;margin:.5rem 0;">"Given [-1;2;-3;4], produce [2;4]"</p>
+      <select id="sCC3" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <option value="">-- Pick --</option>
+        <option value="map">List.map</option>
+        <option value="filter">List.filter</option>
+        <option value="fold">List.fold_left</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCresult" style="margin-top:.8rem;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:.5rem;">
+    <div id="sCCfb1" style="border-radius:8px;padding:.5rem .7rem;font-size:.85rem;"></div>
+    <div id="sCCfb2" style="border-radius:8px;padding:.5rem .7rem;font-size:.85rem;"></div>
+    <div id="sCCfb3" style="border-radius:8px;padding:.5rem .7rem;font-size:.85rem;"></div>
+  </div>
+  <div class="key-idea" style="margin-top:.5rem;">
+    <strong>Decision Rule:</strong> <strong>Map</strong> = same length, different values. <strong>Filter</strong> = fewer elements, same values. <strong>Fold</strong> = reduce to one value.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCC1:'map', sCC2:'fold', sCC3:'filter'};
+  const explanations = {
+    sCC1: 'List.map (fun x -> x * 2) — transforms each element 1:1',
+    sCC2: 'List.fold_left (+) 0 — reduces the list to a single sum',
+    sCC3: 'List.filter (fun x -> x > 0) — keeps elements passing the test'
+  };
+  window.sCCCheck = function() {
+    let score = 0;
+    ['sCC1','sCC2','sCC3'].forEach((id, i) => {
+      const val = document.getElementById(id).value;
+      const fb = document.getElementById(`sCCfb${i+1}`);
+      if (val === answers[id]) {
+        score++;
+        fb.style.background = 'rgba(34,197,94,0.15)';
+        fb.style.border = '1px solid #22c55e';
+        fb.innerHTML = `<span style="color:#22c55e">✓</span> ${explanations[id]}`;
+      } else {
+        fb.style.background = 'rgba(239,68,68,0.1)';
+        fb.style.border = '1px solid #ef4444';
+        fb.innerHTML = `<span style="color:#ef4444">✗</span> ${explanations[id]}`;
+      }
+    });
+    document.getElementById('sCCresult').innerHTML = `<span style="color:${score===3?'#22c55e':'#f59e0b'};font-weight:600;font-size:1.1rem;">${score}/3 correct</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 17: RECURSIVE TYPES ==================== -->
+<div class="slide" id="s17">
+  <h2>Recursive Types — Trees</h2>
+  <p class="subtitle">Types that reference themselves — the foundation of tree structures</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">(* A binary tree type *)</div>
+<div class="line active">type 'a tree =</div>
+<div class="line active">  | Leaf</div>
+<div class="line active">  | Node of 'a * 'a tree * 'a tree</div>
+<div class="line"> </div>
+<div class="line">(* Example tree *)</div>
+<div class="line">let t = Node(1,</div>
+<div class="line">          Node(2, Leaf, Leaf),</div>
+<div class="line">          Node(3,</div>
+<div class="line">            Node(4, Leaf, Leaf),</div>
+<div class="line">            Leaf))</div>
+<div class="line"> </div>
+<div class="line">(* Recursive functions on trees *)</div>
+<div class="line">let rec size = function</div>
+<div class="line">  | Leaf -> 0</div>
+<div class="line">  | Node(_, l, r) -> 1 + size l + size r</div>
+      </div></div>
+    </div>
+    <div>
+      <canvas id="cS17" width="460" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s17Show('tree')">Tree Structure</button>
+        <button class="btn btn-sm" onclick="s17Show('type')">Type Breakdown</button>
+      </div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Pattern:</strong> Recursive type → recursive function. Every <code>tree</code> function matches <code>Leaf</code> (base) and <code>Node</code> (recurse on left/right).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS17');
+  const ctx = canvas.getContext('2d');
+  let mode = 'tree';
+  function drawTree() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (mode === 'tree') {
+      const nodes = [{v:1,x:230,y:45},{v:2,x:120,y:120},{v:3,x:340,y:120},{v:4,x:280,y:195}];
+      const leaves = [{x:70,y:195},{x:170,y:195},{x:395,y:195},{x:230,y:265},{x:330,y:265}];
+      // Edges
+      const edges = [[0,1],[0,2],[1,4],[1,5],[2,3],[2,6]];
+      const allPos = nodes.map(n=>({x:n.x,y:n.y})).concat(leaves.map(l=>({x:l.x,y:l.y})));
+      // Map: 0=node1, 1=node2, 2=node3, 3=node4, 4=leaf, 5=leaf, 6=leaf
+      // Edges from nodes
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2;
+      // 1->2, 1->3
+      ctx.beginPath(); ctx.moveTo(230,45); ctx.lineTo(120,120); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(230,45); ctx.lineTo(340,120); ctx.stroke();
+      // 2->Leaf, 2->Leaf
+      ctx.beginPath(); ctx.moveTo(120,120); ctx.lineTo(70,195); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(120,120); ctx.lineTo(170,195); ctx.stroke();
+      // 3->4, 3->Leaf
+      ctx.beginPath(); ctx.moveTo(340,120); ctx.lineTo(280,195); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(340,120); ctx.lineTo(395,195); ctx.stroke();
+      // 4->Leaf, 4->Leaf
+      ctx.beginPath(); ctx.moveTo(280,195); ctx.lineTo(230,265); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(280,195); ctx.lineTo(330,265); ctx.stroke();
+      // Draw nodes
+      nodes.forEach(n => {
+        ctx.fillStyle = '#6366f1'; ctx.beginPath(); ctx.arc(n.x, n.y, 22, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(n.x, n.y, 22, 0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(n.v, n.x, n.y);
+      });
+      // Draw leaves
+      leaves.forEach(l => {
+        ctx.fillStyle = '#334155'; ctx.beginPath(); ctx.arc(l.x, l.y, 14, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('L', l.x, l.y);
+      });
+      ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('L = Leaf    Circles = Node(value, left, right)', 20, canvas.height - 10);
+    } else {
+      // Type breakdown
+      ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+      ctx.fillText("type 'a tree = Leaf | Node of 'a * 'a tree * 'a tree", canvas.width/2, 25);
+      const items = [
+        {label:"Leaf", desc:"Base case — empty tree", color:"#ef4444", y:60},
+        {label:"Node(v, l, r)", desc:"A value + left subtree + right subtree", color:"#6366f1", y:110},
+        {label:"'a", desc:"Polymorphic — works with int, string, etc.", color:"#22c55e", y:160},
+        {label:"Recursive!", desc:"'a tree appears in its own definition", color:"#f59e0b", y:210},
+      ];
+      items.forEach(item => {
+        ctx.fillStyle = item.color; ctx.globalAlpha = 0.1;
+        ctx.beginPath(); ctx.roundRect(30, item.y, canvas.width-60, 40, 8); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = item.color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(30, item.y, canvas.width-60, 40, 8); ctx.stroke();
+        ctx.fillStyle = item.color; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left';
+        ctx.fillText(item.label, 45, item.y+25);
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'right';
+        ctx.fillText(item.desc, canvas.width-45, item.y+25);
+      });
+    }
+  }
+  window.s17Show = function(m) { mode = m; drawTree(); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s17').classList.contains('active')) drawTree(); });
+  obs.observe(document.getElementById('s17'), {attributes:true, attributeFilter:['class']});
+  drawTree();
+})();
+</script>
+
+<!-- ==================== SLIDE 18: CONNECTIONS TO THEORY & SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Connections & Summary</h2>
+  <p class="subtitle">How OCaml connects to CS305 and the bigger picture</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>OCaml ↔ Theory of Computation</h3>
+      <canvas id="cS18" width="460" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="analogy" style="margin-top:.5rem;">
+        <strong>Why learn OCaml in CS336?</strong> Pattern matching mirrors formal proofs by cases. Algebraic types model language grammars. Recursion is the natural way to process recursive structures like parse trees and automata.
+      </div>
+    </div>
+    <div>
+      <h3>OCaml Cheat Sheet</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-size:.82rem;">
+        <div style="background:rgba(99,102,241,0.1);padding:.4rem .6rem;border-radius:6px;"><code>let x = 5</code><br><span style="color:#94a3b8">binding</span></div>
+        <div style="background:rgba(99,102,241,0.1);padding:.4rem .6rem;border-radius:6px;"><code>let f x = x+1</code><br><span style="color:#94a3b8">function</span></div>
+        <div style="background:rgba(34,197,94,0.1);padding:.4rem .6rem;border-radius:6px;"><code>fun x -> x+1</code><br><span style="color:#94a3b8">anonymous fn</span></div>
+        <div style="background:rgba(34,197,94,0.1);padding:.4rem .6rem;border-radius:6px;"><code>let rec f n = ...</code><br><span style="color:#94a3b8">recursion</span></div>
+        <div style="background:rgba(245,158,11,0.1);padding:.4rem .6rem;border-radius:6px;"><code>match x with</code><br><span style="color:#94a3b8">pattern match</span></div>
+        <div style="background:rgba(245,158,11,0.1);padding:.4rem .6rem;border-radius:6px;"><code>type t = A | B</code><br><span style="color:#94a3b8">variant</span></div>
+        <div style="background:rgba(167,139,250,0.1);padding:.4rem .6rem;border-radius:6px;"><code>h :: t</code><br><span style="color:#94a3b8">cons/destructure</span></div>
+        <div style="background:rgba(167,139,250,0.1);padding:.4rem .6rem;border-radius:6px;"><code>x |> f |> g</code><br><span style="color:#94a3b8">pipe</span></div>
+        <div style="background:rgba(244,114,182,0.1);padding:.4rem .6rem;border-radius:6px;"><code>List.map f lst</code><br><span style="color:#94a3b8">map</span></div>
+        <div style="background:rgba(244,114,182,0.1);padding:.4rem .6rem;border-radius:6px;"><code>List.fold_left</code><br><span style="color:#94a3b8">fold</span></div>
+        <div style="background:rgba(239,68,68,0.1);padding:.4rem .6rem;border-radius:6px;"><code>None | Some v</code><br><span style="color:#94a3b8">option type</span></div>
+        <div style="background:rgba(239,68,68,0.1);padding:.4rem .6rem;border-radius:6px;"><code>(a, b, c)</code><br><span style="color:#94a3b8">tuple</span></div>
+      </div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Core principles:</strong> Everything is an expression. Types are inferred. Data is immutable. Functions are values.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS18');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const connections = [
+      {ocaml:'Pattern Matching', theory:'Proof by Cases', color:'#6366f1', y:25},
+      {ocaml:'Algebraic Types', theory:'Formal Grammars', color:'#22c55e', y:65},
+      {ocaml:'Recursion', theory:'Inductive Definitions', color:'#f59e0b', y:105},
+      {ocaml:'Higher-Order Fns', theory:'λ-Calculus', color:'#a78bfa', y:145},
+    ];
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('OCaml', 80, 13);
+    ctx.fillText('Theory', 380, 13);
+    connections.forEach(c => {
+      // Left box
+      ctx.fillStyle = c.color; ctx.globalAlpha = 0.15;
+      ctx.beginPath(); ctx.roundRect(10, c.y, 145, 30, 6); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = c.color; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(c.ocaml, 82, c.y+20);
+      // Right box
+      ctx.fillStyle = c.color; ctx.globalAlpha = 0.15;
+      ctx.beginPath(); ctx.roundRect(305, c.y, 145, 30, 6); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = c.color; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(c.theory, 377, c.y+20);
+      // Arrow
+      ctx.strokeStyle = c.color; ctx.lineWidth = 2; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(155, c.y+15); ctx.lineTo(305, c.y+15); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = c.color; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('↔', 230, c.y+20);
+    });
+  }
+  const obs = new MutationObserver(() => { if (document.getElementById('s18').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s18'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: QUIZ MC ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz — Multiple Choice</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q1: Type of <code>fun x -> x</code></h3>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="a"> <code>int -> int</code></label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="b"> <code>'a -> 'a</code></label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="c"> <code>'a -> 'b</code></label>
+      </div>
+      <div id="sQ1fb1" style="margin-top:.3rem;font-size:.85rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q2: What is <code>List.map</code>?</h3>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="a"> Removes elements from a list</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="b"> Applies a function to each element</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="c"> Reduces a list to a single value</label>
+      </div>
+      <div id="sQ1fb2" style="margin-top:.3rem;font-size:.85rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q3: <code>let (a,_,c) = (1,2,3)</code></h3>
+      <p style="font-size:.9rem;color:#94a3b8;">What are <code>a</code> and <code>c</code>?</p>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="a"> a=1, c=3</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="b"> a=1, c=2</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="c"> Error: can't skip elements</label>
+      </div>
+      <div id="sQ1fb3" style="margin-top:.3rem;font-size:.85rem;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1score" style="margin-left:1rem;font-size:1.1rem;font-weight:600;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {q1:'b', q2:'b', q3:'a'};
+  const explanations = {
+    q1: "'a -> 'a — the identity function returns whatever it receives, so input and output have the same polymorphic type.",
+    q2: "List.map applies a function to each element, producing a new list of the same length.",
+    q3: "a=1, c=3 — the underscore _ ignores the second element of the tuple."
+  };
+  window.sQ1Check = function() {
+    let score = 0;
+    ['q1','q2','q3'].forEach((q, i) => {
+      const sel = document.querySelector(`input[name="${q}"]:checked`);
+      const fb = document.getElementById(`sQ1fb${i+1}`);
+      if (!sel) { fb.innerHTML = '<span style="color:#f59e0b;">Select an answer</span>'; return; }
+      if (sel.value === answers[q]) {
+        score++;
+        fb.innerHTML = `<span style="color:#22c55e;">✓ ${explanations[q]}</span>`;
+      } else {
+        fb.innerHTML = `<span style="color:#ef4444;">✗ ${explanations[q]}</span>`;
+      }
+    });
+    document.getElementById('sQ1score').innerHTML = `<span style="color:${score===3?'#22c55e':'#f59e0b'}">${score}/3</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: QUIZ TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz — Trace the Recursion</h2>
+  <p class="subtitle">What does this function return?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">let rec count f lst =</div>
+<div class="line">  match lst with</div>
+<div class="line">  | [] -> 0</div>
+<div class="line">  | h :: t -></div>
+<div class="line">      (if f h then 1 else 0) + count f t</div>
+<div class="line"> </div>
+<div class="line">let result =</div>
+<div class="line">  count (fun x -> x > 3) [1; 5; 2; 7; 3; 8]</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">result = </label>
+        <input type="text" id="sQ2input" placeholder="?" style="width:80px;padding:.4rem .6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:1rem;text-align:center;">
+        <button class="btn" onclick="sQ2Check()" style="margin-left:.5rem;">Check</button>
+      </div>
+      <div id="sQ2feedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>Step-by-Step Trace</h3>
+      <div id="sQ2trace" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:.8rem;font-family:monospace;font-size:.82rem;min-height:220px;max-height:280px;overflow-y:auto;color:#94a3b8;">
+        Enter your answer, then click Check to see the trace.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ2Check = function() {
+    const ans = document.getElementById('sQ2input').value.trim();
+    const fb = document.getElementById('sQ2feedback');
+    const trace = document.getElementById('sQ2trace');
+    if (ans === '3') {
+      fb.innerHTML = '<span style="color:#22c55e;font-weight:600;">✓ Correct! 3 elements are greater than 3.</span>';
+    } else {
+      fb.innerHTML = '<span style="color:#ef4444;font-weight:600;">✗ Not quite. Trace through each element.</span>';
+    }
+    trace.innerHTML = `
+<div style="color:#818cf8">count (>3) [1; 5; 2; 7; 3; 8]</div>
+<div>  1>3? <span style="color:#ef4444">No → 0</span> + count (>3) [5;2;7;3;8]</div>
+<div>    5>3? <span style="color:#22c55e">Yes → 1</span> + count (>3) [2;7;3;8]</div>
+<div>      2>3? <span style="color:#ef4444">No → 0</span> + count (>3) [7;3;8]</div>
+<div>        7>3? <span style="color:#22c55e">Yes → 1</span> + count (>3) [3;8]</div>
+<div>          3>3? <span style="color:#ef4444">No → 0</span> + count (>3) [8]</div>
+<div>            8>3? <span style="color:#22c55e">Yes → 1</span> + count (>3) []</div>
+<div>              count (>3) [] = <span style="color:#f59e0b">0</span></div>
+<div style="color:#22c55e;margin-top:.3rem;">= 0+1+0+1+0+1+0 = <strong>3</strong></div>
+<div style="color:#94a3b8;margin-top:.3rem;">Elements > 3: {5, 7, 8} → count = 3</div>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: QUIZ PREDICT ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz — Predict the Pipeline</h2>
+  <p class="subtitle">What does this pipeline produce?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">type shape = Circle of float | Rect of float * float</div>
+<div class="line"> </div>
+<div class="line">let area = function</div>
+<div class="line">  | Circle r -> Float.pi *. r *. r</div>
+<div class="line">  | Rect (w,h) -> w *. h</div>
+<div class="line"> </div>
+<div class="line">let shapes = [Circle 1.0; Rect(3.0,4.0);</div>
+<div class="line">              Circle 2.0; Rect(1.0,1.0)]</div>
+<div class="line"> </div>
+<div class="line">let result =</div>
+<div class="line">  shapes</div>
+<div class="line">  |> List.map area</div>
+<div class="line active">  |> List.filter (fun a -> a > 5.0)</div>
+<div class="line">  |> List.length</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">result = </label>
+        <input type="text" id="sQ3input" placeholder="?" style="width:80px;padding:.4rem .6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:1rem;text-align:center;">
+        <button class="btn" onclick="sQ3Check()" style="margin-left:.5rem;">Check</button>
+      </div>
+      <div id="sQ3feedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>Pipeline Breakdown</h3>
+      <div id="sQ3trace" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:.8rem;font-family:monospace;font-size:.82rem;min-height:240px;max-height:300px;overflow-y:auto;color:#94a3b8;">
+        Enter your answer, then click Check to see the pipeline stages.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ3Check = function() {
+    const ans = document.getElementById('sQ3input').value.trim();
+    const fb = document.getElementById('sQ3feedback');
+    const trace = document.getElementById('sQ3trace');
+    if (ans === '2') {
+      fb.innerHTML = '<span style="color:#22c55e;font-weight:600;">✓ Correct! Two shapes have area > 5.0.</span>';
+    } else {
+      fb.innerHTML = '<span style="color:#ef4444;font-weight:600;">✗ Not quite. Trace each pipeline stage.</span>';
+    }
+    const pi = Math.PI;
+    trace.innerHTML = `
+<div style="color:#6366f1;font-weight:600;">Stage 1: shapes</div>
+<div>[Circle 1.0; Rect(3,4); Circle 2.0; Rect(1,1)]</div>
+<div style="color:#94a3b8;margin:.3rem 0;">↓ List.map area</div>
+<div style="color:#f59e0b;font-weight:600;">Stage 2: areas</div>
+<div>Circle 1.0 → π×1² = <span style="color:#e2e8f0">${(pi*1).toFixed(2)}</span></div>
+<div>Rect(3,4) → 3×4 = <span style="color:#e2e8f0">12.00</span></div>
+<div>Circle 2.0 → π×4 = <span style="color:#e2e8f0">${(pi*4).toFixed(2)}</span></div>
+<div>Rect(1,1) → 1×1 = <span style="color:#e2e8f0">1.00</span></div>
+<div>[${(pi).toFixed(2)}; 12.00; ${(pi*4).toFixed(2)}; 1.00]</div>
+<div style="color:#94a3b8;margin:.3rem 0;">↓ List.filter (a > 5.0)</div>
+<div style="color:#22c55e;font-weight:600;">Stage 3: filter</div>
+<div>${(pi).toFixed(2)} > 5.0? <span style="color:#ef4444">No</span></div>
+<div>12.00 > 5.0? <span style="color:#22c55e">Yes ✓</span></div>
+<div>${(pi*4).toFixed(2)} > 5.0? <span style="color:#22c55e">Yes ✓</span></div>
+<div>1.00 > 5.0? <span style="color:#ef4444">No</span></div>
+<div>[12.00; ${(pi*4).toFixed(2)}]</div>
+<div style="color:#94a3b8;margin:.3rem 0;">↓ List.length</div>
+<div style="color:#a78bfa;font-weight:600;">Result: <span style="color:#22c55e;font-size:1.2rem;">2</span></div>`;
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','sCC','s17','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>
