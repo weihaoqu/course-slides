@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Memory Management — Enhanced Interactive Slides</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden}
+  .slide{display:none;min-height:100vh;padding:2.5rem 3.5rem;position:relative;flex-direction:column;justify-content:center}
+  .slide.active{display:flex}
+  .fade-in{animation:fadeIn .4s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:200}
+  #progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#a78bfa);transition:width .3s}
+  h1{font-size:2.4em;margin-bottom:.5rem;background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+  h2{font-size:1.7em;color:#38bdf8;margin-bottom:.5rem}
+  h3{font-size:1.2em;color:#a5b4fc;margin-bottom:.4rem}
+  p,li{font-size:1.05em;line-height:1.7;color:#cbd5e1}
+  .subtitle{font-size:1.15em;color:#94a3b8;margin-bottom:1.2rem}
+  .nav{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);display:flex;gap:.75rem;z-index:100}
+  .nav button{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:.5rem 1.4rem;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+  .nav button:hover{background:#475569}
+  .nav button:disabled{opacity:.3;cursor:not-allowed}
+  .btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+  .btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+  .btn-sm{padding:.35rem .8rem;font-size:.82rem}
+  .btn-secondary{background:#334155;color:#e2e8f0;border:1px solid #475569}
+  .btn-secondary:hover{background:#475569}
+  .key-idea{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(16,185,129,.1));border-left:4px solid #22c55e;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .warning{background:rgba(239,68,68,.08);border-left:4px solid #ef4444;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .analogy{background:rgba(139,92,246,.08);border-left:4px solid #a78bfa;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .code-block{background:rgba(0,0,0,.3);border:1px solid #334155;border-radius:10px;padding:.8rem 1rem;margin:.5rem 0;overflow-x:auto}
+  .code-content{font-family:'SF Mono','Fira Code',monospace;font-size:.85rem;line-height:1.7}
+  .line{padding:1px 6px;border-left:3px solid transparent;border-radius:0 4px 4px 0;white-space:pre}
+  .line.active{background:rgba(99,102,241,.15);border-left-color:#6366f1}
+  code{font-family:'SF Mono','Fira Code',monospace;background:#1e293b;padding:2px 7px;border-radius:4px;font-size:.9em;color:#a5f3fc}
+  .slide-number{position:absolute;bottom:1rem;right:2rem;color:#475569;font-size:.8rem}
+  ul{padding-left:1.5rem}
+  ul li{margin-bottom:.4rem}
+  canvas{border-radius:12px}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <h1>Dynamic Memory Management</h1>
+  <p class="subtitle">CS310 — <code>new</code>, <code>delete</code>, and Managing the Heap</p>
+  <canvas id="cS1" width="800" height="300" style="width:100%;max-width:800px;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:1.5rem;"></canvas>
+  <p style="color:#94a3b8;margin-top:1rem;font-size:.95rem;">Static memory is managed by the compiler. Dynamic memory is managed by <strong>you</strong> — allocate with <code>new</code>, free with <code>delete</code>.</p>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS1');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Stack section
+    ctx.fillStyle = 'rgba(99,102,241,0.12)'; ctx.beginPath(); ctx.roundRect(40, 30, 320, 240, 12); ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(40, 30, 320, 240, 12); ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.fillText('STACK', 200, 55);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace';
+    ctx.fillText('Managed by compiler', 200, 75);
+    ctx.fillText('Local variables, function params', 200, 95);
+    ctx.fillText('Automatic: allocated on entry,', 200, 120);
+    ctx.fillText('freed on exit', 200, 138);
+    ctx.fillStyle = '#6366f1'; ctx.font = '11px monospace';
+    ctx.fillText('int x = 5;', 200, 170);
+    ctx.fillText('int arr[10];', 200, 190);
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px monospace';
+    ctx.fillText('✓ Safe — no leaks possible', 200, 225);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillText('⚠ Fixed size — must know at compile time', 200, 248);
+    // Heap section
+    ctx.fillStyle = 'rgba(167,139,250,0.12)'; ctx.beginPath(); ctx.roundRect(440, 30, 320, 240, 12); ctx.fill();
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(440, 30, 320, 240, 12); ctx.stroke();
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.fillText('HEAP', 600, 55);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace';
+    ctx.fillText('Managed by YOU', 600, 75);
+    ctx.fillText('Dynamic arrays, objects', 600, 95);
+    ctx.fillText('Manual: new to allocate,', 600, 120);
+    ctx.fillText('delete to free', 600, 138);
+    ctx.fillStyle = '#a78bfa'; ctx.font = '11px monospace';
+    ctx.fillText('int *p = new int;', 600, 170);
+    ctx.fillText('int *arr = new int[n];', 600, 190);
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px monospace';
+    ctx.fillText('✓ Flexible — size at runtime', 600, 225);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText('⚠ YOUR responsibility to free!', 600, 248);
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s1').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: STATIC VS DYNAMIC ==================== -->
+<div class="slide" id="s2">
+  <h2>Static vs Dynamic Memory</h2>
+  <p class="subtitle">Why do we need dynamic memory at all?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>Static — Compiler Manages</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">// Global: alive entire program</div>
+<div class="line">int globalCount = 0;</div>
+<div class="line"> </div>
+<div class="line">void func() {</div>
+<div class="line">  // Local: alive during func() only</div>
+<div class="line active">  int scores[100]; // size must be fixed!</div>
+<div class="line">  // What if we need 200? Or just 3?</div>
+<div class="line">}</div>
+      </div></div>
+      <div class="warning" style="margin-top:.5rem;">
+        <strong>The problem:</strong> Consider a grade roster. How many students? 30? 100? 500? With static allocation, you must pick a size at compile time — waste memory or risk overflow.
+      </div>
+    </div>
+    <div>
+      <h3>Dynamic — You Manage</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">void func() {</div>
+<div class="line">  int n;</div>
+<div class="line">  cout &lt;&lt; "How many students? ";</div>
+<div class="line">  cin >> n;</div>
+<div class="line"> </div>
+<div class="line active">  int *scores = new int[n]; // exact size!</div>
+<div class="line">  // use scores[0] ... scores[n-1]</div>
+<div class="line"> </div>
+<div class="line active">  delete[] scores; // YOU must free it!</div>
+<div class="line">}</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Dynamic memory</strong> lets you allocate exactly the amount you need, when you know how much that is (at runtime, not compile time).
+      </div>
+      <div class="analogy" style="margin-top:.4rem;">
+        <strong>Analogy:</strong> Static allocation is like buying a house — fixed size, decided upfront. Dynamic allocation is like renting — pick the size you need, but you must remember to cancel the lease (delete) when done.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 3: THE NEW OPERATOR ==================== -->
+<div class="slide" id="s3">
+  <h2>The <code>new</code> Operator</h2>
+  <p class="subtitle">Allocate memory on the heap at runtime</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS3" width="480" height="330" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s3Alloc('single')">new int</button>
+        <button class="btn btn-sm" onclick="s3Alloc('array')">new int[5]</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">// Allocate a single int on the heap</div>
+<div class="line active">int *p = new int;</div>
+<div class="line">*p = 42;</div>
+<div class="line"> </div>
+<div class="line">// Allocate an array on the heap</div>
+<div class="line active">int *arr = new int[5];</div>
+<div class="line">arr[0] = 10; // use like normal array</div>
+<div class="line"> </div>
+<div class="line">// new returns a POINTER to the</div>
+<div class="line">// allocated memory on the heap</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>How <code>new</code> works:</strong> It asks the OS for memory from the heap, and returns the address (pointer) of that memory. The pointer itself lives on the stack, but the data lives on the heap.
+      </div>
+      <div class="warning" style="margin-top:.4rem;">
+        <strong>If the heap is full,</strong> <code>new</code> throws a <code>std::bad_alloc</code> exception and the program terminates (unless you catch it).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS3');
+  const ctx = canvas.getContext('2d');
+  let allocations = [];
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Stack region
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.fillRect(20, 20, 200, 130);
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.strokeRect(20, 20, 200, 130);
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillText('STACK', 120, 38);
+    // Heap region
+    ctx.fillStyle = 'rgba(167,139,250,0.08)'; ctx.fillRect(260, 20, 200, 290);
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2; ctx.strokeRect(260, 20, 200, 290);
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillText('HEAP', 360, 38);
+    // Stack pointers
+    allocations.forEach((a, i) => {
+      const sy = 55 + i * 50;
+      ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(30, sy, 180, 38, 6); ctx.fill();
+      ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(30, sy, 180, 38, 6); ctx.stroke();
+      ctx.fillStyle = a.color; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText(a.label, 38, sy+15);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '12px monospace'; ctx.textAlign = 'center'; ctx.fillText(a.addr, 120, sy+30);
+      // Arrow to heap
+      ctx.strokeStyle = a.color; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(210, sy+19); ctx.lineTo(a.hx, a.hy+a.hh/2); ctx.stroke();
+      ctx.setLineDash([]);
+      // Heap block
+      ctx.fillStyle = a.color+'25'; ctx.beginPath(); ctx.roundRect(a.hx, a.hy, a.hw, a.hh, 6); ctx.fill();
+      ctx.strokeStyle = a.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(a.hx, a.hy, a.hw, a.hh, 6); ctx.stroke();
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      if (a.type === 'single') {
+        ctx.fillText(a.val, a.hx+a.hw/2, a.hy+a.hh/2+4);
+      } else {
+        for (let j = 0; j < 5; j++) {
+          const cx = a.hx + 8 + j * 35;
+          ctx.fillStyle = '#1e293b'; ctx.fillRect(cx, a.hy+8, 30, 24);
+          ctx.strokeStyle = '#475569'; ctx.strokeRect(cx, a.hy+8, 30, 24);
+          ctx.fillStyle = '#e2e8f0'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(j===0?'10':'?', cx+15, a.hy+24);
+        }
+      }
+      ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(a.addr, a.hx, a.hy-5);
+    });
+    if (allocations.length === 0) {
+      ctx.fillStyle = '#475569'; ctx.font = '13px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('Click to allocate', 360, 170);
+    }
+  }
+  window.s3Alloc = function(type) {
+    if (allocations.length >= 2) return;
+    if (type === 'single') {
+      allocations.push({type:'single', label:'int *p', addr:'0x2000', val:'42', color:'#22c55e', hx:270, hy:55, hw:80, hh:40});
+    } else {
+      allocations.push({type:'array', label:'int *arr', addr:'0x2100', val:'', color:'#f59e0b', hx:270, hy:120, hw:185, hh:45});
+    }
+    draw();
+  };
+  window.s3Reset = function() { allocations = []; draw(); };
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s3').classList.contains('active')) { allocations=[]; draw(); }});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: DYNAMIC MEMORY EXAMPLE ==================== -->
+<div class="slide" id="s4">
+  <h2>Dynamic Memory Example</h2>
+  <p class="subtitle">Allocate an array based on user input</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content" id="s4code"></div></div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s4Step()">Step</button>
+        <button class="btn btn-sm" onclick="s4Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+      </div>
+      <div id="s4Log" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.78rem;max-height:90px;overflow-y:auto;color:#94a3b8;">Click Step to trace...</div>
+    </div>
+    <div>
+      <canvas id="cS4" width="460" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+  const codeLines = [
+    'int *count, *arrayptr;',
+    'count = new int;',
+    'cout << "How many? "; cin >> *count;',
+    'arrayptr = new int[*count];',
+    '',
+    'for (int i=0; i<*count; i++) {',
+    '  cin >> arrayptr[i];',
+    '}',
+  ];
+  const steps = [
+    {line:0, desc:'Declare two pointers (uninitialized)', heap:[]},
+    {line:1, desc:'count = new int — allocate 1 int on heap', heap:[{label:'*count',w:60,val:'?',color:'#22c55e'}]},
+    {line:2, desc:'User enters 3 → *count = 3', heap:[{label:'*count',w:60,val:'3',color:'#22c55e'}]},
+    {line:3, desc:'arrayptr = new int[3] — allocate array of 3', heap:[{label:'*count',w:60,val:'3',color:'#22c55e'},{label:'arrayptr[0..2]',w:180,val:'? ? ?',color:'#f59e0b'}]},
+    {line:6, desc:'User enters scores: 85, 92, 78', heap:[{label:'*count',w:60,val:'3',color:'#22c55e'},{label:'arrayptr[0..2]',w:180,val:'85 92 78',color:'#f59e0b'}]},
+  ];
+  let stepIdx = 0, timer = null;
+  function drawCode() {
+    document.getElementById('s4code').innerHTML = codeLines.map((ln,i) => {
+      const hl = stepIdx > 0 && steps[stepIdx-1].line === i;
+      return `<div class="line${hl?' active':''}">${ln||' '}</div>`;
+    }).join('');
+  }
+  function drawMem() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Stack
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.fillRect(20, 20, 190, 100);
+    ctx.strokeStyle = '#6366f1'; ctx.strokeRect(20, 20, 190, 100);
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText('STACK', 115, 38);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('count (ptr)', 30, 60);
+    ctx.fillText('arrayptr (ptr)', 30, 80);
+    // Heap
+    ctx.fillStyle = 'rgba(167,139,250,0.08)'; ctx.fillRect(20, 140, 420, 220);
+    ctx.strokeStyle = '#a78bfa'; ctx.strokeRect(20, 140, 420, 220);
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText('HEAP', 230, 158);
+    if (stepIdx === 0) return;
+    const s = steps[stepIdx-1];
+    s.heap.forEach((h, i) => {
+      const x = 40 + i * 210, y = 180;
+      ctx.fillStyle = h.color+'25'; ctx.beginPath(); ctx.roundRect(x, y, h.w, 50, 8); ctx.fill();
+      ctx.strokeStyle = h.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(x, y, h.w, 50, 8); ctx.stroke();
+      ctx.fillStyle = h.color; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText(h.label, x+5, y-5);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.fillText(h.val, x+h.w/2, y+32);
+    });
+  }
+  function init() { stepIdx=0; drawCode(); drawMem(); document.getElementById('s4Log').innerHTML='<span style="color:#94a3b8">Click Step to trace...</span>'; }
+  window.s4Step = function() {
+    if (stepIdx>=steps.length) return;
+    const s = steps[stepIdx]; stepIdx++;
+    drawCode(); drawMem();
+    document.getElementById('s4Log').innerHTML += `<div style="color:#818cf8">Step ${stepIdx}: ${s.desc}</div>`;
+    document.getElementById('s4Log').scrollTop = document.getElementById('s4Log').scrollHeight;
+  };
+  window.s4Auto = function() { if(timer) return; timer=setInterval(()=>{ if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s4Step(); },900); };
+  window.s4Reset = function() { if(timer) clearInterval(timer); timer=null; init(); };
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s4').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: DELETE OPERATOR ==================== -->
+<div class="slide" id="s5">
+  <h2>The <code>delete</code> Operator</h2>
+  <p class="subtitle">Free heap memory when you're done with it</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">// Allocate</div>
+<div class="line">int *p = new int;</div>
+<div class="line">*p = 10;</div>
+<div class="line"> </div>
+<div class="line">// Free a single value</div>
+<div class="line active">delete p;</div>
+<div class="line"> </div>
+<div class="line">// Allocate an array</div>
+<div class="line">int *arr = new int[100];</div>
+<div class="line"> </div>
+<div class="line">// Free an array — use delete[]!</div>
+<div class="line active">delete[] arr;</div>
+<div class="line"> </div>
+<div class="line">// Good practice: set to nullptr after</div>
+<div class="line active">p = nullptr;</div>
+<div class="line active">arr = nullptr;</div>
+      </div></div>
+    </div>
+    <div>
+      <canvas id="cS5" width="460" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>The rule:</strong> Every <code>new</code> must have a matching <code>delete</code>. Every <code>new[]</code> must have a matching <code>delete[]</code>. Miss one? Memory leak. Mix them up? Undefined behavior.
+      </div>
+      <div class="warning" style="margin-top:.4rem;">
+        <strong>Only delete heap memory!</strong> Never <code>delete</code> a pointer to a stack variable — that's undefined behavior and will likely crash.
+      </div>
+      <div class="analogy" style="margin-top:.4rem;">
+        <strong>Analogy:</strong> <code>new</code> checks out a hotel room. <code>delete</code> checks out. If you forget to check out, you're still paying (memory leak). If you check out twice, chaos (double free).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('delete vs delete[]', canvas.width/2, 22);
+    // Single delete
+    ctx.fillStyle = 'rgba(34,197,94,0.1)'; ctx.beginPath(); ctx.roundRect(20, 40, 200, 70, 8); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(20, 40, 200, 70, 8); ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('delete p;', 120, 65);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+    ctx.fillText('For: new Type', 120, 95);
+    // Array delete
+    ctx.fillStyle = 'rgba(245,158,11,0.1)'; ctx.beginPath(); ctx.roundRect(240, 40, 200, 70, 8); ctx.fill();
+    ctx.strokeStyle = '#f59e0b'; ctx.beginPath(); ctx.roundRect(240, 40, 200, 70, 8); ctx.stroke();
+    ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('delete[] arr;', 340, 65);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+    ctx.fillText('For: new Type[n]', 340, 95);
+    // Warning
+    ctx.fillStyle = 'rgba(239,68,68,0.1)'; ctx.beginPath(); ctx.roundRect(20, 130, 420, 50, 8); ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.beginPath(); ctx.roundRect(20, 130, 420, 50, 8); ctx.stroke();
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Mismatch = undefined behavior!', canvas.width/2, 152);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+    ctx.fillText('new + delete[]  or  new[] + delete  →  💥', canvas.width/2, 170);
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s5').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: NEW/DELETE LIFECYCLE ==================== -->
+<div class="slide" id="s6">
+  <h2>The Memory Lifecycle</h2>
+  <p class="subtitle">Allocate → Use → Free — step by step</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content" id="s6code"></div></div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s6Step()">Step</button>
+        <button class="btn btn-sm" onclick="s6Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS6" width="460" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS6');
+  const ctx = canvas.getContext('2d');
+  const codeLines = ['int *p = new int;','*p = 10;','cout << *p;   // 10','delete p;','p = nullptr;','// p is safe to check now'];
+  const steps = [
+    {line:0, desc:'Allocate 1 int on heap', stack:'p→0x2000', heap:{addr:'0x2000',val:'?',color:'#22c55e',alive:true}, pNull:false},
+    {line:1, desc:'Write 10 through pointer', stack:'p→0x2000', heap:{addr:'0x2000',val:'10',color:'#22c55e',alive:true}, pNull:false},
+    {line:2, desc:'Read through pointer — prints 10', stack:'p→0x2000', heap:{addr:'0x2000',val:'10',color:'#f59e0b',alive:true}, pNull:false},
+    {line:3, desc:'delete p — free heap memory', stack:'p→0x2000', heap:{addr:'0x2000',val:'???',color:'#ef4444',alive:false}, pNull:false},
+    {line:4, desc:'p = nullptr — make pointer safe', stack:'p→nullptr', heap:null, pNull:true},
+  ];
+  let stepIdx=0, timer=null;
+  function drawCode() {
+    document.getElementById('s6code').innerHTML = codeLines.map((ln,i) => {
+      const hl = stepIdx>0 && steps[stepIdx-1].line===i;
+      return `<div class="line${hl?' active':''}">${ln}</div>`;
+    }).join('');
+  }
+  function drawMem() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Stack
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.beginPath(); ctx.roundRect(20,20,180,80,10); ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.beginPath(); ctx.roundRect(20,20,180,80,10); ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left'; ctx.fillText('STACK',30,38);
+    if (stepIdx > 0) {
+      const s = steps[stepIdx-1];
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '13px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(s.stack, 30, 70);
+      // Heap
+      ctx.fillStyle = 'rgba(167,139,250,0.08)'; ctx.beginPath(); ctx.roundRect(240,20,200,200,10); ctx.fill();
+      ctx.strokeStyle = '#a78bfa'; ctx.beginPath(); ctx.roundRect(240,20,200,200,10); ctx.stroke();
+      ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left'; ctx.fillText('HEAP',250,38);
+      if (s.heap) {
+        const h = s.heap;
+        ctx.fillStyle = h.alive ? h.color+'30' : 'rgba(239,68,68,0.15)';
+        ctx.beginPath(); ctx.roundRect(260,60,160,50,8); ctx.fill();
+        ctx.strokeStyle = h.alive ? h.color : '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(260,60,160,50,8); ctx.stroke();
+        if (!h.alive) {
+          ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(260,60); ctx.lineTo(420,110); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(420,60); ctx.lineTo(260,110); ctx.stroke();
+        }
+        ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(h.val, 340, 92);
+        ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+        ctx.fillText(h.addr, 260, 55);
+      }
+      if (!s.pNull && s.heap) {
+        ctx.strokeStyle = s.heap.alive ? '#22c55e' : '#ef4444';
+        ctx.lineWidth = 2; ctx.setLineDash([3,3]);
+        ctx.beginPath(); ctx.moveTo(200,55); ctx.lineTo(260,85); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      // Status message
+      ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+      if (!s.heap && s.pNull) ctx.fillText('Memory freed, pointer nullified ✓', 340, 140);
+      else if (s.heap && !s.heap.alive) ctx.fillText('⚠ p still has old address (dangling!)', 340, 140);
+    }
+  }
+  function init() { stepIdx=0; drawCode(); drawMem(); }
+  window.s6Step = function() { if(stepIdx>=steps.length) return; stepIdx++; drawCode(); drawMem(); };
+  window.s6Auto = function() { if(timer) return; timer=setInterval(()=>{ if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s6Step(); },900); };
+  window.s6Reset = function() { if(timer)clearInterval(timer); timer=null; init(); };
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s6').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: DANGLING POINTERS ==================== -->
+<div class="slide" id="s7">
+  <h2>Dangling Pointers</h2>
+  <p class="subtitle">A pointer to memory that has been freed — the most dangerous bug</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">int *p = new int;</div>
+<div class="line">*p = 42;</div>
+<div class="line active">delete p;  // memory freed</div>
+<div class="line"> </div>
+<div class="line">// p still holds the old address!</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">cout << *p;  // DANGLING! UB!</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">*p = 99;     // Writing to freed memory!</div>
+<div class="line"> </div>
+<div class="line">// FIX: set to nullptr after delete</div>
+<div class="line active">delete p;</div>
+<div class="line active">p = nullptr; // now safe to check</div>
+      </div></div>
+    </div>
+    <div>
+      <canvas id="cS7" width="460" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="warning" style="margin-top:.5rem;">
+        <strong>Why it's dangerous:</strong> The freed memory might be reused for something else. Writing to it corrupts unrelated data. Reading it gives garbage. Both are <em>undefined behavior</em> — the program might seem to work, crash later, or produce wrong results.
+      </div>
+      <div class="key-idea" style="margin-top:.4rem;">
+        <strong>Prevention:</strong> Always <code>p = nullptr;</code> right after <code>delete p;</code>. Then check <code>if (p != nullptr)</code> before using it.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS7');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Before delete
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Before delete', 115, 18);
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(30,30,80,35,6); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(30,30,80,35,6); ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('p', 38,45);
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(140,30,80,35,6); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(140,30,80,35,6); ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.fillText('42',180,52);
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(110,47); ctx.lineTo(140,47); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(140,47); ctx.lineTo(134,42); ctx.lineTo(134,52); ctx.closePath();
+    ctx.fillStyle = '#22c55e'; ctx.fill();
+    // After delete (dangling)
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('After delete (DANGLING)', 345, 18);
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(260,30,80,35,6); ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.beginPath(); ctx.roundRect(260,30,80,35,6); ctx.stroke();
+    ctx.fillStyle = '#ef4444'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('p', 268,45);
+    // Freed block
+    ctx.fillStyle = 'rgba(239,68,68,0.1)'; ctx.beginPath(); ctx.roundRect(370,30,80,35,6); ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.roundRect(370,30,80,35,6); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillText('FREED',410,52);
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(340,47); ctx.lineTo(370,47); ctx.stroke();
+    ctx.setLineDash([]);
+    // After fix (nullptr)
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('After fix (nullptr)', 230, 110);
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(155,125,80,35,6); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(155,125,80,35,6); ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('p', 163,140);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillText('nullptr',195,155);
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px monospace';
+    ctx.fillText('✓ Safe to check: if (p != nullptr)', 230, 180);
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s7').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: MEMORY LEAKS ==================== -->
+<div class="slide" id="s8">
+  <h2>Memory Leaks</h2>
+  <p class="subtitle">Allocated memory that can never be freed — it's gone forever</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">void leaky() {</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">  int *p = new int[1000];</div>
+<div class="line">  // ... use the array ...</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">  // OOPS! forgot delete[] p;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">} // p destroyed, memory leaked!</div>
+<div class="line"> </div>
+<div class="line">void also_leaky() {</div>
+<div class="line">  int *p = new int(5);</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">  p = new int(10); // old memory leaked!</div>
+<div class="line">  delete p; // only frees the second one</div>
+<div class="line">}</div>
+      </div></div>
+      <div class="warning" style="margin-top:.5rem;">
+        <strong>Two ways to leak:</strong>
+        <ol style="margin-top:.3rem;font-size:.95rem;">
+          <li>Forgetting to <code>delete</code> before the pointer goes out of scope</li>
+          <li>Reassigning a pointer without freeing the old memory first</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS8" width="460" height="240" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>The golden rule:</strong> Every <code>new</code> must have exactly one matching <code>delete</code>. No more (double free), no less (leak). This is why modern C++ prefers smart pointers (<code>unique_ptr</code>, <code>shared_ptr</code>).
+      </div>
+      <div class="analogy" style="margin-top:.4rem;">
+        <strong>Analogy:</strong> A memory leak is like renting storage units and losing the keys. The units are still rented (memory still allocated), but you can never access or return them. Over time, you run out of units.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Heap fills up with leaked memory over time', canvas.width/2, 20);
+    // Heap bar
+    const barX = 30, barY = 40, barW = 400, barH = 40;
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(barX,barY,barW,barH,6); ctx.fill();
+    ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(barX,barY,barW,barH,6); ctx.stroke();
+    // Leaked blocks
+    const leaks = [0, 0.1, 0.22, 0.38, 0.52, 0.68, 0.82, 0.93];
+    leaks.forEach((start, i) => {
+      const w = [0.08, 0.10, 0.14, 0.12, 0.14, 0.12, 0.09, 0.07][i];
+      ctx.fillStyle = `rgba(239,68,68,${0.2 + i*0.08})`;
+      ctx.fillRect(barX + start*barW, barY+2, w*barW, barH-4);
+    });
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('LEAKED', barX + barW/2, barY + barH/2 + 5);
+    // Labels
+    const labels = ['Call 1','Call 2','Call 3','...','Call N'];
+    const lx = [barX+30, barX+100, barX+180, barX+260, barX+340];
+    labels.forEach((l,i) => {
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(l, lx[i], barY + barH + 15);
+    });
+    // Arrow showing growth
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(barX, barY+barH+25); ctx.lineTo(barX+barW, barY+barH+25); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(barX+barW,barY+barH+25); ctx.lineTo(barX+barW-8,barY+barH+20); ctx.lineTo(barX+barW-8,barY+barH+30); ctx.closePath();
+    ctx.fillStyle = '#ef4444'; ctx.fill();
+    ctx.fillStyle = '#ef4444'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Eventually: out of memory! (std::bad_alloc)', canvas.width/2, barY+barH+45);
+    // Fix
+    ctx.fillStyle = 'rgba(34,197,94,0.1)'; ctx.beginPath(); ctx.roundRect(30,160,400,60,8); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(30,160,400,60,8); ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Prevention: delete before reassign or scope exit', canvas.width/2, 185);
+    ctx.fillStyle = '#a5f3fc'; ctx.font = '11px monospace';
+    ctx.fillText('Modern C++: use unique_ptr<int> — auto-deletes!', canvas.width/2, 208);
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s8').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: RETURNING POINTERS ==================== -->
+<div class="slide" id="s9">
+  <h2>Returning Pointers from Functions</h2>
+  <p class="subtitle">What you can and cannot return — and why</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#ef4444;">BAD: Return local array</h3>
+      <div class="code-block"><div class="code-content" style="font-size:.82rem;">
+<div class="line">int* reverse(const int* list, int size) {</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">  int result[6]; // LOCAL (stack)</div>
+<div class="line">  for (int i=0,j=size-1; i&lt;size; i++,j--)</div>
+<div class="line">    result[j] = list[i];</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">  return result; // DANGLING!</div>
+<div class="line">}</div>
+      </div></div>
+      <div class="warning" style="margin-top:.3rem;">
+        <strong>Why it fails:</strong> <code>result</code> lives on the stack. When the function returns, that stack frame is destroyed. The pointer now points to freed memory — a dangling pointer!
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#22c55e;">GOOD: Return heap array</h3>
+      <div class="code-block"><div class="code-content" style="font-size:.82rem;">
+<div class="line">int* reverse(const int* list, int size) {</div>
+<div class="line active">  int* result = new int[size]; // HEAP</div>
+<div class="line">  for (int i=0,j=size-1; i&lt;size; i++,j--)</div>
+<div class="line">    result[j] = list[i];</div>
+<div class="line active">  return result; // OK! Heap survives</div>
+<div class="line">}</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.3rem;">
+        <strong>Why it works:</strong> Heap memory persists until you explicitly <code>delete[]</code> it. The function allocates on the heap, returns the pointer, and the caller is responsible for freeing it.
+      </div>
+    </div>
+  </div>
+  <canvas id="cS9" width="800" height="130" style="width:100%;max-width:800px;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:.5rem;"></canvas>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Bad: stack frame diagram
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('BAD: Local array on stack', 200, 18);
+    ctx.fillStyle = 'rgba(239,68,68,0.1)'; ctx.beginPath(); ctx.roundRect(20,25,360,90,8); ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.beginPath(); ctx.roundRect(20,25,360,90,8); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('reverse() stack frame:', 30, 45);
+    ctx.fillText('  result[6] on stack', 30, 62);
+    ctx.fillText('  → function returns → frame destroyed', 30, 79);
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 11px monospace';
+    ctx.fillText('  → returned pointer is DANGLING 💥', 30, 96);
+    // Good: heap diagram
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('GOOD: Dynamic array on heap', 600, 18);
+    ctx.fillStyle = 'rgba(34,197,94,0.1)'; ctx.beginPath(); ctx.roundRect(420,25,360,90,8); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(420,25,360,90,8); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('reverse() allocates on heap:', 430, 45);
+    ctx.fillText('  result = new int[size]', 430, 62);
+    ctx.fillText('  → function returns → heap persists', 430, 79);
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 11px monospace';
+    ctx.fillText('  → caller must delete[] later ✓', 430, 96);
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s9').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: FULL LIFECYCLE EXAMPLE ==================== -->
+<div class="slide" id="s10">
+  <h2>Full Example: Reverse with Dynamic Memory</h2>
+  <p class="subtitle">Allocate in function, use in caller, free when done</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content" style="font-size:.82rem;">
+<div class="line">int* reverse(const int* list, int size) {</div>
+<div class="line active">  int* result = new int[size];</div>
+<div class="line">  for (int i=0,j=size-1; i&lt;size; i++,j--)</div>
+<div class="line">    result[j] = list[i];</div>
+<div class="line">  return result;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">int main() {</div>
+<div class="line">  int list[] = {1, 2, 3, 4, 5, 6};</div>
+<div class="line">  int* p = reverse(list, 6);</div>
+<div class="line">  // p = {6, 5, 4, 3, 2, 1}</div>
+<div class="line">  printArray(p, 6);</div>
+<div class="line active">  delete[] p; // Don't forget!</div>
+<div class="line">  return 0;</div>
+<div class="line">}</div>
+      </div></div>
+    </div>
+    <div>
+      <canvas id="cS10" width="460" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Ownership pattern:</strong> The function that calls <code>new</code> doesn't always call <code>delete</code>. Here, <code>reverse()</code> allocates but <code>main()</code> frees. The "owner" of the memory is whoever holds the pointer and is responsible for freeing it.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Stack: list array
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.beginPath(); ctx.roundRect(20,20,200,120,10); ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.beginPath(); ctx.roundRect(20,20,200,120,10); ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left'; ctx.fillText('STACK (main)',30,38);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+    ctx.fillText('list[] = {1,2,3,4,5,6}', 30, 58);
+    ctx.fillText('p → (heap)', 30, 80);
+    // Heap: result array
+    ctx.fillStyle = 'rgba(167,139,250,0.08)'; ctx.beginPath(); ctx.roundRect(240,20,200,120,10); ctx.fill();
+    ctx.strokeStyle = '#a78bfa'; ctx.beginPath(); ctx.roundRect(240,20,200,120,10); ctx.stroke();
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left'; ctx.fillText('HEAP',250,38);
+    // Array blocks
+    const vals = [6,5,4,3,2,1];
+    vals.forEach((v,i) => {
+      const x = 250 + i * 30, y = 55;
+      ctx.fillStyle = '#22c55e20'; ctx.fillRect(x, y, 28, 28);
+      ctx.strokeStyle = '#22c55e'; ctx.strokeRect(x, y, 28, 28);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(v, x+14, y+18);
+    });
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('new int[6]', 250, 100);
+    // Arrow
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(130, 76); ctx.lineTo(250, 69); ctx.stroke();
+    ctx.setLineDash([]);
+    // Lifecycle
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Memory Lifecycle', canvas.width/2, 170);
+    const stages = [
+      {label:'reverse() calls new[]', x:50, color:'#a78bfa'},
+      {label:'p = reverse(list, 6)', x:180, color:'#f59e0b'},
+      {label:'use p[0..5]', x:300, color:'#22c55e'},
+      {label:'delete[] p', x:410, color:'#ef4444'},
+    ];
+    stages.forEach((s,i) => {
+      ctx.fillStyle = s.color+'30'; ctx.beginPath(); ctx.arc(s.x, 210, 22, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(s.x, 210, 22, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.fillText(i+1, s.x, 215);
+      ctx.fillStyle = s.color; ctx.font = '10px monospace';
+      ctx.fillText(s.label, s.x, 245);
+      if (i < stages.length-1) {
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(s.x+25, 210); ctx.lineTo(stages[i+1].x-25, 210); ctx.stroke();
+      }
+    });
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s10').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: STACK VS HEAP DECISION ==================== -->
+<div class="slide" id="s11">
+  <h2>Stack vs Heap — When to Use Which</h2>
+  <p class="subtitle">A decision guide for memory allocation</p>
+  <canvas id="cS11" width="800" height="380" style="width:100%;max-width:800px;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:1rem;"></canvas>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Stack vs Heap Decision Guide', canvas.width/2, 25);
+    // Decision tree
+    const q1 = {text:'Do you know the size\nat compile time?', x:400, y:70};
+    // Yes branch
+    const q2y = {text:'Is it a small,\nshort-lived value?', x:200, y:170};
+    const a1 = {text:'Use STACK\nint arr[10];', x:100, y:280, color:'#6366f1'};
+    const a2 = {text:'Consider HEAP\nfor large arrays', x:300, y:280, color:'#a78bfa'};
+    // No branch
+    const a3 = {text:'Use HEAP\nnew int[n];', x:600, y:170, color:'#22c55e'};
+    function drawNode(n, isAnswer) {
+      const w = isAnswer ? 150 : 180, h = isAnswer ? 55 : 50;
+      ctx.fillStyle = (n.color||'#334155') + (isAnswer?'30':'20');
+      ctx.beginPath(); ctx.roundRect(n.x-w/2, n.y-h/2, w, h, 10); ctx.fill();
+      ctx.strokeStyle = n.color||'#475569'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(n.x-w/2, n.y-h/2, w, h, 10); ctx.stroke();
+      ctx.fillStyle = isAnswer ? (n.color||'#e2e8f0') : '#e2e8f0';
+      ctx.font = isAnswer ? 'bold 12px monospace' : '12px monospace';
+      ctx.textAlign = 'center';
+      n.text.split('\n').forEach((ln,i) => ctx.fillText(ln, n.x, n.y - 6 + i*16));
+    }
+    function drawEdge(from, to, label, color) {
+      ctx.strokeStyle = color||'#475569'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(from.x, from.y+25); ctx.lineTo(to.x, to.y-25); ctx.stroke();
+      if (label) {
+        const mx = (from.x+to.x)/2, my = (from.y+to.y)/2;
+        ctx.fillStyle = color||'#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(label, mx+15, my);
+      }
+    }
+    drawEdge(q1, q2y, 'Yes', '#6366f1');
+    drawEdge(q1, a3, 'No', '#22c55e');
+    drawEdge(q2y, a1, 'Yes', '#6366f1');
+    drawEdge(q2y, a2, 'No', '#a78bfa');
+    drawNode(q1, false);
+    drawNode(q2y, false);
+    drawNode(a1, true);
+    drawNode(a2, true);
+    drawNode(a3, true);
+    // Summary table
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    const rows = [
+      ['', 'Stack', 'Heap'],
+      ['Speed', 'Fast (auto)', 'Slower (OS call)'],
+      ['Size', 'Fixed', 'Runtime'],
+      ['Lifetime', 'Scope-bound', 'Until delete'],
+      ['Risk', 'None', 'Leaks/dangling'],
+    ];
+    const tx = 50, ty = 330, cw = 140;
+    rows.forEach((row, ri) => {
+      row.forEach((cell, ci) => {
+        const x = tx + ci * cw;
+        ctx.fillStyle = ri === 0 ? '#475569' : (ri%2===0 ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.05)');
+        ctx.fillRect(x, ty + ri*22, cw-2, 20);
+        ctx.fillStyle = ri === 0 ? '#e2e8f0' : ci === 0 ? '#94a3b8' : ci === 1 ? '#6366f1' : '#22c55e';
+        ctx.font = ri === 0 ? 'bold 10px monospace' : '10px monospace';
+        ctx.fillText(cell, x + cw/2, ty + ri*22 + 14);
+      });
+    });
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s11').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: CHALLENGE A ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A — Spot the Memory Leak</h2>
+  <p class="subtitle">Which code snippets have memory leaks?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:.8rem;" id="sCAc1">
+      <h3 style="font-size:.95rem;">Snippet 1</h3>
+      <div class="code-block" style="font-size:.78rem;"><div class="code-content">
+<div class="line">int *p = new int(5);</div>
+<div class="line">cout << *p;</div>
+<div class="line">delete p;</div>
+      </div></div>
+      <select id="sCA1" style="width:100%;padding:.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.3rem;">
+        <option value="">-- Leak? --</option>
+        <option value="no">No leak</option>
+        <option value="yes">Has leak</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:.8rem;" id="sCAc2">
+      <h3 style="font-size:.95rem;">Snippet 2</h3>
+      <div class="code-block" style="font-size:.78rem;"><div class="code-content">
+<div class="line">int *p = new int(5);</div>
+<div class="line">p = new int(10);</div>
+<div class="line">delete p;</div>
+      </div></div>
+      <select id="sCA2" style="width:100%;padding:.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.3rem;">
+        <option value="">-- Leak? --</option>
+        <option value="no">No leak</option>
+        <option value="yes">Has leak</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:.8rem;" id="sCAc3">
+      <h3 style="font-size:.95rem;">Snippet 3</h3>
+      <div class="code-block" style="font-size:.78rem;"><div class="code-content">
+<div class="line">void f() {</div>
+<div class="line">  int *a = new int[10];</div>
+<div class="line">  // use a...</div>
+<div class="line">}</div>
+      </div></div>
+      <select id="sCA3" style="width:100%;padding:.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.3rem;">
+        <option value="">-- Leak? --</option>
+        <option value="no">No leak</option>
+        <option value="yes">Has leak</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:.8rem;">
+    <button class="btn" onclick="sCACheck()">Check All</button>
+    <span id="sCAresult" style="margin-left:1rem;font-size:1.1rem;font-weight:600;"></span>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:.4rem;">
+    <div id="sCAfb1" style="border-radius:8px;padding:.4rem .6rem;font-size:.8rem;"></div>
+    <div id="sCAfb2" style="border-radius:8px;padding:.4rem .6rem;font-size:.8rem;"></div>
+    <div id="sCAfb3" style="border-radius:8px;padding:.4rem .6rem;font-size:.8rem;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCA1:'no', sCA2:'yes', sCA3:'yes'};
+  const expl = {
+    sCA1: 'No leak — new is matched by delete ✓',
+    sCA2: 'LEAK! First new(5) is lost when p is reassigned. delete only frees the second allocation.',
+    sCA3: 'LEAK! new int[10] is never delete[]\'d. When f() returns, pointer a is destroyed but heap memory persists.'
+  };
+  window.sCACheck = function() {
+    let score = 0;
+    ['sCA1','sCA2','sCA3'].forEach((id,i) => {
+      const val = document.getElementById(id).value;
+      const fb = document.getElementById(`sCAfb${i+1}`);
+      if (val === answers[id]) {
+        score++;
+        fb.style.background = 'rgba(34,197,94,0.15)'; fb.style.border = '1px solid #22c55e';
+        fb.innerHTML = `<span style="color:#22c55e">✓</span> ${expl[id]}`;
+      } else {
+        fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.border = '1px solid #ef4444';
+        fb.innerHTML = `<span style="color:#ef4444">✗</span> ${expl[id]}`;
+      }
+    });
+    document.getElementById('sCAresult').innerHTML = `<span style="color:${score===3?'#22c55e':'#f59e0b'}">${score}/3</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 12: COMMON MISTAKES ==================== -->
+<div class="slide" id="s12">
+  <h2>Common Dynamic Memory Mistakes</h2>
+  <p class="subtitle">Six pitfalls to avoid</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div>
+      <div class="warning" style="margin-bottom:.5rem;">
+        <strong>1. Memory Leak</strong> — forgetting delete
+        <div class="code-block" style="margin-top:.2rem;font-size:.8rem;"><div class="code-content">
+<div class="line" style="background:rgba(239,68,68,0.15);">void f() { int *p = new int; } // leaked!</div>
+        </div></div>
+      </div>
+      <div class="warning" style="margin-bottom:.5rem;">
+        <strong>2. Dangling Pointer</strong> — using after delete
+        <div class="code-block" style="margin-top:.2rem;font-size:.8rem;"><div class="code-content">
+<div class="line">delete p;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">*p = 10; // undefined behavior!</div>
+        </div></div>
+      </div>
+      <div class="warning">
+        <strong>3. Double Free</strong> — deleting twice
+        <div class="code-block" style="margin-top:.2rem;font-size:.8rem;"><div class="code-content">
+<div class="line">delete p;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">delete p; // crash or corruption!</div>
+        </div></div>
+      </div>
+    </div>
+    <div>
+      <div class="warning" style="margin-bottom:.5rem;">
+        <strong>4. Mismatched new/delete</strong>
+        <div class="code-block" style="margin-top:.2rem;font-size:.8rem;"><div class="code-content">
+<div class="line">int *p = new int[10];</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">delete p; // should be delete[] p!</div>
+        </div></div>
+      </div>
+      <div class="warning" style="margin-bottom:.5rem;">
+        <strong>5. Deleting stack memory</strong>
+        <div class="code-block" style="margin-top:.2rem;font-size:.8rem;"><div class="code-content">
+<div class="line">int x = 5;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">delete &x; // NOT from new! Crash!</div>
+        </div></div>
+      </div>
+      <div class="warning">
+        <strong>6. Returning local pointer</strong>
+        <div class="code-block" style="margin-top:.2rem;font-size:.8rem;"><div class="code-content">
+<div class="line">int* f() { int x=5;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">  return &x; } // x destroyed on return!</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:.5rem;">
+    <strong>Modern C++ solution:</strong> Use <code>std::unique_ptr</code> and <code>std::shared_ptr</code> — they automatically call <code>delete</code> when the pointer goes out of scope. Zero leaks, zero dangling pointers.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE sCB: CHALLENGE B ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B — Fix the Bug</h2>
+  <p class="subtitle">This function has a memory management error</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <h3>Buggy Code</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">int* createArray(int size) {</div>
+<div class="line">  int arr[size]; // VLA on stack</div>
+<div class="line">  for (int i = 0; i &lt; size; i++)</div>
+<div class="line">    arr[i] = i * 10;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">  return arr; // returning local!</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">int main() {</div>
+<div class="line">  int *p = createArray(5);</div>
+<div class="line">  cout &lt;&lt; p[2]; // undefined!</div>
+<div class="line">}</div>
+      </div></div>
+      <div style="margin-top:.8rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">What's the fix?</label>
+        <select id="sCBans" style="width:100%;padding:.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:.9rem;margin-top:.3rem;">
+          <option value="">-- Select --</option>
+          <option value="a">Use static int arr[size] instead</option>
+          <option value="b">Use int* arr = new int[size] instead</option>
+          <option value="c">Pass the array as a parameter</option>
+          <option value="d">Both b and c would work</option>
+        </select>
+        <button class="btn" onclick="sCBCheck()" style="margin-top:.5rem;">Check</button>
+      </div>
+      <div id="sCBfeedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>The Fix</h3>
+      <div id="sCBfix" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:1rem;font-family:monospace;font-size:.85rem;min-height:220px;color:#94a3b8;">
+        Select and check to see the fix...
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCBCheck = function() {
+    const ans = document.getElementById('sCBans').value;
+    const fb = document.getElementById('sCBfeedback');
+    const fix = document.getElementById('sCBfix');
+    if (ans === 'd') {
+      fb.innerHTML = '<div style="color:#22c55e;font-weight:600;">✓ Correct! Both approaches solve the dangling pointer.</div>';
+      fix.innerHTML = `<div style="color:#22c55e;margin-bottom:.4rem;">✓ Two valid fixes:</div>
+<div class="code-block"><div class="code-content" style="font-size:.82rem;">
+<div class="line">// Fix 1: Allocate on heap</div>
+<div class="line active">int* arr = new int[size];</div>
+<div class="line">// ... caller must delete[] ...</div>
+<div class="line"> </div>
+<div class="line">// Fix 2: Pass array as parameter</div>
+<div class="line active">void fillArray(int* arr, int size) {</div>
+<div class="line">  for (int i=0; i&lt;size; i++) arr[i]=i*10;</div>
+<div class="line">}</div>
+<div class="line">// caller allocates and owns memory</div>
+</div></div>
+<div style="color:#94a3b8;margin-top:.3rem;font-size:.82rem;">Fix 2 is often preferred because the caller controls memory lifetime — no confusion about who should delete.</div>`;
+    } else if (ans === '') {
+      fb.innerHTML = '<div style="color:#f59e0b;">Please select an option.</div>';
+    } else if (ans === 'b') {
+      fb.innerHTML = '<div style="color:#f59e0b;">That works, but there\'s an even more complete answer...</div>';
+    } else {
+      fb.innerHTML = '<div style="color:#ef4444;">✗ Not quite. The core issue is returning a pointer to stack memory that gets destroyed.</div>';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 13: SMART POINTERS PREVIEW ==================== -->
+<div class="slide" id="s13">
+  <h2>Preview: Smart Pointers (Modern C++)</h2>
+  <p class="subtitle">The future: automatic memory management without garbage collection</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>Raw Pointer (Manual)</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line" style="background:rgba(239,68,68,0.1);">int *p = new int(42);</div>
+<div class="line">// ... use p ...</div>
+<div class="line" style="background:rgba(239,68,68,0.1);">delete p; // YOUR responsibility</div>
+<div class="line">// What if you forget? → LEAK</div>
+<div class="line">// What if exception? → LEAK</div>
+      </div></div>
+    </div>
+    <div>
+      <h3>Smart Pointer (Automatic)</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">#include &lt;memory&gt;</div>
+<div class="line active">auto p = std::make_unique&lt;int&gt;(42);</div>
+<div class="line">// ... use *p ...</div>
+<div class="line active">// automatically deleted when p goes</div>
+<div class="line active">// out of scope! No leaks possible.</div>
+      </div></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(99,102,241,0.1);border-radius:10px;padding:.8rem;">
+      <h3 style="font-size:.95rem;color:#6366f1;">unique_ptr</h3>
+      <p style="font-size:.85rem;">Single owner. Deleted when owner goes out of scope. Can't be copied, only moved.</p>
+    </div>
+    <div style="background:rgba(34,197,94,0.1);border-radius:10px;padding:.8rem;">
+      <h3 style="font-size:.95rem;color:#22c55e;">shared_ptr</h3>
+      <p style="font-size:.85rem;">Reference counted. Multiple owners. Deleted when last owner is destroyed.</p>
+    </div>
+    <div style="background:rgba(245,158,11,0.1);border-radius:10px;padding:.8rem;">
+      <h3 style="font-size:.95rem;color:#f59e0b;">weak_ptr</h3>
+      <p style="font-size:.85rem;">Non-owning observer. Doesn't prevent deletion. Used to break circular references.</p>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:.5rem;">
+    <strong>Rule of thumb:</strong> In modern C++ (C++11 and later), prefer <code>unique_ptr</code> by default. Use <code>shared_ptr</code> only when you truly need shared ownership. Use raw <code>new/delete</code> only when you understand why you need it.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 14: SUMMARY ==================== -->
+<div class="slide" id="s14">
+  <h2>Dynamic Memory — Summary</h2>
+  <p class="subtitle">The rules to live by</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS14" width="460" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-size:.82rem;">
+        <div style="background:rgba(34,197,94,0.1);padding:.5rem .6rem;border-radius:6px;"><code>new T</code><br><span style="color:#94a3b8">alloc single</span></div>
+        <div style="background:rgba(34,197,94,0.1);padding:.5rem .6rem;border-radius:6px;"><code>new T[n]</code><br><span style="color:#94a3b8">alloc array</span></div>
+        <div style="background:rgba(239,68,68,0.1);padding:.5rem .6rem;border-radius:6px;"><code>delete p</code><br><span style="color:#94a3b8">free single</span></div>
+        <div style="background:rgba(239,68,68,0.1);padding:.5rem .6rem;border-radius:6px;"><code>delete[] p</code><br><span style="color:#94a3b8">free array</span></div>
+        <div style="background:rgba(245,158,11,0.1);padding:.5rem .6rem;border-radius:6px;"><code>p = nullptr</code><br><span style="color:#94a3b8">after delete</span></div>
+        <div style="background:rgba(245,158,11,0.1);padding:.5rem .6rem;border-radius:6px;"><code>if (p)</code><br><span style="color:#94a3b8">check before use</span></div>
+        <div style="background:rgba(167,139,250,0.1);padding:.5rem .6rem;border-radius:6px;"><code>unique_ptr</code><br><span style="color:#94a3b8">modern C++</span></div>
+        <div style="background:rgba(167,139,250,0.1);padding:.5rem .6rem;border-radius:6px;"><code>make_unique</code><br><span style="color:#94a3b8">preferred</span></div>
+      </div>
+      <div class="key-idea" style="margin-top:.6rem;">
+        <strong>The Four Rules:</strong>
+        <ol style="margin-top:.3rem;font-size:.95rem;">
+          <li>Every <code>new</code> needs a <code>delete</code></li>
+          <li>Every <code>new[]</code> needs a <code>delete[]</code></li>
+          <li>Set pointer to <code>nullptr</code> after delete</li>
+          <li>Never return pointers to local variables</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS14');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Memory Management Mental Model', canvas.width/2, 22);
+    // new → heap → delete cycle
+    const cx = 230, cy = 155;
+    // new arrow
+    ctx.fillStyle = '#22c55e30'; ctx.beginPath(); ctx.arc(100, cy, 45, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(100, cy, 45, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px monospace'; ctx.fillText('new', 100, cy-5);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.fillText('allocate', 100, cy+12);
+    // Heap
+    ctx.fillStyle = '#a78bfa30'; ctx.beginPath(); ctx.arc(cx, cy, 50, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, 50, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 14px monospace'; ctx.fillText('HEAP', cx, cy-5);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.fillText('use *p', cx, cy+12);
+    // delete
+    ctx.fillStyle = '#ef444430'; ctx.beginPath(); ctx.arc(360, cy, 45, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(360, cy, 45, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 14px monospace'; ctx.fillText('delete', 360, cy-5);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.fillText('free', 360, cy+12);
+    // Arrows
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(145, cy); ctx.lineTo(180, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(180,cy); ctx.lineTo(172,cy-5); ctx.lineTo(172,cy+5); ctx.closePath(); ctx.fillStyle = '#22c55e'; ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(280, cy); ctx.lineTo(315, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(315,cy); ctx.lineTo(307,cy-5); ctx.lineTo(307,cy+5); ctx.closePath(); ctx.fillStyle = '#ef4444'; ctx.fill();
+    // nullptr after
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(360, cy+48); ctx.quadraticCurveTo(360, cy+85, 230, cy+85);
+    ctx.quadraticCurveTo(100, cy+85, 100, cy+48); ctx.stroke();
+    ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('p = nullptr', cx, cy+98);
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s14').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCC: CHALLENGE C ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C — Stack or Heap?</h2>
+  <p class="subtitle">For each scenario, choose the right allocation strategy</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:.95rem;">1. A loop counter <code>i</code> used in a for loop</h3>
+      <select id="sCC1" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.5rem;">
+        <option value="">-- Pick --</option>
+        <option value="stack">Stack</option>
+        <option value="heap">Heap (new)</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:.95rem;">2. An array whose size is read from user input</h3>
+      <select id="sCC2" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.5rem;">
+        <option value="">-- Pick --</option>
+        <option value="stack">Stack</option>
+        <option value="heap">Heap (new)</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:.95rem;">3. Data that must outlive the function that creates it</h3>
+      <select id="sCC3" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.5rem;">
+        <option value="">-- Pick --</option>
+        <option value="stack">Stack</option>
+        <option value="heap">Heap (new)</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+    <span id="sCCresult" style="margin-left:1rem;font-size:1.1rem;font-weight:600;"></span>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:.3rem;">
+    <div id="sCCfb1" style="border-radius:8px;padding:.4rem .6rem;font-size:.8rem;"></div>
+    <div id="sCCfb2" style="border-radius:8px;padding:.4rem .6rem;font-size:.8rem;"></div>
+    <div id="sCCfb3" style="border-radius:8px;padding:.4rem .6rem;font-size:.8rem;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCC1:'stack', sCC2:'heap', sCC3:'heap'};
+  const expl = {
+    sCC1: 'Stack — small, short-lived, known size. No reason to use heap.',
+    sCC2: 'Heap — size unknown at compile time. Use new int[n].',
+    sCC3: 'Heap — stack memory is destroyed when function returns. Heap persists until delete.'
+  };
+  window.sCCCheck = function() {
+    let score = 0;
+    ['sCC1','sCC2','sCC3'].forEach((id,i) => {
+      const val = document.getElementById(id).value;
+      const fb = document.getElementById(`sCCfb${i+1}`);
+      if (val === answers[id]) {
+        score++;
+        fb.style.background = 'rgba(34,197,94,0.15)'; fb.style.border = '1px solid #22c55e';
+        fb.innerHTML = `<span style="color:#22c55e">✓</span> ${expl[id]}`;
+      } else {
+        fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.border = '1px solid #ef4444';
+        fb.innerHTML = `<span style="color:#ef4444">✗</span> ${expl[id]}`;
+      }
+    });
+    document.getElementById('sCCresult').innerHTML = `<span style="color:${score===3?'#22c55e':'#f59e0b'}">${score}/3</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: QUIZ MC ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz — Multiple Choice</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q1: Where does <code>new</code> allocate?</h3>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="a"> Stack</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="b"> Heap</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="c"> Global data segment</label>
+      </div>
+      <div id="sQ1fb1" style="margin-top:.3rem;font-size:.82rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q2: What frees <code>new int[10]</code>?</h3>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="a"> delete p;</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="b"> delete[] p;</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="c"> free(p);</label>
+      </div>
+      <div id="sQ1fb2" style="margin-top:.3rem;font-size:.82rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q3: A dangling pointer is:</h3>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="a"> A null pointer</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="b"> A pointer to freed memory</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="c"> An uninitialized pointer</label>
+      </div>
+      <div id="sQ1fb3" style="margin-top:.3rem;font-size:.82rem;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1score" style="margin-left:1rem;font-size:1.1rem;font-weight:600;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {q1:'b',q2:'b',q3:'b'};
+  const expl = {
+    q1:'Heap — new allocates from the heap (free store). The pointer lives on the stack, but the data is on the heap.',
+    q2:'delete[] — new[] must be matched with delete[]. Using delete (without []) is undefined behavior.',
+    q3:'A pointer to freed memory — after delete, the pointer still holds the old address but the memory is no longer valid.'
+  };
+  window.sQ1Check = function() {
+    let score = 0;
+    ['q1','q2','q3'].forEach((q,i) => {
+      const sel = document.querySelector(`input[name="${q}"]:checked`);
+      const fb = document.getElementById(`sQ1fb${i+1}`);
+      if (!sel) { fb.innerHTML = '<span style="color:#f59e0b;">Select an answer</span>'; return; }
+      if (sel.value === answers[q]) { score++; fb.innerHTML = `<span style="color:#22c55e;">✓ ${expl[q]}</span>`; }
+      else { fb.innerHTML = `<span style="color:#ef4444;">✗ ${expl[q]}</span>`; }
+    });
+    document.getElementById('sQ1score').innerHTML = `<span style="color:${score===3?'#22c55e':'#f59e0b'}">${score}/3</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: QUIZ TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz — Trace Memory Operations</h2>
+  <p class="subtitle">How many bytes are leaked?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">int *a = new int[3];     // 12 bytes</div>
+<div class="line">int *b = new int[5];     // 20 bytes</div>
+<div class="line">int *c = a;</div>
+<div class="line">a = b;</div>
+<div class="line">delete[] a;</div>
+<div class="line">delete[] c;</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">Bytes leaked: </label>
+        <input type="text" id="sQ2input" placeholder="?" style="width:80px;padding:.4rem .6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:1rem;text-align:center;">
+        <button class="btn" onclick="sQ2Check()" style="margin-left:.5rem;">Check</button>
+      </div>
+      <div id="sQ2feedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>Trace</h3>
+      <div id="sQ2trace" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:.8rem;font-family:monospace;font-size:.82rem;min-height:250px;color:#94a3b8;">
+        Enter your answer, then click Check...
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ2Check = function() {
+    const ans = document.getElementById('sQ2input').value.trim();
+    const fb = document.getElementById('sQ2feedback');
+    if (ans === '0') {
+      fb.innerHTML = '<span style="color:#22c55e;font-weight:600;">✓ Correct! No memory is leaked.</span>';
+    } else {
+      fb.innerHTML = '<span style="color:#ef4444;font-weight:600;">✗ Trace carefully — which allocations get freed?</span>';
+    }
+    document.getElementById('sQ2trace').innerHTML = `
+<div style="color:#818cf8">Line 1: a = new int[3] → a→[heap block A, 12B]</div>
+<div style="color:#818cf8">Line 2: b = new int[5] → b→[heap block B, 20B]</div>
+<div style="color:#f59e0b;margin-top:.3rem;">Line 3: c = a</div>
+<div>c now also points to block A. a→A, b→B, c→A</div>
+<div style="color:#f59e0b;margin-top:.3rem;">Line 4: a = b</div>
+<div>a now points to block B. a→B, b→B, c→A</div>
+<div>Block A is still reachable through c ✓</div>
+<div style="color:#ef4444;margin-top:.3rem;">Line 5: delete[] a</div>
+<div>a points to B → frees block B (20 bytes) ✓</div>
+<div style="color:#ef4444;margin-top:.3rem;">Line 6: delete[] c</div>
+<div>c points to A → frees block A (12 bytes) ✓</div>
+<div style="color:#22c55e;margin-top:.5rem;font-weight:600;">Both blocks freed! 0 bytes leaked.</div>
+<div style="color:#94a3b8;">The key: c saved the pointer to A before a was reassigned.</div>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: QUIZ PREDICT OUTPUT ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz — Predict the Output</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">int* create(int val, int size) {</div>
+<div class="line">  int* arr = new int[size];</div>
+<div class="line">  for (int i = 0; i &lt; size; i++)</div>
+<div class="line">    arr[i] = val + i;</div>
+<div class="line">  return arr;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">int main() {</div>
+<div class="line">  int* p = create(10, 4);</div>
+<div class="line">  cout &lt;&lt; p[0] &lt;&lt; " "</div>
+<div class="line">       &lt;&lt; p[2] &lt;&lt; " "</div>
+<div class="line">       &lt;&lt; *(p+3) &lt;&lt; endl;</div>
+<div class="line">  delete[] p;</div>
+<div class="line">}</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">Output: </label>
+        <input type="text" id="sQ3input" placeholder="e.g., 10 12 13" style="width:150px;padding:.4rem .6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+        <button class="btn" onclick="sQ3Check()" style="margin-left:.5rem;">Check</button>
+      </div>
+      <div id="sQ3feedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>Trace</h3>
+      <div id="sQ3trace" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:.8rem;font-family:monospace;font-size:.85rem;min-height:240px;color:#94a3b8;">
+        Enter your answer, then click Check.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ3Check = function() {
+    const ans = document.getElementById('sQ3input').value.trim();
+    const fb = document.getElementById('sQ3feedback');
+    if (ans === '10 12 13') {
+      fb.innerHTML = '<span style="color:#22c55e;font-weight:600;">✓ Correct!</span>';
+    } else {
+      fb.innerHTML = '<span style="color:#ef4444;font-weight:600;">✗ Trace the array creation carefully.</span>';
+    }
+    document.getElementById('sQ3trace').innerHTML = `
+<div style="color:#818cf8">create(10, 4):</div>
+<div>  arr = new int[4]</div>
+<div>  arr[0] = 10+0 = <span style="color:#22c55e">10</span></div>
+<div>  arr[1] = 10+1 = <span style="color:#e2e8f0">11</span></div>
+<div>  arr[2] = 10+2 = <span style="color:#22c55e">12</span></div>
+<div>  arr[3] = 10+3 = <span style="color:#22c55e">13</span></div>
+<div>  return arr → p = {10, 11, 12, 13}</div>
+<div style="color:#f59e0b;margin-top:.4rem;">Output:</div>
+<div>  p[0] = 10</div>
+<div>  p[2] = 12</div>
+<div>  *(p+3) = p[3] = 13</div>
+<div style="color:#22c55e;font-weight:600;margin-top:.4rem;">10 12 13</div>
+<div style="color:#94a3b8;margin-top:.3rem;">Memory properly freed with delete[] p ✓</div>`;
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','sCB','s13','s14','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

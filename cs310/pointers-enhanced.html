@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointers — Enhanced Interactive Slides</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden}
+  .slide{display:none;min-height:100vh;padding:2.5rem 3.5rem;position:relative;flex-direction:column;justify-content:center}
+  .slide.active{display:flex}
+  .fade-in{animation:fadeIn .4s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:200}
+  #progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#a78bfa);transition:width .3s}
+  h1{font-size:2.4em;margin-bottom:.5rem;background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+  h2{font-size:1.7em;color:#38bdf8;margin-bottom:.5rem}
+  h3{font-size:1.2em;color:#a5b4fc;margin-bottom:.4rem}
+  p,li{font-size:1.05em;line-height:1.7;color:#cbd5e1}
+  .subtitle{font-size:1.15em;color:#94a3b8;margin-bottom:1.2rem}
+  .nav{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);display:flex;gap:.75rem;z-index:100}
+  .nav button{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:.5rem 1.4rem;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+  .nav button:hover{background:#475569}
+  .nav button:disabled{opacity:.3;cursor:not-allowed}
+  .btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:.9rem;transition:all .2s}
+  .btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+  .btn-sm{padding:.35rem .8rem;font-size:.82rem}
+  .btn-secondary{background:#334155;color:#e2e8f0;border:1px solid #475569}
+  .btn-secondary:hover{background:#475569}
+  .key-idea{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(16,185,129,.1));border-left:4px solid #22c55e;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .warning{background:rgba(239,68,68,.08);border-left:4px solid #ef4444;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .analogy{background:rgba(139,92,246,.08);border-left:4px solid #a78bfa;border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.75rem 0}
+  .code-block{background:rgba(0,0,0,.3);border:1px solid #334155;border-radius:10px;padding:.8rem 1rem;margin:.5rem 0;overflow-x:auto}
+  .code-content{font-family:'SF Mono','Fira Code',monospace;font-size:.85rem;line-height:1.7}
+  .line{padding:1px 6px;border-left:3px solid transparent;border-radius:0 4px 4px 0;white-space:pre}
+  .line.active{background:rgba(99,102,241,.15);border-left-color:#6366f1}
+  code{font-family:'SF Mono','Fira Code',monospace;background:#1e293b;padding:2px 7px;border-radius:4px;font-size:.9em;color:#a5f3fc}
+  .slide-number{position:absolute;bottom:1rem;right:2rem;color:#475569;font-size:.8rem}
+  ul{padding-left:1.5rem}
+  ul li{margin-bottom:.4rem}
+  canvas{border-radius:12px}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <h1>Pointers</h1>
+  <p class="subtitle">CS310 — Understanding Memory Addresses in C++</p>
+  <canvas id="cS1" width="800" height="340" style="width:100%;max-width:800px;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:1.5rem;"></canvas>
+  <p style="color:#94a3b8;margin-top:1rem;font-size:.95rem;">A pointer is a variable that holds a memory address. This deck covers declaration, dereferencing, pointer arithmetic, arrays, and function parameters.</p>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS1');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const topics = [
+      {label:'What is a\nPointer?', x:80, color:'#6366f1'},
+      {label:'Declare &\nInitialize', x:200, color:'#818cf8'},
+      {label:'Address &\nDereference', x:320, color:'#a78bfa'},
+      {label:'Pointer\nAssignment', x:440, color:'#38bdf8'},
+      {label:'Arrays &\nPointers', x:560, color:'#22c55e'},
+      {label:'Pointer\nArithmetic', x:680, color:'#f59e0b'},
+    ];
+    const y = 170;
+    // Connection line
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(80, y); ctx.lineTo(680, y); ctx.stroke();
+    topics.forEach((t, i) => {
+      // Circle
+      ctx.fillStyle = t.color; ctx.beginPath(); ctx.arc(t.x, y, 42, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(t.x, y, 42, 0, Math.PI*2); ctx.stroke();
+      // Label
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const lines = t.label.split('\n');
+      lines.forEach((ln, li) => {
+        ctx.fillText(ln, t.x, y - 6 + li * 15);
+      });
+      // Number
+      ctx.fillStyle = '#0f172a'; ctx.font = 'bold 14px monospace';
+      ctx.beginPath(); ctx.arc(t.x + 30, y - 30, 12, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(i+1, t.x+30, y-30);
+    });
+    // Second row
+    const topics2 = [
+      {label:'Function\nParameters', x:200, color:'#f472b6'},
+      {label:'Swap\nPatterns', x:400, color:'#fb923c'},
+      {label:'Array\nParameters', x:600, color:'#34d399'},
+    ];
+    const y2 = 280;
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(200, y2); ctx.lineTo(600, y2); ctx.stroke();
+    // Connect rows
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 2; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(440, y+42); ctx.lineTo(400, y2-42); ctx.stroke();
+    ctx.setLineDash([]);
+    topics2.forEach((t, i) => {
+      ctx.fillStyle = t.color; ctx.beginPath(); ctx.arc(t.x, y2, 36, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+      const lines = t.label.split('\n');
+      lines.forEach((ln, li) => { ctx.fillText(ln, t.x, y2 - 6 + li * 15); });
+      ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.arc(t.x+26, y2-26, 12, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px monospace'; ctx.fillText(i+7, t.x+26, y2-26);
+    });
+  }
+  const obs = new MutationObserver(() => { if (document.getElementById('s1').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s1'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: WHAT IS A POINTER ==================== -->
+<div class="slide" id="s2">
+  <h2>What is a Pointer?</h2>
+  <p class="subtitle">Every variable lives at a specific memory address</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS2" width="480" height="360" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">int count = 5;</div>
+<div class="line">short status = 2;</div>
+<div class="line">char letter = 'A';</div>
+<div class="line"> </div>
+<div class="line active">// A pointer holds an ADDRESS</div>
+<div class="line active">int *ptr = &count;</div>
+<div class="line"> </div>
+<div class="line">// ptr contains 0x0060 (the address of count)</div>
+<div class="line">// *ptr gives us 5 (the value at that address)</div>
+      </div></div>
+      <div class="analogy" style="margin-top:.5rem;">
+        <strong>Analogy:</strong> Think of memory as a row of mailboxes. Each mailbox has an <strong>address</strong> (like 0x0060) and holds a <strong>value</strong> (like 5). A pointer is a slip of paper that has a mailbox address written on it.
+      </div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Key insight:</strong> A pointer is just a variable — but instead of storing data like <code>5</code> or <code>'A'</code>, it stores the <em>address</em> of another variable.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS2');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Memory Layout', canvas.width/2, 20);
+    const cells = [
+      {addr:'0x0060', label:'count', val:'5', type:'int (4 bytes)', color:'#6366f1', h:60},
+      {addr:'0x0064', label:'status', val:'2', type:'short (2 bytes)', color:'#22c55e', h:36},
+      {addr:'0x0066', label:'letter', val:"'A'", type:'char (1 byte)', color:'#f59e0b', h:24},
+      {addr:'0x0067', label:'', val:'...', type:'', color:'#334155', h:24},
+      {addr:'0x0070', label:'ptr', val:'0x0060', type:'int* (8 bytes)', color:'#a78bfa', h:60},
+    ];
+    let y = 40;
+    const addrX = 20, boxX = 100, boxW = 200, valX = 340;
+    cells.forEach(c => {
+      // Address label
+      ctx.fillStyle = '#64748b'; ctx.font = '11px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(c.addr, addrX + 70, y + c.h/2 + 4);
+      // Memory box
+      ctx.fillStyle = c.color; ctx.globalAlpha = 0.15;
+      ctx.fillRect(boxX, y, boxW, c.h);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = c.color; ctx.lineWidth = 2;
+      ctx.strokeRect(boxX, y, boxW, c.h);
+      // Value inside
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(c.val, boxX + boxW/2, y + c.h/2 + 5);
+      // Label and type
+      if (c.label) {
+        ctx.fillStyle = c.color; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+        ctx.fillText(c.label, valX + 15, y + c.h/2);
+        ctx.fillStyle = '#64748b'; ctx.font = '10px monospace';
+        ctx.fillText(c.type, valX + 15, y + c.h/2 + 14);
+      }
+      y += c.h + 4;
+    });
+    // Arrow from ptr to count
+    const ptrY = 40 + 60+4 + 36+4 + 24+4 + 24+4; // start of ptr box
+    const countY = 40; // start of count box
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2; ctx.setLineDash([5,3]);
+    ctx.beginPath();
+    ctx.moveTo(boxX + boxW + 5, ptrY + 30);
+    ctx.quadraticCurveTo(boxX + boxW + 50, ptrY, boxX + boxW + 50, countY + 30);
+    ctx.quadraticCurveTo(boxX + boxW + 50, countY + 10, boxX + boxW + 5, countY + 30);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(boxX + boxW + 5, countY + 30);
+    ctx.lineTo(boxX + boxW + 15, countY + 24);
+    ctx.lineTo(boxX + boxW + 15, countY + 36);
+    ctx.closePath(); ctx.fillStyle = '#a78bfa'; ctx.fill();
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('points to', boxX + boxW + 60, (ptrY + countY)/2 + 50);
+  }
+  const obs = new MutationObserver(() => { if (document.getElementById('s2').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s2'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: DECLARING POINTERS ==================== -->
+<div class="slide" id="s3">
+  <h2>Declaring & Initializing Pointers</h2>
+  <p class="subtitle">Syntax, spacing, and the declaration trap</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>Declaration Syntax</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line active">dataType* pointerName;</div>
+<div class="line"> </div>
+<div class="line">// All equivalent:</div>
+<div class="line">int *intptr;</div>
+<div class="line">int* intptr;</div>
+<div class="line">int * intptr;</div>
+<div class="line"> </div>
+<div class="line">// Read as: "intptr can hold the</div>
+<div class="line">//  address of an int"</div>
+      </div></div>
+      <div class="warning" style="margin-top:.5rem;">
+        <strong>Declaration Trap!</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content">
+<div class="line" style="background:rgba(239,68,68,0.15);">int* pI, pJ;  // pJ is NOT a pointer!</div>
+<div class="line">// Equivalent to: int *pI, pJ;</div>
+<div class="line"> </div>
+<div class="line active">int *pI, *pJ; // Both are pointers ✓</div>
+        </div></div>
+        <p style="font-size:.9rem;margin-top:.3rem;">The <code>*</code> binds to the variable name, not the type. Each pointer variable needs its own <code>*</code>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Initialization</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">// Initialize to an existing variable's address</div>
+<div class="line active">int count = 5;</div>
+<div class="line active">int *ptr = &count;</div>
+<div class="line"> </div>
+<div class="line">// Initialize to NULL (points to nothing)</div>
+<div class="line active">int *ptr2 = NULL;    // C style</div>
+<div class="line active">int *ptr3 = nullptr; // C++11 style</div>
+      </div></div>
+      <div class="warning" style="margin-top:.5rem;">
+        <strong>Never dereference NULL!</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content">
+<div class="line">int *ptr = nullptr;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">cout << *ptr; // CRASH! Segfault</div>
+        </div></div>
+        <p style="font-size:.9rem;margin-top:.3rem;">Always check for NULL before dereferencing: <code>if (ptr != nullptr)</code></p>
+      </div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Rule of thumb:</strong> Always initialize pointers when you declare them — either to a valid address or to <code>nullptr</code>.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 4: ADDRESS & DEREFERENCE ==================== -->
+<div class="slide" id="s4">
+  <h2>The Two Operators: <code>&</code> and <code>*</code></h2>
+  <p class="subtitle">Address-of and dereference — the yin and yang of pointers</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS4" width="480" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.6rem;">
+        <button class="btn btn-sm" onclick="s4Show('addr')">& (Address-of)</button>
+        <button class="btn btn-sm" onclick="s4Show('deref')">* (Dereference)</button>
+        <button class="btn btn-sm" onclick="s4Show('both')">Both Together</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" id="s4code"></div></div>
+      <div id="s4desc" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.82rem;color:#94a3b8;"></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Inverse operations:</strong> <code>&</code> gets the address of a variable. <code>*</code> follows an address to get the value. They undo each other: <code>*(&x) == x</code>.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+  let mode = 'addr';
+  function drawMemBox(x, y, w, h, label, val, color, highlight) {
+    ctx.fillStyle = highlight ? color : 'rgba(0,0,0,0.2)';
+    ctx.globalAlpha = highlight ? 0.3 : 1;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = highlight ? color : '#475569'; ctx.lineWidth = highlight ? 3 : 1;
+    ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(val, x+w/2, y+h/2+5);
+    ctx.fillStyle = color; ctx.font = '11px monospace';
+    ctx.fillText(label, x+w/2, y-8);
+  }
+  const examples = {
+    addr: {
+      code: ['int count = 5;','','// & gets the ADDRESS of count','int *ptr = &count;','','cout << ptr;  // prints 0x0060','// ptr now holds the address of count'],
+      desc: '<span style="color:#22c55e">&count</span> evaluates to the memory address where <code>count</code> is stored. This address is then stored in the pointer <code>ptr</code>.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('& (Address-of Operator)', canvas.width/2, 25);
+        // count box
+        drawMemBox(80, 80, 130, 60, 'count', '5', '#6366f1', false);
+        ctx.fillStyle = '#64748b'; ctx.font = '10px monospace'; ctx.textAlign = 'left';
+        ctx.fillText('0x0060', 80, 155);
+        // & arrow
+        ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(145, 140); ctx.lineTo(145, 190); ctx.stroke();
+        ctx.fillStyle = '#22c55e'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('&', 125, 180);
+        // Result
+        ctx.fillStyle = 'rgba(34,197,94,0.15)'; ctx.beginPath(); ctx.roundRect(70, 200, 150, 40, 8); ctx.fill();
+        ctx.strokeStyle = '#22c55e'; ctx.beginPath(); ctx.roundRect(70, 200, 150, 40, 8); ctx.stroke();
+        ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('0x0060', 145, 225);
+        // ptr box
+        drawMemBox(280, 80, 130, 60, 'ptr', '0x0060', '#a78bfa', true);
+        // Arrow from result to ptr
+        ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.setLineDash([4,4]);
+        ctx.beginPath(); ctx.moveTo(220, 220); ctx.lineTo(280, 110); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    },
+    deref: {
+      code: ['int count = 5;','int *ptr = &count;','','// * follows the pointer to the VALUE','cout << *ptr;  // prints 5','','// * "dereferences" the pointer'],
+      desc: '<span style="color:#f59e0b">*ptr</span> follows the address stored in <code>ptr</code> to find the value at that location — which is <code>5</code>.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('* (Dereference Operator)', canvas.width/2, 25);
+        // ptr box
+        drawMemBox(80, 80, 130, 60, 'ptr', '0x0060', '#a78bfa', true);
+        // Arrow following
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(210, 110); ctx.lineTo(280, 110); ctx.stroke();
+        // Arrowhead
+        ctx.beginPath(); ctx.moveTo(280,110); ctx.lineTo(270,104); ctx.lineTo(270,116); ctx.closePath();
+        ctx.fillStyle = '#f59e0b'; ctx.fill();
+        ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('*', 245, 100);
+        ctx.fillText('follow', 245, 80);
+        // count box
+        drawMemBox(280, 80, 130, 60, 'count (at 0x0060)', '5', '#6366f1', true);
+        // Result
+        ctx.fillStyle = 'rgba(245,158,11,0.15)'; ctx.beginPath(); ctx.roundRect(280, 200, 130, 40, 8); ctx.fill();
+        ctx.strokeStyle = '#f59e0b'; ctx.beginPath(); ctx.roundRect(280, 200, 130, 40, 8); ctx.stroke();
+        ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('5', 345, 226);
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(345, 140); ctx.lineTo(345, 200); ctx.stroke();
+      }
+    },
+    both: {
+      code: ['int count = 5;','int *ptr = &count;','','// They are inverses!','*(&count) == count  // true','&(*ptr) == ptr      // true','','// Writing through a pointer:','*ptr = 20;  // count is now 20!'],
+      desc: '<code>&</code> and <code>*</code> are <strong>inverses</strong>. <code>&</code> goes from value→address, <code>*</code> goes from address→value. You can also <em>write</em> through a pointer with <code>*ptr = 20</code>.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('& and * are inverses', canvas.width/2, 25);
+        // Value world
+        ctx.fillStyle = 'rgba(99,102,241,0.1)'; ctx.beginPath(); ctx.roundRect(30, 50, 180, 220, 12); ctx.fill();
+        ctx.strokeStyle = '#6366f1'; ctx.beginPath(); ctx.roundRect(30, 50, 180, 220, 12); ctx.stroke();
+        ctx.fillStyle = '#6366f1'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('VALUE WORLD', 120, 70);
+        // count
+        drawMemBox(60, 90, 120, 50, 'count', '5', '#6366f1', false);
+        // Address world
+        ctx.fillStyle = 'rgba(167,139,250,0.1)'; ctx.beginPath(); ctx.roundRect(270, 50, 180, 220, 12); ctx.fill();
+        ctx.strokeStyle = '#a78bfa'; ctx.beginPath(); ctx.roundRect(270, 50, 180, 220, 12); ctx.stroke();
+        ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('ADDRESS WORLD', 360, 70);
+        drawMemBox(300, 90, 120, 50, 'ptr', '0x0060', '#a78bfa', false);
+        // & arrow (value → address)
+        ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(210, 105); ctx.lineTo(270, 105); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(270,105); ctx.lineTo(260,99); ctx.lineTo(260,111); ctx.closePath();
+        ctx.fillStyle = '#22c55e'; ctx.fill();
+        ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('&', 240, 95);
+        // * arrow (address → value)
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(270, 130); ctx.lineTo(210, 130); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(210,130); ctx.lineTo(220,124); ctx.lineTo(220,136); ctx.closePath();
+        ctx.fillStyle = '#f59e0b'; ctx.fill();
+        ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 14px monospace';
+        ctx.fillText('*', 240, 145);
+        // Write-through
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('*ptr = 20 changes count to 20!', canvas.width/2, 240);
+        ctx.fillText('(writing through a pointer)', canvas.width/2, 258);
+      }
+    }
+  };
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const ex = examples[mode];
+    document.getElementById('s4code').innerHTML = ex.code.map(ln => `<div class="line">${ln||' '}</div>`).join('');
+    document.getElementById('s4desc').innerHTML = ex.desc;
+    ex.draw();
+  }
+  window.s4Show = function(m) { mode = m; draw(); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s4').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s4'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: EXAMPLE PROGRAM STEP-THROUGH ==================== -->
+<div class="slide" id="s5">
+  <h2>Example: Pointers in Action</h2>
+  <p class="subtitle">Step through a complete program and watch memory change</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content" id="s5code"></div></div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s5Step()">Step</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+      <div id="s5Log" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.78rem;max-height:100px;overflow-y:auto;color:#94a3b8;">
+        Click Step to trace the program...
+      </div>
+    </div>
+    <div>
+      <canvas id="cS5" width="460" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+  const codeLines = [
+    'int count = 5;',
+    'int* pCount = &count;',
+    '',
+    'cout << count;     // ?',
+    'cout << &count;    // ?',
+    'cout << pCount;    // ?',
+    'cout << *pCount;   // ?',
+  ];
+  const steps = [
+    {line:0, desc:'Declare count = 5', mem:{count:{val:5,addr:'0x0060'}, pCount:null}, output:''},
+    {line:1, desc:'pCount = &count (points to count)', mem:{count:{val:5,addr:'0x0060'}, pCount:{val:'0x0060',addr:'0x0070'}}, output:''},
+    {line:3, desc:'Print count → value of count', mem:{count:{val:5,addr:'0x0060',hl:true}, pCount:{val:'0x0060',addr:'0x0070'}}, output:'5'},
+    {line:4, desc:'Print &count → address of count', mem:{count:{val:5,addr:'0x0060',hlAddr:true}, pCount:{val:'0x0060',addr:'0x0070'}}, output:'5\n0x0060'},
+    {line:5, desc:'Print pCount → value inside pCount (an address)', mem:{count:{val:5,addr:'0x0060'}, pCount:{val:'0x0060',addr:'0x0070',hl:true}}, output:'5\n0x0060\n0x0060'},
+    {line:6, desc:'Print *pCount → follow pointer to get value', mem:{count:{val:5,addr:'0x0060',hl:true}, pCount:{val:'0x0060',addr:'0x0070',hlArrow:true}}, output:'5\n0x0060\n0x0060\n5'},
+  ];
+  let stepIdx = 0, timer = null;
+  function drawCode() {
+    const el = document.getElementById('s5code');
+    const activeLine = stepIdx > 0 ? steps[stepIdx-1].line : -1;
+    el.innerHTML = codeLines.map((ln, i) => `<div class="line${i===activeLine?' active':''}">${ln||' '}</div>`).join('');
+  }
+  function drawMem() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Memory', 160, 20);
+    ctx.fillText('Output', 380, 20);
+    if (stepIdx === 0) {
+      ctx.fillStyle = '#475569'; ctx.font = '13px monospace';
+      ctx.fillText('(empty)', 160, 120);
+      return;
+    }
+    const s = steps[stepIdx-1];
+    const m = s.mem;
+    // count box
+    if (m.count) {
+      const bx = 40, by = 40, bw = 200, bh = 55;
+      ctx.fillStyle = m.count.hl ? 'rgba(99,102,241,0.25)' : 'rgba(0,0,0,0.2)';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeStyle = m.count.hl ? '#6366f1' : '#475569';
+      ctx.lineWidth = m.count.hl ? 3 : 1;
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.fillStyle = m.count.hlAddr ? '#22c55e' : '#64748b';
+      ctx.font = '10px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(m.count.addr, bx+5, by+15);
+      ctx.fillStyle = '#6366f1'; ctx.font = '11px monospace';
+      ctx.fillText('count (int)', bx+5, by+35);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(m.count.val, bx+bw-10, by+42);
+    }
+    // pCount box
+    if (m.pCount) {
+      const bx = 40, by = 120, bw = 200, bh = 55;
+      ctx.fillStyle = m.pCount.hl ? 'rgba(167,139,250,0.25)' : 'rgba(0,0,0,0.2)';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeStyle = m.pCount.hl ? '#a78bfa' : '#475569';
+      ctx.lineWidth = m.pCount.hl ? 3 : 1;
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.fillStyle = '#64748b'; ctx.font = '10px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(m.pCount.addr, bx+5, by+15);
+      ctx.fillStyle = '#a78bfa'; ctx.font = '11px monospace';
+      ctx.fillText('pCount (int*)', bx+5, by+35);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(m.pCount.val, bx+bw-10, by+42);
+      // Arrow from pCount to count
+      if (m.pCount.hlArrow) {
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3;
+      } else {
+        ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2;
+      }
+      ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(bx+bw, by+28); ctx.quadraticCurveTo(bx+bw+40, by+28, bx+bw+40, 67);
+      ctx.quadraticCurveTo(bx+bw+40, 50, bx+bw, 67); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(bx+bw, 67); ctx.lineTo(bx+bw+8, 61); ctx.lineTo(bx+bw+8, 73); ctx.closePath();
+      ctx.fillStyle = m.pCount.hlArrow ? '#f59e0b' : '#a78bfa'; ctx.fill();
+    }
+    // Output panel
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.roundRect(300, 40, 150, 200, 8); ctx.fill();
+    ctx.strokeStyle = '#334155';
+    ctx.beginPath(); ctx.roundRect(300, 40, 150, 200, 8); ctx.stroke();
+    if (s.output) {
+      ctx.fillStyle = '#22c55e'; ctx.font = '13px monospace'; ctx.textAlign = 'left';
+      s.output.split('\n').forEach((line, i) => {
+        ctx.fillText(line, 315, 65 + i * 22);
+      });
+    }
+  }
+  function init() { stepIdx = 0; drawCode(); drawMem(); document.getElementById('s5Log').innerHTML = '<span style="color:#94a3b8">Click Step to trace the program...</span>'; }
+  window.s5Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx]; stepIdx++;
+    drawCode(); drawMem();
+    const log = document.getElementById('s5Log');
+    const color = '#818cf8';
+    log.innerHTML += `<div style="color:${color}">Step ${stepIdx}: ${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+  };
+  window.s5Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => { if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; } s5Step(); }, 900);
+  };
+  window.s5Reset = function() { if (timer) clearInterval(timer); timer = null; init(); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s5').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s5'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: POINTER TYPE & NULL ==================== -->
+<div class="slide" id="s6">
+  <h2>Pointer Types & Safety</h2>
+  <p class="subtitle">Type matching and the null pointer</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>Type Must Match</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">int area = 1;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">double* pArea = &area; // ERROR!</div>
+<div class="line">// int* and double* are different types</div>
+<div class="line"> </div>
+<div class="line active">int* pArea = &area;    // OK ✓</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Why types matter:</strong> The pointer type tells the compiler how many bytes to read when dereferencing. An <code>int*</code> reads 4 bytes, a <code>double*</code> reads 8 bytes. Mixing them would read the wrong amount of memory.
+      </div>
+      <canvas id="cS6" width="460" height="140" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:.5rem;"></canvas>
+    </div>
+    <div>
+      <h3>NULL / nullptr</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">// A pointer that points to nothing</div>
+<div class="line active">int *ptr = nullptr;</div>
+<div class="line"> </div>
+<div class="line">// Always check before dereferencing!</div>
+<div class="line">if (ptr != nullptr) {</div>
+<div class="line">    cout << *ptr;  // safe</div>
+<div class="line">}</div>
+      </div></div>
+      <div class="warning" style="margin-top:.5rem;">
+        <strong>Uninitialized pointers are dangerous!</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content">
+<div class="line">int *ptr;      // garbage address!</div>
+<div class="line">cout << *ptr;  // undefined behavior</div>
+        </div></div>
+        <p style="font-size:.9rem;">An uninitialized pointer contains whatever was previously in that memory — it could point anywhere, causing hard-to-debug crashes.</p>
+      </div>
+      <div class="analogy" style="margin-top:.5rem;">
+        <strong>Analogy:</strong> An uninitialized pointer is like having a random house address on a slip of paper — you might end up at a stranger's house, an empty lot, or a restricted zone. <code>nullptr</code> is like writing "NO ADDRESS" — at least you know not to follow it.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS6');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Why types matter: pointer tells how many bytes to read', canvas.width/2, 18);
+    const types = [
+      {label:'char*', bytes:1, color:'#f59e0b'},
+      {label:'short*', bytes:2, color:'#22c55e'},
+      {label:'int*', bytes:4, color:'#6366f1'},
+      {label:'double*', bytes:8, color:'#a78bfa'},
+    ];
+    const startX = 30, y = 50, cellW = 40, cellH = 35;
+    // Memory cells
+    for (let i = 0; i < 10; i++) {
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(startX + i*cellW, y, cellW-2, cellH);
+      ctx.strokeStyle = '#475569'; ctx.strokeRect(startX + i*cellW, y, cellW-2, cellH);
+      ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('0x'+i.toString(16).toUpperCase(), startX + i*cellW + cellW/2 - 1, y + cellH + 12);
+    }
+    // Bracket for each type
+    let bx = startX;
+    types.forEach(t => {
+      const w = t.bytes * cellW;
+      ctx.strokeStyle = t.color; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(bx + 2, y - 4);
+      ctx.lineTo(bx + 2, y - 12);
+      ctx.lineTo(bx + w - 4, y - 12);
+      ctx.lineTo(bx + w - 4, y - 4);
+      ctx.stroke();
+      ctx.fillStyle = t.color; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(t.label + ' reads ' + t.bytes + 'B', bx + w/2, y - 18);
+    });
+  }
+  const obs = new MutationObserver(() => { if (document.getElementById('s6').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s6'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: POINTER ASSIGNMENT ==================== -->
+<div class="slide" id="s7">
+  <h2>Pointer Assignment: <code>pX = pY</code> vs <code>*pX = *pY</code></h2>
+  <p class="subtitle">Two very different operations that look similar</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 id="s7title">Click a scenario to see the difference</h3>
+      <canvas id="cS7" width="460" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s7Show('before')">Before</button>
+        <button class="btn btn-sm" onclick="s7Show('copy_ptr')">pX = pY</button>
+        <button class="btn btn-sm" onclick="s7Show('copy_val')">*pX = *pY</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" id="s7code"></div></div>
+      <div id="s7desc" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.82rem;color:#94a3b8;"></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Critical distinction:</strong>
+        <ul style="margin-top:.3rem;">
+          <li><code>pX = pY</code> — copies the <em>address</em> (now both point to y)</li>
+          <li><code>*pX = *pY</code> — copies the <em>value</em> (x gets y's value, pointers unchanged)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS7');
+  const ctx = canvas.getContext('2d');
+  let mode = 'before';
+  function drawVar(x, y, label, val, addr, color, highlight) {
+    ctx.fillStyle = highlight ? color+'30' : 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.roundRect(x, y, 110, 55, 8); ctx.fill();
+    ctx.strokeStyle = highlight ? color : '#475569'; ctx.lineWidth = highlight ? 3 : 1;
+    ctx.beginPath(); ctx.roundRect(x, y, 110, 55, 8); ctx.stroke();
+    ctx.fillStyle = color; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(label, x+8, y+18);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(val, x+55, y+42);
+    ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(addr, x+105, y+15);
+  }
+  function drawArrow(x1,y1,x2,y2,color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.setLineDash([]);
+    const a = Math.atan2(y2-y1,x2-x1);
+    ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-10*Math.cos(a-.4),y2-10*Math.sin(a-.4)); ctx.lineTo(x2-10*Math.cos(a+.4),y2-10*Math.sin(a+.4)); ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+  }
+  const scenarios = {
+    before: {
+      code: ['int x = 5, y = 6;','int *pX = &x;','int *pY = &y;','','// pX points to x (value 5)','// pY points to y (value 6)'],
+      desc: 'Initial state: <code>pX</code> → <code>x=5</code>, <code>pY</code> → <code>y=6</code>. Two pointers, two variables.',
+      draw: function() {
+        document.getElementById('s7title').textContent = 'Initial State';
+        drawVar(30, 40, 'x', '5', '0x60', '#6366f1', false);
+        drawVar(30, 130, 'y', '6', '0x64', '#22c55e', false);
+        drawVar(260, 40, 'pX', '0x60', '0x70', '#a78bfa', false);
+        drawVar(260, 130, 'pY', '0x64', '0x78', '#f472b6', false);
+        drawArrow(260, 67, 142, 67, '#a78bfa');
+        drawArrow(260, 157, 142, 157, '#f472b6');
+      }
+    },
+    copy_ptr: {
+      code: ['int x = 5, y = 6;','int *pX = &x;','int *pY = &y;','','/*** Pointer copy ***/',' pX = pY;','','// Both pX and pY now point to y','// x is still 5 but nobody points to it'],
+      desc: '<span style="color:#f59e0b">pX = pY</span> copies the <strong>address</strong>. Now pX and pY both hold 0x64 (address of y). x still exists with value 5, but pX no longer points to it.',
+      draw: function() {
+        document.getElementById('s7title').textContent = 'After pX = pY';
+        drawVar(30, 40, 'x', '5', '0x60', '#6366f1', false);
+        drawVar(30, 130, 'y', '6', '0x64', '#22c55e', true);
+        drawVar(260, 40, 'pX', '0x64', '0x70', '#a78bfa', true);
+        drawVar(260, 130, 'pY', '0x64', '0x78', '#f472b6', false);
+        // Both arrows go to y
+        drawArrow(260, 67, 142, 145, '#a78bfa');
+        drawArrow(260, 157, 142, 157, '#f472b6');
+        // X mark on old connection
+        ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(160, 55); ctx.lineTo(190, 75); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(190, 55); ctx.lineTo(160, 75); ctx.stroke();
+        ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('orphaned!', 85, 115);
+      }
+    },
+    copy_val: {
+      code: ['int x = 5, y = 6;','int *pX = &x;','int *pY = &y;','','/*** Value copy ***/',' *pX = *pY;','','// x is now 6 (copied from y)','// Pointers unchanged: pX→x, pY→y'],
+      desc: '<span style="color:#22c55e">*pX = *pY</span> copies the <strong>value</strong>. It reads the value at pY (which is 6) and writes it to the location pX points to (x). Pointers stay the same.',
+      draw: function() {
+        document.getElementById('s7title').textContent = 'After *pX = *pY';
+        drawVar(30, 40, 'x', '6', '0x60', '#6366f1', true);
+        drawVar(30, 130, 'y', '6', '0x64', '#22c55e', false);
+        drawVar(260, 40, 'pX', '0x60', '0x70', '#a78bfa', false);
+        drawVar(260, 130, 'pY', '0x64', '0x78', '#f472b6', false);
+        drawArrow(260, 67, 142, 67, '#a78bfa');
+        drawArrow(260, 157, 142, 157, '#f472b6');
+        // Value flow arrow
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(85, 130); ctx.lineTo(85, 95); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(85,95); ctx.lineTo(79,105); ctx.lineTo(91,105); ctx.closePath();
+        ctx.fillStyle = '#f59e0b'; ctx.fill();
+        ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('value copied', 85, 115);
+      }
+    }
+  };
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const sc = scenarios[mode];
+    document.getElementById('s7code').innerHTML = sc.code.map((ln,i) => {
+      const hl = (mode === 'copy_ptr' && i === 5) || (mode === 'copy_val' && i === 5);
+      return `<div class="line${hl?' active':''}">${ln||' '}</div>`;
+    }).join('');
+    document.getElementById('s7desc').innerHTML = sc.desc;
+    sc.draw();
+  }
+  window.s7Show = function(m) { mode = m; draw(); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s7').classList.contains('active')) { mode='before'; draw(); }});
+  obs.observe(document.getElementById('s7'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: ARRAYS & POINTERS ==================== -->
+<div class="slide" id="s8">
+  <h2>Arrays and Pointers</h2>
+  <p class="subtitle">An array name IS a pointer to the first element</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS8" width="480" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s8Show('layout')">Memory Layout</button>
+        <button class="btn btn-sm" onclick="s8Show('equiv')">Equivalence</button>
+        <button class="btn btn-sm" onclick="s8Show('arith')">Pointer + Offset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" id="s8code"></div></div>
+      <div id="s8desc" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.82rem;color:#94a3b8;"></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Equivalence:</strong> <code>vals[i]</code> is syntactic sugar for <code>*(vals + i)</code>. The compiler translates array indexing into pointer arithmetic.
+      </div>
+      <div class="warning" style="margin-top:.4rem;">
+        <strong>Precedence trap:</strong> <code>*vals + 1</code> ≠ <code>*(vals + 1)</code>. The first dereferences then adds 1 to the value. The second adds 1 to the pointer then dereferences.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+  let mode = 'layout';
+  const examples = {
+    layout: {
+      code: ['int vals[] = {4, 7, 11};','','cout << vals;     // 0x005E (address)','cout << vals[0];  // 4 (first value)','cout << *vals;    // 4 (same thing!)','','// vals IS a pointer to the first element'],
+      desc: 'An array name evaluates to the address of element [0]. So <code>vals</code> and <code>&vals[0]</code> are the same thing.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('int vals[] = {4, 7, 11}', canvas.width/2, 22);
+        const vals = [4, 7, 11];
+        const cellW = 100, cellH = 60, startX = 65, y = 60;
+        vals.forEach((v, i) => {
+          const x = startX + i * (cellW + 10);
+          ctx.fillStyle = 'rgba(99,102,241,0.15)'; ctx.fillRect(x, y, cellW, cellH);
+          ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.strokeRect(x, y, cellW, cellH);
+          ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 22px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(v, x + cellW/2, y + 38);
+          ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace';
+          ctx.fillText(`vals[${i}]`, x + cellW/2, y + cellH + 14);
+          ctx.fillStyle = '#64748b'; ctx.font = '10px monospace';
+          const addr = '0x' + (0x5E + i*4).toString(16).toUpperCase().padStart(4,'0');
+          ctx.fillText(addr, x + cellW/2, y - 6);
+        });
+        // vals pointer
+        ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('vals →', startX - 30, y + 30);
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(startX - 5, y + 26); ctx.lineTo(startX, y + 26); ctx.stroke();
+        // Contiguous label
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Contiguous memory — each int is 4 bytes apart', canvas.width/2, y + cellH + 40);
+      }
+    },
+    equiv: {
+      code: ['int vals[] = {4, 7, 11};','int *valptr = vals;','','// All equivalent ways to access vals[1]:','vals[1]        // array notation','*(vals + 1)    // pointer arithmetic','valptr[1]      // pointer as array name','*(valptr + 1)  // explicit pointer math'],
+      desc: 'Array indexing <code>vals[i]</code> is identical to <code>*(vals + i)</code>. And a pointer can use array notation: <code>valptr[1]</code>.',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('4 ways to access the same element', canvas.width/2, 22);
+        const ways = [
+          {expr:'vals[1]', desc:'Array notation', color:'#6366f1'},
+          {expr:'*(vals + 1)', desc:'Pointer arithmetic', color:'#22c55e'},
+          {expr:'valptr[1]', desc:'Pointer as array', color:'#f59e0b'},
+          {expr:'*(valptr + 1)', desc:'Explicit pointer math', color:'#a78bfa'},
+        ];
+        ways.forEach((w, i) => {
+          const y = 45 + i * 60;
+          ctx.fillStyle = w.color; ctx.globalAlpha = 0.1;
+          ctx.beginPath(); ctx.roundRect(30, y, canvas.width-60, 48, 8); ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = w.color; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(30, y, canvas.width-60, 48, 8); ctx.stroke();
+          ctx.fillStyle = w.color; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'left';
+          ctx.fillText(w.expr, 50, y + 22);
+          ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'right';
+          ctx.fillText(w.desc, canvas.width - 50, y + 22);
+          // All equal 7
+          ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+          ctx.fillText('= 7', canvas.width/2, y + 40);
+        });
+      }
+    },
+    arith: {
+      code: ['int vals[] = {4, 7, 11};','','// Pointer + n jumps by n * sizeof(int)','*(vals + 0)  // = 4  (offset 0 bytes)','*(vals + 1)  // = 7  (offset 4 bytes)','*(vals + 2)  // = 11 (offset 8 bytes)','','// TRAP: *vals + 1 = 4 + 1 = 5 (NOT 7!)'],
+      desc: 'Adding <code>n</code> to a pointer advances it by <code>n × sizeof(type)</code> bytes. So <code>vals+1</code> skips 4 bytes (one int) to reach element [1].',
+      draw: function() {
+        ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('Pointer arithmetic scales by sizeof(type)', canvas.width/2, 22);
+        const vals = [4, 7, 11];
+        const cellW = 80, cellH = 50, startX = 60, y = 60;
+        // Draw byte-level memory
+        for (let i = 0; i < 12; i++) {
+          const bx = startX + i * 30;
+          ctx.fillStyle = i < 4 ? 'rgba(99,102,241,0.15)' : i < 8 ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)';
+          ctx.fillRect(bx, y, 28, 30);
+          ctx.strokeStyle = '#475569'; ctx.strokeRect(bx, y, 28, 30);
+        }
+        // Labels
+        const colors = ['#6366f1','#22c55e','#f59e0b'];
+        vals.forEach((v, i) => {
+          const x = startX + i * 120;
+          ctx.fillStyle = colors[i]; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(v, x + 60, y + 20);
+          ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace';
+          ctx.fillText(`+${i*4} bytes`, x + 60, y + 45);
+          ctx.fillText(`vals+${i}`, x + 60, y + 58);
+        });
+        // Offset arrows
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(startX+60, y+68); ctx.lineTo(startX+60+120, y+68); ctx.stroke();
+        ctx.fillStyle = '#f59e0b'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('+1 = +4 bytes', startX+120, y+82);
+        ctx.beginPath(); ctx.moveTo(startX+60+120, y+68); ctx.lineTo(startX+60+240, y+68); ctx.stroke();
+        ctx.fillText('+1 = +4 bytes', startX+240, y+82);
+        // Precedence trap
+        ctx.fillStyle = 'rgba(239,68,68,0.1)'; ctx.beginPath(); ctx.roundRect(30, 180, canvas.width-60, 80, 8); ctx.fill();
+        ctx.strokeStyle = '#ef4444'; ctx.beginPath(); ctx.roundRect(30, 180, canvas.width-60, 80, 8); ctx.stroke();
+        ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+        ctx.fillText('⚠ Precedence trap:', 50, 205);
+        ctx.fillStyle = '#e2e8f0'; ctx.font = '13px monospace';
+        ctx.fillText('*vals + 1   = (*vals) + 1 = 4 + 1 = 5', 50, 228);
+        ctx.fillText('*(vals + 1) = val at addr+4 = 7', 50, 248);
+      }
+    }
+  };
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const ex = examples[mode];
+    document.getElementById('s8code').innerHTML = ex.code.map(ln => `<div class="line">${ln||' '}</div>`).join('');
+    document.getElementById('s8desc').innerHTML = ex.desc;
+    ex.draw();
+  }
+  window.s8Show = function(m) { mode = m; draw(); };
+  const obs = new MutationObserver(() => { if (document.getElementById('s8').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s8'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: POINTER ARITHMETIC ==================== -->
+<div class="slide" id="s9">
+  <h2>Pointer Arithmetic</h2>
+  <p class="subtitle">Increment, decrement, add, subtract — all scaled by type size</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS9" width="480" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s9Op('init')">Reset</button>
+        <button class="btn btn-sm" onclick="s9Op('pp')">valptr++</button>
+        <button class="btn btn-sm" onclick="s9Op('mm')">valptr--</button>
+        <button class="btn btn-sm" onclick="s9Op('add2')">valptr += 2</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Op('sub')">valptr - vals</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">int vals[] = {4, 7, 11};</div>
+<div class="line">int *valptr = vals;</div>
+<div class="line"> </div>
+<div class="line">valptr++;    // now points at 7</div>
+<div class="line">valptr--;    // back to 4</div>
+<div class="line">valptr += 2; // jumps to 11</div>
+<div class="line"> </div>
+<div class="line">// Pointer subtraction:</div>
+<div class="line">cout << valptr - vals; // # of ints apart</div>
+      </div></div>
+      <div id="s9Log" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.82rem;max-height:100px;overflow-y:auto;color:#94a3b8;">
+        Click an operation to see pointer movement...
+      </div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Scaled arithmetic:</strong> <code>ptr + 1</code> advances by <code>sizeof(int)</code> = 4 bytes, not 1 byte. The compiler handles the scaling.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  const vals = [4, 7, 11];
+  let ptrIdx = 0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const cellW = 110, cellH = 60, startX = 50, y = 80;
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('int vals[] = {4, 7, 11}', canvas.width/2, 25);
+    // Array cells
+    vals.forEach((v, i) => {
+      const x = startX + i * (cellW + 15);
+      const isPtr = (i === ptrIdx);
+      ctx.fillStyle = isPtr ? 'rgba(245,158,11,0.2)' : 'rgba(99,102,241,0.1)';
+      ctx.beginPath(); ctx.roundRect(x, y, cellW, cellH, 8); ctx.fill();
+      ctx.strokeStyle = isPtr ? '#f59e0b' : '#6366f1'; ctx.lineWidth = isPtr ? 3 : 2;
+      ctx.beginPath(); ctx.roundRect(x, y, cellW, cellH, 8); ctx.stroke();
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 22px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(v, x + cellW/2, y + 38);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace';
+      ctx.fillText(`vals[${i}]`, x + cellW/2, y + cellH + 15);
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('0x' + (0x5E + i*4).toString(16).toUpperCase().padStart(4, '0'), x + cellW/2, y - 8);
+    });
+    // Pointer indicator
+    if (ptrIdx >= 0 && ptrIdx < vals.length) {
+      const px = startX + ptrIdx * (cellW + 15) + cellW/2;
+      ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('valptr', px, y + cellH + 38);
+      ctx.fillText('↑', px, y + cellH + 25);
+      ctx.fillText('*valptr = ' + vals[ptrIdx], px, y + cellH + 55);
+    } else {
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('⚠ OUT OF BOUNDS!', canvas.width/2, y + cellH + 40);
+    }
+    // Byte addresses bar
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Each int = 4 bytes. ptr++ moves 4 bytes forward.', canvas.width/2, 260);
+  }
+  window.s9Op = function(op) {
+    const log = document.getElementById('s9Log');
+    if (op === 'init') { ptrIdx = 0; log.innerHTML = '<span style="color:#94a3b8">Reset: valptr = vals (index 0)</span>'; }
+    else if (op === 'pp') { ptrIdx++; log.innerHTML += `<div style="color:#22c55e">valptr++ → index ${ptrIdx}${ptrIdx>=vals.length?' (OUT OF BOUNDS!)':' → *valptr = '+vals[ptrIdx]}</div>`; }
+    else if (op === 'mm') { ptrIdx--; log.innerHTML += `<div style="color:#818cf8">valptr-- → index ${ptrIdx}${ptrIdx<0?' (OUT OF BOUNDS!)':' → *valptr = '+vals[ptrIdx]}</div>`; }
+    else if (op === 'add2') { ptrIdx+=2; log.innerHTML += `<div style="color:#f59e0b">valptr+=2 → index ${ptrIdx}${ptrIdx>=vals.length?' (OUT OF BOUNDS!)':' → *valptr = '+vals[ptrIdx]}</div>`; }
+    else if (op === 'sub') { log.innerHTML += `<div style="color:#a78bfa">valptr - vals = ${ptrIdx} (ints apart)</div>`; }
+    log.scrollTop = log.scrollHeight;
+    draw();
+  };
+  const obs = new MutationObserver(() => { if (document.getElementById('s9').classList.contains('active')) { ptrIdx=0; draw(); }});
+  obs.observe(document.getElementById('s9'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: ARRAY ACCESS ==================== -->
+<div class="slide" id="s10">
+  <h2>Array Access — Four Equivalent Ways</h2>
+  <p class="subtitle">Array notation and pointer notation are interchangeable</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS10" width="480" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">#include &lt;iostream&gt;</div>
+<div class="line">using namespace std;</div>
+<div class="line"> </div>
+<div class="line">int main() {</div>
+<div class="line">  int list[6] = {11,12,13,14,15,16};</div>
+<div class="line"> </div>
+<div class="line">  for (int i = 0; i &lt; 6; i++) {</div>
+<div class="line active">    cout &lt;&lt; (list + i)   // address</div>
+<div class="line active">         &lt;&lt; *(list + i)  // pointer deref</div>
+<div class="line active">         &lt;&lt; list[i];     // array index</div>
+<div class="line">  }</div>
+<div class="line">}</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>All four notations work:</strong>
+        <ul style="margin-top:.3rem;font-size:.95rem;">
+          <li><code>list[i]</code> — array subscript</li>
+          <li><code>*(list + i)</code> — pointer arithmetic</li>
+          <li><code>ptr[i]</code> — pointer with subscript</li>
+          <li><code>*(ptr + i)</code> — pointer math on variable</li>
+        </ul>
+      </div>
+      <div class="warning" style="margin-top:.4rem;">
+        <strong>No bounds checking!</strong> C++ won't stop you from accessing <code>list[100]</code> — it will happily read garbage memory. This is a common source of bugs and security vulnerabilities.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const vals = [11,12,13,14,15,16];
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('int list[6] = {11, 12, 13, 14, 15, 16}', canvas.width/2, 20);
+    const cellW = 65, cellH = 45, startX = 25, y = 40;
+    vals.forEach((v, i) => {
+      const x = startX + i * (cellW + 5);
+      ctx.fillStyle = 'rgba(99,102,241,0.12)'; ctx.fillRect(x, y, cellW, cellH);
+      ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, cellW, cellH);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(v, x+cellW/2, y+30);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '9px monospace';
+      ctx.fillText(`[${i}]`, x+cellW/2, y+cellH+12);
+    });
+    // Show table of equivalent access
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('address', 80, 130); ctx.fillText('*(list+i)', 200, 130); ctx.fillText('list[i]', 330, 130); ctx.fillText('value', 430, 130);
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, 138); ctx.lineTo(460, 138); ctx.stroke();
+    vals.forEach((v, i) => {
+      const row = 155 + i * 28;
+      const addr = '0x' + (0x100 + i*4).toString(16).toUpperCase();
+      ctx.fillStyle = '#64748b'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(addr, 80, row);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillText(`*(list+${i})`, 200, row);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText(`list[${i}]`, 330, row);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px monospace';
+      ctx.fillText(v, 430, row);
+    });
+  }
+  const obs = new MutationObserver(() => { if (document.getElementById('s10').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s10'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: COMPARING POINTERS ==================== -->
+<div class="slide" id="s11">
+  <h2>Comparing Pointers</h2>
+  <p class="subtitle">Address comparison vs content comparison</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS11" width="460" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">int a = 5, b = 5, c = 10;</div>
+<div class="line">int *p1 = &a, *p2 = &b, *p3 = &a;</div>
+<div class="line"> </div>
+<div class="line">// Compare ADDRESSES</div>
+<div class="line active">p1 == p2   // false (different addresses)</div>
+<div class="line active">p1 == p3   // true  (same address)</div>
+<div class="line"> </div>
+<div class="line">// Compare CONTENTS</div>
+<div class="line active">*p1 == *p2 // true  (both are 5)</div>
+<div class="line active">*p1 == *c  // false (5 ≠ 10)</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Two kinds of equality:</strong>
+        <ul style="margin-top:.3rem;">
+          <li><code>p1 == p2</code> — "Do they point to the same memory location?"</li>
+          <li><code>*p1 == *p2</code> — "Do the values they point to happen to be equal?"</li>
+        </ul>
+      </div>
+      <div class="analogy" style="margin-top:.4rem;">
+        <strong>Analogy:</strong> Two people can have the same phone number written down (same address). Or they might have different phone numbers that happen to ring the same pizza place (different addresses, same value).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Variables
+    const vars = [
+      {label:'a', val:5, addr:'0x60', x:50, y:50, color:'#6366f1'},
+      {label:'b', val:5, addr:'0x64', x:50, y:130, color:'#22c55e'},
+      {label:'c', val:10, addr:'0x68', x:50, y:210, color:'#f59e0b'},
+    ];
+    const ptrs = [
+      {label:'p1', val:'0x60', x:300, y:50, color:'#a78bfa', target:0},
+      {label:'p2', val:'0x64', x:300, y:130, color:'#f472b6', target:1},
+      {label:'p3', val:'0x60', x:300, y:210, color:'#38bdf8', target:0},
+    ];
+    vars.forEach(v => {
+      ctx.fillStyle = v.color+'20'; ctx.beginPath(); ctx.roundRect(v.x, v.y, 120, 50, 8); ctx.fill();
+      ctx.strokeStyle = v.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(v.x, v.y, 120, 50, 8); ctx.stroke();
+      ctx.fillStyle = v.color; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText(v.label+' ('+v.addr+')', v.x+8, v.y+18);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center'; ctx.fillText(v.val, v.x+60, v.y+40);
+    });
+    ptrs.forEach(p => {
+      ctx.fillStyle = p.color+'20'; ctx.beginPath(); ctx.roundRect(p.x, p.y, 120, 50, 8); ctx.fill();
+      ctx.strokeStyle = p.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(p.x, p.y, 120, 50, 8); ctx.stroke();
+      ctx.fillStyle = p.color; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText(p.label, p.x+8, p.y+18);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillText(p.val, p.x+60, p.y+40);
+      // Arrow to target
+      const tv = vars[p.target];
+      ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(p.x, p.y+25); ctx.lineTo(tv.x+120, tv.y+25); ctx.stroke();
+      ctx.setLineDash([]);
+    });
+    // Highlight: p1 and p3 point to same address
+    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.roundRect(280, 38, 160, 235, 12); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#38bdf8'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('p1==p3 (same addr)', 360, 285);
+  }
+  const obs = new MutationObserver(() => { if (document.getElementById('s11').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s11'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: CHALLENGE A ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A — Predict the Memory State</h2>
+  <p class="subtitle">Trace the pointer operations and predict the values</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">int a = 10, b = 20;</div>
+<div class="line">int *p = &a;</div>
+<div class="line">int *q = &b;</div>
+<div class="line"> </div>
+<div class="line">*p = *q + 5;</div>
+<div class="line">q = p;</div>
+<div class="line">*q = *q * 2;</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">After all operations, what are the values?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem;">
+          <div>
+            <label style="color:#94a3b8;font-size:.85rem;">a = </label>
+            <input type="text" id="sCAa" placeholder="?" style="width:60px;padding:.3rem .5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          </div>
+          <div>
+            <label style="color:#94a3b8;font-size:.85rem;">b = </label>
+            <input type="text" id="sCAb" placeholder="?" style="width:60px;padding:.3rem .5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+          <button class="btn" onclick="sCACheck()">Check</button>
+          <button class="btn btn-secondary" onclick="sCATrace()">Show Trace</button>
+        </div>
+      </div>
+      <div id="sCAfeedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>Step-by-Step Trace</h3>
+      <div id="sCAlog" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:.8rem;font-family:monospace;font-size:.82rem;min-height:240px;max-height:300px;overflow-y:auto;color:#94a3b8;">
+        Try to work it out first, then click "Show Trace"...
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCACheck = function() {
+    const a = document.getElementById('sCAa').value.trim();
+    const b = document.getElementById('sCAb').value.trim();
+    const fb = document.getElementById('sCAfeedback');
+    if (a === '50' && b === '20') {
+      fb.innerHTML = '<div style="color:#22c55e;font-weight:600;">✓ Correct! a=50, b=20. After q=p, both p and q point to a, so *q*2 doubles a.</div>';
+    } else {
+      fb.innerHTML = '<div style="color:#ef4444;font-weight:600;">✗ Not quite. Remember: q=p copies the address (not the value). After that, *q modifies a, not b.</div>';
+    }
+  };
+  window.sCATrace = function() {
+    document.getElementById('sCAlog').innerHTML = `
+<div style="color:#818cf8">Step 1: int a=10, b=20</div>
+<div>  a=10 (at 0x60), b=20 (at 0x64)</div>
+<div style="color:#818cf8;margin-top:.3rem;">Step 2: int *p=&a, *q=&b</div>
+<div>  p→a(10), q→b(20)</div>
+<div style="color:#f59e0b;margin-top:.3rem;">Step 3: *p = *q + 5</div>
+<div>  *q is 20, so *p = 25. <span style="color:#22c55e">a is now 25</span>, b still 20</div>
+<div style="color:#f59e0b;margin-top:.3rem;">Step 4: q = p</div>
+<div>  Copy address! q now points to a (not b). <span style="color:#ef4444">b is orphaned</span></div>
+<div>  p→a(25), q→a(25)</div>
+<div style="color:#f59e0b;margin-top:.3rem;">Step 5: *q = *q * 2</div>
+<div>  q points to a, so *q is 25. *q = 50. <span style="color:#22c55e">a is now 50</span></div>
+<div style="color:#22c55e;margin-top:.5rem;font-weight:600;">Final: a = 50, b = 20</div>
+<div style="color:#94a3b8;">b was never modified after initialization — q stopped pointing to it after step 4.</div>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 12: POINTERS AS FUNCTION PARAMETERS ==================== -->
+<div class="slide" id="s12">
+  <h2>Pointers as Function Parameters</h2>
+  <p class="subtitle">Passing addresses to functions to modify the caller's variables</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">void doubleIt(int x, int *p) {</div>
+<div class="line active">    *p = 2 * x;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">int main() {</div>
+<div class="line">    int a = 16;</div>
+<div class="line">    int b = 9;</div>
+<div class="line active">    doubleIt(b, &a);</div>
+<div class="line">    cout &lt;&lt; a;  // prints 18</div>
+<div class="line">}</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Three requirements for pointer parameters:</strong>
+        <ol style="margin-top:.3rem;font-size:.95rem;">
+          <li><code>*</code> in the function parameter: <code>int *p</code></li>
+          <li><code>*</code> in the function body to dereference: <code>*p = ...</code></li>
+          <li><code>&</code> in the call to pass the address: <code>doubleIt(b, &a)</code></li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS12" width="460" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // main() frame
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.beginPath(); ctx.roundRect(20, 20, 200, 130, 10); ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(20, 20, 200, 130, 10); ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.fillText('main()', 30, 40);
+    // a and b
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(35, 55, 80, 35, 6); ctx.fill();
+    ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(35, 55, 80, 35, 6); ctx.stroke();
+    ctx.fillStyle = '#f59e0b'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('a', 42, 70);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'right'; ctx.fillText('16→18', 108, 78);
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(130, 55, 80, 35, 6); ctx.fill();
+    ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(130, 55, 80, 35, 6); ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('b', 137, 70);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'right'; ctx.fillText('9', 203, 78);
+    // Call: doubleIt(b, &a) = doubleIt(9, 0x60)
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('doubleIt(b, &a)', 35, 130);
+    ctx.fillText('= doubleIt(9, 0x60)', 35, 145);
+    // doubleIt frame
+    ctx.fillStyle = 'rgba(167,139,250,0.08)'; ctx.beginPath(); ctx.roundRect(240, 20, 200, 130, 10); ctx.fill();
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(240, 20, 200, 130, 10); ctx.stroke();
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.fillText('doubleIt()', 250, 40);
+    // x (copy of b) and p (address of a)
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(255, 55, 80, 35, 6); ctx.fill();
+    ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(255, 55, 80, 35, 6); ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('x (copy)', 262, 70);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'right'; ctx.fillText('9', 328, 78);
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(345, 55, 85, 35, 6); ctx.fill();
+    ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(345, 55, 85, 35, 6); ctx.stroke();
+    ctx.fillStyle = '#a78bfa'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('p (ptr)', 352, 70);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.fillText('0x60', 423, 78);
+    // Arrow from p back to a
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(387, 90); ctx.quadraticCurveTo(387, 200, 75, 200);
+    ctx.quadraticCurveTo(40, 200, 40, 90); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(40,90); ctx.lineTo(34,100); ctx.lineTo(46,100); ctx.closePath();
+    ctx.fillStyle = '#f59e0b'; ctx.fill();
+    ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('*p = 2 * x', 220, 210);
+    ctx.fillText('*p = 2 * 9 = 18', 220, 228);
+    ctx.fillText('modifies a in main!', 220, 246);
+    // Execution arrow
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('x gets a COPY of b (pass by value)', canvas.width/2, 290);
+    ctx.fillText('p gets ADDRESS of a (pass by pointer)', canvas.width/2, 308);
+  }
+  const obs = new MutationObserver(() => { if (document.getElementById('s12').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s12'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: SWAP THREE WAYS ==================== -->
+<div class="slide" id="s13">
+  <h2>Swap: Value vs Reference vs Pointer</h2>
+  <p class="subtitle">Three approaches — only two actually work</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:.8rem;">
+      <h3 style="color:#ef4444;font-size:1rem;">By Value (FAILS)</h3>
+      <div class="code-block" style="font-size:.8rem;"><div class="code-content">
+<div class="line">void swap(int x, int y){</div>
+<div class="line">  int temp = x;</div>
+<div class="line">  x = y;</div>
+<div class="line">  y = temp;</div>
+<div class="line">}</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">swap(a, b); // a,b unchanged!</div>
+      </div></div>
+      <p style="font-size:.85rem;color:#ef4444;margin-top:.3rem;">Swaps local copies only. Originals untouched.</p>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:.8rem;">
+      <h3 style="color:#22c55e;font-size:1rem;">By Reference ✓</h3>
+      <div class="code-block" style="font-size:.8rem;"><div class="code-content">
+<div class="line">void swap(int &x, int &y){</div>
+<div class="line">  int temp = x;</div>
+<div class="line">  x = y;</div>
+<div class="line">  y = temp;</div>
+<div class="line">}</div>
+<div class="line active">swap(a, b); // a,b swapped!</div>
+      </div></div>
+      <p style="font-size:.85rem;color:#22c55e;margin-top:.3rem;">x and y are aliases for a and b.</p>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:.8rem;">
+      <h3 style="color:#22c55e;font-size:1rem;">By Pointer ✓</h3>
+      <div class="code-block" style="font-size:.8rem;"><div class="code-content">
+<div class="line">void swap(int *x, int *y){</div>
+<div class="line">  int temp = *x;</div>
+<div class="line">  *x = *y;</div>
+<div class="line">  *y = temp;</div>
+<div class="line">}</div>
+<div class="line active">swap(&a, &b); // a,b swapped!</div>
+      </div></div>
+      <p style="font-size:.85rem;color:#22c55e;margin-top:.3rem;">Dereference to access originals.</p>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.8rem;">
+    <div class="key-idea">
+      <strong>Reference vs Pointer:</strong> References are simpler (no <code>&</code> at call site, no <code>*</code> to dereference). Pointers are more flexible (can be reassigned, can be NULL, needed for dynamic memory).
+    </div>
+    <div class="warning">
+      <strong>Common mistake:</strong> Swapping the pointers themselves (<code>x = y; y = x;</code>) instead of the values they point to (<code>*x = *y; *y = *x;</code>). The first just changes local pointer copies!
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE sCB: CHALLENGE B ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B — Fix the Bug</h2>
+  <p class="subtitle">This swap function doesn't work. Why?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <h3>Buggy Code</h3>
+      <div class="code-block"><div class="code-content">
+<div class="line">void swap(int *x, int *y) {</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">    int *temp = x;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">    x = y;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">    y = temp;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">int a = 5, b = 10;</div>
+<div class="line">swap(&a, &b);</div>
+<div class="line">cout &lt;&lt; a &lt;&lt; " " &lt;&lt; b; // prints: 5 10</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">What's wrong?</label>
+        <select id="sCBans" style="width:100%;padding:.5rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:.9rem;margin-top:.3rem;">
+          <option value="">-- Select the bug --</option>
+          <option value="a">temp should be int, not int*</option>
+          <option value="b">It swaps the pointer copies, not the pointed-to values</option>
+          <option value="c">The & in swap(&a, &b) is wrong</option>
+          <option value="d">x and y need to be references, not pointers</option>
+        </select>
+        <button class="btn" onclick="sCBCheck()" style="margin-top:.5rem;">Check</button>
+      </div>
+      <div id="sCBfeedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>The Fix</h3>
+      <div id="sCBfix" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:1rem;font-family:monospace;font-size:.85rem;min-height:200px;color:#94a3b8;">
+        Select the bug and click Check to see the fix...
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCBCheck = function() {
+    const ans = document.getElementById('sCBans').value;
+    const fb = document.getElementById('sCBfeedback');
+    const fix = document.getElementById('sCBfix');
+    if (ans === 'b') {
+      fb.innerHTML = '<div style="color:#22c55e;font-weight:600;">✓ Correct! It swaps the local pointer copies, not the values.</div>';
+      fix.innerHTML = `<div style="color:#22c55e;margin-bottom:.5rem;">✓ Fixed version:</div>
+<div class="code-block"><div class="code-content">
+<div class="line">void swap(int *x, int *y) {</div>
+<div class="line active">    int temp = *x;  // copy VALUE, not pointer</div>
+<div class="line active">    *x = *y;        // write through pointer</div>
+<div class="line active">    *y = temp;      // write through pointer</div>
+<div class="line">}</div>
+</div></div>
+<div style="color:#94a3b8;margin-top:.5rem;font-size:.82rem;">
+<strong>The bug:</strong> <code>x = y</code> changes where the local variable <code>x</code> points — it doesn't change the value at that address. You need <code>*x = *y</code> to write through the pointer to the actual memory location.</div>`;
+    } else if (ans === '') {
+      fb.innerHTML = '<div style="color:#f59e0b;">Please select an option.</div>';
+    } else {
+      fb.innerHTML = '<div style="color:#ef4444;">✗ Not quite. Think about what x = y does — does it change the pointed-to value, or just the local pointer copy?</div>';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 14: PASS ARRAY VIA POINTER ==================== -->
+<div class="slide" id="s14">
+  <h2>Passing Arrays to Functions</h2>
+  <p class="subtitle">Array parameters are always pointers under the hood</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">// These two signatures are identical:</div>
+<div class="line active">void printArr(int list[], int size);</div>
+<div class="line active">void printArr(int *list, int size);</div>
+<div class="line"> </div>
+<div class="line">// const prevents modification:</div>
+<div class="line active">void printArr(const int *list, int size) {</div>
+<div class="line">  for (int i = 0; i &lt; size; i++)</div>
+<div class="line">    cout &lt;&lt; list[i] &lt;&lt; " ";</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">int arr[] = {1, 2, 3, 4, 5};</div>
+<div class="line">printArr(arr, 5); // arr decays to pointer</div>
+      </div></div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Array decay:</strong> When you pass an array to a function, it "decays" to a pointer to its first element. The function receives just an address — it doesn't know the array's size. That's why you always pass <code>size</code> separately.
+      </div>
+    </div>
+    <div>
+      <h3>Reverse Array Example</h3>
+      <div class="code-block"><div class="code-content" style="font-size:.8rem;">
+<div class="line">void reverse(const int list[],</div>
+<div class="line">             int newList[], int size) {</div>
+<div class="line">  for (int i=0, j=size-1; i&lt;size; i++, j--)</div>
+<div class="line active">    newList[j] = list[i];</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">int list[] = {1, 2, 3, 4, 5, 6};</div>
+<div class="line">int newList[6];</div>
+<div class="line">reverse(list, newList, 6);</div>
+<div class="line">// newList = {6, 5, 4, 3, 2, 1}</div>
+      </div></div>
+      <div class="analogy" style="margin-top:.5rem;">
+        <strong>Why pass by pointer?</strong> Copying an entire array (potentially millions of elements) every time you call a function would be extremely wasteful. Passing just the address (8 bytes) is O(1) regardless of array size.
+      </div>
+      <div class="warning" style="margin-top:.4rem;">
+        <strong>Use <code>const</code></strong> when the function shouldn't modify the array. This catches accidental writes at compile time.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 15: SWAP STEP-THROUGH ==================== -->
+<div class="slide" id="s15">
+  <h2>Swap by Pointer — Step Through</h2>
+  <p class="subtitle">Watch the pointer-based swap execute step by step</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content" id="s15code"></div></div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+        <button class="btn btn-sm" onclick="s15Step()">Step</button>
+        <button class="btn btn-sm" onclick="s15Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+      <div id="s15Log" style="margin-top:.5rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:.6rem;font-family:monospace;font-size:.78rem;max-height:90px;overflow-y:auto;color:#94a3b8;">
+        Click Step to trace swap(&num1, &num2)...
+      </div>
+    </div>
+    <div>
+      <canvas id="cS15" width="460" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+  const codeLines = [
+    'void swap(int *x, int *y) {',
+    '    int temp = *x;',
+    '    *x = *y;',
+    '    *y = temp;',
+    '}',
+    '',
+    'int num1 = 2, num2 = -3;',
+    'swap(&num1, &num2);',
+  ];
+  const steps = [
+    {line:6, desc:'Declare num1=2, num2=-3', num1:2, num2:-3, temp:null, phase:'main'},
+    {line:7, desc:'Call swap(&num1, &num2)', num1:2, num2:-3, temp:null, phase:'call', x:'→num1', y:'→num2'},
+    {line:1, desc:'temp = *x → temp = 2', num1:2, num2:-3, temp:2, phase:'exec', x:'→num1', y:'→num2', hl:'temp'},
+    {line:2, desc:'*x = *y → num1 = -3', num1:-3, num2:-3, temp:2, phase:'exec', x:'→num1', y:'→num2', hl:'num1'},
+    {line:3, desc:'*y = temp → num2 = 2', num1:-3, num2:2, temp:2, phase:'exec', x:'→num1', y:'→num2', hl:'num2'},
+    {line:7, desc:'Return — swap complete!', num1:-3, num2:2, temp:null, phase:'done'},
+  ];
+  let stepIdx = 0, timer = null;
+  function drawCode() {
+    const el = document.getElementById('s15code');
+    const activeLine = stepIdx > 0 ? steps[stepIdx-1].line : -1;
+    el.innerHTML = codeLines.map((ln,i) => `<div class="line${i===activeLine?' active':''}">${ln||' '}</div>`).join('');
+  }
+  function drawMem() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (stepIdx === 0) { ctx.fillStyle='#475569'; ctx.font='13px monospace'; ctx.textAlign='center'; ctx.fillText('Click Step to begin',canvas.width/2,180); return; }
+    const s = steps[stepIdx-1];
+    // main frame
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.beginPath(); ctx.roundRect(20, 20, 200, 120, 10); ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(20, 20, 200, 120, 10); ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.fillText('main()', 30, 38);
+    // num1
+    const n1hl = s.hl === 'num1';
+    ctx.fillStyle = n1hl ? 'rgba(245,158,11,0.2)' : '#1e293b';
+    ctx.beginPath(); ctx.roundRect(35, 50, 80, 35, 6); ctx.fill();
+    ctx.strokeStyle = n1hl ? '#f59e0b' : '#475569'; ctx.lineWidth = n1hl ? 3 : 1;
+    ctx.beginPath(); ctx.roundRect(35, 50, 80, 35, 6); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('num1', 42, 63);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.fillText(s.num1, 75, 78);
+    // num2
+    const n2hl = s.hl === 'num2';
+    ctx.fillStyle = n2hl ? 'rgba(245,158,11,0.2)' : '#1e293b';
+    ctx.beginPath(); ctx.roundRect(130, 50, 80, 35, 6); ctx.fill();
+    ctx.strokeStyle = n2hl ? '#f59e0b' : '#475569'; ctx.lineWidth = n2hl ? 3 : 1;
+    ctx.beginPath(); ctx.roundRect(130, 50, 80, 35, 6); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('num2', 137, 63);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.fillText(s.num2, 170, 78);
+    if (s.phase !== 'main') {
+      // swap frame
+      ctx.fillStyle = 'rgba(167,139,250,0.08)'; ctx.beginPath(); ctx.roundRect(240, 20, 200, 160, 10); ctx.fill();
+      ctx.strokeStyle = s.phase==='done' ? '#22c55e' : '#a78bfa'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(240, 20, 200, 160, 10); ctx.stroke();
+      ctx.fillStyle = s.phase==='done' ? '#22c55e' : '#a78bfa'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(s.phase==='done' ? 'swap() ✓ done' : 'swap()', 250, 38);
+      // x, y pointers
+      ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(255, 50, 80, 35, 6); ctx.fill();
+      ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(255, 50, 80, 35, 6); ctx.stroke();
+      ctx.fillStyle = '#a78bfa'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('x', 262, 63);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('→num1', 295, 78);
+      ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(345, 50, 80, 35, 6); ctx.fill();
+      ctx.strokeStyle = '#475569'; ctx.beginPath(); ctx.roundRect(345, 50, 80, 35, 6); ctx.stroke();
+      ctx.fillStyle = '#f472b6'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('y', 352, 63);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('→num2', 385, 78);
+      // temp
+      if (s.temp !== null) {
+        const thl = s.hl === 'temp';
+        ctx.fillStyle = thl ? 'rgba(245,158,11,0.2)' : '#1e293b';
+        ctx.beginPath(); ctx.roundRect(280, 100, 100, 35, 6); ctx.fill();
+        ctx.strokeStyle = thl ? '#f59e0b' : '#475569'; ctx.lineWidth = thl ? 3 : 1;
+        ctx.beginPath(); ctx.roundRect(280, 100, 100, 35, 6); ctx.stroke();
+        ctx.fillStyle = '#f59e0b'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('temp', 287, 113);
+        ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.fillText(s.temp, 330, 128);
+      }
+      // Arrows from x,y to num1,num2
+      ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 1.5; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(255, 67); ctx.lineTo(115, 67); ctx.stroke();
+      ctx.strokeStyle = '#f472b6';
+      ctx.beginPath(); ctx.moveTo(345, 67); ctx.quadraticCurveTo(230, 67, 210, 67); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // Status
+    if (s.phase === 'done') {
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('✓ num1=' + s.num1 + ', num2=' + s.num2 + '  (swapped!)', canvas.width/2, 230);
+    }
+  }
+  function init() { stepIdx=0; drawCode(); drawMem(); document.getElementById('s15Log').innerHTML='<span style="color:#94a3b8">Click Step to trace swap(&num1, &num2)...</span>'; }
+  window.s15Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx]; stepIdx++;
+    drawCode(); drawMem();
+    const log = document.getElementById('s15Log');
+    log.innerHTML += `<div style="color:#818cf8">Step ${stepIdx}: ${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+  };
+  window.s15Auto = function() { if(timer) return; timer=setInterval(()=>{ if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s15Step(); },800); };
+  window.s15Reset = function() { if(timer)clearInterval(timer); timer=null; init(); };
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s15').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: POINTER PATTERNS SUMMARY ==================== -->
+<div class="slide" id="s16">
+  <h2>Pointer Patterns Cheat Sheet</h2>
+  <p class="subtitle">Quick reference for all pointer operations</p>
+  <canvas id="cS16" width="800" height="400" style="width:100%;max-width:800px;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:1rem;"></canvas>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const items = [
+      {op:'int *p = &x;', desc:'Declare pointer, assign address', cat:'Declare', color:'#6366f1'},
+      {op:'*p', desc:'Dereference — get/set value at address', cat:'Access', color:'#22c55e'},
+      {op:'&x', desc:'Address-of — get variable\'s address', cat:'Access', color:'#22c55e'},
+      {op:'p++', desc:'Move to next element (+ sizeof)', cat:'Arithmetic', color:'#f59e0b'},
+      {op:'p + n', desc:'Offset by n elements', cat:'Arithmetic', color:'#f59e0b'},
+      {op:'p - q', desc:'# of elements between two pointers', cat:'Arithmetic', color:'#f59e0b'},
+      {op:'arr[i] ≡ *(arr+i)', desc:'Array subscript = pointer math', cat:'Arrays', color:'#a78bfa'},
+      {op:'void f(int *p)', desc:'Pointer parameter — modify caller\'s data', cat:'Functions', color:'#f472b6'},
+      {op:'void f(const int *p)', desc:'Read-only pointer parameter', cat:'Functions', color:'#f472b6'},
+      {op:'p = nullptr;', desc:'Null pointer — points to nothing', cat:'Safety', color:'#ef4444'},
+      {op:'if (p != nullptr)', desc:'Always check before dereferencing', cat:'Safety', color:'#ef4444'},
+    ];
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('C++ Pointer Operations Reference', canvas.width/2, 22);
+    const rowH = 32, startY = 40, colOp = 30, colDesc = 320, colCat = 680;
+    // Header
+    ctx.fillStyle = '#475569'; ctx.fillRect(20, startY, canvas.width-40, rowH);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('Operation', colOp, startY+20);
+    ctx.fillText('Description', colDesc, startY+20);
+    ctx.textAlign = 'right'; ctx.fillText('Category', colCat, startY+20);
+    items.forEach((item, i) => {
+      const y = startY + rowH + i * rowH;
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.05)';
+      ctx.fillRect(20, y, canvas.width-40, rowH);
+      // Left border color
+      ctx.fillStyle = item.color; ctx.fillRect(20, y, 4, rowH);
+      ctx.fillStyle = '#a5f3fc'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(item.op, colOp, y+20);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace';
+      ctx.fillText(item.desc, colDesc, y+20);
+      ctx.fillStyle = item.color; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(item.cat, colCat, y+20);
+    });
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s16').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 17: COMMON MISTAKES ==================== -->
+<div class="slide" id="s17">
+  <h2>Common Pointer Mistakes</h2>
+  <p class="subtitle">Avoid these — they cause crashes, corruption, and security vulnerabilities</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="warning" style="margin-bottom:.6rem;">
+        <strong>1. Uninitialized pointer</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content" style="font-size:.82rem;">
+<div class="line" style="background:rgba(239,68,68,0.15);">int *p;       // garbage address</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">*p = 10;      // writes to random memory!</div>
+<div class="line active">int *p = nullptr; // ✓ safe</div>
+        </div></div>
+      </div>
+      <div class="warning" style="margin-bottom:.6rem;">
+        <strong>2. Dereferencing NULL</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content" style="font-size:.82rem;">
+<div class="line">int *p = nullptr;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">cout << *p;   // SEGFAULT!</div>
+<div class="line active">if (p) cout << *p; // ✓ check first</div>
+        </div></div>
+      </div>
+      <div class="warning">
+        <strong>3. Pointer type mismatch</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content" style="font-size:.82rem;">
+<div class="line">int x = 5;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">double *p = &x; // type mismatch!</div>
+<div class="line active">int *p = &x;    // ✓ types match</div>
+        </div></div>
+      </div>
+    </div>
+    <div>
+      <div class="warning" style="margin-bottom:.6rem;">
+        <strong>4. Confusing pointer assignment vs value assignment</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content" style="font-size:.82rem;">
+<div class="line">int a=5, b=10; int *p=&a, *q=&b;</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">p = q;    // changes what p points to</div>
+<div class="line active">*p = *q;  // changes the value at p</div>
+        </div></div>
+      </div>
+      <div class="warning" style="margin-bottom:.6rem;">
+        <strong>5. Declaring multiple pointers</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content" style="font-size:.82rem;">
+<div class="line" style="background:rgba(239,68,68,0.15);">int* p, q;    // q is int, NOT int*!</div>
+<div class="line active">int *p, *q;   // ✓ both are pointers</div>
+        </div></div>
+      </div>
+      <div class="warning">
+        <strong>6. Operator precedence</strong>
+        <div class="code-block" style="margin-top:.3rem;"><div class="code-content" style="font-size:.82rem;">
+<div class="line">int arr[] = {4, 7, 11};</div>
+<div class="line" style="background:rgba(239,68,68,0.15);">*arr + 1    // = 5 (deref then add)</div>
+<div class="line active">*(arr + 1)  // = 7 (add then deref) ✓</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 18: SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Pointers — Summary</h2>
+  <p class="subtitle">The mental model to carry forward</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS18" width="460" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-size:.82rem;">
+        <div style="background:rgba(99,102,241,0.1);padding:.5rem .6rem;border-radius:6px;"><code>int *p;</code><br><span style="color:#94a3b8">declare pointer</span></div>
+        <div style="background:rgba(99,102,241,0.1);padding:.5rem .6rem;border-radius:6px;"><code>p = &x;</code><br><span style="color:#94a3b8">assign address</span></div>
+        <div style="background:rgba(34,197,94,0.1);padding:.5rem .6rem;border-radius:6px;"><code>*p</code><br><span style="color:#94a3b8">dereference</span></div>
+        <div style="background:rgba(34,197,94,0.1);padding:.5rem .6rem;border-radius:6px;"><code>&x</code><br><span style="color:#94a3b8">address-of</span></div>
+        <div style="background:rgba(245,158,11,0.1);padding:.5rem .6rem;border-radius:6px;"><code>p++</code><br><span style="color:#94a3b8">next element</span></div>
+        <div style="background:rgba(245,158,11,0.1);padding:.5rem .6rem;border-radius:6px;"><code>*(p+i)</code><br><span style="color:#94a3b8">offset access</span></div>
+        <div style="background:rgba(167,139,250,0.1);padding:.5rem .6rem;border-radius:6px;"><code>arr[i]≡*(arr+i)</code><br><span style="color:#94a3b8">array = pointer</span></div>
+        <div style="background:rgba(167,139,250,0.1);padding:.5rem .6rem;border-radius:6px;"><code>void f(int *p)</code><br><span style="color:#94a3b8">pointer param</span></div>
+        <div style="background:rgba(239,68,68,0.1);padding:.5rem .6rem;border-radius:6px;"><code>nullptr</code><br><span style="color:#94a3b8">null pointer</span></div>
+        <div style="background:rgba(239,68,68,0.1);padding:.5rem .6rem;border-radius:6px;"><code>const int *p</code><br><span style="color:#94a3b8">read-only ptr</span></div>
+      </div>
+      <div class="key-idea" style="margin-top:.6rem;">
+        <strong>The one rule:</strong> A pointer stores an address. <code>&</code> gets addresses, <code>*</code> follows them. Everything else — arrays, arithmetic, parameters — builds on this.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS18');
+  const ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('The Pointer Mental Model', canvas.width/2, 22);
+    // Variable box
+    ctx.fillStyle = 'rgba(99,102,241,0.15)'; ctx.beginPath(); ctx.roundRect(30, 80, 140, 100, 12); ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(30, 80, 140, 100, 12); ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Variable x', 100, 105);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 24px monospace';
+    ctx.fillText('42', 100, 145);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px monospace';
+    ctx.fillText('at 0x0060', 100, 170);
+    // Pointer box
+    ctx.fillStyle = 'rgba(167,139,250,0.15)'; ctx.beginPath(); ctx.roundRect(290, 80, 140, 100, 12); ctx.fill();
+    ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(290, 80, 140, 100, 12); ctx.stroke();
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Pointer p', 360, 105);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 16px monospace';
+    ctx.fillText('0x0060', 360, 145);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px monospace';
+    ctx.fillText('at 0x0070', 360, 170);
+    // & arrow (x → p)
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(170, 110); ctx.lineTo(290, 110); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(290,110); ctx.lineTo(280,104); ctx.lineTo(280,116); ctx.closePath();
+    ctx.fillStyle = '#22c55e'; ctx.fill();
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('& (address-of)', 230, 100);
+    // * arrow (p → x)
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(290, 155); ctx.lineTo(170, 155); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(170,155); ctx.lineTo(180,149); ctx.lineTo(180,161); ctx.closePath();
+    ctx.fillStyle = '#f59e0b'; ctx.fill();
+    ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('* (dereference)', 230, 170);
+    // Next topic
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Next: Dynamic Memory Management — new & delete', canvas.width/2, 250);
+  }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s18').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCC: CHALLENGE C ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C — Which Pointer Operation?</h2>
+  <p class="subtitle">Pick the right approach for each scenario</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">1. Access the 3rd element of array <code>arr</code></h3>
+      <select id="sCC1" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.5rem;">
+        <option value="">-- Pick --</option>
+        <option value="a">*arr + 2</option>
+        <option value="b">*(arr + 2)</option>
+        <option value="c">&arr[2]</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">2. Make a function modify a caller's variable</h3>
+      <select id="sCC2" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.5rem;">
+        <option value="">-- Pick --</option>
+        <option value="a">Pass by value: f(x)</option>
+        <option value="b">Pass by pointer: f(&x)</option>
+        <option value="c">Return the value: x = f()</option>
+      </select>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">3. Check if two pointers point to the same location</h3>
+      <select id="sCC3" style="width:100%;padding:.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:.5rem;">
+        <option value="">-- Pick --</option>
+        <option value="a">*p == *q</option>
+        <option value="b">p == q</option>
+        <option value="c">&p == &q</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCresult" style="margin-top:.6rem;text-align:center;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:.3rem;">
+    <div id="sCCfb1" style="border-radius:8px;padding:.5rem .7rem;font-size:.82rem;"></div>
+    <div id="sCCfb2" style="border-radius:8px;padding:.5rem .7rem;font-size:.82rem;"></div>
+    <div id="sCCfb3" style="border-radius:8px;padding:.5rem .7rem;font-size:.82rem;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCC1:'b', sCC2:'b', sCC3:'b'};
+  const explanations = {
+    sCC1: '*(arr+2) — pointer math then deref. *arr+2 would be first elem + 2.',
+    sCC2: 'Pass &x — the function receives the address and can modify x via *p.',
+    sCC3: 'p == q compares addresses. *p == *q compares values. &p == &q compares pointer locations.'
+  };
+  window.sCCCheck = function() {
+    let score = 0;
+    ['sCC1','sCC2','sCC3'].forEach((id,i) => {
+      const val = document.getElementById(id).value;
+      const fb = document.getElementById(`sCCfb${i+1}`);
+      if (val === answers[id]) {
+        score++;
+        fb.style.background = 'rgba(34,197,94,0.15)'; fb.style.border = '1px solid #22c55e';
+        fb.innerHTML = `<span style="color:#22c55e">✓</span> ${explanations[id]}`;
+      } else {
+        fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.border = '1px solid #ef4444';
+        fb.innerHTML = `<span style="color:#ef4444">✗</span> ${explanations[id]}`;
+      }
+    });
+    document.getElementById('sCCresult').innerHTML = `<span style="color:${score===3?'#22c55e':'#f59e0b'};font-weight:600;font-size:1.1rem;">${score}/3 correct</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: QUIZ MC ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz — Multiple Choice</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q1: What does <code>&x</code> return?</h3>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="a"> The value of x</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="b"> The memory address of x</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q1" value="c"> A reference to x</label>
+      </div>
+      <div id="sQ1fb1" style="margin-top:.3rem;font-size:.82rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q2: <code>int *p, q;</code> declares:</h3>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="a"> Two int pointers</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="b"> One int pointer and one int</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q2" value="c"> Compilation error</label>
+      </div>
+      <div id="sQ1fb2" style="margin-top:.3rem;font-size:.82rem;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <h3 style="font-size:1rem;">Q3: <code>ptr+1</code> for an <code>int*</code> advances by:</h3>
+      <div style="margin-top:.5rem;">
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="a"> 1 byte</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="b"> 4 bytes (sizeof int)</label>
+        <label style="display:block;padding:.3rem;cursor:pointer;"><input type="radio" name="q3" value="c"> 8 bytes (sizeof pointer)</label>
+      </div>
+      <div id="sQ1fb3" style="margin-top:.3rem;font-size:.82rem;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1score" style="margin-left:1rem;font-size:1.1rem;font-weight:600;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {q1:'b', q2:'b', q3:'b'};
+  const explanations = {
+    q1: '& is the address-of operator — it returns the memory address where x is stored.',
+    q2: 'The * binds to p, not the type. So p is int* and q is int. Use int *p, *q for both.',
+    q3: 'Pointer arithmetic scales by sizeof(type). For int* (4 bytes), +1 moves 4 bytes.'
+  };
+  window.sQ1Check = function() {
+    let score = 0;
+    ['q1','q2','q3'].forEach((q,i) => {
+      const sel = document.querySelector(`input[name="${q}"]:checked`);
+      const fb = document.getElementById(`sQ1fb${i+1}`);
+      if (!sel) { fb.innerHTML = '<span style="color:#f59e0b;">Select an answer</span>'; return; }
+      if (sel.value === answers[q]) { score++; fb.innerHTML = `<span style="color:#22c55e;">✓ ${explanations[q]}</span>`; }
+      else { fb.innerHTML = `<span style="color:#ef4444;">✗ ${explanations[q]}</span>`; }
+    });
+    document.getElementById('sQ1score').innerHTML = `<span style="color:${score===3?'#22c55e':'#f59e0b'}">${score}/3</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: QUIZ TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz — Trace the Pointers</h2>
+  <p class="subtitle">What are the final values?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">int arr[] = {10, 20, 30, 40, 50};</div>
+<div class="line">int *p = arr;</div>
+<div class="line">int *q = arr + 3;</div>
+<div class="line"> </div>
+<div class="line">p++;</div>
+<div class="line">*p = *q;</div>
+<div class="line">q--;</div>
+<div class="line">*q = *p + 5;</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">Final array contents:</label>
+        <div style="display:flex;gap:.3rem;margin-top:.3rem;">
+          <input type="text" id="sQ2a0" placeholder="[0]" style="width:50px;padding:.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+          <input type="text" id="sQ2a1" placeholder="[1]" style="width:50px;padding:.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+          <input type="text" id="sQ2a2" placeholder="[2]" style="width:50px;padding:.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+          <input type="text" id="sQ2a3" placeholder="[3]" style="width:50px;padding:.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+          <input type="text" id="sQ2a4" placeholder="[4]" style="width:50px;padding:.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+          <button class="btn" onclick="sQ2Check()">Check</button>
+          <button class="btn btn-secondary" onclick="sQ2Trace()">Show Trace</button>
+        </div>
+      </div>
+      <div id="sQ2feedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>Step-by-Step</h3>
+      <div id="sQ2trace" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:.8rem;font-family:monospace;font-size:.82rem;min-height:250px;max-height:300px;overflow-y:auto;color:#94a3b8;">
+        Enter your answer first, then click Show Trace...
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ2Check = function() {
+    const ans = [0,1,2,3,4].map(i => document.getElementById('sQ2a'+i).value.trim());
+    const correct = ['10','40','45','40','50'];
+    const fb = document.getElementById('sQ2feedback');
+    if (ans.join(',') === correct.join(',')) {
+      fb.innerHTML = '<span style="color:#22c55e;font-weight:600;">✓ Correct! {10, 40, 45, 40, 50}</span>';
+    } else {
+      fb.innerHTML = '<span style="color:#ef4444;font-weight:600;">✗ Not quite. Click Show Trace to see the step-by-step.</span>';
+    }
+  };
+  window.sQ2Trace = function() {
+    document.getElementById('sQ2trace').innerHTML = `
+<div style="color:#818cf8">Initial: arr = {10, 20, 30, 40, 50}</div>
+<div>p = arr (→[0]), q = arr+3 (→[3])</div>
+<div style="color:#f59e0b;margin-top:.4rem;">p++;</div>
+<div>p now points to arr[1] (value 20)</div>
+<div style="color:#f59e0b;margin-top:.4rem;">*p = *q;</div>
+<div>*p = arr[1], *q = arr[3] = 40</div>
+<div>So arr[1] = 40. Array: {10, <span style="color:#22c55e">40</span>, 30, 40, 50}</div>
+<div style="color:#f59e0b;margin-top:.4rem;">q--;</div>
+<div>q now points to arr[2] (value 30)</div>
+<div style="color:#f59e0b;margin-top:.4rem;">*q = *p + 5;</div>
+<div>*p = arr[1] = 40. So *q = 40 + 5 = 45</div>
+<div>arr[2] = 45. Array: {10, 40, <span style="color:#22c55e">45</span>, 40, 50}</div>
+<div style="color:#22c55e;margin-top:.5rem;font-weight:600;">Final: {10, 40, 45, 40, 50}</div>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: QUIZ PREDICT OUTPUT ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz — Predict the Output</h2>
+  <p class="subtitle">What does this program print?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line">void mystery(int *a, int *b) {</div>
+<div class="line">    *a = *a + *b;</div>
+<div class="line">    *b = *a - *b;</div>
+<div class="line">    *a = *a - *b;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">int main() {</div>
+<div class="line">    int x = 7, y = 3;</div>
+<div class="line">    mystery(&x, &y);</div>
+<div class="line">    cout &lt;&lt; x &lt;&lt; " " &lt;&lt; y;</div>
+<div class="line">}</div>
+      </div></div>
+      <div style="margin-top:1rem;">
+        <label style="color:#94a3b8;font-size:.9rem;">Output: </label>
+        <input type="text" id="sQ3input" placeholder="e.g., 3 7" style="width:120px;padding:.4rem .6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:1rem;">
+        <button class="btn" onclick="sQ3Check()" style="margin-left:.5rem;">Check</button>
+      </div>
+      <div id="sQ3feedback" style="margin-top:.5rem;"></div>
+    </div>
+    <div>
+      <h3>Trace</h3>
+      <div id="sQ3trace" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:.8rem;font-family:monospace;font-size:.85rem;min-height:240px;color:#94a3b8;">
+        Enter your answer, then click Check to see the trace.
+      </div>
+      <div class="key-idea" style="margin-top:.5rem;">
+        <strong>Hint:</strong> This is a well-known trick. Think about what happens to *a and *b at each step.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ3Check = function() {
+    const ans = document.getElementById('sQ3input').value.trim();
+    const fb = document.getElementById('sQ3feedback');
+    const trace = document.getElementById('sQ3trace');
+    if (ans === '3 7') {
+      fb.innerHTML = '<span style="color:#22c55e;font-weight:600;">✓ Correct! It\'s a swap without a temp variable!</span>';
+    } else {
+      fb.innerHTML = '<span style="color:#ef4444;font-weight:600;">✗ Not quite. Trace each line carefully.</span>';
+    }
+    trace.innerHTML = `
+<div style="color:#818cf8">Initial: x=7, y=3</div>
+<div style="color:#818cf8">mystery(&x, &y) — a→x, b→y</div>
+<div style="color:#f59e0b;margin-top:.4rem;">*a = *a + *b</div>
+<div>*a = 7 + 3 = 10. <span style="color:#e2e8f0">x=10, y=3</span></div>
+<div style="color:#f59e0b;margin-top:.4rem;">*b = *a - *b</div>
+<div>*b = 10 - 3 = 7. <span style="color:#e2e8f0">x=10, y=7</span></div>
+<div style="color:#f59e0b;margin-top:.4rem;">*a = *a - *b</div>
+<div>*a = 10 - 7 = 3. <span style="color:#e2e8f0">x=3, y=7</span></div>
+<div style="color:#22c55e;margin-top:.5rem;font-weight:600;">Output: 3 7</div>
+<div style="color:#94a3b8;margin-top:.3rem;">This is the <strong>XOR-swap trick</strong> using arithmetic! It swaps two values without a temporary variable. Clever but less readable than using temp.</div>`;
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','s17','s18','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>
