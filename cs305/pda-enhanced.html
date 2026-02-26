@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pushdown Automata (PDA) - Enhanced Interactive</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.05); z-index: 200; }
+#progress { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #38bdf8; }
+h3 { font-size: 1.3em; margin-bottom: 10px; color: #a5b4fc; }
+p, li { font-size: 1.1em; line-height: 1.7; color: #cbd5e1; margin-bottom: 8px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 24px; }
+code { background: rgba(99,102,241,0.15); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono','Fira Code',monospace; color: #a5b4fc; font-size: 0.95em; }
+.btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 6px 14px; font-size: 0.85em; }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+.key-idea { background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.1)); border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.key-idea h3 { color: #4ade80; margin-bottom: 6px; }
+.warning { background: rgba(239,68,68,0.08); border-left: 4px solid #ef4444; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.warning h3 { color: #f87171; margin-bottom: 6px; }
+.analogy { background: rgba(168,85,247,0.08); border-left: 4px solid #a78bfa; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.analogy h3 { color: #c4b5fd; margin-bottom: 6px; }
+.challenge-box { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(234,88,12,0.1)); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 12px 0; }
+.challenge-box h3 { color: #fbbf24; }
+.quiz-option { background: #334155; border: 2px solid #475569; color: #e2e8f0; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-size: 1em; transition: all 0.3s; min-width: 140px; }
+.quiz-option:hover { background: #475569; }
+.quiz-option.correct { background: rgba(16,185,129,0.3); border-color: #10b981; color: #34d399; }
+.quiz-option.wrong { background: rgba(239,68,68,0.3); border-color: #ef4444; color: #f87171; }
+.quiz-option:disabled { cursor: default; }
+.formula { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px 24px; margin: 12px 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 1.05em; color: #c4b5fd; text-align: center; }
+.code-block { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin: 10px 0; overflow-x: auto; }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 6px; }
+ol { padding-left: 24px; }
+ol li { margin-bottom: 6px; }
+table { border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #475569; padding: 8px 14px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; font-size: 0.95em; }
+td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <div style="text-align:center;">
+    <h1>Pushdown Automata (PDA)</h1>
+    <p class="subtitle">CS305 -- Formal Language Theory</p>
+    <canvas id="cS1" width="600" height="200" style="width:100%;max-width:600px;background:rgba(0,0,0,0.2);border-radius:12px;margin:20px auto;display:block;"></canvas>
+    <p style="color:#64748b;font-size:0.9em;">Use &larr; &rarr; arrows to navigate &middot; 24 slides</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS1'), ctx = c.getContext('2d');
+  let frame = 0, animId = null;
+  const stackSyms = ['$','a','a','a'];
+  function draw(){
+    ctx.clearRect(0,0,600,200);
+    const t = frame * 0.02;
+    // NFA box
+    const nfaX = 80 + Math.sin(t)*3;
+    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2;
+    ctx.strokeRect(nfaX-50, 60, 100, 50);
+    ctx.fillStyle = '#3b82f6'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('NFA', nfaX, 92);
+    // Plus
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 28px system-ui';
+    ctx.fillText('+', 190, 90);
+    // Animated stack
+    const stackX = 280;
+    ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 2;
+    const bounce = Math.sin(t*1.5);
+    for(let i = 0; i < stackSyms.length; i++){
+      const y = 100 - i*22 + bounce*2;
+      ctx.fillStyle = 'rgba(139,92,246,0.15)';
+      ctx.fillRect(stackX-25, y-10, 50, 20);
+      ctx.strokeRect(stackX-25, y-10, 50, 20);
+      ctx.fillStyle = '#c4b5fd'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(stackSyms[i], stackX, y+5);
+    }
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui';
+    ctx.fillText('STACK', stackX, 120);
+    // Equals
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 28px system-ui';
+    ctx.fillText('=', 370, 90);
+    // PDA glow
+    const glow = 0.3 + 0.2*Math.sin(t*2);
+    ctx.fillStyle = 'rgba(59,130,246,'+glow+')';
+    ctx.beginPath(); ctx.arc(470, 85, 45, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(470, 85, 45, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 22px system-ui';
+    ctx.fillText('PDA', 470, 92);
+    // Bottom text
+    ctx.fillStyle = '#64748b'; ctx.font = '13px system-ui';
+    ctx.fillText('Recognizes Context-Free Languages (CFLs)', 300, 175);
+    ctx.fillText('Equivalent to Context-Free Grammars (CFGs)', 300, 192);
+    frame++;
+    animId = requestAnimationFrame(draw);
+  }
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s1').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h2>The Big Picture: PDA = NFA + Stack</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <p>A <strong>Pushdown Automaton</strong> extends an NFA with a <strong>stack</strong> -- an infinite, last-in-first-out memory.</p>
+      <ul style="margin-top:10px;">
+        <li><strong>DFA/NFA</strong> -- regular languages</li>
+        <li><strong>PDA</strong> -- context-free languages</li>
+        <li><strong>Turing Machine</strong> -- recursively enumerable</li>
+      </ul>
+      <div class="key-idea" style="margin-top:14px;">
+        <h3>Key Idea</h3>
+        <p>The stack lets the PDA "remember" unbounded information in LIFO order. This is exactly the power needed to match nested structures like a<sup>n</sup>b<sup>n</sup> and balanced parentheses.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS2" width="520" height="370" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS2'), ctx = c.getContext('2d');
+  let frame = 0, animId = null;
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    const t = frame*0.015;
+    const levels = [
+      {label:'Recursively Enumerable (TM)', color:'#ef4444', x:20, y:20, w:480, h:320},
+      {label:'Context-Sensitive', color:'#f59e0b', x:50, y:55, w:420, h:250},
+      {label:'Context-Free (PDA) -- YOU ARE HERE', color:'#8b5cf6', x:80, y:90, w:360, h:180},
+      {label:'Regular (DFA/NFA)', color:'#3b82f6', x:120, y:130, w:280, h:100}
+    ];
+    levels.forEach((lv, i) => {
+      const pulse = (i === 2) ? 0.15 + 0.08*Math.sin(t*2) : 0.08;
+      const r = parseInt(lv.color.slice(1,3),16), g = parseInt(lv.color.slice(3,5),16), b = parseInt(lv.color.slice(5,7),16);
+      ctx.fillStyle = 'rgba('+r+','+g+','+b+','+pulse+')';
+      ctx.strokeStyle = lv.color; ctx.lineWidth = (i===2)?3:1.5;
+      ctx.beginPath(); ctx.roundRect(lv.x, lv.y, lv.w, lv.h, 12); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = lv.color; ctx.font = (i===2)?'bold 13px system-ui':'12px system-ui'; ctx.textAlign = 'left';
+      ctx.fillText(lv.label, lv.x+12, lv.y+18);
+    });
+    if(Math.sin(t*3) > 0){
+      ctx.fillStyle = '#8b5cf6'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right';
+      ctx.fillText('\u25C0', 76, 180);
+    }
+    frame++;
+    animId = requestAnimationFrame(draw);
+  }
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s2').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 3: WHY STACK ==================== -->
+<div class="slide" id="s3">
+  <h2>Why Do We Need a Stack?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <p>A DFA has <strong>finite memory</strong> (just its state). It cannot count beyond a fixed bound.</p>
+      <p style="margin-top:8px;">Consider L = { a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }:</p>
+      <ul>
+        <li>A DFA needs a separate state per count of a's</li>
+        <li>But n can be <em>any</em> number -- infinitely many states</li>
+        <li>The Pumping Lemma proves no DFA suffices</li>
+      </ul>
+      <p style="margin-top:8px;"><strong>Solution:</strong> Add a stack! Push each <code>a</code>, pop one per <code>b</code>. Accept if stack is empty.</p>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy: Cafeteria Tray Stack</h3>
+        <p>A spring-loaded tray dispenser. You only see the <strong>top tray</strong>. Push on, pop off. Never reach into the middle.</p>
+      </div>
+    </div>
+    <div>
+      <h3>DFA vs PDA Race</h3>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-secondary" onclick="s3Race(1)">a<sup>1</sup>b<sup>1</sup></button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Race(2)">a<sup>2</sup>b<sup>2</sup></button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Race(3)">a<sup>3</sup>b<sup>3</sup></button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Race(5)">a<sup>5</sup>b<sup>5</sup></button>
+      </div>
+      <canvas id="cS3" width="520" height="340" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <div id="s3msg" style="color:#94a3b8;font-size:13px;margin-top:6px;min-height:20px;">Click a test case above</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS3'), ctx = c.getContext('2d');
+  let step = -1, n = 0, timer = null;
+  const DFA_MAX = 3;
+  function drawFrame(){
+    ctx.clearRect(0,0,520,340);
+    const input = 'a'.repeat(n) + 'b'.repeat(n);
+    // DFA side
+    ctx.fillStyle = '#f87171'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('DFA (finite memory)', 140, 22);
+    for(let i = 0; i <= DFA_MAX; i++){
+      const x = 40 + i*70, y = 55;
+      ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI*2);
+      const isActive = (step >= 0 && step <= n) ? (step <= DFA_MAX ? i === step : i === DFA_MAX) : i === 0;
+      ctx.fillStyle = isActive ? 'rgba(239,68,68,0.2)' : '#1e293b'; ctx.fill();
+      ctx.strokeStyle = isActive ? '#ef4444' : '#475569'; ctx.lineWidth = isActive ? 2.5 : 1.5; ctx.stroke();
+      ctx.fillStyle = isActive ? '#f87171' : '#94a3b8'; ctx.font = '12px monospace';
+      ctx.fillText('q'+i, x, y+4);
+    }
+    ctx.font = '12px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#94a3b8'; ctx.fillText('Input:', 20, 100);
+    for(let i = 0; i < input.length && i < 16; i++){
+      const x = 70 + i*22;
+      const consumed = step > i, current = step === i;
+      ctx.fillStyle = current ? 'rgba(250,204,21,0.2)' : consumed ? '#0f172a' : '#1e293b';
+      ctx.fillRect(x, 88, 20, 22);
+      ctx.strokeStyle = current ? '#fbbf24' : '#475569'; ctx.lineWidth = 1; ctx.strokeRect(x, 88, 20, 22);
+      ctx.fillStyle = consumed ? '#475569' : current ? '#fbbf24' : '#e2e8f0';
+      ctx.font = '13px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(input[i], x+10, 104);
+    }
+    if(step >= 2*n){
+      const dfaOk = n <= DFA_MAX;
+      ctx.fillStyle = dfaOk ? '#4ade80' : '#f87171'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(dfaOk ? 'ACCEPT (n <= '+DFA_MAX+')' : 'FAIL: lost count at n > '+DFA_MAX, 140, 130);
+    }
+    // Separator
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(10, 150); ctx.lineTo(510, 150); ctx.stroke();
+    // PDA side
+    ctx.fillStyle = '#4ade80'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('PDA (stack memory)', 140, 172);
+    const pdaStates = [{label:'q0',x:60,y:205},{label:'q1',x:180,y:205},{label:'qacc',x:120,y:260}];
+    const pdaActive = step < 0 ? 0 : step < n ? 0 : step < 2*n ? 1 : 2;
+    pdaStates.forEach((s, i)=>{
+      ctx.beginPath(); ctx.arc(s.x, s.y, 18, 0, Math.PI*2);
+      const active = i === pdaActive;
+      ctx.fillStyle = active ? 'rgba(34,197,94,0.2)' : '#1e293b'; ctx.fill();
+      ctx.strokeStyle = active ? '#22c55e' : '#475569'; ctx.lineWidth = active ? 2.5 : 1.5; ctx.stroke();
+      if(i === 2){ ctx.beginPath(); ctx.arc(s.x, s.y, 14, 0, Math.PI*2); ctx.stroke(); }
+      ctx.fillStyle = active ? '#4ade80' : '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(s.label, s.x, s.y+4);
+    });
+    // PDA stack
+    const stackX = 320, stackBaseY = 310;
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('STACK', stackX, 172);
+    let stk = ['$'];
+    if(step >= 0){
+      for(let i = 0; i < Math.min(step, n); i++) stk.push('a');
+      for(let i = 0; i < Math.max(0, step - n); i++) if(stk.length > 1) stk.pop();
+    }
+    for(let i = 0; i < stk.length; i++){
+      const y = stackBaseY - i*24;
+      ctx.fillStyle = 'rgba(139,92,246,0.15)';
+      ctx.fillRect(stackX-25, y-12, 50, 22);
+      ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 1; ctx.strokeRect(stackX-25, y-12, 50, 22);
+      ctx.fillStyle = '#c4b5fd'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(stk[i], stackX, y+3);
+    }
+    // PDA tape
+    ctx.font = '12px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#94a3b8'; ctx.fillText('Input:', 20, 300);
+    for(let i = 0; i < input.length && i < 16; i++){
+      const x = 70 + i*22;
+      const consumed = step > i, current = step === i;
+      ctx.fillStyle = current ? 'rgba(250,204,21,0.2)' : consumed ? '#0f172a' : '#1e293b';
+      ctx.fillRect(x, 288, 20, 22);
+      ctx.strokeStyle = current ? '#fbbf24' : '#475569'; ctx.lineWidth = 1; ctx.strokeRect(x, 288, 20, 22);
+      ctx.fillStyle = consumed ? '#475569' : current ? '#fbbf24' : '#e2e8f0';
+      ctx.font = '13px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(input[i], x+10, 304);
+    }
+    if(step >= 2*n){
+      ctx.fillStyle = '#4ade80'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('ACCEPT: stack matched all '+n+' pairs!', 200, 330);
+    }
+  }
+  window.s3Race = function(nn){
+    if(timer) clearInterval(timer);
+    n = nn; step = -1;
+    drawFrame();
+    timer = setInterval(()=>{
+      step++;
+      drawFrame();
+      if(step >= 2*nn){ clearInterval(timer); timer = null; }
+    }, 400);
+    document.getElementById('s3msg').textContent = 'Running a^'+nn+'b^'+nn+' = '+'a'.repeat(nn)+'b'.repeat(nn);
+  };
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s3').classList.contains('active')){ drawFrame(); }
+    else { if(timer){clearInterval(timer);timer=null;} }
+  });
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 4: PDA MACHINE MODEL ==================== -->
+<div class="slide" id="s4">
+  <h2>The PDA Machine Model</h2>
+  <p>A PDA has three components: an <strong>input tape</strong>, a <strong>finite control</strong> (state), and a <strong>stack</strong> (unbounded LIFO).</p>
+  <div style="margin-top:12px;">
+    <canvas id="cS4" width="680" height="320" style="width:100%;max-width:680px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+      <button class="btn btn-sm" onclick="s4Step()">Step</button>
+      <button class="btn btn-sm" onclick="s4Run()">Run</button>
+      <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+      <span id="s4Status" style="color:#94a3b8;font-size:13px;font-family:monospace;margin-left:8px;">Press Step or Run (input: aabb)</span>
+    </div>
+  </div>
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px;margin-top:10px;font-size:0.95em;color:#cbd5e1;line-height:1.6;">
+    At each step: <strong>1.</strong> Read input symbol (or &epsilon;) &nbsp; <strong>2.</strong> Peek at stack top &nbsp; <strong>3.</strong> Based on (state, input, stack_top), transition to new state and modify stack
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS4'), ctx = c.getContext('2d');
+  const input = ['a','a','b','b'];
+  const trace = [
+    ['q0', 0, ['$'], 'Start: state=q0, stack=[$]'],
+    ['q0', 1, ['$','a'], 'Read a, push a'],
+    ['q0', 2, ['$','a','a'], 'Read a, push a'],
+    ['q1', 3, ['$','a'], 'Read b, pop a -> q1'],
+    ['q1', 4, ['$'], 'Read b, pop a'],
+    ['qacc', 4, ['$'], '\u03B5-move, see $ -> qacc: ACCEPT!']
+  ];
+  let step = 0, timer = null;
+  function draw(){
+    ctx.clearRect(0,0,680,320);
+    const st = trace[step];
+    // Input tape
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('INPUT TAPE', 300, 18);
+    for(let i = 0; i < input.length; i++){
+      const x = 180 + i*60;
+      const isCur = i === st[1] && st[1] < input.length;
+      const consumed = i < st[1];
+      ctx.fillStyle = isCur ? 'rgba(250,204,21,0.15)' : consumed ? 'rgba(15,23,42,0.5)' : '#1e293b';
+      ctx.fillRect(x, 28, 50, 36);
+      ctx.strokeStyle = isCur ? '#fbbf24' : '#475569'; ctx.lineWidth = 1.5; ctx.strokeRect(x, 28, 50, 36);
+      ctx.fillStyle = consumed ? '#475569' : isCur ? '#fbbf24' : '#e2e8f0';
+      ctx.font = 'bold 20px monospace'; ctx.fillText(input[i], x+25, 53);
+    }
+    if(st[1] < input.length){
+      const hx = 180 + st[1]*60 + 25;
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath(); ctx.moveTo(hx, 70); ctx.lineTo(hx-8, 86); ctx.lineTo(hx+8, 86); ctx.closePath(); ctx.fill();
+    }
+    // Arrow tape->control
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(300, 90); ctx.lineTo(300, 120); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = '#64748b'; ctx.font = '10px monospace'; ctx.fillText('read', 328, 108);
+    // Control box
+    ctx.fillStyle = '#1e293b'; ctx.strokeStyle = '#475569'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(230, 120, 140, 65, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('FINITE CONTROL', 300, 140);
+    ctx.fillStyle = st[0]==='qacc' ? '#4ade80' : '#93c5fd'; ctx.font = 'bold 22px monospace';
+    ctx.fillText(st[0], 300, 170);
+    // Arrow control->stack
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(375, 155); ctx.lineTo(440, 155); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = '#64748b'; ctx.font = '10px monospace'; ctx.fillText('push/pop', 408, 145);
+    // Stack
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('STACK', 520, 100);
+    const stk = st[2];
+    for(let i = 0; i < stk.length; i++){
+      const y = 280 - i*32;
+      ctx.fillStyle = (i === stk.length-1) ? 'rgba(139,92,246,0.2)' : 'rgba(30,41,59,0.8)';
+      ctx.fillRect(490, y, 60, 28);
+      ctx.strokeStyle = (i === stk.length-1) ? '#8b5cf6' : '#475569'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(490, y, 60, 28);
+      ctx.fillStyle = (i === stk.length-1) ? '#c4b5fd' : '#94a3b8'; ctx.font = 'bold 16px monospace';
+      ctx.fillText(stk[i], 520, y+19);
+    }
+    // Status
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(st[3], 30, 310);
+  }
+  window.s4Step = function(){
+    if(step < trace.length-1){ step++; draw(); }
+    document.getElementById('s4Status').textContent = 'Step '+step+' / '+(trace.length-1);
+  };
+  window.s4Run = function(){
+    if(timer) return;
+    timer = setInterval(()=>{
+      if(step < trace.length-1){ step++; draw(); document.getElementById('s4Status').textContent='Step '+step+' / '+(trace.length-1); }
+      else { clearInterval(timer); timer=null; }
+    }, 600);
+  };
+  window.s4Reset = function(){
+    if(timer){clearInterval(timer);timer=null;}
+    step = 0; draw();
+    document.getElementById('s4Status').textContent = 'Press Step or Run (input: aabb)';
+  };
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s4').classList.contains('active')){ draw(); }
+    else { if(timer){clearInterval(timer);timer=null;} }
+  });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 5: FORMAL DEFINITION ==================== -->
+<div class="slide" id="s5">
+  <h2>Formal Definition of a PDA</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <p>A PDA is a <strong>7-tuple</strong>:</p>
+      <div class="formula">M = (Q, &Sigma;, &Gamma;, &delta;, q<sub>0</sub>, Z<sub>0</sub>, F)</div>
+      <canvas id="cS5" width="520" height="260" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;margin-top:10px;"></canvas>
+    </div>
+    <div>
+      <h3>The Transition Function</h3>
+      <div class="formula" style="font-size:0.95em;">&delta; : Q &times; (&Sigma; &cup; {&epsilon;}) &times; &Gamma; &rarr; P(Q &times; &Gamma;*)</div>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Idea</h3>
+        <p>The range is a <strong>set</strong> of (state, string) pairs -- PDAs are <strong>nondeterministic</strong>. The PDA "chooses" among moves. Accepts if <em>any</em> choice leads to acceptance.</p>
+      </div>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Watch Out</h3>
+        <p>&Sigma; is the input alphabet (e.g. {a,b}). &Gamma; is the stack alphabet (e.g. {a,b,$}). They can overlap, but &Gamma; often has extra symbols like bottom marker $.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS5'), ctx = c.getContext('2d');
+  let frame = 0, animId = null;
+  const rows = [
+    {sym:'Q', desc:'Finite set of states', color:'#3b82f6'},
+    {sym:'\u03A3', desc:'Input alphabet', color:'#22c55e'},
+    {sym:'\u0393', desc:'Stack alphabet', color:'#a855f7'},
+    {sym:'\u03B4', desc:'Transition function', color:'#f59e0b'},
+    {sym:'q\u2080', desc:'Start state (q\u2080 \u2208 Q)', color:'#06b6d4'},
+    {sym:'Z\u2080', desc:'Initial stack symbol (Z\u2080 \u2208 \u0393)', color:'#ec4899'},
+    {sym:'F', desc:'Set of accept states', color:'#10b981'}
+  ];
+  function draw(){
+    ctx.clearRect(0,0,520,260);
+    const activeRow = Math.floor(frame * 0.025) % (rows.length + 2);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Symbol', 60, 22); ctx.fillText('Meaning', 300, 22);
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(10, 30); ctx.lineTo(510, 30); ctx.stroke();
+    rows.forEach((r, i)=>{
+      const y = 48 + i*32;
+      const active = i === activeRow;
+      if(active){ ctx.fillStyle = 'rgba(99,102,241,0.1)'; ctx.fillRect(10, y-12, 500, 28); }
+      ctx.fillStyle = active ? r.color : '#94a3b8';
+      ctx.font = active ? 'bold 16px monospace' : '14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(r.sym, 60, y+5);
+      ctx.fillStyle = active ? '#e2e8f0' : '#94a3b8';
+      ctx.font = active ? '13px system-ui' : '12px system-ui'; ctx.textAlign = 'left';
+      ctx.fillText(r.desc, 130, y+5);
+    });
+    frame++;
+    animId = requestAnimationFrame(draw);
+  }
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s5').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 6: READING TRANSITIONS ==================== -->
+<div class="slide" id="s6">
+  <h2>Reading PDA Transitions</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <p>Each transition:</p>
+      <div class="formula">&delta;(q, a, X) contains (p, Y)</div>
+      <p style="margin-top:8px;">Read as: "In state <strong>q</strong>, reading <strong>a</strong>, with <strong>X</strong> on top, move to <strong>p</strong> and replace X with <strong>Y</strong>."</p>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Idea</h3>
+        <p>String <strong>Y</strong> is pushed so its <em>leftmost</em> symbol ends on top. If Y = ABC, then A is on top.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Transition Explorer</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        <button class="btn btn-sm btn-secondary" onclick="s6Select(0)">Push: &delta;(q0,a,$)=(q0,a$)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Select(1)">Pop: &delta;(q1,b,a)=(q1,&epsilon;)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Select(2)">No-op: &delta;(q,a,X)=(p,X)</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Select(3)">Multi: &delta;(q,a,X)=(p,ABC)</button>
+      </div>
+      <canvas id="cS6" width="520" height="300" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <div id="s6explain" style="color:#94a3b8;font-size:13px;margin-top:6px;min-height:20px;">Select a transition above</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS6'), ctx = c.getContext('2d');
+  let sel = -1, animFrame = 0, animId = null;
+  const trs = [
+    {q:'q0',p:'q0',label:'a, $ / a$', before:['$'], after:['$','a'], explain:'Push: pop $, push a$ back. Net effect: a appears on top of $.'},
+    {q:'q1',p:'q1',label:'b, a / \u03B5', before:['$','a'], after:['$'], explain:'Pop: pop a, push nothing. The a is removed.'},
+    {q:'q',p:'p',label:'a, X / X', before:['$','X'], after:['$','X'], explain:'No-change: pop X, push X right back. Stack stays same.'},
+    {q:'q',p:'p',label:'a, X / ABC', before:['$','X'], after:['$','C','B','A'], explain:'Multi-push: pop X, push ABC. A on top (leftmost = top).'}
+  ];
+  function drawStack(cx, baseY, stack, alpha){
+    for(let i = 0; i < stack.length; i++){
+      const y = baseY - i*30;
+      const isTop = i === stack.length-1;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = isTop ? 'rgba(139,92,246,0.25)' : '#1e293b';
+      ctx.fillRect(cx-30, y-14, 60, 26);
+      ctx.strokeStyle = isTop ? '#8b5cf6' : '#475569'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx-30, y-14, 60, 26);
+      ctx.fillStyle = isTop ? '#c4b5fd' : '#94a3b8'; ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(stack[i], cx, y+3);
+      ctx.globalAlpha = 1;
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    if(sel < 0){ ctx.fillStyle='#475569';ctx.font='14px system-ui';ctx.textAlign='center';ctx.fillText('Click a transition button above',260,150); return; }
+    const tr = trs[sel];
+    const progress = Math.min(1, (animFrame % 120) / 60);
+    // States
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath(); ctx.arc(80, 50, 28, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = progress < 0.5 ? '#3b82f6' : '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(tr.q, 80, 55);
+    // Arrow
+    ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(112, 50); ctx.lineTo(388, 50); ctx.stroke();
+    ctx.fillStyle = '#8b5cf6';
+    ctx.beginPath(); ctx.moveTo(395, 50); ctx.lineTo(385, 44); ctx.lineTo(385, 56); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#a78bfa'; ctx.font = '13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(tr.label, 250, 38);
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath(); ctx.arc(420, 50, 28, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = progress >= 0.5 ? '#3b82f6' : '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace';
+    ctx.fillText(tr.p, 420, 55);
+    // Stacks
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui';
+    ctx.fillText('BEFORE', 130, 110);
+    drawStack(130, 260, tr.before, progress < 0.5 ? 1 : 0.4);
+    ctx.fillStyle = '#475569'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('\u2192', 260, 190);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui';
+    ctx.fillText('AFTER', 390, 110);
+    drawStack(390, 260, tr.after, progress >= 0.5 ? 1 : 0.4);
+    animFrame++;
+    animId = requestAnimationFrame(draw);
+  }
+  window.s6Select = function(i){
+    sel = i; animFrame = 0;
+    document.getElementById('s6explain').textContent = trs[i].explain;
+    if(!animId) draw();
+  };
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s6').classList.contains('active')){if(sel>=0 && !animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 7: PUSH POP OPERATIONS ==================== -->
+<div class="slide" id="s7">
+  <h2>Push, Pop, and No-Change Operations</h2>
+  <p>Every transition pops the stack top and pushes a replacement. We encode push, pop, and no-change via this single mechanism.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:12px;">
+    <div>
+      <canvas id="cS7" width="520" height="370" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s7Show(0)">Push</button>
+        <button class="btn btn-sm" onclick="s7Show(1)">Pop</button>
+        <button class="btn btn-sm" onclick="s7Show(2)">No-change</button>
+        <button class="btn btn-sm" onclick="s7Show(3)">Multi-push</button>
+      </div>
+    </div>
+    <div>
+      <h3>PUSH (add B on top of X)</h3>
+      <div class="formula" style="font-size:0.9em;">&delta;(q, a, X) = {(p, BX)}</div>
+      <p style="font-size:0.95em;">Pop X, push BX. Net: B appears on top, X stays below.</p>
+      <h3 style="margin-top:14px;">POP (remove X)</h3>
+      <div class="formula" style="font-size:0.9em;">&delta;(q, a, X) = {(p, &epsilon;)}</div>
+      <p style="font-size:0.95em;">Pop X, push nothing. X is gone.</p>
+      <h3 style="margin-top:14px;">NO-CHANGE</h3>
+      <div class="formula" style="font-size:0.9em;">&delta;(q, a, X) = {(p, X)}</div>
+      <p style="font-size:0.95em;">Pop X, push X back. Stack unchanged.</p>
+      <h3 style="margin-top:14px;">MULTI-PUSH</h3>
+      <div class="formula" style="font-size:0.9em;">&delta;(q, a, X) = {(p, ABC)}</div>
+      <p style="font-size:0.95em;">Pop X, push ABC. A on top (leftmost = top).</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS7'), ctx = c.getContext('2d');
+  let mode = 0, animFrame = 0, animId = null;
+  const ops = [
+    {title:'PUSH', before:['$','..','X'], after:['$','..','X','B'], label:'Replace X with BX'},
+    {title:'POP', before:['$','..','X'], after:['$','..'], label:'Replace X with \u03B5'},
+    {title:'NO-CHANGE', before:['$','..','X'], after:['$','..','X'], label:'Replace X with X'},
+    {title:'MULTI-PUSH', before:['$','..','X'], after:['$','..','C','B','A'], label:'Replace X with ABC'}
+  ];
+  function drawS(cx, baseY, stack, alpha){
+    for(let i = 0; i < stack.length; i++){
+      const y = baseY - i*36;
+      const isTop = i === stack.length-1;
+      const sym = stack[i];
+      ctx.globalAlpha = (sym === '..') ? 0.3 : alpha;
+      ctx.fillStyle = isTop ? 'rgba(139,92,246,0.25)' : '#1e293b';
+      ctx.fillRect(cx-35, y-16, 70, 30);
+      ctx.strokeStyle = isTop ? '#8b5cf6' : '#475569'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx-35, y-16, 70, 30);
+      ctx.fillStyle = isTop ? '#c4b5fd' : (sym === '..' ? '#334155' : '#94a3b8');
+      ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(sym === '..' ? '\u22EE' : sym, cx, y+3);
+      if(isTop){ ctx.fillStyle = '#8b5cf6'; ctx.font = '10px system-ui'; ctx.fillText('\u2190 top', cx+52, y); }
+      ctx.globalAlpha = 1;
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    const op = ops[mode];
+    const phase = (Math.sin(animFrame*0.025)+1)/2;
+    ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(op.title, 260, 28);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px system-ui';
+    ctx.fillText(op.label, 260, 48);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui';
+    ctx.fillText('BEFORE', 140, 75);
+    drawS(140, 330, op.before, 1);
+    ctx.fillStyle = '#475569'; ctx.font = 'bold 32px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('\u2192', 260, 200);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px system-ui';
+    ctx.fillText('AFTER', 380, 75);
+    drawS(380, 330, op.after, phase > 0.5 ? 1 : 0.7+phase*0.6);
+    animFrame++;
+    animId = requestAnimationFrame(draw);
+  }
+  window.s7Show = function(m){ mode = m; animFrame = 0; if(!animId)draw(); };
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s7').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 8: a^n b^n SIMULATOR ==================== -->
+<div class="slide" id="s8">
+  <h2>Example: PDA for { a<sup>n</sup>b<sup>n</sup> | n &ge; 0 }</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3>Strategy</h3>
+      <ol>
+        <li>Start with $ on the stack</li>
+        <li>For each <code>a</code>: push <code>a</code></li>
+        <li>Switch to "b-reading" mode</li>
+        <li>For each <code>b</code>: pop one <code>a</code></li>
+        <li>Accept if stack has only $</li>
+      </ol>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Key Idea</h3>
+        <p>The stack <strong>counts</strong> a's. Each b cancels one a. If counts match, stack returns to $.</p>
+      </div>
+      <h3 style="margin-top:12px;">Transitions</h3>
+      <div class="formula" style="font-size:0.78em;text-align:left;padding:10px;">
+        &delta;(q0, a, $) = {(q0, a$)}<br>
+        &delta;(q0, a, a) = {(q0, aa)}<br>
+        &delta;(q0, &epsilon;, $) = {(qacc, $)}<br>
+        &delta;(q0, b, a) = {(q1, &epsilon;)}<br>
+        &delta;(q1, b, a) = {(q1, &epsilon;)}<br>
+        &delta;(q1, &epsilon;, $) = {(qacc, $)}
+      </div>
+    </div>
+    <div>
+      <h3>Interactive Simulator</h3>
+      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+        <input type="text" id="s8input" placeholder="e.g. aabb" maxlength="16" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:14px;width:120px;">
+        <button class="btn btn-sm" onclick="s8Step()">Step</button>
+        <button class="btn btn-sm" onclick="s8Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+      <canvas id="cS8" width="520" height="420" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <div id="s8log" style="color:#94a3b8;font-size:12px;font-family:monospace;margin-top:6px;max-height:60px;overflow-y:auto;line-height:1.5;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS8'), ctx = c.getContext('2d');
+  let state='q0', pos=0, stack=['$'], input=[], done=false, accepted=false, timer=null, logLines=[];
+  function draw(){
+    ctx.clearRect(0,0,520,420);
+    // State diagram
+    const sts = [{id:'q0',x:100,y:50},{id:'q1',x:300,y:50},{id:'qacc',x:200,y:130}];
+    sts.forEach(s=>{
+      ctx.beginPath(); ctx.arc(s.x,s.y,24,0,Math.PI*2);
+      ctx.fillStyle = (state===s.id)?'rgba(59,130,246,0.2)':'#1e293b'; ctx.fill();
+      ctx.strokeStyle = (state===s.id)?'#3b82f6':'#475569'; ctx.lineWidth = (state===s.id)?2.5:1.5; ctx.stroke();
+      if(s.id==='qacc'){ctx.beginPath();ctx.arc(s.x,s.y,19,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle = (state===s.id)?'#93c5fd':'#94a3b8'; ctx.font='12px monospace'; ctx.textAlign='center';
+      ctx.fillText(s.id,s.x,s.y+4);
+    });
+    // Labels
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(100,18,16,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText('a: push',100,4);
+    ctx.beginPath();ctx.moveTo(126,50);ctx.lineTo(274,50);ctx.stroke();
+    ctx.fillText('b,a/\u03B5',200,42);
+    ctx.beginPath();ctx.arc(300,18,16,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
+    ctx.fillText('b,a/\u03B5',300,4);
+    ctx.beginPath();ctx.moveTo(108,72);ctx.lineTo(184,114);ctx.stroke();
+    ctx.fillText('\u03B5,$/$',128,100);
+    ctx.beginPath();ctx.moveTo(292,72);ctx.lineTo(216,114);ctx.stroke();
+    ctx.fillText('\u03B5,$/$',272,100);
+    // Tape
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('INPUT:',20,180);
+    for(let i=0;i<input.length;i++){
+      const x=20+i*30;
+      const consumed=i<pos, current=i===pos&&!done;
+      ctx.fillStyle=current?'rgba(250,204,21,0.15)':consumed?'rgba(15,23,42,0.5)':'#1e293b';
+      ctx.fillRect(x,188,26,28);
+      ctx.strokeStyle=current?'#fbbf24':'#475569';ctx.lineWidth=1;ctx.strokeRect(x,188,26,28);
+      ctx.fillStyle=consumed?'#475569':current?'#fbbf24':'#e2e8f0';
+      ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.fillText(input[i],x+13,207);
+    }
+    if(!input.length){ctx.fillStyle='#475569';ctx.font='13px monospace';ctx.textAlign='left';ctx.fillText('(enter input above)',20,207);}
+    // Stack
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('STACK',440,180);
+    for(let i=0;i<stack.length;i++){
+      const y=400-i*28, isTop=i===stack.length-1;
+      ctx.fillStyle=isTop?'rgba(139,92,246,0.2)':'#1e293b';
+      ctx.fillRect(410,y-12,60,24);
+      ctx.strokeStyle=isTop?'#8b5cf6':'#475569';ctx.lineWidth=1.5;ctx.strokeRect(410,y-12,60,24);
+      ctx.fillStyle=isTop?'#c4b5fd':'#94a3b8';ctx.font='bold 14px monospace';ctx.fillText(stack[i],440,y+3);
+    }
+    // Verdict
+    if(done){
+      ctx.font='bold 18px system-ui';ctx.textAlign='center';
+      ctx.fillStyle=accepted?'#4ade80':'#f87171';
+      ctx.fillText(accepted?'ACCEPTED':'REJECTED',200,260);
+    }
+    // Config
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='left';
+    const rem=input.slice(pos).join('')||'\u03B5';
+    ctx.fillText('('+state+', '+rem+', '+[...stack].reverse().join('')+')',20,290);
+  }
+  function doStep(){
+    if(done) return;
+    const top=stack[stack.length-1], sym=pos<input.length?input[pos]:null;
+    if(state==='q0'){
+      if(sym==='a'){stack.push('a');pos++;logLines.push('Read a, push a');}
+      else if(sym==='b'&&top==='a'){stack.pop();pos++;state='q1';logLines.push('Read b, pop a -> q1');}
+      else if(sym===null&&top==='$'){state='qacc';done=true;accepted=true;logLines.push('\u03B5, see $ -> qacc: ACCEPT');}
+      else{done=true;accepted=false;logLines.push('No transition: REJECT');}
+    } else if(state==='q1'){
+      if(sym==='b'&&top==='a'){stack.pop();pos++;logLines.push('Read b, pop a');}
+      else if(sym===null&&top==='$'){state='qacc';done=true;accepted=true;logLines.push('\u03B5, see $ -> qacc: ACCEPT');}
+      else{done=true;accepted=false;logLines.push('No transition: REJECT');}
+    }
+    draw();
+    document.getElementById('s8log').innerHTML=logLines.map(l=>'<div>'+l+'</div>').join('');
+    document.getElementById('s8log').scrollTop=9999;
+  }
+  function init(){
+    const v=document.getElementById('s8input').value.trim();
+    input=v.split('');logLines=['Input: "'+v+'"'];draw();
+  }
+  window.s8Step=function(){if(!input.length&&!done)init();doStep();};
+  window.s8Auto=function(){
+    if(!input.length&&!done)init();
+    if(timer)return;
+    timer=setInterval(()=>{if(!done)doStep();else{clearInterval(timer);timer=null;}},500);
+  };
+  window.s8Reset=function(){
+    if(timer){clearInterval(timer);timer=null;}
+    state='q0';pos=0;stack=['$'];input=[];done=false;accepted=false;logLines=[];
+    document.getElementById('s8log').innerHTML='';draw();
+  };
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s8').classList.contains('active')){draw();}
+    else{if(timer){clearInterval(timer);timer=null;}}
+  });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 9: ACCEPTANCE MODES ==================== -->
+<div class="slide" id="s9">
+  <h2>Acceptance: Final State vs. Empty Stack</h2>
+  <p>There are <strong>two equivalent</strong> ways a PDA can accept a string.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>1. Acceptance by Final State</h3>
+      <canvas id="cS9a" width="520" height="160" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <p style="margin-top:8px;font-size:0.95em;">Accept if ALL input consumed and PDA is in state q &isin; F. Stack contents do not matter.</p>
+    </div>
+    <div>
+      <h3>2. Acceptance by Empty Stack</h3>
+      <canvas id="cS9b" width="520" height="160" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <p style="margin-top:8px;font-size:0.95em;">Accept if ALL input consumed and stack is completely EMPTY. Current state does not matter.</p>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:14px;">
+    <h3>Key Idea</h3>
+    <p>These two modes are <strong>equivalent in power</strong>. Any language accepted by final state can also be accepted by empty stack (via a different PDA), and vice versa. We can mechanically convert between them.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Final state canvas
+  const ca = document.getElementById('cS9a'), ctxA = ca.getContext('2d');
+  const cb = document.getElementById('cS9b'), ctxB = cb.getContext('2d');
+  let frame=0, animId=null;
+  function draw(){
+    // Final state
+    ctxA.clearRect(0,0,520,160);
+    const t=frame*0.02;
+    // Stack with stuff
+    for(let i=0;i<3;i++){
+      const y=130-i*30;
+      ctxA.fillStyle='rgba(139,92,246,0.15)';ctxA.fillRect(60,y,50,26);
+      ctxA.strokeStyle='#8b5cf6';ctxA.lineWidth=1;ctxA.strokeRect(60,y,50,26);
+      ctxA.fillStyle='#c4b5fd';ctxA.font='bold 13px monospace';ctxA.textAlign='center';
+      ctxA.fillText(['$','x','y'][i],85,y+17);
+    }
+    ctxA.fillStyle='#94a3b8';ctxA.font='10px system-ui';ctxA.fillText('stack has stuff',85,55);
+    ctxA.fillStyle='#94a3b8';ctxA.font='10px system-ui';ctxA.fillText('(we don\'t care!)',85,45);
+    // State in F
+    const glow=0.3+0.2*Math.sin(t*2);
+    ctxA.fillStyle='rgba(34,197,94,'+glow+')';
+    ctxA.beginPath();ctxA.arc(300,80,35,0,Math.PI*2);ctxA.fill();
+    ctxA.strokeStyle='#22c55e';ctxA.lineWidth=3;
+    ctxA.beginPath();ctxA.arc(300,80,35,0,Math.PI*2);ctxA.stroke();
+    ctxA.beginPath();ctxA.arc(300,80,29,0,Math.PI*2);ctxA.stroke();
+    ctxA.fillStyle='#4ade80';ctxA.font='bold 16px monospace';ctxA.fillText('q \u2208 F',300,85);
+    ctxA.fillStyle='#4ade80';ctxA.font='bold 14px system-ui';ctxA.fillText('ACCEPT',430,85);
+
+    // Empty stack
+    ctxB.clearRect(0,0,520,160);
+    // Empty stack area
+    ctxB.strokeStyle='#475569';ctxB.lineWidth=1;ctxB.setLineDash([4,3]);
+    ctxB.strokeRect(60,70,50,60);ctxB.setLineDash([]);
+    ctxB.fillStyle='#475569';ctxB.font='11px system-ui';ctxB.textAlign='center';
+    ctxB.fillText('(empty)',85,105);
+    const glow2=0.3+0.2*Math.sin(t*2);
+    ctxB.fillStyle='rgba(59,130,246,'+glow2+')';
+    ctxB.beginPath();ctxB.arc(300,80,35,0,Math.PI*2);ctxB.fill();
+    ctxB.strokeStyle='#3b82f6';ctxB.lineWidth=2;
+    ctxB.beginPath();ctxB.arc(300,80,35,0,Math.PI*2);ctxB.stroke();
+    ctxB.fillStyle='#93c5fd';ctxB.font='bold 14px monospace';ctxB.fillText('any q',300,85);
+    ctxB.fillStyle='#4ade80';ctxB.font='bold 14px system-ui';ctxB.fillText('ACCEPT',430,85);
+
+    frame++;animId=requestAnimationFrame(draw);
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s9').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 10: CONVERTING MODES ==================== -->
+<div class="slide" id="s10">
+  <h2>Converting Between Acceptance Modes</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3>Final State &rarr; Empty Stack</h3>
+      <canvas id="cS10a" width="520" height="240" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <p style="font-size:0.9em;margin-top:6px;">1. Add new start q0', push new bottom marker Z0' under Z0. 2. From every final state, &epsilon;-transition to q_drain. 3. q_drain pops everything.</p>
+    </div>
+    <div>
+      <h3>Empty Stack &rarr; Final State</h3>
+      <canvas id="cS10b" width="520" height="240" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <p style="font-size:0.9em;margin-top:6px;">1. Add new start q0', push Z0' under Z0. 2. From EVERY state, &epsilon;-transition to q_f when Z0' is on top. 3. q_f is only accept state.</p>
+    </div>
+  </div>
+  <div class="warning" style="margin-top:12px;">
+    <h3>Watch Out</h3>
+    <p>The new bottom marker Z0' is essential! Without it, the original PDA might empty its stack prematurely and the conversion would accept strings it should not.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const ca=document.getElementById('cS10a'),ctxA=ca.getContext('2d');
+  const cb=document.getElementById('cS10b'),ctxB=cb.getContext('2d');
+  let frame=0,animId=null;
+  function drawState(ctx,x,y,label,color,dbl){
+    ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);
+    ctx.fillStyle='#1e293b';ctx.fill();
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+    if(dbl){ctx.beginPath();ctx.arc(x,y,17,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle=color;ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText(label,x,y+4);
+  }
+  function drawArrow(ctx,x1,y1,x2,y2,label){
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';
+    ctx.fillText(label,mx,my-8);
+  }
+  function draw(){
+    // Final->Empty
+    ctxA.clearRect(0,0,520,240);
+    drawState(ctxA,60,60,"q0'",'#f59e0b',false);
+    drawArrow(ctxA,84,60,136,60,'\u03B5,Z0\'/Z0\'');
+    drawState(ctxA,160,60,'q0','#3b82f6',false);
+    ctxA.fillStyle='#94a3b8';ctxA.font='10px system-ui';ctxA.textAlign='center';
+    ctxA.fillText('original PDA',250,40);
+    ctxA.strokeStyle='#334155';ctxA.lineWidth=1;ctxA.setLineDash([3,3]);
+    ctxA.strokeRect(180,30,140,60);ctxA.setLineDash([]);
+    drawState(ctxA,350,60,'q\u2208F','#22c55e',true);
+    drawArrow(ctxA,374,60,426,60,'\u03B5,any/\u03B5');
+    drawState(ctxA,450,60,'qdrain','#ef4444',false);
+    // Loop on drain
+    ctxA.beginPath();ctxA.arc(450,30,14,0.3*Math.PI,0.7*Math.PI,true);
+    ctxA.strokeStyle='#ef4444';ctxA.lineWidth=1.5;ctxA.stroke();
+    ctxA.fillStyle='#f87171';ctxA.font='9px monospace';ctxA.fillText('\u03B5,any/\u03B5',450,10);
+    // Labels
+    ctxA.fillStyle='#94a3b8';ctxA.font='11px system-ui';ctxA.textAlign='left';
+    ctxA.fillText('Steps:',20,120);
+    ctxA.fillText('1. New start q0\', push Z0\' under original Z0',20,140);
+    ctxA.fillText('2. From every final state \u2192 q_drain',20,158);
+    ctxA.fillText('3. q_drain pops everything (loop)',20,176);
+
+    // Empty->Final
+    ctxB.clearRect(0,0,520,240);
+    drawState(ctxB,60,60,"q0'",'#f59e0b',false);
+    drawArrow(ctxB,84,60,136,60,'\u03B5,Z0\'/Z0 Z0\'');
+    drawState(ctxB,160,60,'q0','#3b82f6',false);
+    ctxB.fillStyle='#94a3b8';ctxB.font='10px system-ui';ctxB.textAlign='center';
+    ctxB.fillText('original PDA',250,40);
+    ctxB.strokeStyle='#334155';ctxB.lineWidth=1;ctxB.setLineDash([3,3]);
+    ctxB.strokeRect(180,30,140,60);ctxB.setLineDash([]);
+    drawState(ctxB,350,60,'any q','#94a3b8',false);
+    drawArrow(ctxB,374,60,426,60,'\u03B5,Z0\'/\u03B5');
+    drawState(ctxB,450,60,'q_f','#22c55e',true);
+    ctxB.fillStyle='#94a3b8';ctxB.font='11px system-ui';ctxB.textAlign='left';
+    ctxB.fillText('Steps:',20,120);
+    ctxB.fillText('1. New start q0\', push Z0\' under Z0',20,140);
+    ctxB.fillText('2. From EVERY state, \u03B5-trans to q_f when Z0\' on top',20,158);
+    ctxB.fillText('3. q_f is the only accept state',20,176);
+
+    frame++;animId=requestAnimationFrame(draw);
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s10').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 11: BALANCED PARENTHESES ==================== -->
+<div class="slide" id="s11">
+  <h2>Example: Balanced Parentheses PDA</h2>
+  <p>Language: { w &isin; {(, )}* | w has properly nested, balanced parentheses }</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>Strategy</h3>
+      <ul>
+        <li>Push marker L for each <code>(</code></li>
+        <li>Pop marker L for each <code>)</code></li>
+        <li>Accept if stack returns to just $</li>
+      </ul>
+      <h3 style="margin-top:10px;">Transitions</h3>
+      <div class="formula" style="font-size:0.82em;text-align:left;padding:10px;">
+        &delta;(q0, (, $) = {(q0, L$)}<br>
+        &delta;(q0, (, L) = {(q0, LL)}<br>
+        &delta;(q0, ), L) = {(q0, &epsilon;)}<br>
+        &delta;(q0, &epsilon;, $) = {(qacc, $)}
+      </div>
+      <div class="warning" style="margin-top:8px;">
+        <h3>Watch Out</h3>
+        <p>Seeing <code>)</code> when stack has only $ means unmatched close paren -- machine gets stuck (reject).</p>
+      </div>
+    </div>
+    <div>
+      <h3>Interactive Simulator</h3>
+      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+        <input type="text" id="s11input" placeholder="e.g. (())" maxlength="20" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:14px;width:120px;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+      <canvas id="cS11" width="520" height="340" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <div id="s11log" style="color:#94a3b8;font-size:12px;font-family:monospace;margin-top:4px;max-height:50px;overflow-y:auto;line-height:1.5;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS11'),ctx=c.getContext('2d');
+  let state='q0',pos=0,stack=['$'],input=[],done=false,accepted=false,timer=null,logLines=[];
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    // States
+    const sts=[{id:'q0',x:120,y:50},{id:'qacc',x:350,y:50}];
+    sts.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,24,0,Math.PI*2);
+      ctx.fillStyle=(state===s.id)?'rgba(59,130,246,0.2)':'#1e293b';ctx.fill();
+      ctx.strokeStyle=(state===s.id)?'#3b82f6':'#475569';ctx.lineWidth=(state===s.id)?2.5:1.5;ctx.stroke();
+      if(s.id==='qacc'){ctx.beginPath();ctx.arc(s.x,s.y,19,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle=(state===s.id)?'#93c5fd':'#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
+      ctx.fillText(s.id,s.x,s.y+4);
+    });
+    // Self-loop on q0
+    ctx.strokeStyle='#475569';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(120,18,16,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';
+    ctx.fillText('(: push L  ): pop L',120,2);
+    // q0->qacc
+    ctx.beginPath();ctx.moveTo(146,50);ctx.lineTo(324,50);ctx.stroke();
+    ctx.fillText('\u03B5,$/$',235,42);
+    // Tape
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('INPUT:',20,110);
+    for(let i=0;i<input.length;i++){
+      const x=20+i*28;
+      const consumed=i<pos,current=i===pos&&!done;
+      ctx.fillStyle=current?'rgba(250,204,21,0.15)':consumed?'rgba(15,23,42,0.5)':'#1e293b';
+      ctx.fillRect(x,118,24,26);
+      ctx.strokeStyle=current?'#fbbf24':'#475569';ctx.lineWidth=1;ctx.strokeRect(x,118,24,26);
+      ctx.fillStyle=consumed?'#475569':current?'#fbbf24':'#e2e8f0';
+      ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.fillText(input[i],x+12,136);
+    }
+    // Stack
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('STACK',450,110);
+    for(let i=0;i<stack.length;i++){
+      const y=310-i*26,isTop=i===stack.length-1;
+      ctx.fillStyle=isTop?'rgba(139,92,246,0.2)':'#1e293b';
+      ctx.fillRect(420,y-12,60,24);
+      ctx.strokeStyle=isTop?'#8b5cf6':'#475569';ctx.lineWidth=1.5;ctx.strokeRect(420,y-12,60,24);
+      ctx.fillStyle=isTop?'#c4b5fd':'#94a3b8';ctx.font='bold 14px monospace';ctx.fillText(stack[i],450,y+3);
+    }
+    if(done){
+      ctx.font='bold 16px system-ui';ctx.textAlign='center';
+      ctx.fillStyle=accepted?'#4ade80':'#f87171';
+      ctx.fillText(accepted?'ACCEPTED':'REJECTED',220,190);
+    }
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='left';
+    const rem=input.slice(pos).join('')||'\u03B5';
+    ctx.fillText('('+state+', '+rem+', '+[...stack].reverse().join('')+')',20,220);
+  }
+  function doStep(){
+    if(done)return;
+    const top=stack[stack.length-1],sym=pos<input.length?input[pos]:null;
+    if(state==='q0'){
+      if(sym==='('&&top==='$'){stack.push('L');pos++;logLines.push('Read (, push L');}
+      else if(sym==='('&&top==='L'){stack.push('L');pos++;logLines.push('Read (, push L');}
+      else if(sym===')'&&top==='L'){stack.pop();pos++;logLines.push('Read ), pop L');}
+      else if(sym===null&&top==='$'){state='qacc';done=true;accepted=true;logLines.push('\u03B5,$ -> qacc: ACCEPT');}
+      else{done=true;accepted=false;logLines.push('No transition: REJECT');}
+    }
+    draw();
+    document.getElementById('s11log').innerHTML=logLines.map(l=>'<div>'+l+'</div>').join('');
+    document.getElementById('s11log').scrollTop=9999;
+  }
+  function init(){const v=document.getElementById('s11input').value.trim();input=v.split('');logLines=['Input: "'+v+'"'];draw();}
+  window.s11Step=function(){if(!input.length&&!done)init();doStep();};
+  window.s11Auto=function(){if(!input.length&&!done)init();if(timer)return;timer=setInterval(()=>{if(!done)doStep();else{clearInterval(timer);timer=null;}},400);};
+  window.s11Reset=function(){if(timer){clearInterval(timer);timer=null;}state='q0';pos=0;stack=['$'];input=[];done=false;accepted=false;logLines=[];document.getElementById('s11log').innerHTML='';draw();};
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s11').classList.contains('active')){draw();}
+    else{if(timer){clearInterval(timer);timer=null;}}
+  });
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE CA: CHALLENGE - PREDICT PDA STATE ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the PDA State</h2>
+  <div class="challenge-box">
+    <h3>Challenge A</h3>
+    <p>Consider the a<sup>n</sup>b<sup>n</sup> PDA from Slide 8. After processing the input <code>aaab</code> (3 a's then 1 b), what is the current configuration?</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+      <button class="quiz-option" onclick="sCACheck(this,0)">(q1, &epsilon;, aa$)</button>
+      <button class="quiz-option" onclick="sCACheck(this,1)">(q0, &epsilon;, aaa$)</button>
+      <button class="quiz-option" onclick="sCACheck(this,2)">(q1, &epsilon;, $)</button>
+    </div>
+    <div id="sCAresult" style="margin-top:12px;min-height:60px;"></div>
+  </div>
+  <canvas id="cSCA" width="520" height="200" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;margin-top:12px;"></canvas>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cSCA'),ctx=c.getContext('2d');
+  let answered=false,correct=-1;
+  function draw(){
+    ctx.clearRect(0,0,520,200);
+    // Show the trace
+    const steps=[
+      {s:'q0',input:'aaab',stack:'$'},
+      {s:'q0',input:'aab',stack:'a$'},
+      {s:'q0',input:'ab',stack:'aa$'},
+      {s:'q0',input:'b',stack:'aaa$'},
+      {s:'q1',input:'\u03B5',stack:'aa$'}
+    ];
+    ctx.fillStyle='#94a3b8';ctx.font='bold 11px system-ui';ctx.textAlign='left';
+    ctx.fillText('Step-by-step trace:',20,20);
+    steps.forEach((st,i)=>{
+      const y=42+i*30;
+      const show=answered||i<=0;
+      ctx.fillStyle=show?(i===4?'#4ade80':'#cbd5e1'):'#334155';
+      ctx.font='13px monospace';
+      ctx.fillText('Step '+i+': ('+st.s+', '+st.input+', '+st.stack+')',30,y);
+      if(!answered&&i===0){
+        ctx.fillStyle='#f59e0b';ctx.fillText('  \u2190 start',350,y);
+      }
+    });
+    if(answered){
+      ctx.fillStyle='#4ade80';ctx.font='bold 13px system-ui';
+      ctx.fillText('Answer: (q1, \u03B5, aa$) -- pushed 3 a\'s, popped 1 for the b',30,195);
+    }
+  }
+  window.sCACheck=function(btn,idx){
+    if(answered)return;answered=true;
+    document.querySelectorAll('#sCA .quiz-option').forEach((b,i)=>{
+      b.disabled=true;
+      if(i===0)b.classList.add('correct');
+      else if(i===idx)b.classList.add('wrong');
+    });
+    const res=document.getElementById('sCAresult');
+    if(idx===0){
+      res.innerHTML='<div style="color:#4ade80;font-weight:bold;">Correct!</div><div style="color:#94a3b8;font-size:0.95em;">We push 3 a\'s (stack=aaa$), then read b and pop one a (stack=aa$), transitioning to q1. No more input remains.</div>';
+    } else {
+      res.innerHTML='<div style="color:#f87171;font-weight:bold;">Not quite.</div><div style="color:#94a3b8;font-size:0.95em;">We push 3 a\'s (stack=aaa$), then read b and pop one a (stack=aa$), transitioning to q1. Answer: (q1, \u03B5, aa$).</div>';
+    }
+    draw();
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCA').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 12: PALINDROMES ww^R ==================== -->
+<div class="slide" id="s12">
+  <h2>Example: PDA for { ww<sup>R</sup> | w &isin; {0,1}* }</h2>
+  <p>Even-length palindromes! The second half is the reverse of the first.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>The Problem</h3>
+      <p><code>0110</code>: first half <code>01</code>, second half <code>10</code> = reverse of <code>01</code>.</p>
+      <p style="margin-top:6px;">But how does the PDA know where the <strong>middle</strong> is?</p>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Key Idea: Nondeterminism!</h3>
+        <p>The PDA <strong>guesses</strong> the midpoint! At every position it branches:</p>
+        <ol>
+          <li>"Haven't reached middle" -- keep pushing</li>
+          <li>"This IS the middle!" -- switch to popping</li>
+        </ol>
+        <p>Accepts if <em>any</em> guess leads to acceptance.</p>
+      </div>
+      <div class="analogy" style="margin-top:8px;">
+        <h3>Analogy</h3>
+        <p>Clone yourself at every step. One clone keeps pushing, the other switches to matching. Most clones die. The one who guessed right survives.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Palindrome Simulator</h3>
+      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+        <input type="text" id="s12input" placeholder="e.g. 0110" maxlength="16" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:14px;width:120px;">
+        <button class="btn btn-sm" onclick="s12Step()">Step</button>
+        <button class="btn btn-sm" onclick="s12Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+      <canvas id="cS12" width="520" height="350" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <div id="s12log" style="color:#94a3b8;font-size:12px;font-family:monospace;margin-top:4px;max-height:50px;overflow-y:auto;line-height:1.5;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS12'),ctx=c.getContext('2d');
+  let state='q0',pos=0,stack=['$'],input=[],done=false,accepted=false,timer=null,logLines=[],midGuessed=false;
+  function draw(){
+    ctx.clearRect(0,0,520,350);
+    const sts=[{id:'q0',x:100,y:50},{id:'q1',x:300,y:50},{id:'qacc',x:200,y:130}];
+    sts.forEach(s=>{
+      ctx.beginPath();ctx.arc(s.x,s.y,22,0,Math.PI*2);
+      ctx.fillStyle=(state===s.id)?'rgba(59,130,246,0.2)':'#1e293b';ctx.fill();
+      ctx.strokeStyle=(state===s.id)?'#3b82f6':'#475569';ctx.lineWidth=(state===s.id)?2.5:1.5;ctx.stroke();
+      if(s.id==='qacc'){ctx.beginPath();ctx.arc(s.x,s.y,17,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle=(state===s.id)?'#93c5fd':'#94a3b8';ctx.font='11px monospace';ctx.textAlign='center';
+      ctx.fillText(s.id,s.x,s.y+4);
+    });
+    ctx.strokeStyle='#475569';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(100,20,14,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText('0,1:push',100,6);
+    ctx.beginPath();ctx.moveTo(124,50);ctx.lineTo(276,50);ctx.stroke();
+    ctx.fillStyle='#a78bfa';ctx.fillText('\u03B5 (guess mid!)',200,42);
+    ctx.strokeStyle='#475569';
+    ctx.beginPath();ctx.arc(300,20,14,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.fillText('match&pop',300,6);
+    ctx.beginPath();ctx.moveTo(106,70);ctx.lineTo(184,116);ctx.stroke();
+    ctx.fillText('\u03B5,$/$',130,100);
+    ctx.beginPath();ctx.moveTo(294,70);ctx.lineTo(216,116);ctx.stroke();
+    ctx.fillText('\u03B5,$/$',274,100);
+    // Tape
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('INPUT:',20,170);
+    for(let i=0;i<input.length;i++){
+      const x=20+i*28,consumed=i<pos,current=i===pos&&!done;
+      ctx.fillStyle=current?'rgba(250,204,21,0.15)':consumed?'rgba(15,23,42,0.5)':'#1e293b';
+      ctx.fillRect(x,178,24,26);
+      ctx.strokeStyle=current?'#fbbf24':'#475569';ctx.lineWidth=1;ctx.strokeRect(x,178,24,26);
+      ctx.fillStyle=consumed?'#475569':current?'#fbbf24':'#e2e8f0';
+      ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.fillText(input[i],x+12,196);
+    }
+    // Stack
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('STACK',460,170);
+    for(let i=0;i<stack.length;i++){
+      const y=330-i*24,isTop=i===stack.length-1;
+      ctx.fillStyle=isTop?'rgba(139,92,246,0.2)':'#1e293b';
+      ctx.fillRect(430,y-10,60,22);
+      ctx.strokeStyle=isTop?'#8b5cf6':'#475569';ctx.lineWidth=1.5;ctx.strokeRect(430,y-10,60,22);
+      ctx.fillStyle=isTop?'#c4b5fd':'#94a3b8';ctx.font='bold 13px monospace';ctx.fillText(stack[i],460,y+5);
+    }
+    if(done){
+      ctx.font='bold 16px system-ui';ctx.textAlign='center';
+      ctx.fillStyle=accepted?'#4ade80':'#f87171';
+      ctx.fillText(accepted?'ACCEPTED':'REJECTED',200,250);
+    }
+  }
+  function doStep(){
+    if(done)return;
+    const top=stack[stack.length-1],sym=pos<input.length?input[pos]:null;
+    if(state==='q0'){
+      // Determine if we should guess the middle (use the correct midpoint for deterministic demo)
+      const mid=Math.floor(input.length/2);
+      if(pos<mid&&sym!==null){
+        stack.push(sym);pos++;logLines.push('Push '+sym+' (still in first half)');
+      } else if(pos===mid&&!midGuessed){
+        midGuessed=true;state='q1';logLines.push('\u03B5-move: GUESS MIDDLE! Switch to q1');
+      } else if(sym===null&&top==='$'){
+        state='qacc';done=true;accepted=true;logLines.push('ACCEPT (empty string)');
+      } else {done=true;accepted=false;logLines.push('Stuck: REJECT');}
+    } else if(state==='q1'){
+      if(sym!==null&&top===sym){stack.pop();pos++;logLines.push('Match '+sym+', pop');}
+      else if(sym===null&&top==='$'){state='qacc';done=true;accepted=true;logLines.push('\u03B5,$: ACCEPT!');}
+      else{done=true;accepted=false;logLines.push('Mismatch: REJECT');}
+    }
+    draw();
+    document.getElementById('s12log').innerHTML=logLines.map(l=>'<div>'+l+'</div>').join('');
+    document.getElementById('s12log').scrollTop=9999;
+  }
+  function init(){const v=document.getElementById('s12input').value.trim();input=v.split('');logLines=['Input: "'+v+'"'];draw();}
+  window.s12Step=function(){if(!input.length&&!done)init();doStep();};
+  window.s12Auto=function(){if(!input.length&&!done)init();if(timer)return;timer=setInterval(()=>{if(!done)doStep();else{clearInterval(timer);timer=null;}},500);};
+  window.s12Reset=function(){if(timer){clearInterval(timer);timer=null;}state='q0';pos=0;stack=['$'];input=[];done=false;accepted=false;midGuessed=false;logLines=[];document.getElementById('s12log').innerHTML='';draw();};
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s12').classList.contains('active')){draw();}
+    else{if(timer){clearInterval(timer);timer=null;}}
+  });
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 13: DPDA vs NPDA ==================== -->
+<div class="slide" id="s13">
+  <h2>DPDA vs NPDA: Nondeterminism Matters!</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3>Recall: DFA vs NFA</h3>
+      <p>For finite automata: deterministic = nondeterministic in power.</p>
+      <div class="formula" style="font-size:0.95em;">DFA = NFA (same languages: regular)</div>
+      <h3 style="margin-top:14px;">For PDAs: NOT the same!</h3>
+      <div class="formula" style="font-size:0.95em;">DPDA &lt; PDA (strict subset!)</div>
+      <canvas id="cS13" width="520" height="200" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;margin-top:10px;"></canvas>
+    </div>
+    <div>
+      <h3>What is a DPDA?</h3>
+      <p style="font-size:0.95em;">A <strong>deterministic PDA</strong> has at most <strong>one</strong> move per configuration. No branching, no guessing.</p>
+      <div class="warning" style="margin-top:10px;">
+        <h3>Critical Difference</h3>
+        <p>{ ww<sup>R</sup> } is context-free but NOT deterministic context-free. The "guess the middle" trick <em>requires</em> nondeterminism.</p>
+      </div>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Key Idea</h3>
+        <p>Deterministic CFLs matter in practice: most programming languages are DCFLs so parsers run efficiently.</p>
+      </div>
+      <table style="margin-top:10px;font-size:0.9em;">
+        <tr><th>Language</th><th>DPDA?</th><th>PDA?</th></tr>
+        <tr><td>a<sup>n</sup>b<sup>n</sup></td><td style="color:#4ade80;">Yes</td><td style="color:#4ade80;">Yes</td></tr>
+        <tr><td>ww<sup>R</sup></td><td style="color:#f87171;">No</td><td style="color:#4ade80;">Yes</td></tr>
+        <tr><td>wcw<sup>R</sup></td><td style="color:#4ade80;">Yes</td><td style="color:#4ade80;">Yes</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS13'),ctx=c.getContext('2d');
+  let frame=0,animId=null;
+  function draw(){
+    ctx.clearRect(0,0,520,200);
+    const t=frame*0.015;
+    // Nested sets
+    const sets=[
+      {label:'Context-Free Languages (PDA)',color:'#8b5cf6',x:20,y:10,w:480,h:180},
+      {label:'Deterministic CFLs (DPDA)',color:'#3b82f6',x:60,y:40,w:340,h:120},
+      {label:'Regular (DFA)',color:'#22c55e',x:100,y:70,w:200,h:60}
+    ];
+    sets.forEach((s,i)=>{
+      const pulse=0.08+0.04*Math.sin(t*2+i);
+      const r=parseInt(s.color.slice(1,3),16),g=parseInt(s.color.slice(3,5),16),b=parseInt(s.color.slice(5,7),16);
+      ctx.fillStyle='rgba('+r+','+g+','+b+','+pulse+')';
+      ctx.strokeStyle=s.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(s.x,s.y,s.w,s.h,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle=s.color;ctx.font='bold 11px system-ui';ctx.textAlign='left';
+      ctx.fillText(s.label,s.x+8,s.y+16);
+    });
+    // Example labels
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText('a*b*',200,108);
+    ctx.fillText('a^n b^n',300,85);
+    ctx.fillText('ww^R',440,100);
+    frame++;animId=requestAnimationFrame(draw);
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s13').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE CB: CHALLENGE - FIX THE BUG ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the Bug in This PDA</h2>
+  <div class="challenge-box">
+    <h3>Challenge B</h3>
+    <p>This PDA is supposed to accept { a<sup>n</sup>b<sup>n</sup> | n &ge; 1 } but has a bug. Which transition is wrong?</p>
+    <div class="formula" style="font-size:0.85em;text-align:left;padding:12px;">
+      &delta;(q0, a, $) = {(q0, a$)}<br>
+      &delta;(q0, a, a) = {(q0, aa)}<br>
+      &delta;(q0, b, a) = {(q1, &epsilon;)}<br>
+      &delta;(q1, b, a) = {(q1, &epsilon;)}<br>
+      <span style="color:#f59e0b;">&delta;(q1, &epsilon;, $) = {(q1, $)}</span> &larr; Transition 5<br>
+    </div>
+    <p style="margin-top:8px;">What is wrong with Transition 5?</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+      <button class="quiz-option" onclick="sCBCheck(this,0)">Should go to qacc, not q1</button>
+      <button class="quiz-option" onclick="sCBCheck(this,1)">Should push a, not $</button>
+      <button class="quiz-option" onclick="sCBCheck(this,2)">Should pop $, not keep it</button>
+    </div>
+    <div id="sCBresult" style="margin-top:12px;min-height:40px;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCBCheck=function(btn,idx){
+    document.querySelectorAll('#sCB .quiz-option').forEach((b,i)=>{
+      b.disabled=true;
+      if(i===0)b.classList.add('correct');
+      else if(i===idx)b.classList.add('wrong');
+    });
+    const res=document.getElementById('sCBresult');
+    if(idx===0){
+      res.innerHTML='<div style="color:#4ade80;font-weight:bold;">Correct!</div><div style="color:#94a3b8;font-size:0.95em;">Transition 5 should be &delta;(q1, &epsilon;, $) = {(qacc, $)} to reach an accept state. Staying in q1 means the PDA never accepts!</div>';
+    } else {
+      res.innerHTML='<div style="color:#f87171;font-weight:bold;">Not quite.</div><div style="color:#94a3b8;font-size:0.95em;">The bug is that it stays in q1 instead of going to qacc. The PDA needs &delta;(q1, &epsilon;, $) = {(qacc, $)} to reach an accept state.</div>';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 14: CFG TO PDA CONVERSION ==================== -->
+<div class="slide" id="s14">
+  <h2>CFG to PDA Conversion</h2>
+  <p>Given any CFG G, we build a PDA M with L(M) = L(G). Uses <strong>top-down parsing</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <h3>The Construction (3 states!)</h3>
+      <canvas id="cS14a" width="520" height="160" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+      <div class="key-idea" style="margin-top:10px;">
+        <h3>Key Idea</h3>
+        <p>The stack holds a "prediction" of remaining input. Variables get expanded (replaced by rule RHS). Terminals get matched and consumed. This simulates a <strong>leftmost derivation</strong>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Step-Through: Parsing "aabb"</h3>
+      <p style="font-size:0.9em;margin-bottom:6px;">Grammar: S &rarr; aSb | &epsilon; (generates a<sup>n</sup>b<sup>n</sup>)</p>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="btn btn-sm" onclick="s14Step()">Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+        <span id="s14counter" style="color:#94a3b8;font-size:12px;font-family:monospace;margin-left:6px;">0 / 9</span>
+      </div>
+      <canvas id="cS14b" width="520" height="300" style="width:100%;max-width:520px;background:rgba(0,0,0,0.2);border-radius:12px;display:block;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Construction diagram
+  const ca=document.getElementById('cS14a'),ctxA=ca.getContext('2d');
+  let frame=0,animId=null;
+  function drawA(){
+    ctxA.clearRect(0,0,520,160);
+    const t=frame*0.02;
+    // 3 states
+    function st(x,y,label,color,dbl){
+      ctxA.beginPath();ctxA.arc(x,y,22,0,Math.PI*2);
+      ctxA.fillStyle='#1e293b';ctxA.fill();
+      ctxA.strokeStyle=color;ctxA.lineWidth=2;ctxA.stroke();
+      if(dbl){ctxA.beginPath();ctxA.arc(x,y,17,0,Math.PI*2);ctxA.stroke();}
+      ctxA.fillStyle=color;ctxA.font='bold 11px monospace';ctxA.textAlign='center';
+      ctxA.fillText(label,x,y+4);
+    }
+    st(80,80,'qstart','#f59e0b',false);
+    st(260,80,'qloop','#3b82f6',false);
+    st(440,80,'qacc','#22c55e',true);
+    // Arrows
+    ctxA.strokeStyle='#475569';ctxA.lineWidth=1.5;
+    ctxA.beginPath();ctxA.moveTo(104,80);ctxA.lineTo(236,80);ctxA.stroke();
+    ctxA.fillStyle='#94a3b8';ctxA.font='10px monospace';ctxA.textAlign='center';
+    ctxA.fillText('\u03B5, $ / S$',170,70);
+    ctxA.beginPath();ctxA.moveTo(284,80);ctxA.lineTo(416,80);ctxA.stroke();
+    ctxA.fillText('\u03B5, $ / $',350,70);
+    // Self-loop on qloop
+    const pulse=0.5+0.5*Math.sin(t*2);
+    ctxA.strokeStyle='rgba(59,130,246,'+pulse+')';
+    ctxA.beginPath();ctxA.arc(260,48,18,0.3*Math.PI,0.7*Math.PI,true);ctxA.stroke();
+    ctxA.fillStyle='#93c5fd';ctxA.font='9px monospace';
+    ctxA.fillText('A\u2192w: \u03B5,A/w',260,24);
+    ctxA.fillText('terminal a: a,a/\u03B5',260,36);
+    frame++;animId=requestAnimationFrame(drawA);
+  }
+
+  // Step-through
+  const cb=document.getElementById('cS14b'),ctxB=cb.getContext('2d');
+  const steps=[
+    {stack:['$'],input:'aabb',action:'Start: stack=[$], input=aabb',type:'start'},
+    {stack:['$','S'],input:'aabb',action:'\u03B5,$/S$: push S',type:'expand'},
+    {stack:['$','b','S','a'],input:'aabb',action:'\u03B5,S/aSb: expand S\u2192aSb',type:'expand'},
+    {stack:['$','b','S'],input:'abb',action:'a,a/\u03B5: match a',type:'match'},
+    {stack:['$','b','b','S','a'],input:'abb',action:'\u03B5,S/aSb: expand S\u2192aSb',type:'expand'},
+    {stack:['$','b','b','S'],input:'bb',action:'a,a/\u03B5: match a',type:'match'},
+    {stack:['$','b','b'],input:'bb',action:'\u03B5,S/\u03B5: expand S\u2192\u03B5',type:'expand'},
+    {stack:['$','b'],input:'b',action:'b,b/\u03B5: match b',type:'match'},
+    {stack:['$'],input:'\u03B5',action:'b,b/\u03B5: match b',type:'match'},
+    {stack:['$'],input:'\u03B5',action:'\u03B5,$/$: ACCEPT!',type:'accept'}
+  ];
+  let step=0,timer=null;
+
+  function drawB(){
+    ctxB.clearRect(0,0,520,300);
+    const st=steps[step];
+    // Stack
+    ctxB.fillStyle='#94a3b8';ctxB.font='11px system-ui';ctxB.textAlign='center';
+    ctxB.fillText('STACK',60,20);
+    const stk=st.stack;
+    for(let i=0;i<stk.length;i++){
+      const y=270-i*26,isTop=i===stk.length-1;
+      ctxB.fillStyle=isTop?'rgba(139,92,246,0.2)':'#1e293b';
+      ctxB.fillRect(30,y-10,60,22);
+      ctxB.strokeStyle=isTop?'#8b5cf6':'#475569';ctxB.lineWidth=1.5;ctxB.strokeRect(30,y-10,60,22);
+      ctxB.fillStyle=isTop?'#c4b5fd':'#94a3b8';ctxB.font='bold 13px monospace';
+      ctxB.fillText(stk[i],60,y+5);
+    }
+    // Input remaining
+    ctxB.fillStyle='#94a3b8';ctxB.font='11px system-ui';ctxB.textAlign='left';
+    ctxB.fillText('Input remaining:',140,30);
+    ctxB.fillStyle='#e2e8f0';ctxB.font='bold 16px monospace';
+    ctxB.fillText(st.input||'\u03B5',280,30);
+    // Action
+    const colors={start:'#3b82f6',expand:'#a78bfa',match:'#4ade80',accept:'#4ade80'};
+    ctxB.fillStyle='rgba(30,41,59,0.8)';
+    ctxB.beginPath();ctxB.roundRect(140,50,360,36,8);ctxB.fill();
+    ctxB.strokeStyle=colors[st.type]||'#475569';ctxB.lineWidth=2;
+    ctxB.beginPath();ctxB.roundRect(140,50,360,36,8);ctxB.stroke();
+    ctxB.fillStyle=colors[st.type];ctxB.font='13px monospace';ctxB.textAlign='left';
+    ctxB.fillText(st.action,152,73);
+    // Step history
+    ctxB.fillStyle='#94a3b8';ctxB.font='11px system-ui';ctxB.fillText('History:',140,110);
+    for(let i=Math.max(0,step-5);i<=step;i++){
+      const y=125+(i-Math.max(0,step-5))*22;
+      const s2=steps[i];
+      ctxB.fillStyle=(i===step)?colors[s2.type]:'#475569';
+      ctxB.font='11px monospace';
+      ctxB.fillText((i===step?'\u25B6 ':' ')+s2.action,150,y);
+    }
+  }
+
+  window.s14Step=function(){if(step<steps.length-1){step++;drawB();document.getElementById('s14counter').textContent=step+' / '+(steps.length-1);}};
+  window.s14Auto=function(){if(timer)return;timer=setInterval(()=>{if(step<steps.length-1){step++;drawB();document.getElementById('s14counter').textContent=step+' / '+(steps.length-1);}else{clearInterval(timer);timer=null;}},600);};
+  window.s14Reset=function(){if(timer){clearInterval(timer);timer=null;}step=0;drawB();document.getElementById('s14counter').textContent='0 / '+(steps.length-1);};
+
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s14').classList.contains('active')){drawB();if(!animId)drawA();}
+    else{if(animId){cancelAnimationFrame(animId);animId=null;}if(timer){clearInterval(timer);timer=null;}}
+  });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE 15: PDA TO CFG ==================== -->
+<div class="slide" id="s15">
+  <h2>PDA to CFG Conversion</h2>
+  <p>Every PDA can be converted to an equivalent CFG &mdash; the reverse direction of the equivalence.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3>High-Level Idea</h3>
+      <p style="font-size:0.95em;">For each pair of states (p, q), create a variable A<sub>pq</sub> that generates all strings taking the PDA from state p with empty stack to state q with empty stack.</p>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The grammar variable A<sub>pq</sub> represents "what the PDA does between states p and q." This captures every possible computation path.</p>
+      </div>
+      <div class="warning" style="margin-top:12px;">
+        <h3>Warning</h3>
+        <p>This conversion can produce exponentially many rules! The resulting CFG is correct but usually not practical &mdash; it's a theoretical tool.</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS15" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS15'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,280);
+    // PDA on left, arrow, CFG on right
+    ctx.fillStyle='#1e293b';
+    ctx.beginPath();ctx.roundRect(30,40,150,100,10);ctx.fill();
+    ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(30,40,150,100,10);ctx.stroke();
+    ctx.fillStyle='#93c5fd';ctx.font='bold 14px system-ui';ctx.textAlign='center';
+    ctx.fillText('PDA',105,75);
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';
+    ctx.fillText('States + Stack',105,100);
+    ctx.fillText('Transitions',105,118);
+    // Arrow
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(190,90);ctx.lineTo(230,90);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(230,90);ctx.lineTo(222,84);ctx.lineTo(222,96);ctx.closePath();
+    ctx.fillStyle='#f59e0b';ctx.fill();
+    ctx.fillStyle='#f59e0b';ctx.font='bold 11px system-ui';ctx.fillText('convert',210,78);
+    // CFG
+    ctx.fillStyle='#1e293b';
+    ctx.beginPath();ctx.roundRect(240,40,150,100,10);ctx.fill();
+    ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(240,40,150,100,10);ctx.stroke();
+    ctx.fillStyle='#c4b5fd';ctx.font='bold 14px system-ui';
+    ctx.fillText('CFG',315,75);
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';
+    ctx.fillText('Variables A_pq',315,100);
+    ctx.fillText('Production rules',315,118);
+    // Rule examples
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';ctx.textAlign='left';
+    ctx.fillText('Rule patterns:',30,180);
+    ctx.fillStyle='#c4b5fd';ctx.font='12px monospace';
+    ctx.fillText('A_pq \u2192 a A_rs b',40,200);
+    ctx.fillStyle='#64748b';ctx.font='11px system-ui';
+    ctx.fillText('(push a, eventually pop to reach q)',40,218);
+    ctx.fillStyle='#c4b5fd';ctx.font='12px monospace';
+    ctx.fillText('A_pq \u2192 A_pr A_rq',40,242);
+    ctx.fillStyle='#64748b';ctx.font='11px system-ui';
+    ctx.fillText('(go through intermediate state r)',40,260);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: BIG EQUIVALENCE ==================== -->
+<div class="slide" id="s16">
+  <h2>The Big Equivalence: PDA = CFG</h2>
+  <p>This is one of the most important results in formal language theory.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS16" width="440" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Theorem</h3>
+        <p>A language is context-free <strong>if and only if</strong> some PDA recognizes it.</p>
+        <p style="margin-top:6px;">CFL = {L | some CFG generates L} = {L | some PDA recognizes L}</p>
+      </div>
+      <div class="analogy" style="margin-top:12px;">
+        <h3>Analogy</h3>
+        <p>Like how DFAs, NFAs, and regex are three equivalent ways to describe regular languages, CFGs and PDAs are two equivalent ways to describe context-free languages.</p>
+      </div>
+      <p style="margin-top:12px;font-size:0.95em;">This means: any language you can describe with recursive production rules, you can also recognize with a stack-based machine, and vice versa.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS16'),ctx=c.getContext('2d');
+  let frame=0,animId=null;
+  function draw(){
+    ctx.clearRect(0,0,440,280);
+    // Two boxes connected by double arrow
+    const pulse=Math.sin(frame*0.04)*0.15+0.85;
+    // CFG box
+    ctx.fillStyle='rgba(167,139,250,0.1)';
+    ctx.beginPath();ctx.roundRect(40,80,140,100,12);ctx.fill();
+    ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(40,80,140,100,12);ctx.stroke();
+    ctx.fillStyle='#c4b5fd';ctx.font='bold 18px system-ui';ctx.textAlign='center';
+    ctx.fillText('CFG',110,125);
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';
+    ctx.fillText('Grammar rules',110,150);
+    ctx.fillText('S \u2192 aSb | \u03B5',110,168);
+    // PDA box
+    ctx.fillStyle='rgba(59,130,246,0.1)';
+    ctx.beginPath();ctx.roundRect(260,80,140,100,12);ctx.fill();
+    ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(260,80,140,100,12);ctx.stroke();
+    ctx.fillStyle='#93c5fd';ctx.font='bold 18px system-ui';
+    ctx.fillText('PDA',330,125);
+    ctx.fillStyle='#94a3b8';ctx.font='11px system-ui';
+    ctx.fillText('States + Stack',330,150);
+    ctx.fillText('\u03B4(q,a,$)=(q,a$)',330,168);
+    // Double arrow
+    ctx.globalAlpha=pulse;
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=3;
+    // Top arrow: CFG -> PDA
+    ctx.beginPath();ctx.moveTo(185,110);ctx.lineTo(255,110);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(255,110);ctx.lineTo(247,105);ctx.lineTo(247,115);ctx.closePath();ctx.fillStyle='#f59e0b';ctx.fill();
+    // Bottom arrow: PDA -> CFG
+    ctx.beginPath();ctx.moveTo(255,150);ctx.lineTo(185,150);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(185,150);ctx.lineTo(193,145);ctx.lineTo(193,155);ctx.closePath();ctx.fill();
+    ctx.globalAlpha=1;
+    // Labels
+    ctx.fillStyle='#f59e0b';ctx.font='10px system-ui';ctx.textAlign='center';
+    ctx.fillText('CFG \u2192 PDA',220,102);
+    ctx.fillText('PDA \u2192 CFG',220,165);
+    // = CFL
+    ctx.fillStyle='#22c55e';ctx.font='bold 20px system-ui';
+    ctx.fillText('= Context-Free Languages',220,240);
+    // Title
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 16px system-ui';
+    ctx.fillText('PDA \u2261 CFG',220,35);
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';
+    ctx.fillText('Two equivalent characterizations of CFLs',220,55);
+    frame++;
+    animId=requestAnimationFrame(draw);
+  }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s16').classList.contains('active')){if(!animId)draw();}
+    else if(animId){cancelAnimationFrame(animId);animId=null;}
+  });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 17: LIMITATIONS ==================== -->
+<div class="slide" id="s17">
+  <h2>Limitations: What PDAs Cannot Do</h2>
+  <p>The stack gives power beyond DFAs, but it's still limited.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="color:#ef4444;">Cannot recognize:</h3>
+      <ul>
+        <li><code>{a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>}</code> &mdash; needs to match THREE counts</li>
+        <li><code>{ww}</code> &mdash; needs to compare non-nested halves</li>
+        <li><code>{a<sup>n</sup>b<sup>m</sup>c<sup>n</sup>d<sup>m</sup>}</code> &mdash; cross-serial dependencies</li>
+      </ul>
+      <div class="warning" style="margin-top:12px;">
+        <h3>Why?</h3>
+        <p>A stack is LIFO &mdash; you can only match in <strong>nested</strong> (palindromic) patterns. Matching in <strong>crossing</strong> patterns requires more memory (like a Turing machine tape).</p>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS17" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="key-idea" style="margin-top:12px;">
+        <h3>Key Insight</h3>
+        <p><strong>DPDA &subne; NPDA</strong>: Unlike DFA=NFA, deterministic PDAs are strictly weaker than nondeterministic ones! {ww<sup>R</sup>} needs nondeterminism to guess the middle.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS17'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,260);
+    // Nested vs crossing patterns
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 13px system-ui';ctx.textAlign='center';
+    ctx.fillText('Nested vs Crossing Dependencies',210,25);
+    // Nested (PDA can do)
+    ctx.fillStyle='#22c55e';ctx.font='bold 12px system-ui';
+    ctx.fillText('\u2713 Nested (PDA can do)',120,55);
+    // Draw nested arcs: a matches b in reverse
+    const nestX=120,nestY=100;
+    ctx.font='bold 16px monospace';ctx.textAlign='center';
+    ['a','a','b','b'].forEach((ch,i)=>{
+      ctx.fillStyle=i<2?'#3b82f6':'#8b5cf6';
+      ctx.fillText(ch,nestX-45+i*30,nestY);
+    });
+    // Arcs
+    ctx.strokeStyle='rgba(34,197,94,0.5)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(nestX-15,nestY+5,45,Math.PI,0,true);ctx.stroke();
+    ctx.beginPath();ctx.arc(nestX-15,nestY+5,15,Math.PI,0,true);ctx.stroke();
+    // Crossing (PDA cannot)
+    ctx.fillStyle='#ef4444';ctx.font='bold 12px system-ui';
+    ctx.fillText('\u2717 Crossing (PDA cannot)',310,55);
+    const crossX=310,crossY=100;
+    ctx.font='bold 16px monospace';
+    ['a','b','a','b'].forEach((ch,i)=>{
+      ctx.fillStyle=i%2===0?'#3b82f6':'#8b5cf6';
+      ctx.fillText(ch,crossX-45+i*30,crossY);
+    });
+    ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(crossX-15,crossY+5,45,Math.PI,0,true);ctx.stroke();
+    ctx.beginPath();ctx.arc(crossX-15,crossY-10,15,0,Math.PI,false);ctx.stroke();
+    // Hierarchy at bottom
+    ctx.fillStyle='#94a3b8';ctx.font='12px system-ui';ctx.textAlign='center';
+    ctx.fillText('Power hierarchy:',210,155);
+    const levels=[
+      {t:'DFA/NFA',w:80,col:'#3b82f6'},
+      {t:'DPDA',w:100,col:'#818cf8'},
+      {t:'NPDA(=CFG)',w:130,col:'#a78bfa'},
+      {t:'TM',w:160,col:'#f59e0b'},
+    ];
+    levels.forEach((l,i)=>{
+      let x=210-l.w/2, y=170+i*20;
+      ctx.fillStyle=l.col;ctx.globalAlpha=0.1;
+      ctx.beginPath();ctx.roundRect(x,y,l.w,18,4);ctx.fill();
+      ctx.globalAlpha=1;ctx.strokeStyle=l.col;ctx.lineWidth=1;
+      ctx.beginPath();ctx.roundRect(x,y,l.w,18,4);ctx.stroke();
+      ctx.fillStyle=l.col;ctx.font='10px system-ui';
+      ctx.fillText(l.t,210,y+13);
+    });
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s17').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s17'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE CC: CHALLENGE C ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: What Can a PDA Recognize?</h2>
+  <div class="challenge-box">
+    <h3>Classify each language</h3>
+    <p>For each language, decide: PDA can recognize, or PDA cannot?</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155;">
+        <p style="font-size:0.95em;">1. {a<sup>n</sup>b<sup>2n</sup> | n &ge; 0}</p>
+        <select id="sCCq1" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:4px 8px;"><option value="">Choose...</option><option value="yes">PDA can</option><option value="no">PDA cannot</option></select>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155;">
+        <p style="font-size:0.95em;">2. {a<sup>n</sup>b<sup>n</sup>c<sup>n</sup> | n &ge; 0}</p>
+        <select id="sCCq2" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:4px 8px;"><option value="">Choose...</option><option value="yes">PDA can</option><option value="no">PDA cannot</option></select>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155;">
+        <p style="font-size:0.95em;">3. {ww<sup>R</sup> | w &isin; {0,1}*}</p>
+        <select id="sCCq3" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:4px 8px;"><option value="">Choose...</option><option value="yes">PDA can</option><option value="no">PDA cannot</option></select>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;border:1px solid #334155;">
+        <p style="font-size:0.95em;">4. {ww | w &isin; {0,1}*}</p>
+        <select id="sCCq4" style="background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:4px 8px;"><option value="">Choose...</option><option value="yes">PDA can</option><option value="no">PDA cannot</option></select>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px;"><button class="btn" onclick="sCCCheck()">Check All</button></div>
+    <div id="sCCResult" style="margin-top:12px;font-size:0.9em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const ans={sCCq1:'yes',sCCq2:'no',sCCq3:'yes',sCCq4:'no'};
+  const expl={
+    sCCq1:'Yes! Push 2 b\'s for each a. Strategy: push aa for each a read, then pop one a for each b.',
+    sCCq2:'No! Needs to match 3 counts simultaneously. Proven non-CFL by CFL pumping lemma.',
+    sCCq3:'Yes! Classic PDA example: push first half, nondeterministically guess middle, pop & match. Palindromes are the poster child of CFLs.',
+    sCCq4:'No! {ww} requires cross-serial matching. The first half isn\'t reversed, so the stack can\'t help.'
+  };
+  window.sCCCheck=function(){
+    let score=0,html='';
+    Object.keys(ans).forEach(id=>{
+      let v=document.getElementById(id).value;
+      let ok=v===ans[id];if(ok)score++;
+      document.getElementById(id).style.borderColor=ok?'#22c55e':'#ef4444';
+      html+='<p style="color:'+(ok?'#22c55e':'#ef4444')+';">'+(ok?'\u2713':'\u2717')+' '+expl[id]+'</p>';
+    });
+    document.getElementById('sCCResult').innerHTML='<p style="font-weight:700;color:#e2e8f0;">Score: '+score+'/4</p>'+html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 18: SUMMARY ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary &amp; Cheat Sheet</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <table style="width:100%;">
+        <tr><th>Concept</th><th>Key Point</th></tr>
+        <tr><td style="color:#93c5fd;">PDA</td><td>NFA + Stack = CFL recognizer</td></tr>
+        <tr><td style="color:#93c5fd;">7-tuple</td><td>(Q, &Sigma;, &Gamma;, &delta;, q<sub>0</sub>, Z<sub>0</sub>, F)</td></tr>
+        <tr><td style="color:#93c5fd;">Transitions</td><td>&delta;(q, a, X) = {(p, Y)}</td></tr>
+        <tr><td style="color:#93c5fd;">Acceptance</td><td>Final state or empty stack</td></tr>
+        <tr><td style="color:#93c5fd;">Equivalence</td><td>PDA &equiv; CFG (both define CFLs)</td></tr>
+        <tr><td style="color:#93c5fd;">DPDA &subne; NPDA</td><td>Nondeterminism adds power!</td></tr>
+        <tr><td style="color:#93c5fd;">Limits</td><td>Can't do a<sup>n</sup>b<sup>n</sup>c<sup>n</sup> or ww</td></tr>
+      </table>
+    </div>
+    <div>
+      <canvas id="cS18" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c=document.getElementById('cS18'),ctx=c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,420,280);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 15px system-ui';ctx.textAlign='center';
+    ctx.fillText('Chomsky Hierarchy: PDA\'s Place',210,25);
+    const levels=[
+      {label:'RE (Turing Machine)',w:360,h:220,x:30,y:45,col:'#64748b'},
+      {label:'Decidable',w:300,h:170,x:60,y:65,col:'#f59e0b'},
+      {label:'Context-Free (PDA/CFG)',w:220,h:110,x:100,y:95,col:'#a78bfa'},
+      {label:'Regular (DFA/NFA)',w:140,h:50,x:140,y:125,col:'#3b82f6'},
+    ];
+    levels.forEach((l,i)=>{
+      ctx.fillStyle=l.col;ctx.globalAlpha=0.08;
+      ctx.beginPath();ctx.roundRect(l.x,l.y,l.w,l.h,12);ctx.fill();
+      ctx.globalAlpha=1;ctx.strokeStyle=l.col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(l.x,l.y,l.w,l.h,12);ctx.stroke();
+      ctx.fillStyle=l.col;ctx.font='bold 11px system-ui';ctx.textAlign='left';
+      ctx.fillText(l.label,l.x+8,l.y+14);
+    });
+    // Highlight PDA level
+    ctx.strokeStyle='#a78bfa';ctx.lineWidth=3;ctx.setLineDash([5,3]);
+    ctx.beginPath();ctx.roundRect(98,93,224,114,12);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#c4b5fd';ctx.font='bold 12px system-ui';ctx.textAlign='right';
+    ctx.fillText('\u2190 YOU ARE HERE',395,152);
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s18').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE Q1: QUIZ MC ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Multiple Choice</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:#1e293b;padding:16px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;color:#38bdf8;font-weight:600;">Q1: What does a PDA add to an NFA?</p>
+      <div style="margin-top:8px;">
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq1" value="0"> A second tape</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq1" value="1"> A stack (LIFO memory)</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq1" value="2"> A queue (FIFO memory)</label>
+      </div>
+      <div id="pq1fb" style="margin-top:8px;font-size:0.85em;"></div>
+    </div>
+    <div style="background:#1e293b;padding:16px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;color:#38bdf8;font-weight:600;">Q2: Which language can a PDA recognize?</p>
+      <div style="margin-top:8px;">
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq2" value="0"> {a<sup>n</sup>b<sup>n</sup>c<sup>n</sup>}</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq2" value="1"> {a<sup>n</sup>b<sup>n</sup>}</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq2" value="2"> {ww}</label>
+      </div>
+      <div id="pq2fb" style="margin-top:8px;font-size:0.85em;"></div>
+    </div>
+    <div style="background:#1e293b;padding:16px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;color:#38bdf8;font-weight:600;">Q3: Are DPDA and NPDA equivalent?</p>
+      <div style="margin-top:8px;">
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq3" value="0"> Yes, just like DFA=NFA</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq3" value="1"> No, NPDA is strictly more powerful</label>
+        <label style="display:block;margin:4px 0;cursor:pointer;font-size:0.9em;"><input type="radio" name="pq3" value="2"> No, DPDA is more powerful</label>
+      </div>
+      <div id="pq3fb" style="margin-top:8px;font-size:0.85em;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:16px;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:16px;font-weight:700;font-size:1.1em;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ1Check=function(){
+    const answers=[1,1,1];
+    const explanations=['A PDA = NFA + Stack (LIFO). A queue would make a Turing machine!','{a\u207Fb\u207F} is the classic CFL. a\u207Fb\u207Fc\u207F and ww are not context-free.','NPDA is strictly more powerful than DPDA. ww\u1D3F needs nondeterminism to guess the middle.'];
+    let score=0;
+    answers.forEach((a,i)=>{
+      let sel=document.querySelector('input[name="pq'+(i+1)+'"]:checked');
+      let ok=sel&&parseInt(sel.value)===a;if(ok)score++;
+      document.getElementById('pq'+(i+1)+'fb').innerHTML='<span style="color:'+(ok?'#22c55e':'#ef4444')+';">'+(ok?'\u2713 Correct!':'\u2717 '+explanations[i])+'</span>';
+    });
+    document.getElementById('sQ1Score').innerHTML='<span style="color:'+(score===3?'#22c55e':'#f59e0b')+';">'+score+'/3</span>';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE Q2: QUIZ TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace the PDA</h2>
+  <div class="challenge-box">
+    <h3>Complete the computation</h3>
+    <p>PDA for {a<sup>n</sup>b<sup>n</sup>}: start in q0 with stack [$]. Input: <code>aabbb</code></p>
+    <p style="margin-top:8px;">Fill in the missing stack contents and final result:</p>
+    <div class="code-block"><div class="code-content" style="font-size:0.9em;">
+<div class="line">Step 0: (q0, aabbb, $)</div>
+<div class="line">Step 1: Read a, push a: (q0, abbb, <input type="text" id="sQ2a1" style="width:60px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="?">)</div>
+<div class="line">Step 2: Read a, push a: (q0, bbb, <input type="text" id="sQ2a2" style="width:60px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="?">)</div>
+<div class="line">Step 3: Read b, pop a: (q1, bb, a$)</div>
+<div class="line">Step 4: Read b, pop a: (q1, b, $)</div>
+<div class="line">Step 5: Read b, stack top is $: <input type="text" id="sQ2a3" style="width:120px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="accept/reject?"></div>
+    </div></div>
+    <div style="text-align:center;margin-top:12px;"><button class="btn" onclick="sQ2Check()">Check</button></div>
+    <div id="sQ2Result" style="margin-top:12px;font-size:0.95em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ2Check=function(){
+    let a1=document.getElementById('sQ2a1').value.trim();
+    let a2=document.getElementById('sQ2a2').value.trim();
+    let a3=document.getElementById('sQ2a3').value.trim().toLowerCase();
+    let ok1=a1==='a$';
+    let ok2=a2==='aa$';
+    let ok3=a3.includes('reject');
+    let score=(ok1?1:0)+(ok2?1:0)+(ok3?1:0);
+    let html='<p style="font-weight:700;color:'+(score===3?'#22c55e':'#f59e0b')+';">'+score+'/3</p>';
+    if(!ok1)html+='<p style="color:#f59e0b;">Step 1: After pushing first a, stack is a$ (a on top of $).</p>';
+    if(!ok2)html+='<p style="color:#f59e0b;">Step 2: After pushing second a, stack is aa$ (two a\'s on top of $).</p>';
+    if(!ok3)html+='<p style="color:#f59e0b;">Step 5: We try to read b but stack top is $ (no a to pop). No valid transition \u2192 REJECT. Input aabbb has 2 a\'s but 3 b\'s!</p>';
+    if(score===3)html+='<p style="color:#22c55e;">Perfect! The PDA rejects because there are more b\'s than a\'s.</p>';
+    document.getElementById('sQ2Result').innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE Q3: QUIZ BUILD ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Design a PDA</h2>
+  <div class="challenge-box">
+    <h3>Build transitions for {0<sup>n</sup>1<sup>n</sup> | n &ge; 1}</h3>
+    <p>Fill in the missing parts of these PDA transitions:</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <div style="background:#1e293b;padding:12px;border-radius:8px;">
+        <p style="font-size:0.9em;">1. &delta;(q0, 0, $) = {(q0, <input type="text" id="sQ3a1" style="width:50px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="?">)}</p>
+        <p style="font-size:0.8em;color:#64748b;">First 0: push onto empty stack</p>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;">
+        <p style="font-size:0.9em;">2. &delta;(q0, 0, 0) = {(q0, <input type="text" id="sQ3a2" style="width:50px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="?">)}</p>
+        <p style="font-size:0.8em;color:#64748b;">More 0's: keep pushing</p>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;">
+        <p style="font-size:0.9em;">3. &delta;(q0, 1, 0) = {(<input type="text" id="sQ3a3" style="width:30px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:4px;padding:2px 6px;font-family:monospace;" placeholder="?">, &epsilon;)}</p>
+        <p style="font-size:0.8em;color:#64748b;">Switch to reading 1's</p>
+      </div>
+      <div style="background:#1e293b;padding:12px;border-radius:8px;">
+        <p style="font-size:0.9em;">4. &delta;(q1, &epsilon;, $) = {(q<sub>acc</sub>, $)}</p>
+        <p style="font-size:0.8em;color:#64748b;">Accept when stack empty</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px;"><button class="btn" onclick="sQ3Check()">Check</button></div>
+    <div id="sQ3Result" style="margin-top:12px;font-size:0.95em;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sQ3Check=function(){
+    let a1=document.getElementById('sQ3a1').value.trim();
+    let a2=document.getElementById('sQ3a2').value.trim();
+    let a3=document.getElementById('sQ3a3').value.trim();
+    let ok1=a1==='0$';
+    let ok2=a2==='00';
+    let ok3=a3==='q1';
+    let score=(ok1?1:0)+(ok2?1:0)+(ok3?1:0);
+    let html='<p style="font-weight:700;color:'+(score===3?'#22c55e':'#f59e0b')+';">'+score+'/3</p>';
+    if(!ok1)html+='<p style="color:#f59e0b;">#1: Push 0 on top of $, so replacement is 0$ (0 on top, $ below).</p>';
+    if(!ok2)html+='<p style="color:#f59e0b;">#2: Push another 0 on top of existing 0, so replacement is 00.</p>';
+    if(!ok3)html+='<p style="color:#f59e0b;">#3: When we see the first 1, transition to state q1 (b-reading mode) and pop the 0.</p>';
+    if(score===3)html+='<p style="color:#22c55e;">Perfect! This PDA pushes a 0 for each 0 read, then pops one for each 1.</p>';
+    document.getElementById('sQ3Result').innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','s17','sCC','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) {
+    currentIdx = next;
+    showSlide(currentIdx);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

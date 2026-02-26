@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Turing Machines &amp; Undecidability - Enhanced Interactive</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.05); z-index: 200; }
+#progress { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #38bdf8; }
+h3 { font-size: 1.3em; margin-bottom: 10px; color: #a5b4fc; }
+p, li { font-size: 1.1em; line-height: 1.7; color: #cbd5e1; margin-bottom: 8px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 24px; }
+code { background: rgba(99,102,241,0.15); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono','Fira Code',monospace; color: #a5b4fc; font-size: 0.95em; }
+.btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 6px 14px; font-size: 0.85em; }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.12)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.key-idea h3 { color: #93c5fd; margin-bottom: 6px; }
+.warning { background: rgba(245,158,11,0.08); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.warning h3 { color: #fbbf24; margin-bottom: 6px; }
+.analogy { background: rgba(16,185,129,0.08); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.analogy h3 { color: #34d399; margin-bottom: 6px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; font-family: 'SF Mono','Fira Code','Consolas',monospace; font-size: 0.95em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 12px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.85em; }
+.code-block { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin: 10px 0; overflow-x: auto; }
+.formula { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px 24px; margin: 12px 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 1.05em; color: #c4b5fd; text-align: center; }
+.challenge-box { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(234,88,12,0.1)); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 12px 0; }
+.challenge-box h3 { color: #fbbf24; }
+.quiz-option { background: #334155; border: 2px solid #475569; color: #e2e8f0; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-size: 1em; transition: all 0.3s; min-width: 140px; }
+.quiz-option:hover { background: #475569; }
+.quiz-option.correct { background: rgba(16,185,129,0.3); border-color: #10b981; color: #34d399; }
+.quiz-option.wrong { background: rgba(239,68,68,0.3); border-color: #ef4444; color: #f87171; }
+.quiz-option:disabled { cursor: default; }
+table { border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #475569; padding: 8px 14px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; font-size: 0.95em; }
+td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+@keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+@keyframes flash { 0%{background:rgba(239,68,68,0.5);} 100%{background:transparent;} }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 6px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.step { opacity: 0; transform: translateY(10px); transition: all 0.4s; }
+.step.revealed { opacity: 1; transform: translateY(0); }
+.mt { margin-top: 16px; }
+/* Interactive controls */
+.ctrl-btn { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+.ctrl-btn:hover { background: #475569; }
+.ctrl-btn.active { background: #3b82f6; border-color: #60a5fa; }
+.ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin: 12px 0; }
+.status { font-size: 0.95em; color: #94a3b8; margin: 8px 0; min-height: 24px; }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 600; }
+.badge-red { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; }
+.badge-green { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
+.badge-amber { background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+/* Diag table */
+.diag-cell { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #475569; background: #1e293b; color: #e2e8f0; cursor: pointer; font-size: 1.1em; font-weight: 600; transition: all 0.3s; border-radius: 4px; }
+.diag-cell.on-diagonal { border-color: #f59e0b; }
+.diag-cell.pulse-diag { animation: pulse 0.8s ease-in-out 3; border-color: #f59e0b; background: rgba(245,158,11,0.2); }
+.diag-cell.flipped { background: rgba(16,185,129,0.2); border-color: #10b981; color: #10b981; }
+.diag-header { width: 44px; height: 36px; display: inline-flex; align-items: center; justify-content: center; color: #93c5fd; font-weight: 600; font-size: 0.9em; }
+/* Rice checker */
+.rice-prop { background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: all 0.2s; margin: 4px 0; font-size: 0.95em; color: #cbd5e1; }
+.rice-prop:hover { border-color: #93c5fd; background: #243047; }
+/* Hierarchy buttons */
+.hier-btn { display: inline-block; background: #1e293b; border: 1px solid #475569; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.85em; color: #cbd5e1; margin: 3px; transition: all 0.2s; }
+.hier-btn:hover { border-color: #93c5fd; }
+.hier-btn.selected { border-color: #3b82f6; background: rgba(59,130,246,0.15); }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <div style="text-align:center;">
+    <h1>Universal Turing Machines<br>&amp; Undecidability</h1>
+    <p class="subtitle">CS305 &mdash; Formal Language Theory</p>
+    <canvas id="cS1" width="740" height="200" style="width:100%;max-width:740px;background:rgba(0,0,0,0.2);border-radius:12px;margin:20px auto;display:block;"></canvas>
+    <p style="color:#64748b;font-size:0.9em;">Use &larr; &rarr; arrows to navigate &bull; Press S for step-through reveals</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS1'), ctx = c.getContext('2d');
+  const tape = ['B','1','1','0','1','0','0','1','#','0','1','1','B','B'];
+  const cellW = 48, cellH = 36, startX = 40, tapeY = 90;
+  let headPos = 0, frame = 0, phase = 0, resultIdx = 0;
+  const results = [{text:'ACCEPT',col:'#10b981'},{text:'REJECT',col:'#ef4444'}];
+  let animId = null;
+
+  function draw(){
+    ctx.clearRect(0,0,740,200);
+    // Draw tape cells
+    for(let i=0;i<tape.length;i++){
+      const x = startX + i*cellW;
+      const isHead = i === headPos;
+      ctx.fillStyle = isHead ? 'rgba(59,130,246,0.25)' : '#1e293b';
+      ctx.strokeStyle = isHead ? '#3b82f6' : '#334155';
+      ctx.lineWidth = isHead ? 2 : 1;
+      ctx.beginPath(); ctx.roundRect(x, tapeY, cellW-2, cellH, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = tape[i]==='#'?'#f59e0b':(tape[i]==='B'?'#64748b':'#e2e8f0');
+      ctx.font = '600 15px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(tape[i], x+cellW/2-1, tapeY+cellH/2+5);
+    }
+    // Labels
+    const mStart = startX+cellW/2, mEnd = startX+7*cellW+cellW/2;
+    const wStart = startX+9*cellW+cellW/2, wEnd = startX+11*cellW+cellW/2;
+    const lY = tapeY+cellH+16;
+    ctx.strokeStyle='#93c5fd'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(mStart,lY); ctx.lineTo(mEnd,lY); ctx.stroke();
+    ctx.fillStyle='#93c5fd'; ctx.font='600 13px sans-serif';
+    ctx.fillText('\u27E8M\u27E9',(mStart+mEnd)/2,lY+14);
+    ctx.strokeStyle='#f59e0b';
+    ctx.beginPath(); ctx.moveTo(wStart,lY); ctx.lineTo(wEnd,lY); ctx.stroke();
+    ctx.fillStyle='#f59e0b';
+    ctx.fillText('w',(wStart+wEnd)/2,lY+14);
+    // Head pointer
+    const hx = startX+headPos*cellW+cellW/2-1;
+    ctx.fillStyle='#3b82f6';
+    ctx.beginPath(); ctx.moveTo(hx,tapeY-4); ctx.lineTo(hx-8,tapeY-16); ctx.lineTo(hx+8,tapeY-16); ctx.closePath(); ctx.fill();
+    // Finite control
+    const states=['q0','q0','q1','q1','q2','q2','q3','q3','q3','q4','q4','q4','q5','q5'];
+    const st = states[Math.min(headPos,states.length-1)];
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(hx-45,tapeY-50,90,30,6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#93c5fd'; ctx.font='600 12px sans-serif';
+    ctx.fillText('State: '+st, hx, tapeY-31);
+    // Result badge
+    if(phase===2){
+      const r = results[resultIdx];
+      ctx.fillStyle = r.col+'33';
+      ctx.strokeStyle = r.col; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(300,10,140,36,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=r.col; ctx.font='700 15px sans-serif';
+      ctx.fillText(r.text+(r.text==='ACCEPT'?' \u2713':' \u2717'),370,34);
+    }
+  }
+
+  function tick(){
+    frame++;
+    if(phase===0){
+      if(frame%8===0){
+        if(headPos<tape.length-2) headPos++;
+        else { phase=1; setTimeout(()=>{phase=2; setTimeout(()=>{resultIdx=(resultIdx+1)%2; headPos=0; phase=0; frame=0;},2000);},600); }
+      }
+    }
+    draw();
+    animId = requestAnimationFrame(tick);
+  }
+
+  function start(){ if(!animId){ headPos=0; phase=0; frame=0; tick(); } }
+  function stop(){ if(animId){ cancelAnimationFrame(animId); animId=null; } }
+
+  const obs = new MutationObserver(muts=>{
+    muts.forEach(m=>{
+      if(m.attributeName==='class'){
+        if(document.getElementById('s1').classList.contains('active')) start(); else stop();
+      }
+    });
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true});
+  draw();
+  start();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h1>The Big Picture</h1>
+  <p class="subtitle">We've climbed the Chomsky hierarchy. Now we hit the ceiling.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram small">
+  The Chomsky Hierarchy of Power:
+
+  Regular  &rarr;  Context-Free  &rarr;  Context-Sensitive  &rarr;  RE
+   (DFA)        (PDA)            (LBA)               (TM)
+    |             |                |                    |
+    v             v                v                    v
+  Least        More             Even more          MOST POWERFUL
+  powerful     powerful         powerful           machine possible
+                                                        |
+                                                        v
+                                              But is it ALL-powerful?
+                                              Can it solve EVERYTHING?
+      </div>
+      <div class="key-idea">
+        <h3>Key Question</h3>
+        <p>Turing machines are the most powerful computational model we know. But are there problems that even TMs <strong>cannot</strong> solve? The shocking answer is <strong>yes</strong> &mdash; and <em>most</em> problems are unsolvable.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Where We're Going</h3>
+      <ol style="padding-left:24px;">
+        <li class="step">Encoding TMs as strings &mdash; programs are data</li>
+        <li class="step">The Universal TM &mdash; one machine to rule them all</li>
+        <li class="step">Diagonalization &mdash; more problems than programs</li>
+        <li class="step">The Halting Problem &mdash; a specific unsolvable problem</li>
+        <li class="step">Reductions &mdash; spreading undecidability</li>
+        <li class="step">Rice's Theorem &mdash; the nuclear option</li>
+        <li class="step">The language hierarchy &mdash; Decidable vs RE vs co-RE</li>
+      </ol>
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>Think of it like exploring a mountain range. We've been climbing higher (more powerful machines). Now we discover there's a <strong>hard ceiling</strong> &mdash; a boundary even infinite time and memory can't cross.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 3: ENCODING TMs ==================== -->
+<div class="slide" id="s3">
+  <h1>Encoding Turing Machines as Strings</h1>
+  <p class="subtitle">Any TM can be written as a finite binary string &lang;M&rang;.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>The Idea</h3>
+      <p>A Turing machine M is defined by finite components:</p>
+      <ul>
+        <li>States: q<sub>0</sub>, q<sub>1</sub>, ..., q<sub>n</sub></li>
+        <li>Tape alphabet: 0, 1, B</li>
+        <li>Transitions: (state, symbol) &rarr; (state, symbol, direction)</li>
+        <li>Start, accept, reject states</li>
+      </ul>
+      <p class="mt">All of this is <strong>finite</strong>, so we can encode it as a binary string &lang;M&rang;.</p>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>A Python program is just a text file &mdash; a string of characters. Similarly, a Turing machine is just a string of bits. <strong>Programs are data.</strong> This is the insight that changes everything.</p>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <canvas id="cS3" width="400" height="320" style="width:100%;display:block;"></canvas>
+        <div style="display:flex;gap:6px;justify-content:center;margin-top:10px;">
+          <button class="ctrl-btn" onclick="s3_step()">Step</button>
+          <button class="ctrl-btn" onclick="s3_auto()">Auto</button>
+          <button class="ctrl-btn" onclick="s3_reset()">Reset</button>
+        </div>
+        <div class="status" id="s3_status" style="text-align:center;">Click Step to walk through encoding</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS3'), ctx = c.getContext('2d');
+  let step = 0; const maxStep = 5; let timer = null;
+
+  const msgs = [
+    'Click Step to walk through encoding',
+    'Step 1: Encode states as binary codes',
+    'Step 2: Encode tape symbols',
+    'Step 3: Encode transition \u03B4(q0,0)=(q1,1,R)',
+    'Step 4: Encode transition \u03B4(q1,1)=(q2,0,L)',
+    'Step 5: Concatenate into final \u27E8M\u27E9'
+  ];
+
+  const lines = [
+    [],
+    ['q0 = 00, q1 = 01, q2 = 10','Start = 00, Accept = 10'],
+    ['q0 = 00, q1 = 01, q2 = 10','0 = 0, 1 = 1, B = 11, R = 0, L = 1'],
+    ['q0 = 00, q1 = 01, q2 = 10','0 = 0, 1 = 1, B = 11','','\u03B4(q0,0)=(q1,1,R) \u2192 00#0#01#1#0'],
+    ['q0 = 00, q1 = 01, q2 = 10','0 = 0, 1 = 1, B = 11','','\u03B4(q0,0)=(q1,1,R) \u2192 00#0#01#1#0','\u03B4(q1,1)=(q2,0,L) \u2192 01#1#10#0#1'],
+    ['q0 = 00, q1 = 01, q2 = 10','0 = 0, 1 = 1, B = 11','','00#0#01#1#0 ## 01#1#10#0#1','','\u27E8M\u27E9 = 00#10#00#0#01#1#0##01#1#10#0#1','It\'s just a string!']
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,400,320);
+    // TM definition box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#334155'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(10,5,380,100,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#93c5fd'; ctx.font='700 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Turing Machine M',200,24);
+    ctx.textAlign='left'; ctx.font='11px monospace'; ctx.fillStyle='#e2e8f0';
+    ctx.fillText('States: {q0, q1, q2}  Start: q0  Accept: q2',20,44);
+    ctx.fillText('\u03B4(q0,0) = (q1, 1, R)',20,64);
+    ctx.fillText('\u03B4(q1,1) = (q2, 0, L)',20,84);
+    ctx.fillStyle='#94a3b8'; ctx.font='10px monospace';
+    ctx.fillText('Alphabet: {0, 1, B}',20,98);
+
+    // Highlight current focus
+    if(step>=1 && step<=2){
+      ctx.fillStyle='rgba(59,130,246,0.12)'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1;
+      if(step===1){ ctx.beginPath(); ctx.roundRect(14,30,368,18,4); ctx.fill(); ctx.stroke(); }
+      if(step===2){ ctx.beginPath(); ctx.roundRect(14,86,200,16,4); ctx.fill(); ctx.stroke(); }
+    }
+    if(step===3){ ctx.fillStyle='rgba(59,130,246,0.12)'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(14,50,220,18,4); ctx.fill(); ctx.stroke(); }
+    if(step===4){ ctx.fillStyle='rgba(59,130,246,0.12)'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(14,70,220,18,4); ctx.fill(); ctx.stroke(); }
+
+    // Arrow
+    ctx.strokeStyle='#64748b'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(200,107); ctx.lineTo(200,128); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#64748b';
+    ctx.beginPath(); ctx.moveTo(200,132); ctx.lineTo(196,124); ctx.lineTo(204,124); ctx.closePath(); ctx.fill();
+
+    // Encoding area
+    ctx.fillStyle='#0f172a'; ctx.strokeStyle='#334155'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(10,136,380,170,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#f59e0b'; ctx.font='700 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Encoding Steps',200,154);
+
+    // Render encoding lines
+    if(step>0){
+      const ls = lines[step];
+      ctx.textAlign='left'; ctx.font='11px monospace';
+      for(let i=0;i<ls.length;i++){
+        const isResult = (step===5 && i>=5);
+        ctx.fillStyle = isResult ? '#10b981' : '#94a3b8';
+        if(isResult) ctx.font='700 12px monospace';
+        ctx.fillText(ls[i], 20, 176+i*20);
+        if(isResult) ctx.font='11px monospace';
+      }
+    }
+    document.getElementById('s3_status').textContent = msgs[step];
+  }
+
+  window.s3_step = function(){ if(step<maxStep){ step++; draw(); } };
+  window.s3_auto = function(){ s3_reset(); let i=1; timer=setInterval(()=>{ if(i<=maxStep){step=i;draw();i++;} else{clearInterval(timer);timer=null;} },1200); };
+  window.s3_reset = function(){ if(timer){clearInterval(timer);timer=null;} step=0; draw(); };
+
+  const sl = document.getElementById('s3');
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&!sl.classList.contains('active'))s3_reset();})).observe(sl,{attributes:true});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: THE UNIVERSAL TM ==================== -->
+<div class="slide" id="s4">
+  <h1>The Universal Turing Machine</h1>
+  <p class="subtitle">One machine to simulate them all.</p>
+
+  <div class="panel" style="max-width:760px;margin:0 auto;">
+    <canvas id="cS4" width="740" height="220" style="width:100%;display:block;"></canvas>
+    <div style="display:flex;gap:6px;justify-content:center;margin-top:10px;">
+      <button class="ctrl-btn" onclick="s4_step()">Step</button>
+      <button class="ctrl-btn" onclick="s4_auto()">Auto</button>
+      <button class="ctrl-btn" onclick="s4_reset()">Reset</button>
+    </div>
+    <div class="status" id="s4_status" style="text-align:center;">Watch the UTM process an input</div>
+  </div>
+
+  <div class="two-col" style="margin-top:16px;">
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The UTM <strong>U</strong> takes two inputs: the <strong>code of a TM</strong> &lang;M&rang; and an <strong>input string</strong> w. It simulates M running on w. Whatever M would do, U does the same. It is a <strong>universal simulator</strong>.</p>
+      </div>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>The UTM is an <strong>interpreter</strong>. Just like Python reads a .py file and executes it, the UTM reads the encoding of a TM and executes it. Or think of it as an <strong>emulator</strong> &mdash; like running a Game Boy game on your PC.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS4'), ctx = c.getContext('2d');
+  let step = 0, timer = null, outcomeIdx = 0;
+  const outcomes = [
+    {t:'M accepts w \u2192 U accepts',col:'#10b981'},
+    {t:'M rejects w \u2192 U rejects',col:'#ef4444'},
+    {t:'M loops on w \u2192 U loops too',col:'#f59e0b'}
+  ];
+  const msgs = [
+    'Watch the UTM process an input',
+    'UTM reads the encoding of M to learn its transition function',
+    'UTM executes M step-by-step on input w',
+    'UTM produces the same result as M would on w'
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,740,220);
+    // Input box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#334155'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(20,60,130,90,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='rgba(59,130,246,0.1)'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(24,64,58,82,6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#93c5fd'; ctx.font='600 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('\u27E8M\u27E9',53,110);
+    ctx.fillStyle='rgba(245,158,11,0.1)'; ctx.strokeStyle='#f59e0b';
+    ctx.beginPath(); ctx.roundRect(86,64,58,82,6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#f59e0b'; ctx.fillText('w',115,110);
+    ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.fillText('Input',85,54);
+
+    // Arrow to UTM
+    ctx.strokeStyle = step>=1?'#3b82f6':'#475569'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(152,105); ctx.lineTo(215,105); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = step>=1?'#3b82f6':'#475569';
+    ctx.beginPath(); ctx.moveTo(220,105); ctx.lineTo(212,100); ctx.lineTo(212,110); ctx.closePath(); ctx.fill();
+
+    // Packet
+    if(step===1){ ctx.fillStyle='#3b82f6'; ctx.beginPath(); ctx.arc(190,105,5,0,Math.PI*2); ctx.fill(); }
+
+    // UTM box
+    const utmStroke = step===0?'#334155':(step===1?'#3b82f6':(step===2?'#f59e0b':outcomes[outcomeIdx].col));
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle=utmStroke; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(222,30,290,150,12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#e2e8f0'; ctx.font='700 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('UNIVERSAL TURING MACHINE (U)',367,56);
+
+    if(step>=1){
+      ctx.fillStyle = step===1?'#93c5fd':(step===2?'#f59e0b':outcomes[outcomeIdx].col);
+      ctx.font='13px monospace';
+      ctx.fillText(step===1?'1. Reading \u27E8M\u27E9...':(step===2?'2. Simulating M on w...':'3. Result!'),367,105);
+    }
+
+    // Gear animation placeholder
+    if(step===2){
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(367,135,10,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='#f59e0b'; ctx.beginPath(); ctx.arc(367,135,3,0,Math.PI*2); ctx.fill();
+    }
+
+    // Arrow to output
+    if(step>=3){
+      ctx.strokeStyle='#475569'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(514,105); ctx.lineTo(560,105); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=outcomes[outcomeIdx].col;
+      ctx.beginPath(); ctx.arc(540,105,5,0,Math.PI*2); ctx.fill();
+    }
+
+    // Output box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#334155'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(564,55,160,100,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Output',644,74);
+    if(step>=3){
+      ctx.fillStyle=outcomes[outcomeIdx].col; ctx.font='12px sans-serif';
+      ctx.fillText(outcomes[outcomeIdx].t,644,108);
+    }
+
+    document.getElementById('s4_status').textContent = msgs[Math.min(step,3)];
+  }
+
+  window.s4_step = function(){ if(step<3){step++;draw();} };
+  window.s4_auto = function(){
+    s4_reset();
+    let i=1;
+    timer=setInterval(()=>{
+      if(i<=3){step=i;draw();i++;}
+      else if(i===5){outcomeIdx=(outcomeIdx+1)%3;step=0;draw();i=1;}
+      else i++;
+    },1200);
+  };
+  window.s4_reset = function(){ if(timer){clearInterval(timer);timer=null;} step=0; draw(); };
+
+  const sl = document.getElementById('s4');
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&!sl.classList.contains('active'))s4_reset();})).observe(sl,{attributes:true});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: HOW UTM SIMULATES ==================== -->
+<div class="slide" id="s5">
+  <h1>How the UTM Simulates</h1>
+  <p class="subtitle">Three-tape simulation, step by step.</p>
+
+  <div class="panel">
+    <canvas id="cS5" width="660" height="210" style="width:100%;max-width:660px;display:block;margin:0 auto;"></canvas>
+    <div style="display:flex;gap:6px;justify-content:center;margin-top:10px;">
+      <button class="ctrl-btn" onclick="s5_step()">Step</button>
+      <button class="ctrl-btn" onclick="s5_auto()">Auto</button>
+      <button class="ctrl-btn" onclick="s5_reset()">Reset</button>
+      <span id="s5_counter" style="color:#64748b;font-size:13px;padding:6px;">Step 0 / 4</span>
+    </div>
+    <div class="status" id="s5_status" style="text-align:center;">Ready to simulate M on "011"</div>
+  </div>
+
+  <div class="two-col" style="margin-top:12px;">
+    <div>
+      <h3>Simulation Loop</h3>
+      <ol style="padding-left:24px;">
+        <li>Read current state from Tape 3</li>
+        <li>Read current symbol from Tape 1 (at head)</li>
+        <li>Look up (state, symbol) in Tape 2</li>
+        <li>Write new symbol, move head, update state</li>
+        <li>If accept/reject, halt. Otherwise repeat.</li>
+      </ol>
+    </div>
+    <div>
+      <div class="warning">
+        <h3>Important Detail</h3>
+        <p>The UTM uses 3 tapes for clarity, but any multi-tape TM can be converted to single-tape. A UTM can be a <strong>single-tape</strong> machine &mdash; just slower.</p>
+      </div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The UTM is itself a TM with a finite number of states. The "program" it runs is on its <em>tape</em>, not in its states.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS5'), ctx = c.getContext('2d');
+  let step = 0; let timers = [];
+  const transitions = ['(q0,0)\u2192(q0,X,R)','(q0,1)\u2192(q0,Y,R)','(q0,B)\u2192(qacc,B,R)'];
+  const steps = [
+    {tape:['0','1','1','B','B','B','B','B','B'],head:0,state:'q0',hl:-1,msg:'Ready to simulate M on "011"'},
+    {tape:['X','1','1','B','B','B','B','B','B'],head:1,state:'q0',hl:0,msg:'Step 1: Read 0, write X, move R'},
+    {tape:['X','Y','1','B','B','B','B','B','B'],head:2,state:'q0',hl:1,msg:'Step 2: Read 1, write Y, move R'},
+    {tape:['X','Y','Y','B','B','B','B','B','B'],head:3,state:'q0',hl:1,msg:'Step 3: Read 1, write Y, move R'},
+    {tape:['X','Y','Y','B','B','B','B','B','B'],head:4,state:'q_acc',hl:2,msg:'Step 4: Read B, M accepts \u2192 U accepts!'}
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,660,210);
+    const s = steps[step];
+    // Tape 1
+    ctx.fillStyle='#93c5fd'; ctx.font='600 11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText("TAPE 1: M's work tape",10,16);
+    for(let i=0;i<9;i++){
+      const x=50+i*65;
+      ctx.fillStyle=(i===s.head)?'rgba(59,130,246,0.2)':'#1e293b';
+      ctx.strokeStyle=(i===s.head)?'#3b82f6':'#334155'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(x,24,58,30,4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#e2e8f0'; ctx.font='14px monospace'; ctx.textAlign='center';
+      ctx.fillText(s.tape[i],x+29,44);
+    }
+    // Head
+    const hx=79+s.head*65;
+    ctx.fillStyle='#3b82f6';
+    ctx.beginPath(); ctx.moveTo(hx,56); ctx.lineTo(hx-6,66); ctx.lineTo(hx+6,66); ctx.closePath(); ctx.fill();
+    // Tape 2
+    ctx.fillStyle='#f59e0b'; ctx.font='600 11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText("TAPE 2: M's transitions (read-only)",10,86);
+    for(let i=0;i<3;i++){
+      const x=50+i*198;
+      ctx.fillStyle=(i===s.hl)?'rgba(245,158,11,0.25)':'#1e293b';
+      ctx.strokeStyle=(i===s.hl)?'#f59e0b':'#334155'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(x,92,188,28,4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#f59e0b'; ctx.font='11px monospace'; ctx.textAlign='center';
+      ctx.fillText(transitions[i],x+94,111);
+    }
+    // Tape 3
+    ctx.fillStyle='#10b981'; ctx.font='600 11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText("TAPE 3: M's current state",10,148);
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#334155'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(50,154,80,28,4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=(s.state==='q_acc')?'#10b981':'#e2e8f0'; ctx.font='600 14px monospace'; ctx.textAlign='center';
+    ctx.fillText(s.state,90,173);
+
+    document.getElementById('s5_counter').textContent='Step '+step+' / 4';
+    document.getElementById('s5_status').textContent=s.msg;
+    if(s.state==='q_acc') document.getElementById('s5_status').style.color='#10b981';
+    else document.getElementById('s5_status').style.color='#94a3b8';
+  }
+
+  window.s5_step = function(){ if(step<4){step++;draw();} };
+  window.s5_auto = function(){ s5_reset(); let i=1; function go(){if(i<=4){step=i;draw();i++;timers.push(setTimeout(go,900));}} timers.push(setTimeout(go,500)); };
+  window.s5_reset = function(){ timers.forEach(clearTimeout); timers=[]; step=0; draw(); };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&!document.getElementById('s5').classList.contains('active'))s5_reset();})).observe(document.getElementById('s5'),{attributes:true});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: DIAGONALIZATION ==================== -->
+<div class="slide" id="s6">
+  <h1>Diagonalization: The Counting Argument</h1>
+  <p class="subtitle">There are more problems than programs. Way more.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>TMs are Countable</h3>
+      <p>Every TM is a finite binary string. We can list all binary strings in lexicographic order. So: <strong>countably many TMs</strong>.</p>
+      <div class="formula">|TMs| = |N| = &#8501;<sub>0</sub></div>
+
+      <h3 class="mt">Languages are Uncountable</h3>
+      <p>A language over {0,1} is any subset of {0,1}*. Each language = an infinite binary sequence (IN/OUT for each string).</p>
+      <div class="formula">|Languages| = 2<sup>&#8501;<sub>0</sub></sup> = |R|</div>
+    </div>
+    <div>
+      <div class="panel">
+        <canvas id="cS6" width="400" height="340" style="width:100%;display:block;"></canvas>
+        <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;">
+          <button class="ctrl-btn" onclick="s6_fill()">Random Fill</button>
+          <button class="ctrl-btn" id="s6_diagBtn" onclick="s6_diag()" disabled>Show Diagonal</button>
+          <button class="ctrl-btn" id="s6_flipBtn" onclick="s6_flip()" disabled>Flip It!</button>
+        </div>
+        <div class="status" id="s6_status" style="text-align:center;">Fill the table, then diagonalize</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warning">
+    <h3>The Devastating Conclusion</h3>
+    <p>Countably many TMs, uncountably many languages. So <strong>most languages have no TM that recognizes them</strong>. The solvable problems are a vanishingly tiny fraction of all problems.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS6'), ctx = c.getContext('2d');
+  const N = 6;
+  let grid = Array.from({length:N},()=>Array(N).fill(-1));
+  let phase = 0; // 0=empty/filling, 1=diagonal shown, 2=flipped
+  const labels_r = ['M1','M2','M3','M4','M5','M6'];
+  const labels_c = ['w1','w2','w3','w4','w5','w6'];
+  const cellSz = 48, offX = 50, offY = 40;
+
+  function draw(){
+    ctx.clearRect(0,0,400,340);
+    // Col headers
+    ctx.fillStyle='#93c5fd'; ctx.font='600 12px sans-serif'; ctx.textAlign='center';
+    for(let j=0;j<N;j++) ctx.fillText(labels_c[j], offX+j*cellSz+cellSz/2, offY-8);
+    // Rows
+    for(let i=0;i<N;i++){
+      ctx.fillStyle='#f59e0b'; ctx.font='600 12px sans-serif'; ctx.textAlign='right';
+      ctx.fillText(labels_r[i], offX-8, offY+i*cellSz+cellSz/2+4);
+      for(let j=0;j<N;j++){
+        const x=offX+j*cellSz, y=offY+i*cellSz;
+        const isDiag = (i===j);
+        let bg='#1e293b', border='#475569';
+        if(phase>=1 && isDiag){ bg='rgba(245,158,11,0.2)'; border='#f59e0b'; }
+        ctx.fillStyle=bg; ctx.strokeStyle=border; ctx.lineWidth=isDiag&&phase>=1?2:1;
+        ctx.beginPath(); ctx.roundRect(x+1,y+1,cellSz-2,cellSz-2,4); ctx.fill(); ctx.stroke();
+
+        const v = grid[i][j];
+        if(v!==-1){
+          ctx.fillStyle = (phase>=1&&isDiag) ? '#f59e0b' : '#e2e8f0';
+          ctx.font='600 14px sans-serif'; ctx.textAlign='center';
+          ctx.fillText(v?'A':'R', x+cellSz/2, y+cellSz/2+5);
+        } else {
+          ctx.fillStyle='#475569'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+          ctx.fillText('?', x+cellSz/2, y+cellSz/2+4);
+        }
+      }
+    }
+    // Flipped row
+    if(phase===2){
+      const rowY = offY + N*cellSz + 16;
+      ctx.fillStyle='#10b981'; ctx.font='600 12px sans-serif'; ctx.textAlign='right';
+      ctx.fillText('L_d', offX-8, rowY+cellSz/2+4);
+      for(let j=0;j<N;j++){
+        const x=offX+j*cellSz;
+        ctx.fillStyle='rgba(16,185,129,0.2)'; ctx.strokeStyle='#10b981'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.roundRect(x+1,rowY+1,cellSz-2,cellSz-2,4); ctx.fill(); ctx.stroke();
+        const flipped = grid[j][j] ? 0 : 1;
+        ctx.fillStyle='#10b981'; ctx.font='600 14px sans-serif'; ctx.textAlign='center';
+        ctx.fillText(flipped?'A':'R', x+cellSz/2, rowY+cellSz/2+5);
+      }
+      // Arrow from diagonal
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(offX+N*cellSz/2, offY+N*cellSz+2); ctx.lineTo(offX+N*cellSz/2, rowY-2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#94a3b8'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('flip each bit', offX+N*cellSz/2+50, offY+N*cellSz+10);
+    }
+  }
+
+  window.s6_fill = function(){
+    phase=0;
+    for(let i=0;i<N;i++) for(let j=0;j<N;j++) grid[i][j]=Math.random()<0.5?1:0;
+    document.getElementById('s6_diagBtn').disabled=false;
+    document.getElementById('s6_flipBtn').disabled=true;
+    document.getElementById('s6_status').textContent='Table filled! Now show the diagonal.';
+    draw();
+  };
+  window.s6_diag = function(){
+    if(phase!==0) return;
+    phase=1;
+    document.getElementById('s6_flipBtn').disabled=false;
+    let diag=''; for(let i=0;i<N;i++) diag+=(grid[i][i]?'A':'R');
+    document.getElementById('s6_status').textContent='Diagonal: '+diag+' \u2014 now flip it!';
+    draw();
+  };
+  window.s6_flip = function(){
+    if(phase!==1) return;
+    phase=2;
+    document.getElementById('s6_status').textContent='L_d differs from EVERY row at the diagonal \u2014 no TM recognizes it!';
+    draw();
+  };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&!document.getElementById('s6').classList.contains('active')){phase=0;grid=Array.from({length:N},()=>Array(N).fill(-1));document.getElementById('s6_diagBtn').disabled=true;document.getElementById('s6_flipBtn').disabled=true;draw();}})).observe(document.getElementById('s6'),{attributes:true});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: THE LANGUAGE Ld ==================== -->
+<div class="slide" id="s7">
+  <h1>The Language L<sub>d</sub></h1>
+  <p class="subtitle">A specific language that NO Turing machine can recognize. Not even RE.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="formula" style="text-align:left;font-size:1em;">
+L<sub>d</sub> = { w<sub>i</sub> | M<sub>i</sub> does NOT accept w<sub>i</sub> }
+      </div>
+
+      <h3>Proof: L<sub>d</sub> is Not RE</h3>
+      <ol style="padding-left:24px;">
+        <li><strong>Assume</strong> some TM M<sub>j</sub> recognizes L<sub>d</sub>.</li>
+        <li>M<sub>j</sub> appears in the enumeration as the j-th machine.</li>
+        <li><strong>Ask:</strong> Is w<sub>j</sub> in L<sub>d</sub>?</li>
+        <li><strong>Case 1:</strong> w<sub>j</sub> &in; L<sub>d</sub>
+          <ul><li>By def: M<sub>j</sub> does NOT accept w<sub>j</sub></li>
+          <li>But M<sub>j</sub> recognizes L<sub>d</sub>, so it should accept &mdash; <strong>contradiction!</strong></li></ul>
+        </li>
+        <li><strong>Case 2:</strong> w<sub>j</sub> &notin; L<sub>d</sub>
+          <ul><li>By def: M<sub>j</sub> DOES accept w<sub>j</sub></li>
+          <li>But M<sub>j</sub> recognizes L<sub>d</sub>, so it shouldn't &mdash; <strong>contradiction!</strong></li></ul>
+        </li>
+      </ol>
+    </div>
+    <div>
+      <div class="diagram small">
+  If Mj recognizes L_d:
+
+  wj in L_d?
+      |
+      +-- YES --&gt; Mj does NOT accept wj
+      |           (by def of L_d)
+      |           But Mj recognizes L_d,
+      |           so Mj SHOULD accept wj
+      |           CONTRADICTION!
+      |
+      +-- NO  --&gt; Mj DOES accept wj
+                  (by def of L_d)
+                  But Mj recognizes L_d,
+                  so Mj should NOT accept wj
+                  CONTRADICTION!
+
+  Both cases lead to contradiction.
+  Therefore, no such Mj exists.
+  L_d is NOT RE.
+      </div>
+
+      <div class="warning">
+        <h3>What This Means</h3>
+        <p>L<sub>d</sub> is not just undecidable &mdash; it's not even <strong>recognizable</strong>. No TM of any kind can recognize it, even one allowed to loop forever on non-members.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 8: THE HALTING PROBLEM ==================== -->
+<div class="slide" id="s8">
+  <h1>The Halting Problem</h1>
+  <p class="subtitle">The most famous undecidable problem in computer science.</p>
+
+  <div class="key-idea">
+    <h3>Definition</h3>
+    <p><strong>HALT = { &lang;M, w&rang; | M is a TM and M halts on input w }</strong><br>
+    Given a program and an input, does the program eventually stop?</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>Interactive Proof by Contradiction</h3>
+      <div class="panel" style="min-height:200px;">
+        <canvas id="cS8" width="460" height="280" style="width:100%;display:block;"></canvas>
+        <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;">
+          <button class="ctrl-btn" onclick="s8_step()">Step</button>
+          <button class="ctrl-btn" onclick="s8_auto()">Auto</button>
+          <button class="ctrl-btn" onclick="s8_reset()">Reset</button>
+          <span id="s8_counter" style="color:#64748b;font-size:13px;padding:6px;">Step 0 / 5</span>
+        </div>
+        <div class="status" id="s8_status" style="text-align:center;">Click Step to build the contradiction</div>
+      </div>
+    </div>
+    <div>
+      <h3>Why It Matters</h3>
+      <p>If we could solve HALT, we could:</p>
+      <ul>
+        <li>Build a <strong>perfect debugger</strong></li>
+        <li>Verify that <strong>any program terminates</strong></li>
+        <li>Solve <strong>Goldbach's conjecture</strong></li>
+        <li>Build a <strong>perfect virus scanner</strong></li>
+      </ul>
+      <p class="mt">But we <strong>cannot</strong>.</p>
+
+      <div class="analogy mt">
+        <h3>Analogy: The Barber Paradox</h3>
+        <p>"A barber shaves everyone who doesn't shave themselves." Who shaves the barber? <strong>Self-reference + negation = paradox.</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS8'), ctx = c.getContext('2d');
+  let step = 0; let timers = [];
+  const msgs = [
+    'Click Step to build the contradiction',
+    'Step 1: Assume decider H for HALT exists',
+    'Step 2: H(\u27E8M, w\u27E9) always answers correctly',
+    'Step 3: Build D: runs H(\u27E8M, \u27E8M\u27E9\u27E9), does the OPPOSITE',
+    'Step 4: Run D(\u27E8D\u27E9) \u2014 feed D its own code',
+    'Step 5: CONTRADICTION! H cannot exist.'
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,460,280);
+    // Step 1: H box
+    if(step>=1){
+      ctx.fillStyle='#1e293b'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(30,20,120,70,10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#93c5fd'; ctx.font='700 20px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('H',90,62);
+      ctx.fillStyle='#64748b'; ctx.font='10px sans-serif';
+      ctx.fillText('(assumed decider)',90,82);
+    }
+    // Step 2: arrows
+    if(step>=2){
+      ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('\u27E8M, w\u27E9 \u2192',160,40);
+      ctx.fillStyle='#10b981'; ctx.fillText('"accept" if M halts',220,40);
+      ctx.fillStyle='#ef4444'; ctx.fillText('"reject" if M loops',220,58);
+    }
+    // Step 3: D box
+    if(step>=3){
+      ctx.fillStyle='#1e293b'; ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.roundRect(30,110,400,80,10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#a5b4fc'; ctx.font='700 16px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('D(\u27E8M\u27E9):',50,138);
+      ctx.fillStyle='#cbd5e1'; ctx.font='12px monospace';
+      ctx.fillText('1. Run H(\u27E8M, \u27E8M\u27E9\u27E9)',50,158);
+      ctx.fillText('2. If H says "halt" \u2192 D LOOPS    If H says "loop" \u2192 D HALTS',50,175);
+      // Small H inside D
+      ctx.fillStyle='rgba(59,130,246,0.1)'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.roundRect(340,120,60,30,5); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#93c5fd'; ctx.font='600 12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('H',370,140);
+    }
+    // Step 4: D(D)
+    if(step>=4){
+      ctx.fillStyle='rgba(245,158,11,0.1)'; ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(30,200,400,36,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#fbbf24'; ctx.font='700 14px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('Now run D(\u27E8D\u27E9) \u2014 feed D its own code!',230,224);
+    }
+    // Step 5: Contradiction
+    if(step>=5){
+      ctx.fillStyle='rgba(239,68,68,0.15)'; ctx.strokeStyle='#ef4444'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.roundRect(60,244,340,34,10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#ef4444'; ctx.font='700 15px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('D halts \u21D4 D does NOT halt \u2014 CONTRADICTION!',230,266);
+    }
+
+    document.getElementById('s8_counter').textContent='Step '+step+' / 5';
+    document.getElementById('s8_status').textContent=msgs[step];
+  }
+
+  window.s8_step = function(){ if(step<5){step++;draw();} };
+  window.s8_auto = function(){ s8_reset(); let i=1; function go(){if(i<=5){step=i;draw();i++;timers.push(setTimeout(go,1200));}} timers.push(setTimeout(go,600)); };
+  window.s8_reset = function(){ timers.forEach(clearTimeout); timers=[]; step=0; draw(); };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&!document.getElementById('s8').classList.contains('active'))s8_reset();})).observe(document.getElementById('s8'),{attributes:true});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: HALTING PROOF DETAIL ==================== -->
+<div class="slide" id="s9">
+  <h1>Halting Proof: The Full Paradox</h1>
+  <p class="subtitle">What happens when we feed D its own encoding?</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram small">
+  D(&lang;D&rang;):
+    1. Run H(&lang;D, &lang;D&rang;&rang;)
+    2. If H says "accept":
+         D loops forever
+    3. If H says "reject":
+         D halts and accepts
+      </div>
+
+      <h3 class="mt">The Two Cases</h3>
+      <div class="panel" id="s9_panel">
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="ctrl-btn" onclick="s9_run('A')" id="s9_btnA" style="background:rgba(16,185,129,0.15);border-color:#10b981;color:#10b981;">Case A: D halts on &lang;D&rang;</button>
+          <button class="ctrl-btn" onclick="s9_run('B')" id="s9_btnB" style="background:rgba(239,68,68,0.15);border-color:#ef4444;color:#ef4444;">Case B: D loops on &lang;D&rang;</button>
+          <button class="ctrl-btn" onclick="s9_clear()">Reset</button>
+        </div>
+        <div id="s9_steps" style="min-height:120px;"></div>
+        <div id="s9_conclusion" class="status" style="text-align:center;font-weight:600;"></div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS9" width="400" height="300" style="width:100%;display:block;border-radius:12px;background:rgba(0,0,0,0.2);"></canvas>
+      <div class="warning mt">
+        <h3>The Conclusion</h3>
+        <p>No TM H can decide the Halting Problem. This is a fundamental <strong>mathematical impossibility</strong>, not a limitation of current technology.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS9'), ctx = c.getContext('2d');
+  let timers = [];
+
+  function drawFlowchart(highlight){
+    ctx.clearRect(0,0,400,300);
+    // D(D) box at top
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(130,10,140,40,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#a5b4fc'; ctx.font='700 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('D(\u27E8D\u27E9)',200,36);
+    // Arrow down to H
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(200,52); ctx.lineTo(200,72); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(200,76); ctx.lineTo(196,68); ctx.lineTo(204,68); ctx.closePath(); ctx.fill();
+    // H diamond
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(200,78); ctx.lineTo(280,120); ctx.lineTo(200,162); ctx.lineTo(120,120); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#93c5fd'; ctx.font='600 13px sans-serif';
+    ctx.fillText('H(\u27E8D,\u27E8D\u27E9\u27E9)',200,118);
+    ctx.font='10px sans-serif'; ctx.fillText('halt or loop?',200,134);
+    // Left branch: "accept"
+    const leftHL = (highlight==='A');
+    ctx.strokeStyle=leftHL?'#10b981':'#475569'; ctx.lineWidth=leftHL?2:1;
+    ctx.beginPath(); ctx.moveTo(120,120); ctx.lineTo(60,120); ctx.lineTo(60,200); ctx.stroke();
+    ctx.fillStyle=leftHL?'#10b981':'#475569';
+    ctx.beginPath(); ctx.moveTo(60,204); ctx.lineTo(56,196); ctx.lineTo(64,196); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=leftHL?'#10b981':'#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('"halt"',80,112);
+    // Left result: D loops
+    ctx.fillStyle=leftHL?'rgba(239,68,68,0.15)':'#1e293b'; ctx.strokeStyle=leftHL?'#ef4444':'#334155'; ctx.lineWidth=leftHL?2:1;
+    ctx.beginPath(); ctx.roundRect(10,208,100,50,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=leftHL?'#ef4444':'#94a3b8'; ctx.font='600 12px sans-serif';
+    ctx.fillText('D LOOPS',60,228);
+    ctx.fillStyle=leftHL?'#ef4444':'#64748b'; ctx.font='10px sans-serif';
+    ctx.fillText('But we said',60,246);
+    ctx.fillText('D halts!',60,258);
+    // Right branch: "reject"
+    const rightHL = (highlight==='B');
+    ctx.strokeStyle=rightHL?'#ef4444':'#475569'; ctx.lineWidth=rightHL?2:1;
+    ctx.beginPath(); ctx.moveTo(280,120); ctx.lineTo(340,120); ctx.lineTo(340,200); ctx.stroke();
+    ctx.fillStyle=rightHL?'#ef4444':'#475569';
+    ctx.beginPath(); ctx.moveTo(340,204); ctx.lineTo(336,196); ctx.lineTo(344,196); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=rightHL?'#ef4444':'#64748b'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('"loop"',316,112);
+    // Right result: D halts
+    ctx.fillStyle=rightHL?'rgba(16,185,129,0.15)':'#1e293b'; ctx.strokeStyle=rightHL?'#10b981':'#334155'; ctx.lineWidth=rightHL?2:1;
+    ctx.beginPath(); ctx.roundRect(290,208,100,50,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=rightHL?'#10b981':'#94a3b8'; ctx.font='600 12px sans-serif';
+    ctx.fillText('D HALTS',340,228);
+    ctx.fillStyle=rightHL?'#10b981':'#64748b'; ctx.font='10px sans-serif';
+    ctx.fillText('But we said',340,246);
+    ctx.fillText('D loops!',340,258);
+    // Contradiction banner
+    if(highlight){
+      ctx.fillStyle='rgba(239,68,68,0.15)'; ctx.strokeStyle='#ef4444'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(100,272,200,24,6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#ef4444'; ctx.font='700 13px sans-serif';
+      ctx.fillText('CONTRADICTION!',200,289);
+    }
+  }
+
+  const caseA = [
+    {html:'<p style="color:#10b981;">1. Suppose D halts on \u27E8D\u27E9</p>',delay:0},
+    {html:'<p style="color:#10b981;">2. \u2192 H(\u27E8D, \u27E8D\u27E9\u27E9) says "accept" (D halts)</p>',delay:700},
+    {html:'<p style="color:#f59e0b;">3. \u2192 D enters infinite loop (by construction)</p>',delay:1400},
+    {html:'<p style="color:#ef4444;font-weight:700;">4. \u2192 D does NOT halt \u2014 CONTRADICTION!</p>',delay:2100}
+  ];
+  const caseB = [
+    {html:'<p style="color:#ef4444;">1. Suppose D does NOT halt on \u27E8D\u27E9</p>',delay:0},
+    {html:'<p style="color:#ef4444;">2. \u2192 H(\u27E8D, \u27E8D\u27E9\u27E9) says "reject" (D loops)</p>',delay:700},
+    {html:'<p style="color:#10b981;">3. \u2192 D halts and accepts</p>',delay:1400},
+    {html:'<p style="color:#ef4444;font-weight:700;">4. \u2192 D DOES halt \u2014 CONTRADICTION!</p>',delay:2100}
+  ];
+
+  window.s9_run = function(c){
+    s9_clear();
+    drawFlowchart(c);
+    const steps = c==='A'?caseA:caseB;
+    const el = document.getElementById('s9_steps');
+    steps.forEach(st=>{
+      timers.push(setTimeout(()=>{el.innerHTML+=st.html;},st.delay));
+    });
+    timers.push(setTimeout(()=>{
+      document.getElementById('s9_conclusion').innerHTML='<span style="color:#ef4444;">\u2234 H cannot exist. HALT is undecidable.</span>';
+    },2800));
+  };
+  window.s9_clear = function(){
+    timers.forEach(clearTimeout); timers=[];
+    document.getElementById('s9_steps').innerHTML='';
+    document.getElementById('s9_conclusion').innerHTML='';
+    drawFlowchart(null);
+  };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'){if(document.getElementById('s9').classList.contains('active'))drawFlowchart(null);else s9_clear();}})).observe(document.getElementById('s9'),{attributes:true});
+  drawFlowchart(null);
+})();
+</script>
+
+<!-- ==================== SLIDE 10: REDUCIBILITY ==================== -->
+<div class="slide" id="s10">
+  <h1>Reducibility</h1>
+  <p class="subtitle">Proving new problems undecidable by "reducing" from known ones.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="diagram small">
+  THE IDEA:
+  "If you could solve Problem B,
+   you could solve Problem A."
+
+  If A is undecidable, B must be too!
+
+  +----------+  reduce  +----------+
+  | Problem A| ------&gt; | Problem B|
+  | (known   |         | (want to |
+  |  undec.) |         |  prove)  |
+  +----------+         +----------+
+      HALT               New Problem
+      </div>
+
+      <div class="key-idea">
+        <h3>Proof Pattern</h3>
+        <ol style="padding-left:24px;">
+          <li>Want to prove B is undecidable</li>
+          <li>Assume B is decidable</li>
+          <li>Show how to use B's decider to decide HALT</li>
+          <li>But HALT is undecidable &mdash; contradiction!</li>
+          <li>Therefore B is undecidable</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <canvas id="cS10" width="400" height="240" style="width:100%;display:block;"></canvas>
+        <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;">
+          <button class="ctrl-btn" onclick="s10_sel(0)" id="s10_b0">HALT &rarr; E_TM</button>
+          <button class="ctrl-btn" onclick="s10_sel(1)" id="s10_b1">HALT &rarr; EQ_TM</button>
+          <button class="ctrl-btn" onclick="s10_sel(2)" id="s10_b2">HALT &rarr; ALL_TM</button>
+        </div>
+        <div class="status" id="s10_desc" style="text-align:center;">Click a reduction to see it</div>
+      </div>
+
+      <div class="analogy mt">
+        <h3>Analogy</h3>
+        <p>If you can't solve a maze (Problem A), and someone shows that solving a different puzzle (Problem B) would let you solve the maze, then that puzzle is at least as hard as the maze.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS10'), ctx = c.getContext('2d');
+  const examples = [
+    {label:'E_TM',sub:'"Is L(M) empty?"',desc:'E_TM: "Is L(M) empty?" Build M\' that accepts everything iff M halts on w.',col:'#3b82f6'},
+    {label:'EQ_TM',sub:'"Is L(M\u2081) = L(M\u2082)?"',desc:'EQ_TM: "Is L(M\u2081) = L(M\u2082)?" Compare M with a TM that accepts nothing.',col:'#8b5cf6'},
+    {label:'ALL_TM',sub:'"Is L(M) = \u03A3*?"',desc:'ALL_TM: "Is L(M) = \u03A3*?" Build M\' that accepts all strings iff M halts on w.',col:'#f59e0b'}
+  ];
+  let sel = 0;
+
+  function draw(){
+    ctx.clearRect(0,0,400,240);
+    const e = examples[sel];
+    // HALT box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#ef4444'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(10,30,90,50,6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ef4444'; ctx.font='700 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('HALT',55,60);
+    // Arrow: reduce
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(102,55); ctx.lineTo(148,55); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(152,55); ctx.lineTo(144,50); ctx.lineTo(144,60); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#64748b'; ctx.font='9px sans-serif'; ctx.fillText('reduce',127,48);
+    // Transform box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(154,30,90,50,6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#f59e0b'; ctx.font='600 12px sans-serif';
+    ctx.fillText('Transform f',199,60);
+    // Arrow
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(246,55); ctx.lineTo(278,55); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(282,55); ctx.lineTo(274,50); ctx.lineTo(274,60); ctx.closePath(); ctx.fill();
+    // Target box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle=e.col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(284,20,106,70,6); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=e.col; ctx.font='700 13px sans-serif';
+    ctx.fillText(e.label,337,48);
+    ctx.font='10px sans-serif';
+    ctx.fillText(e.sub,337,68);
+    // Dashed decider
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.roundRect(284,100,106,40,6); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#64748b'; ctx.font='10px sans-serif';
+    ctx.fillText('Decider for '+e.label+'?',337,124);
+    // Arrow down
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(337,92); ctx.lineTo(337,98); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(337,142); ctx.lineTo(333,134); ctx.lineTo(341,134); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(337,142); ctx.lineTo(337,160); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif';
+    ctx.fillText('yes / no',337,175);
+    // Curved arrow back
+    ctx.strokeStyle='#ef4444'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.moveTo(337,180); ctx.quadraticCurveTo(337,215,200,215); ctx.quadraticCurveTo(55,215,55,82); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.moveTo(55,78); ctx.lineTo(51,86); ctx.lineTo(59,86); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#ef4444'; ctx.font='600 10px sans-serif';
+    ctx.fillText('Decides HALT! Contradiction!',200,210);
+  }
+
+  window.s10_sel = function(idx){
+    sel=idx; draw();
+    document.getElementById('s10_desc').textContent=examples[idx].desc;
+    for(let i=0;i<3;i++) document.getElementById('s10_b'+i).classList.toggle('active',i===idx);
+  };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('s10').classList.contains('active'))draw();})).observe(document.getElementById('s10'),{attributes:true});
+  draw();
+  document.getElementById('s10_b0').classList.add('active');
+  document.getElementById('s10_desc').textContent=examples[0].desc;
+})();
+</script>
+
+<!-- ==================== SLIDE 11: MORE UNDECIDABLE PROBLEMS ==================== -->
+<div class="slide" id="s11">
+  <h1>More Undecidable Problems</h1>
+  <p class="subtitle">Undecidability spreads through reductions.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Reduction Example: E<sub>TM</sub></h3>
+      <p>E<sub>TM</sub> = { &lang;M&rang; | L(M) = &empty; } &mdash; Is the language empty?</p>
+      <ol style="padding-left:24px;">
+        <li>Assume decider R for E<sub>TM</sub></li>
+        <li>Given &lang;M, w&rang;, build M' that ignores its input, runs M on w, accepts if M does</li>
+        <li>If M accepts w: L(M') = &Sigma;* (not empty)</li>
+        <li>If M doesn't accept w: L(M') = &empty; (empty)</li>
+        <li>R(&lang;M'&rang;) decides whether M accepts w &mdash; that's the Halting Problem!</li>
+      </ol>
+
+      <h3 class="mt">Other Undecidable Problems</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>Problem</th><th>Question</th></tr>
+        <tr><td style="text-align:left;">E<sub>TM</sub></td><td style="text-align:left;">Is L(M) = &empty;?</td></tr>
+        <tr><td style="text-align:left;">EQ<sub>TM</sub></td><td style="text-align:left;">Is L(M<sub>1</sub>) = L(M<sub>2</sub>)?</td></tr>
+        <tr><td style="text-align:left;">ALL<sub>TM</sub></td><td style="text-align:left;">Is L(M) = &Sigma;*?</td></tr>
+        <tr><td style="text-align:left;">REG<sub>TM</sub></td><td style="text-align:left;">Is L(M) regular?</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="panel">
+        <canvas id="cS11" width="400" height="380" style="width:100%;display:block;"></canvas>
+        <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;">
+          <button class="ctrl-btn" onclick="s11_step()">Step</button>
+          <button class="ctrl-btn" onclick="s11_auto()">Auto</button>
+          <button class="ctrl-btn" onclick="s11_reset()">Reset</button>
+          <span id="s11_counter" style="color:#64748b;font-size:13px;padding:6px;">Step 0 / 6</span>
+        </div>
+        <div class="status" id="s11_status" style="text-align:center;">E_TM reduction step-through</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS11'), ctx = c.getContext('2d');
+  let step = 0; let timers = [];
+  const msgs = [
+    'E_TM reduction step-through',
+    'Step 1: We have \u27E8M, w\u27E9 \u2014 does M accept w?',
+    'Step 2: Construct M\u2032: ignores input, runs M on w',
+    'Step 3: Feed \u27E8M\u2032\u27E9 to R (assumed E_TM decider)',
+    'Step 4: R outputs: L(M\u2032) empty or not?',
+    'Step 5: This tells us if M accepts w!',
+    'Step 6: We decided acceptance \u2014 CONTRADICTION!'
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,400,380);
+    // Step 1: input
+    if(step>=1){
+      const glow = step===1;
+      ctx.fillStyle='#0f172a'; ctx.strokeStyle=glow?'#60a5fa':'#3b82f6'; ctx.lineWidth=glow?2.5:2;
+      ctx.beginPath(); ctx.roundRect(120,10,160,40,10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#93c5fd'; ctx.font='700 15px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('\u27E8M, w\u27E9',200,36);
+    }
+    // Step 2: M' box
+    if(step>=2){
+      ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(200,52); ctx.lineTo(200,78); ctx.stroke();
+      ctx.fillStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(200,82); ctx.lineTo(196,74); ctx.lineTo(204,74); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#64748b'; ctx.font='10px sans-serif'; ctx.fillText('construct',228,70);
+      const glow = step===2;
+      ctx.fillStyle='#1e293b'; ctx.strokeStyle=glow?'#c4b5fd':'#8b5cf6'; ctx.lineWidth=glow?2.5:2;
+      ctx.beginPath(); ctx.roundRect(90,84,220,65,10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#a5b4fc'; ctx.font='700 14px sans-serif';
+      ctx.fillText("M'",200,106);
+      ctx.fillStyle='#94a3b8'; ctx.font='10px sans-serif';
+      ctx.fillText("M'(x): ignore x, run M on w,",200,122);
+      ctx.fillText("accept if M does",200,136);
+    }
+    // Step 3: R box
+    if(step>=3){
+      ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(200,151); ctx.lineTo(200,178); ctx.stroke();
+      ctx.fillStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(200,182); ctx.lineTo(196,174); ctx.lineTo(204,174); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#64748b'; ctx.font='10px sans-serif'; ctx.fillText("feed \u27E8M'\u27E9 to R",228,168);
+      const glow = step===3;
+      ctx.fillStyle='#1e293b'; ctx.strokeStyle=glow?'#fbbf24':'#f59e0b'; ctx.lineWidth=glow?2.5:2;
+      ctx.beginPath(); ctx.roundRect(120,184,160,50,10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#f59e0b'; ctx.font='700 14px sans-serif';
+      ctx.fillText('R',200,210);
+      ctx.fillStyle='#94a3b8'; ctx.font='10px sans-serif';
+      ctx.fillText('(assumed E_TM decider)',200,226);
+    }
+    // Step 4: outputs
+    if(step>=4){
+      ctx.strokeStyle='#ef4444'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(145,236); ctx.lineTo(80,272); ctx.stroke();
+      ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.moveTo(76,276); ctx.lineTo(80,266); ctx.lineTo(86,274); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='rgba(239,68,68,0.1)'; ctx.strokeStyle='#ef4444'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(10,278,160,34,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#ef4444'; ctx.font='600 11px sans-serif';
+      ctx.fillText('"L(M\') is empty"',90,300);
+
+      ctx.strokeStyle='#10b981'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(255,236); ctx.lineTo(320,272); ctx.stroke();
+      ctx.fillStyle='#10b981'; ctx.beginPath(); ctx.moveTo(324,276); ctx.lineTo(314,274); ctx.lineTo(320,266); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='rgba(16,185,129,0.1)'; ctx.strokeStyle='#10b981'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(230,278,160,34,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#10b981'; ctx.font='600 11px sans-serif';
+      ctx.fillText('"L(M\') NOT empty"',310,300);
+    }
+    // Step 5: meaning
+    if(step>=5){
+      ctx.fillStyle='#ef4444'; ctx.font='11px sans-serif';
+      ctx.fillText('\u2192 M does NOT accept w',90,328);
+      ctx.fillStyle='#10b981';
+      ctx.fillText('\u2192 M DOES accept w',310,328);
+      ctx.fillStyle='#93c5fd'; ctx.font='600 12px sans-serif';
+      ctx.fillText('We just decided acceptance!',200,348);
+    }
+    // Step 6: contradiction
+    if(step>=6){
+      ctx.fillStyle='rgba(239,68,68,0.15)'; ctx.strokeStyle='#ef4444'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.roundRect(80,356,240,28,10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#ef4444'; ctx.font='800 14px sans-serif';
+      ctx.fillText('CONTRADICTION!',200,376);
+    }
+
+    document.getElementById('s11_counter').textContent='Step '+step+' / 6';
+    document.getElementById('s11_status').textContent=msgs[step];
+  }
+
+  window.s11_step = function(){ if(step<6){step++;draw();} };
+  window.s11_auto = function(){ s11_reset(); let i=1; function go(){if(i<=6){step=i;draw();i++;timers.push(setTimeout(go,1200));}} timers.push(setTimeout(go,600)); };
+  window.s11_reset = function(){ timers.forEach(clearTimeout); timers=[]; step=0; draw(); };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&!document.getElementById('s11').classList.contains('active'))s11_reset();})).observe(document.getElementById('s11'),{attributes:true});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE CA: CHALLENGE - IS IT DECIDABLE? ==================== -->
+<div class="slide" id="sCA">
+  <h1>Challenge: Is It Decidable?</h1>
+  <p class="subtitle">For each problem, decide: Decidable, RE (but not decidable), or Neither?</p>
+
+  <div class="challenge-box">
+    <h3>Classify These Problems</h3>
+    <div id="sCA_area">
+      <div id="sCA_q" style="font-size:1.15em;color:#e2e8f0;margin:12px 0;font-weight:600;"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;" id="sCA_opts"></div>
+      <div id="sCA_fb" style="margin-top:12px;min-height:40px;"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="ctrl-btn" onclick="sCA_next()" id="sCA_nextBtn" disabled>Next &rarr;</button>
+        <button class="ctrl-btn" onclick="sCA_init()">Restart</button>
+        <span id="sCA_score" style="color:#64748b;font-size:13px;padding:6px;"></span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const problems = [
+    {q:'"Does TM M have fewer than 100 states?"',answer:'Decidable',explain:'This is about the machine structure, not L(M). Just inspect the encoding.'},
+    {q:'"Is L(M) = {0^n 1^n | n >= 0}?"',answer:'Neither',explain:'Non-trivial property of L(M). By Rice\'s, undecidable. In fact, not even RE.'},
+    {q:'"Does M accept the empty string?"',answer:'RE',explain:'Non-trivial property of L(M) \u2192 undecidable by Rice\'s. But it is RE: simulate M on \u03B5 and say yes if it accepts.'},
+    {q:'"Is L(M) finite?"',answer:'Neither',explain:'Non-trivial property of L(M) \u2192 undecidable by Rice\'s. Not RE either.'},
+    {q:'"Does M halt on input 0?"',answer:'RE',explain:'We can simulate M on 0. If it halts, we know. But we can\'t detect infinite loops \u2192 RE but not decidable.'}
+  ];
+  const options = ['Decidable','RE','Neither'];
+  let idx=0, score=0, answered=false;
+
+  function show(){
+    if(idx>=problems.length){
+      document.getElementById('sCA_q').textContent='Challenge Complete!';
+      document.getElementById('sCA_opts').innerHTML='';
+      document.getElementById('sCA_fb').innerHTML='<p style="color:#10b981;font-weight:600;">Score: '+score+'/'+problems.length+'</p>';
+      document.getElementById('sCA_nextBtn').disabled=true;
+      return;
+    }
+    const p=problems[idx];
+    document.getElementById('sCA_q').textContent='Q'+(idx+1)+'/'+problems.length+': '+p.q;
+    let h='';
+    options.forEach((o,i)=>{h+='<button class="quiz-option" onclick="sCA_answer('+i+')">'+o+'</button>';});
+    document.getElementById('sCA_opts').innerHTML=h;
+    document.getElementById('sCA_fb').innerHTML='';
+    document.getElementById('sCA_nextBtn').disabled=true;
+    document.getElementById('sCA_score').textContent='Score: '+score+'/'+problems.length;
+    answered=false;
+  }
+
+  window.sCA_answer = function(i){
+    if(answered)return;
+    answered=true;
+    const p=problems[idx];
+    const correct = options[i]===p.answer;
+    if(correct)score++;
+    const btns=document.querySelectorAll('#sCA_opts .quiz-option');
+    btns.forEach((b,j)=>{
+      if(options[j]===p.answer) b.classList.add('correct');
+      else if(j===i) b.classList.add('wrong');
+      b.disabled=true;
+    });
+    document.getElementById('sCA_fb').innerHTML='<div class="'+(correct?'key-idea':'warning')+'" style="padding:10px 14px;"><p style="font-size:0.95em;">'+p.explain+'</p></div>';
+    document.getElementById('sCA_nextBtn').disabled=false;
+    document.getElementById('sCA_score').textContent='Score: '+score+'/'+problems.length;
+  };
+  window.sCA_next = function(){ idx++; show(); };
+  window.sCA_init = function(){ idx=0; score=0; answered=false; show(); };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('sCA').classList.contains('active'))show();})).observe(document.getElementById('sCA'),{attributes:true});
+  show();
+})();
+</script>
+
+<!-- ==================== SLIDE 12: RICE'S THEOREM ==================== -->
+<div class="slide" id="s12">
+  <h1>Rice's Theorem</h1>
+  <p class="subtitle">The nuclear weapon of undecidability results.</p>
+
+  <div class="key-idea">
+    <h3>Rice's Theorem (1953)</h3>
+    <p>Every <strong>non-trivial</strong> property of the <strong>language recognized by a Turing machine</strong> is <strong>undecidable</strong>.</p>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>What does "non-trivial" mean?</h3>
+      <ul>
+        <li>At least one TM has a language satisfying P</li>
+        <li>At least one TM has a language NOT satisfying P</li>
+      </ul>
+      <p>Not always-true or always-false.</p>
+
+      <h3 class="mt">What does "property of L(M)" mean?</h3>
+      <p>Depends only on <strong>what</strong> M computes, not <strong>how</strong> it computes.</p>
+    </div>
+    <div>
+      <div class="panel">
+        <h3 style="color:#a5b4fc;font-size:1em;">Rice's Theorem Quick Checker</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;" id="s12_props">
+          <div class="rice-prop" onclick="s12_check(0)">Is L(M) empty?</div>
+          <div class="rice-prop" onclick="s12_check(1)">Is L(M) finite?</div>
+          <div class="rice-prop" onclick="s12_check(2)">Does M have 5 states?</div>
+          <div class="rice-prop" onclick="s12_check(3)">Is L(M) = {0<sup>n</sup>1<sup>n</sup>}?</div>
+          <div class="rice-prop" onclick="s12_check(4)">Does M ever move left?</div>
+          <div class="rice-prop" onclick="s12_check(5)">Is L(M) context-free?</div>
+        </div>
+        <div id="s12_result" style="min-height:80px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <h3>Analogy</h3>
+    <p>"You can never determine ANY interesting fact about what a program outputs, just by looking at the program." You can ask about the code's <em>structure</em> (how many lines? what variables?), but not its <em>behavior</em>.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const data = [
+    {name:'Is L(M) empty?',propLM:true,nontrivial:true},
+    {name:'Is L(M) finite?',propLM:true,nontrivial:true},
+    {name:'Does M have exactly 5 states?',propLM:false},
+    {name:'Is L(M) = {0\u207F1\u207F}?',propLM:true,nontrivial:true},
+    {name:'Does M ever move left?',propLM:false},
+    {name:'Is L(M) context-free?',propLM:true,nontrivial:true}
+  ];
+  let timers = [];
+
+  window.s12_check = function(idx){
+    timers.forEach(clearTimeout); timers=[];
+    const d=data[idx], el=document.getElementById('s12_result');
+    el.innerHTML='';
+    const lines=[];
+    if(d.propLM){
+      lines.push('<div style="margin:4px 0;"><span style="color:#10b981;">\u2713</span> Property of L(M)? <strong style="color:#10b981;">Yes</strong></div>');
+      lines.push('<div style="margin:4px 0;"><span style="color:#10b981;">\u2713</span> Non-trivial? <strong style="color:#10b981;">Yes</strong></div>');
+      lines.push('<div style="margin-top:8px;"><span class="badge badge-red">UNDECIDABLE by Rice\'s Theorem</span></div>');
+    } else {
+      lines.push('<div style="margin:4px 0;"><span style="color:#ef4444;">\u2717</span> Property of L(M)? <strong style="color:#ef4444;">No \u2014 property of M itself</strong></div>');
+      lines.push('<div style="margin:4px 0;color:#64748b;">\u2014 Rice\'s doesn\'t apply</div>');
+      lines.push('<div style="margin-top:8px;"><span class="badge badge-green">DECIDABLE \u2014 Rice\'s doesn\'t apply</span></div>');
+    }
+    lines.forEach((l,i)=>{timers.push(setTimeout(()=>{el.innerHTML+=l;},i*500));});
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 13: DECIDABLE vs RE vs co-RE ==================== -->
+<div class="slide" id="s13">
+  <h1>Decidable vs RE vs co-RE</h1>
+  <p class="subtitle">Not all unsolvable problems are equally unsolvable.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="panel">
+        <canvas id="cS13" width="440" height="300" style="width:100%;display:block;"></canvas>
+        <div style="text-align:center;margin-top:8px;">
+          <span class="hier-btn" onclick="s13_place(0)">a<sup>n</sup>b<sup>n</sup></span>
+          <span class="hier-btn" onclick="s13_place(1)">All CFLs</span>
+          <span class="hier-btn" onclick="s13_place(2)">HALT</span>
+          <span class="hier-btn" onclick="s13_place(3)">Compl(HALT)</span>
+          <span class="hier-btn" onclick="s13_place(4)">L<sub>d</sub></span>
+          <span class="hier-btn" onclick="s13_place(5)">{ww}</span>
+          <span class="hier-btn" onclick="s13_place(6)">E<sub>TM</sub></span>
+          <span class="hier-btn" onclick="s13_place(7)">EQ<sub>TM</sub></span>
+        </div>
+        <div class="status" id="s13_status" style="text-align:center;">Click a language to place it in the hierarchy</div>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Insight</h3>
+        <p>A language is <strong>decidable</strong> iff it is both RE and co-RE. The decidable languages sit at the intersection.</p>
+      </div>
+
+      <table style="font-size:0.9em;margin-top:12px;">
+        <tr><th>Class</th><th>Description</th><th>Example</th></tr>
+        <tr><td>Decidable</td><td>TM always halts</td><td>a<sup>n</sup>b<sup>n</sup></td></tr>
+        <tr><td>RE (not dec.)</td><td>TM halts on "yes", may loop on "no"</td><td>HALT</td></tr>
+        <tr><td>co-RE (not dec.)</td><td>TM halts on "no", may loop on "yes"</td><td>Compl(HALT)</td></tr>
+        <tr><td>Neither</td><td>Not RE, not co-RE</td><td>L<sub>d</sub>, EQ<sub>TM</sub></td></tr>
+      </table>
+
+      <div class="warning mt">
+        <h3>Key Theorem</h3>
+        <p>L is decidable &hArr; L is RE AND co-RE. If HALT's complement were RE, then HALT would be decidable. But it's not.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS13'), ctx = c.getContext('2d');
+  const langs = [
+    {name:'a\u207Fb\u207F',x:170,y:160,col:'#10b981',desc:'Decidable: a CFL, decidable by a TM.'},
+    {name:'All CFLs',x:280,y:170,col:'#10b981',desc:'Decidable: every CFL is decidable.'},
+    {name:'HALT',x:190,y:210,col:'#3b82f6',desc:'RE but NOT decidable. We say "yes" if it halts, but may loop on "no".'},
+    {name:'Compl(HALT)',x:370,y:185,col:'#f59e0b',desc:'co-RE but NOT RE. If it were RE, HALT would be decidable.'},
+    {name:'L_d',x:380,y:268,col:'#94a3b8',desc:'Not RE and not co-RE \u2014 completely beyond TM power.'},
+    {name:'{ww}',x:310,y:150,col:'#10b981',desc:'Decidable: can be decided by a 2-tape TM.'},
+    {name:'E_TM',x:330,y:215,col:'#3b82f6',desc:'RE but not decidable.'},
+    {name:'EQ_TM',x:180,y:268,col:'#94a3b8',desc:'Not RE and not co-RE. Even harder than HALT.'}
+  ];
+  let dotX=-1,dotY=-1,dotCol='',dotName='';
+
+  function draw(){
+    ctx.clearRect(0,0,440,300);
+    // ALL LANGUAGES
+    ctx.fillStyle='rgba(71,85,105,0.15)'; ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(10,10,420,280,14); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='600 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('ALL LANGUAGES',220,30);
+    // co-RE
+    ctx.fillStyle='rgba(245,158,11,0.05)'; ctx.strokeStyle='#f59e0b'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(30,42,380,220,12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#f59e0b'; ctx.font='600 11px sans-serif'; ctx.textAlign='right';
+    ctx.fillText('co-RE',400,58);
+    // RE
+    ctx.fillStyle='rgba(59,130,246,0.05)'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(55,68,310,165,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#3b82f6'; ctx.textAlign='right';
+    ctx.fillText('RE',350,84);
+    // Decidable
+    ctx.fillStyle='rgba(16,185,129,0.08)'; ctx.strokeStyle='#10b981'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(90,100,220,100,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#10b981'; ctx.textAlign='center';
+    ctx.fillText('DECIDABLE',200,118);
+    // Dot
+    if(dotX>0){
+      ctx.fillStyle=dotCol; ctx.beginPath(); ctx.arc(dotX,dotY,6,0,Math.PI*2); ctx.fill();
+      ctx.font='600 10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(dotName,dotX,dotY-12);
+    }
+  }
+
+  window.s13_place = function(idx){
+    const l=langs[idx];
+    dotX=l.x; dotY=l.y; dotCol=l.col; dotName=l.name;
+    draw();
+    document.getElementById('s13_status').innerHTML='<span style="color:'+l.col+';font-weight:600;">'+l.name+'</span>: '+l.desc;
+    document.querySelectorAll('.hier-btn').forEach((b,i)=>b.classList.toggle('selected',i===idx));
+  };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('s13').classList.contains('active'))draw();})).observe(document.getElementById('s13'),{attributes:true});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE CB: CHALLENGE - FIX THE REDUCTION ==================== -->
+<div class="slide" id="sCB">
+  <h1>Challenge: Fix the Reduction</h1>
+  <p class="subtitle">The reduction below has a mistake. Can you find it?</p>
+
+  <div class="challenge-box">
+    <h3>Broken Proof: "HALT is decidable"</h3>
+    <div class="diagram small" style="margin:12px 0;">
+  "Proof" that HALT is decidable:
+  1. Given &lang;M, w&rang;, simulate M on w.
+  2. If M halts, output "yes".
+  3. If M doesn't halt, output "no".
+  Therefore HALT is decidable.
+    </div>
+
+    <h3>What's wrong? Select the error:</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;" id="sCB_opts">
+      <button class="quiz-option" onclick="sCB_answer(0)">Step 1 is wrong: you can't simulate TMs</button>
+      <button class="quiz-option" onclick="sCB_answer(1)">Step 2 is wrong: halting doesn't mean "yes"</button>
+      <button class="quiz-option" onclick="sCB_answer(2)">Step 3 is wrong: you can't detect non-halting by simulation</button>
+      <button class="quiz-option" onclick="sCB_answer(3)">The whole approach is valid, HALT is decidable</button>
+    </div>
+    <div id="sCB_fb" style="min-height:40px;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  let answered = false;
+  window.sCB_answer = function(i){
+    if(answered)return;
+    answered=true;
+    const btns=document.querySelectorAll('#sCB_opts .quiz-option');
+    btns.forEach((b,j)=>{
+      if(j===2) b.classList.add('correct');
+      else if(j===i) b.classList.add('wrong');
+      b.disabled=true;
+    });
+    const correct = i===2;
+    document.getElementById('sCB_fb').innerHTML='<div class="'+(correct?'key-idea':'warning')+'" style="padding:12px 16px;"><p style="font-size:0.95em;">'+(correct?'Correct! ':'Incorrect. ')+'The problem is step 3. If M loops forever on w, your simulation also loops forever \u2014 you never reach step 3. A <strong>decider</strong> must halt on ALL inputs, but this "decider" loops when M loops. That\'s why HALT is RE but not decidable.</p></div>';
+  };
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('sCB').classList.contains('active')){answered=false;document.querySelectorAll('#sCB_opts .quiz-option').forEach(b=>{b.classList.remove('correct','wrong');b.disabled=false;});document.getElementById('sCB_fb').innerHTML='';}})).observe(document.getElementById('sCB'),{attributes:true});
+})();
+</script>
+
+<!-- ==================== SLIDE 14: CHOMSKY HIERARCHY COMPLETE ==================== -->
+<div class="slide" id="s14">
+  <h1>The Chomsky Hierarchy Complete</h1>
+  <p class="subtitle">The full picture of computational power.</p>
+
+  <div class="two-col">
+    <div>
+      <div class="panel">
+        <canvas id="cS14" width="440" height="360" style="width:100%;display:block;"></canvas>
+      </div>
+    </div>
+    <div>
+      <table style="font-size:0.9em;">
+        <tr><th>Type</th><th>Language</th><th>Recognizer</th><th>Closure</th></tr>
+        <tr><td>3</td><td style="text-align:left;">Regular</td><td style="text-align:left;">DFA/NFA</td><td style="text-align:left;">&cup; &cap; * comp</td></tr>
+        <tr><td>2</td><td style="text-align:left;">Context-Free</td><td style="text-align:left;">PDA</td><td style="text-align:left;">&cup; * (not &cap;)</td></tr>
+        <tr><td>1</td><td style="text-align:left;">Context-Sensitive</td><td style="text-align:left;">LBA</td><td style="text-align:left;">&cup; &cap; comp</td></tr>
+        <tr><td>0</td><td style="text-align:left;">RE</td><td style="text-align:left;">TM</td><td style="text-align:left;">&cup; &cap; (not comp)</td></tr>
+        <tr><td>&mdash;</td><td style="text-align:left;">Not RE</td><td style="text-align:left;">None</td><td style="text-align:left;">&mdash;</td></tr>
+      </table>
+
+      <div class="key-idea mt">
+        <h3>Key Insight</h3>
+        <p>Each level strictly contains the one below it. The jump from decidable to undecidable is not about "not enough power" &mdash; it's a <strong>provable impossibility</strong> that no amount of computation can overcome.</p>
+      </div>
+
+      <div class="warning mt">
+        <h3>What Undecidability Means</h3>
+        <p>It's not that we haven't found the right algorithm yet. It's that <strong>no algorithm can possibly exist</strong>. This is proven mathematically, not just observed empirically.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const c = document.getElementById('cS14'), ctx = c.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,440,360);
+    // Venn diagram: nested ellipses
+    const cx=220, cy=190;
+    const layers = [
+      {rx:200,ry:165,col:'rgba(71,85,105,0.12)',stroke:'#475569',label:'Not RE',lx:cx,ly:25},
+      {rx:170,ry:140,col:'rgba(245,158,11,0.06)',stroke:'#f59e0b',label:'RE (Type 0)',lx:cx+80,ly:55},
+      {rx:140,ry:110,col:'rgba(59,130,246,0.06)',stroke:'#3b82f6',label:'Decidable',lx:cx+60,ly:90},
+      {rx:105,ry:80,col:'rgba(139,92,246,0.08)',stroke:'#8b5cf6',label:'Context-Sensitive (Type 1)',lx:cx,ly:120},
+      {rx:70,ry:50,col:'rgba(16,185,129,0.1)',stroke:'#10b981',label:'Context-Free (Type 2)',lx:cx,ly:155},
+      {rx:40,ry:25,col:'rgba(244,63,94,0.1)',stroke:'#f43f5e',label:'Regular (Type 3)',lx:cx,ly:195}
+    ];
+    layers.forEach(l=>{
+      ctx.fillStyle=l.col; ctx.strokeStyle=l.stroke; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.ellipse(cx,cy,l.rx,l.ry,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=l.stroke; ctx.font='600 10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(l.label,l.lx,l.ly);
+    });
+    // Example languages
+    ctx.font='10px sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle='#f43f5e'; ctx.fillText('a*b*',cx,cy+5);
+    ctx.fillStyle='#10b981'; ctx.fillText('a\u207Fb\u207F',cx-40,cy-30);
+    ctx.fillStyle='#3b82f6'; ctx.fillText('{ww}',cx+50,cy-60);
+    ctx.fillStyle='#f59e0b'; ctx.fillText('HALT',cx-80,cy-85);
+    ctx.fillStyle='#475569'; ctx.fillText('L_d',cx+100,cy+130);
+  }
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('s14').classList.contains('active'))draw();})).observe(document.getElementById('s14'),{attributes:true});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 15: PRACTICAL IMPLICATIONS ==================== -->
+<div class="slide" id="s15">
+  <h1>Practical Implications of Undecidability</h1>
+  <p class="subtitle">What we can NEVER build, no matter how smart we get.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Impossible Programs</h3>
+      <ul>
+        <li><strong>Perfect Debugger:</strong> No tool can detect all infinite loops</li>
+        <li><strong>Perfect Virus Scanner:</strong> Cannot determine if arbitrary code is malicious</li>
+        <li><strong>Perfect Optimizer:</strong> Cannot determine if two programs compute the same function</li>
+        <li><strong>Perfect Verifier:</strong> Cannot determine if a program meets an arbitrary spec</li>
+        <li><strong>Perfect Type Checker:</strong> Cannot catch all type errors in a sufficiently expressive language</li>
+      </ul>
+    </div>
+    <div>
+      <div class="diagram small">
+  Real-world impact:
+
+  Compiler: "Will this loop terminate?"
+  Answer:   "Undecidable."
+
+  Antivirus: "Is this program malicious?"
+  Answer:    "Undecidable in general."
+
+  Verifier: "Does this code match spec?"
+  Answer:   "Undecidable in general."
+      </div>
+      <div class="warning">
+        <h3>But We Still Write Debuggers!</h3>
+        <p>We can't solve these <em>in general</em>, but CAN solve them for <em>specific cases</em>. Real tools use heuristics, approximations, and restricted inputs. They work <em>most of the time</em> but can never be <em>perfect</em>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 16: TURING-COMPLETE SYSTEMS ==================== -->
+<div class="slide" id="s16">
+  <h1>Turing-Complete Systems</h1>
+  <p class="subtitle">Anything as powerful as a TM inherits all the same limitations.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Surprisingly Turing-Complete</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>System</th><th>Turing-Complete?</th></tr>
+        <tr><td style="text-align:left;">Python, Java, C++</td><td style="color:#10b981;">Yes</td></tr>
+        <tr><td style="text-align:left;">HTML + CSS</td><td style="color:#10b981;">Yes (with user interaction)</td></tr>
+        <tr><td style="text-align:left;">Conway's Game of Life</td><td style="color:#10b981;">Yes</td></tr>
+        <tr><td style="text-align:left;">Magic: The Gathering</td><td style="color:#10b981;">Yes</td></tr>
+        <tr><td style="text-align:left;">PowerPoint</td><td style="color:#10b981;">Yes (with animations)</td></tr>
+        <tr><td style="text-align:left;">Regular Expressions</td><td style="color:#ef4444;">No (just regular langs)</td></tr>
+        <tr><td style="text-align:left;">SQL (basic)</td><td style="color:#ef4444;">No (relational algebra)</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Church-Turing Thesis</h3>
+        <p>Any "reasonable" model of computation is equivalent in power to a Turing machine. No physical device can compute more than a TM.</p>
+      </div>
+      <div class="analogy mt">
+        <h3>Implication</h3>
+        <p>Every Turing-complete system has the same <strong>ceiling</strong>. No programming language, no matter how advanced, can solve the Halting Problem. Quantum computers can't either &mdash; they're faster, but not more powerful in terms of <em>what's computable</em>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 17: OPEN QUESTIONS ==================== -->
+<div class="slide" id="s17">
+  <h1>Open Questions &amp; Connections</h1>
+  <p class="subtitle">Where undecidability meets the rest of computer science.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Connections to Other Fields</h3>
+      <ul>
+        <li><strong>P vs NP:</strong> Even among decidable problems, some may be intractable. Undecidability is the "hardest" layer above this.</li>
+        <li><strong>Logic:</strong> G&ouml;del's Incompleteness Theorem (1931) is the logical analogue. Some true statements can't be proven.</li>
+        <li><strong>AI:</strong> Can AI "solve" undecidable problems? No &mdash; AI runs on Turing-complete hardware. But AI can use heuristics effectively.</li>
+      </ul>
+
+      <div class="key-idea mt">
+        <h3>The Hierarchy of Difficulty</h3>
+        <div class="diagram small" style="margin-top:8px;">
+  Easy     Hard     Impossible
+  |---------|---------|
+  O(n)    NP-hard   Undecidable
+  O(n log n)        Not even RE
+  Polynomial
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Open Questions</h3>
+      <ul>
+        <li>Is there a natural problem that is RE but not decidable, other than HALT variants?</li>
+        <li>How fine-grained is the undecidability hierarchy? (Turing degrees)</li>
+        <li>Are there "levels of unsolvability" beyond RE?</li>
+      </ul>
+
+      <div class="warning mt">
+        <h3>What About Hypercomputation?</h3>
+        <p>Some theorists propose machines more powerful than TMs (oracle machines, infinite time TMs). These are mathematical abstractions &mdash; no physical device is known to exceed TM power.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE CC: CHALLENGE - CLASSIFY ==================== -->
+<div class="slide" id="sCC">
+  <h1>Challenge: Classify the Language</h1>
+  <p class="subtitle">Use Rice's Theorem or reduction arguments to classify each language.</p>
+
+  <div class="challenge-box">
+    <h3>Quick Classification</h3>
+    <div id="sCC_area">
+      <div id="sCC_q" style="font-size:1.15em;color:#e2e8f0;margin:12px 0;font-weight:600;"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;" id="sCC_opts"></div>
+      <div id="sCC_fb" style="margin-top:12px;min-height:40px;"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="ctrl-btn" onclick="sCC_next()" id="sCC_nextBtn" disabled>Next &rarr;</button>
+        <button class="ctrl-btn" onclick="sCC_init()">Restart</button>
+        <span id="sCC_score" style="color:#64748b;font-size:13px;padding:6px;"></span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const problems = [
+    {q:'{ \u27E8M\u27E9 | M accepts at least one string }',answer:'RE',explain:'RE: enumerate all strings, simulate M on each (dovetailing). If M accepts any, we find it. But we can\'t detect "never accepts" \u2192 not decidable.'},
+    {q:'{ \u27E8M\u27E9 | L(M) is regular }',answer:'Undecidable',explain:'Non-trivial property of L(M) \u2192 undecidable by Rice\'s Theorem. In fact, not even RE.'},
+    {q:'{ \u27E8M\u27E9 | M has an even number of states }',answer:'Decidable',explain:'Property of the machine structure, not L(M). Just count states in the encoding.'},
+    {q:'{ \u27E8M\u2081, M\u2082\u27E9 | L(M\u2081) = L(M\u2082) }',answer:'Undecidable',explain:'EQ_TM is not RE and not co-RE. Strictly harder than HALT.'},
+    {q:'{ \u27E8M\u27E9 | M halts on every input }',answer:'Undecidable',explain:'ALL_TM: non-trivial property of L(M). In fact, this is co-RE but not RE.'}
+  ];
+  const options = ['Decidable','RE','Undecidable'];
+  let idx=0,score=0,answered=false;
+
+  function show(){
+    if(idx>=problems.length){
+      document.getElementById('sCC_q').textContent='Challenge Complete!';
+      document.getElementById('sCC_opts').innerHTML='';
+      document.getElementById('sCC_fb').innerHTML='<p style="color:#10b981;font-weight:600;">Score: '+score+'/'+problems.length+'</p>';
+      document.getElementById('sCC_nextBtn').disabled=true;
+      return;
+    }
+    document.getElementById('sCC_q').textContent='Q'+(idx+1)+'/'+problems.length+': '+problems[idx].q;
+    let h='';
+    options.forEach((o,i)=>{h+='<button class="quiz-option" onclick="sCC_answer('+i+')">'+o+'</button>';});
+    document.getElementById('sCC_opts').innerHTML=h;
+    document.getElementById('sCC_fb').innerHTML='';
+    document.getElementById('sCC_nextBtn').disabled=true;
+    document.getElementById('sCC_score').textContent='Score: '+score+'/'+problems.length;
+    answered=false;
+  }
+
+  window.sCC_answer = function(i){
+    if(answered)return; answered=true;
+    const p=problems[idx];
+    const correct = options[i]===p.answer;
+    if(correct)score++;
+    const btns=document.querySelectorAll('#sCC_opts .quiz-option');
+    btns.forEach((b,j)=>{
+      if(options[j]===p.answer)b.classList.add('correct');
+      else if(j===i)b.classList.add('wrong');
+      b.disabled=true;
+    });
+    document.getElementById('sCC_fb').innerHTML='<div class="'+(correct?'key-idea':'warning')+'" style="padding:10px 14px;"><p style="font-size:0.95em;">'+p.explain+'</p></div>';
+    document.getElementById('sCC_nextBtn').disabled=false;
+    document.getElementById('sCC_score').textContent='Score: '+score+'/'+problems.length;
+  };
+  window.sCC_next = function(){ idx++; show(); };
+  window.sCC_init = function(){ idx=0; score=0; answered=false; show(); };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('sCC').classList.contains('active'))show();})).observe(document.getElementById('sCC'),{attributes:true});
+  show();
+})();
+</script>
+
+<!-- ==================== SLIDE 18: SUMMARY & CHEAT SHEET ==================== -->
+<div class="slide" id="s18">
+  <h1>Summary &amp; Cheat Sheet</h1>
+  <p class="subtitle">Everything you need to know, on one slide.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>Big Results</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>Concept</th><th>Key Point</th></tr>
+        <tr><td style="text-align:left;">TM Encoding</td><td style="text-align:left;">Every TM is a finite binary string</td></tr>
+        <tr><td style="text-align:left;">UTM</td><td style="text-align:left;">One TM simulates all others (= interpreter)</td></tr>
+        <tr><td style="text-align:left;">Counting</td><td style="text-align:left;">Countable TMs vs uncountable languages</td></tr>
+        <tr><td style="text-align:left;">L<sub>d</sub></td><td style="text-align:left;">Diagonal language, not even RE</td></tr>
+        <tr><td style="text-align:left;">HALT</td><td style="text-align:left;">RE but not decidable</td></tr>
+        <tr><td style="text-align:left;">Reductions</td><td style="text-align:left;">Prove B undecidable via A &le; B</td></tr>
+        <tr><td style="text-align:left;">Rice's Thm</td><td style="text-align:left;">All non-trivial props of L(M) undecidable</td></tr>
+      </table>
+
+      <div class="key-idea mt">
+        <h3>The Halting Proof in 4 Lines</h3>
+        <p>1. Assume decider H for HALT exists<br>
+           2. Build D: run H(&lang;M,&lang;M&rang;&rang;); do opposite<br>
+           3. Run D(&lang;D&rang;): contradiction either way<br>
+           4. Therefore H cannot exist</p>
+      </div>
+    </div>
+    <div>
+      <div class="diagram small">
+  PROOF STRATEGY CHEAT SHEET:
+
+  To prove L is undecidable:
+  +---------------------------------+
+  | 1. "Assume L is decidable"      |
+  | 2. Show how to reduce HALT to L |
+  | 3. "But HALT is undecidable!"   |
+  | 4. "Contradiction. QED."        |
+  +---------------------------------+
+
+  Or just use Rice's Theorem:
+  +---------------------------------+
+  | 1. Is it a property of L(M)?    |
+  | 2. Is it non-trivial?           |
+  | 3. If both YES: UNDECIDABLE.    |
+  +---------------------------------+
+      </div>
+
+      <div class="warning">
+        <h3>Exam Tip</h3>
+        <p>When asked "is X decidable?", first check: is it a non-trivial property of L(M)? If yes, cite Rice's Theorem. Only do a full reduction if Rice's doesn't apply.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== QUIZ SLIDE Q1 ==================== -->
+<div class="slide" id="sQ1">
+  <h1>Quiz 1: UTM Fundamentals</h1>
+  <p class="subtitle">Test your understanding.</p>
+
+  <div class="challenge-box">
+    <div id="sQ1_q" style="font-size:1.15em;color:#e2e8f0;margin:10px 0;font-weight:600;"></div>
+    <div id="sQ1_opts" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+    <div id="sQ1_fb" style="margin-top:12px;min-height:40px;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const q = {
+    text:'The UTM takes two inputs: \u27E8M\u27E9 and w. What does it do?',
+    opts:['Determines if M halts','Simulates M running on w','Compiles M into binary','Counts M\'s states'],
+    correct:1,
+    explain:'The UTM is a universal interpreter \u2014 it reads M\'s code and executes it on input w, producing the same result M would.'
+  };
+  let answered=false;
+
+  function show(){
+    answered=false;
+    document.getElementById('sQ1_q').textContent=q.text;
+    let h='';
+    q.opts.forEach((o,i)=>{h+='<button class="quiz-option" onclick="sQ1_answer('+i+')">'+o+'</button>';});
+    document.getElementById('sQ1_opts').innerHTML=h;
+    document.getElementById('sQ1_fb').innerHTML='';
+  }
+
+  window.sQ1_answer=function(i){
+    if(answered)return; answered=true;
+    const btns=document.querySelectorAll('#sQ1_opts .quiz-option');
+    btns.forEach((b,j)=>{
+      if(j===q.correct)b.classList.add('correct');
+      else if(j===i)b.classList.add('wrong');
+      b.disabled=true;
+    });
+    document.getElementById('sQ1_fb').innerHTML='<div class="'+(i===q.correct?'key-idea':'warning')+'" style="padding:10px 14px;"><p>'+q.explain+'</p></div>';
+  };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('sQ1').classList.contains('active'))show();})).observe(document.getElementById('sQ1'),{attributes:true});
+  show();
+})();
+</script>
+
+<!-- ==================== QUIZ SLIDE Q2 ==================== -->
+<div class="slide" id="sQ2">
+  <h1>Quiz 2: Halting Problem</h1>
+  <p class="subtitle">The key proof technique.</p>
+
+  <div class="challenge-box">
+    <div id="sQ2_q" style="font-size:1.15em;color:#e2e8f0;margin:10px 0;font-weight:600;"></div>
+    <div id="sQ2_opts" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+    <div id="sQ2_fb" style="margin-top:12px;min-height:40px;"></div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const q = {
+    text:'In the halting proof, what does machine D do?',
+    opts:['It decides HALT directly','It simulates all TMs in parallel','It runs H(\u27E8M, \u27E8M\u27E9\u27E9) and does the opposite','It loops on every input'],
+    correct:2,
+    explain:'D runs H(\u27E8M, \u27E8M\u27E9\u27E9) to ask "does M halt on its own code?", then does the opposite: loops if H says halt, halts if H says loop. This creates the contradiction when D is fed \u27E8D\u27E9.'
+  };
+  let answered=false;
+
+  function show(){
+    answered=false;
+    document.getElementById('sQ2_q').textContent=q.text;
+    let h='';
+    q.opts.forEach((o,i)=>{h+='<button class="quiz-option" onclick="sQ2_answer('+i+')">'+o+'</button>';});
+    document.getElementById('sQ2_opts').innerHTML=h;
+    document.getElementById('sQ2_fb').innerHTML='';
+  }
+
+  window.sQ2_answer=function(i){
+    if(answered)return; answered=true;
+    const btns=document.querySelectorAll('#sQ2_opts .quiz-option');
+    btns.forEach((b,j)=>{
+      if(j===q.correct)b.classList.add('correct');
+      else if(j===i)b.classList.add('wrong');
+      b.disabled=true;
+    });
+    document.getElementById('sQ2_fb').innerHTML='<div class="'+(i===q.correct?'key-idea':'warning')+'" style="padding:10px 14px;"><p>'+q.explain+'</p></div>';
+  };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('sQ2').classList.contains('active'))show();})).observe(document.getElementById('sQ2'),{attributes:true});
+  show();
+})();
+</script>
+
+<!-- ==================== QUIZ SLIDE Q3 ==================== -->
+<div class="slide" id="sQ3">
+  <h1>Quiz 3: Rice's Theorem</h1>
+  <p class="subtitle">The nuclear option.</p>
+
+  <div class="challenge-box">
+    <div id="sQ3_q" style="font-size:1.15em;color:#e2e8f0;margin:10px 0;font-weight:600;"></div>
+    <div id="sQ3_opts" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+    <div id="sQ3_fb" style="margin-top:12px;min-height:40px;"></div>
+  </div>
+
+  <div class="key-idea" style="margin-top:20px;">
+    <h3>Congratulations!</h3>
+    <p>You've completed the UTM &amp; Undecidability enhanced slide deck. Key takeaways: (1) TMs can be encoded as strings, enabling the UTM. (2) Diagonalization proves most languages are unrecognizable. (3) The Halting Problem is undecidable via self-reference + negation. (4) Rice's Theorem generalizes undecidability to all non-trivial properties of L(M).</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const q = {
+    text:'By Rice\'s Theorem, is "Does L(M) contain the empty string?" decidable?',
+    opts:['Yes \u2014 just simulate M on \u03B5','No \u2014 it\'s a non-trivial property of L(M)'],
+    correct:1,
+    explain:'It IS a non-trivial property of L(M) (some TMs accept \u03B5, some don\'t), so Rice\'s Theorem says it\'s undecidable. You can\'t just "simulate M on \u03B5" because M might loop forever \u2014 that makes it RE, not decidable.'
+  };
+  let answered=false;
+
+  function show(){
+    answered=false;
+    document.getElementById('sQ3_q').textContent=q.text;
+    let h='';
+    q.opts.forEach((o,i)=>{h+='<button class="quiz-option" onclick="sQ3_answer('+i+')">'+o+'</button>';});
+    document.getElementById('sQ3_opts').innerHTML=h;
+    document.getElementById('sQ3_fb').innerHTML='';
+  }
+
+  window.sQ3_answer=function(i){
+    if(answered)return; answered=true;
+    const btns=document.querySelectorAll('#sQ3_opts .quiz-option');
+    btns.forEach((b,j)=>{
+      if(j===q.correct)b.classList.add('correct');
+      else if(j===i)b.classList.add('wrong');
+      b.disabled=true;
+    });
+    document.getElementById('sQ3_fb').innerHTML='<div class="'+(i===q.correct?'key-idea':'warning')+'" style="padding:10px 14px;"><p>'+q.explain+'</p></div>';
+  };
+
+  new MutationObserver(muts=>muts.forEach(m=>{if(m.attributeName==='class'&&document.getElementById('sQ3').classList.contains('active'))show();})).observe(document.getElementById('sQ3'),{attributes:true});
+  show();
+})();
+</script>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','s17','sCC','s18','sQ1','sQ2','sQ3'];
+let current = 0;
+function showSlide(n){
+  document.querySelectorAll('.slide').forEach(s=>s.classList.remove('active'));
+  const slide = document.getElementById(slideOrder[n]);
+  if(slide){slide.classList.add('active');slide.classList.add('fade-in');}
+  document.getElementById('prevBtn').disabled = (n===0);
+  document.getElementById('nextBtn').disabled = (n===slideOrder.length-1);
+  document.getElementById('progress').style.width = (((n+1)/slideOrder.length)*100)+'%';
+  // Update slide numbers
+  document.querySelectorAll('.slide-number').forEach((el,i)=>{ el.textContent = ''; });
+  const numEl = slide ? slide.querySelector('.slide-number') : null;
+  if(numEl) numEl.textContent = (n+1)+' / '+slideOrder.length;
+}
+function changeSlide(delta){
+  const next = current+delta;
+  if(next>=0 && next<slideOrder.length){ current=next; showSlide(current); }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '){e.preventDefault();changeSlide(1);}
+  else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();changeSlide(-1);}
+  else if(e.key==='s'||e.key==='S'){
+    const slide=document.getElementById(slideOrder[current]);
+    const steps=slide.querySelectorAll('.step:not(.revealed)');
+    if(steps.length>0)steps[0].classList.add('revealed');
+  }
+});
+showSlide(0);
+</script>
+
+</body>
+</html>

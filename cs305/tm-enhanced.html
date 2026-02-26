@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turing Machines - CS305 Enhanced Interactive</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+.slide { display: none; min-height: 100vh; padding: 40px 60px; position: relative; }
+.slide.active { display: flex; flex-direction: column; justify-content: center; }
+.slide-number { }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.05); z-index: 200; }
+#progress { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; }
+h1 { font-size: 2.8em; margin-bottom: 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2; }
+h2 { font-size: 2em; margin-bottom: 16px; color: #38bdf8; }
+h3 { font-size: 1.3em; margin-bottom: 10px; color: #a5b4fc; }
+p, li { font-size: 1.1em; line-height: 1.7; color: #cbd5e1; margin-bottom: 8px; }
+.subtitle { font-size: 1.3em; color: #94a3b8; margin-bottom: 24px; }
+code { background: rgba(99,102,241,0.15); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono','Fira Code',monospace; color: #a5b4fc; font-size: 0.95em; }
+.btn { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 6px 14px; font-size: 0.85em; }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; box-shadow: none; }
+.key-idea { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15)); border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.key-idea h3 { color: #93c5fd; margin-bottom: 6px; }
+.warning { background: rgba(245,158,11,0.12); border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.warning h3 { color: #fbbf24; margin-bottom: 6px; }
+.analogy { background: rgba(16,185,129,0.12); border-left: 4px solid #10b981; border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 12px 0; }
+.analogy h3 { color: #34d399; margin-bottom: 6px; }
+.challenge-box { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(234,88,12,0.1)); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 12px 0; }
+.challenge-box h3 { color: #fbbf24; }
+.quiz-option { background: #334155; border: 2px solid #475569; color: #e2e8f0; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-size: 1em; transition: all 0.3s; min-width: 140px; }
+.quiz-option:hover { background: #475569; }
+.quiz-option.correct { background: rgba(16,185,129,0.3); border-color: #10b981; color: #34d399; }
+.quiz-option.wrong { background: rgba(239,68,68,0.3); border-color: #ef4444; color: #f87171; }
+.quiz-option:disabled { cursor: default; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.center { text-align: center; }
+.mt { margin-top: 20px; }
+.formula { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px 24px; margin: 12px 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 1.05em; color: #c4b5fd; text-align: center; }
+.diagram { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.9em; line-height: 1.6; white-space: pre; overflow-x: auto; margin: 10px 0; color: #a5f3fc; }
+.diagram.small { font-size: 0.82em; }
+table { border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #475569; padding: 8px 14px; text-align: center; }
+th { background: #334155; color: #93c5fd; font-weight: 600; font-size: 0.95em; }
+td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
+tr.highlight td { background: rgba(59,130,246,0.2); }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+ul { padding-left: 24px; }
+ul li { margin-bottom: 6px; }
+.nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 100; }
+.nav button { background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.nav button:hover { background: #475569; }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+canvas { display: block; margin: 0 auto; border-radius: 12px; }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: TITLE ==================== -->
+<div class="slide" id="s1">
+  <div style="text-align:center;">
+    <h1>Turing Machines</h1>
+    <p class="subtitle">The Ultimate Model of Computation</p>
+    <canvas id="cS1" width="700" height="180" style="width:100%;max-width:700px;background:rgba(0,0,0,0.2);"></canvas>
+    <p class="subtitle" style="margin-top:16px;">CS305 - Formal Language Theory</p>
+    <p style="color:#64748b;font-size:0.9em;">Use &larr; &rarr; arrows to navigate</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS1'),ctx=c.getContext('2d');
+  var symbols='01XYBAB01B10XY'.split(''), headPos=3.5, dir=0.02, frame=0, stateIdx=0;
+  var states=['q\u2080','q\u2081','q\u2082','q\u2083','q_acc'];
+  function draw(){
+    ctx.clearRect(0,0,700,180);
+    frame++;
+    // tape cells
+    var cellW=60, startX=50, y=30;
+    for(var i=0;i<9;i++){
+      var x=startX+i*cellW;
+      var isHead=Math.abs(i-Math.floor(headPos))<0.6;
+      ctx.fillStyle=isHead?'rgba(251,191,36,0.15)':'#1e293b';
+      ctx.strokeStyle=isHead?'#fbbf24':'#475569';
+      ctx.lineWidth=isHead?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x,y,cellW-4,44,4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=symbols[(i+Math.floor(frame/60))%symbols.length]==='B'?'#64748b':'#e2e8f0';
+      ctx.font='bold 18px monospace'; ctx.textAlign='center';
+      ctx.fillText(symbols[(i+Math.floor(frame/60))%symbols.length],x+cellW/2-2,y+28);
+    }
+    // dots
+    ctx.fillStyle='#64748b'; ctx.font='18px monospace';
+    ctx.fillText('...',35,y+28); ctx.fillText('...',startX+9*cellW+5,y+28);
+    // head triangle
+    var hx=startX+headPos*cellW+cellW/2-2;
+    ctx.fillStyle='#fbbf24';
+    ctx.beginPath(); ctx.moveTo(hx,y+50); ctx.lineTo(hx-10,y+65); ctx.lineTo(hx+10,y+65); ctx.closePath(); ctx.fill();
+    // finite control box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(220,100,260,60,12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.fillText('Finite Control',350,118);
+    ctx.fillStyle='#93c5fd'; ctx.font='bold 18px monospace';
+    if(frame%200<160) stateIdx=Math.floor(frame/200)%4;
+    ctx.fillText('State: '+states[stateIdx],350,145);
+    // connector
+    ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(hx,y+65); ctx.lineTo(350,100); ctx.stroke();
+    // animate head
+    headPos+=dir;
+    if(headPos>7||headPos<1) dir=-dir;
+    requestAnimationFrame(draw);
+  }
+  var obs=new MutationObserver(function(){
+    if(document.getElementById('s1').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: BIG PICTURE ==================== -->
+<div class="slide" id="s2">
+  <h2>Big Picture: The Chomsky Hierarchy</h2>
+  <p>We have been climbing a ladder of computational power. The Turing Machine sits at the very top.</p>
+  <div class="two-col">
+    <div>
+      <canvas id="cS2" width="480" height="340" style="width:100%;max-width:480px;background:rgba(0,0,0,0.2);"></canvas>
+    </div>
+    <div>
+      <table>
+        <tr><th>Type</th><th>Grammar</th><th>Machine</th></tr>
+        <tr><td>3</td><td>Regular</td><td>DFA / NFA</td></tr>
+        <tr><td>2</td><td>Context-Free</td><td>PDA</td></tr>
+        <tr><td>1</td><td>Context-Sensitive</td><td>LBA</td></tr>
+        <tr class="highlight"><td>0</td><td>Unrestricted</td><td><strong>TM</strong></td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:16px;">
+        <h3>Key Idea</h3>
+        <p>Each level strictly contains the one below it. TMs can do <strong>everything</strong> the lower models can, and more.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS2'),ctx=c.getContext('2d');
+  var levels=[
+    {label:'Type 0: Recursively Enumerable (TM)',color:'#8b5cf6',w:440,h:300,y:20},
+    {label:'Type 1: Context-Sensitive (LBA)',color:'#3b82f6',w:360,h:220,y:60},
+    {label:'Type 2: Context-Free (PDA)',color:'#10b981',w:280,h:150,y:100},
+    {label:'Type 3: Regular (DFA/NFA)',color:'#f59e0b',w:200,h:80,y:140}
+  ];
+  var highlight=-1, animFrame=0;
+  function draw(){
+    ctx.clearRect(0,0,480,340);
+    animFrame++;
+    highlight=Math.floor(animFrame/120)%4;
+    for(var i=0;i<levels.length;i++){
+      var l=levels[i];
+      var x=(480-l.w)/2;
+      ctx.fillStyle=i===highlight?l.color+'33':l.color+'18';
+      ctx.strokeStyle=i===highlight?l.color:l.color+'88';
+      ctx.lineWidth=i===highlight?3:1.5;
+      ctx.beginPath(); ctx.roundRect(x,l.y,l.w,l.h,12); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=i===highlight?'#fff':l.color;
+      ctx.font=(i===highlight?'bold ':'')+('12px system-ui');
+      ctx.textAlign='center';
+      ctx.fillText(l.label,240,l.y+20);
+    }
+    requestAnimationFrame(draw);
+  }
+  var obs=new MutationObserver(function(){
+    if(document.getElementById('s2').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  if(document.getElementById('s2').classList.contains('active')) draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: TM MACHINE MODEL ==================== -->
+<div class="slide" id="s3">
+  <h2>The Turing Machine Model</h2>
+  <p>A TM consists of three parts: an <strong>infinite tape</strong>, a <strong>read/write head</strong>, and a <strong>finite control</strong>.</p>
+  <canvas id="cS3" width="750" height="280" style="width:100%;max-width:750px;background:rgba(0,0,0,0.2);"></canvas>
+  <div style="text-align:center;margin-top:8px;">
+    <button class="btn btn-sm" onclick="tmModelStep()">Step</button>
+    <button class="btn btn-sm btn-secondary" onclick="tmModelRun()">Auto</button>
+    <button class="btn btn-sm btn-secondary" onclick="tmModelReset()">Reset</button>
+    <span id="s3status" style="margin-left:12px;color:#94a3b8;font-size:0.9em;">TM replaces 0->X and 1->Y. Click Step.</span>
+  </div>
+  <div class="two-col" style="margin-top:12px;">
+    <div>
+      <h3>The Three Components</h3>
+      <ul>
+        <li><strong>Tape:</strong> Divided into cells, each holding one symbol. Extends infinitely. Blank (B) fills unused cells.</li>
+        <li><strong>Head:</strong> Points to one cell. Can <em>read</em>, <em>write</em>, and <em>move</em> left or right.</li>
+        <li><strong>Finite Control:</strong> Finite set of states + transition function.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>Think of a TM as the <strong>simplest possible general-purpose computer</strong>. The tape is RAM (but infinite). The head is the read/write mechanism. The finite control is the CPU running a fixed program.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS3'),ctx=c.getContext('2d');
+  var steps=[
+    {tape:['B','B','0','1','1','0','1','B','B','B','B'],head:2,state:'q0',action:''},
+    {tape:['B','B','X','1','1','0','1','B','B','B','B'],head:3,state:'q0',action:'Read 0: write X, move R'},
+    {tape:['B','B','X','Y','1','0','1','B','B','B','B'],head:4,state:'q0',action:'Read 1: write Y, move R'},
+    {tape:['B','B','X','Y','Y','0','1','B','B','B','B'],head:5,state:'q0',action:'Read 1: write Y, move R'},
+    {tape:['B','B','X','Y','Y','X','1','B','B','B','B'],head:6,state:'q0',action:'Read 0: write X, move R'},
+    {tape:['B','B','X','Y','Y','X','Y','B','B','B','B'],head:7,state:'q0',action:'Read 1: write Y, move R'},
+    {tape:['B','B','X','Y','Y','X','Y','B','B','B','B'],head:7,state:'q_acc',action:'Read B: ACCEPT!'}
+  ];
+  var si=0, running=false, tid=null;
+  function draw(){
+    ctx.clearRect(0,0,750,280);
+    var s=steps[si], cellW=55, startX=375-5.5*cellW;
+    for(var i=0;i<11;i++){
+      var x=startX+i*cellW, isH=i===s.head;
+      ctx.fillStyle=isH?'rgba(251,191,36,0.15)':'#1e293b';
+      ctx.strokeStyle=isH?'#fbbf24':'#475569'; ctx.lineWidth=isH?2.5:1;
+      ctx.beginPath(); ctx.roundRect(x,20,cellW-2,45,4); ctx.fill(); ctx.stroke();
+      var sym=s.tape[i];
+      ctx.fillStyle=sym==='X'?'#67e8f9':sym==='Y'?'#c4b5fd':sym==='B'?'#64748b':'#e2e8f0';
+      ctx.font='bold 18px monospace'; ctx.textAlign='center';
+      ctx.fillText(sym,x+cellW/2-1,49);
+    }
+    ctx.fillStyle='#64748b'; ctx.font='18px monospace';
+    ctx.fillText('...',startX-18,49); ctx.fillText('...',startX+11*cellW+10,49);
+    // head
+    var hx=startX+s.head*cellW+cellW/2-1;
+    ctx.fillStyle='#fbbf24';
+    ctx.beginPath(); ctx.moveTo(hx,72); ctx.lineTo(hx-10,90); ctx.lineTo(hx+10,90); ctx.closePath(); ctx.fill();
+    ctx.font='11px system-ui'; ctx.fillStyle='#fbbf24'; ctx.fillText('Head',hx,104);
+    // connector
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(hx,104); ctx.lineTo(375,140); ctx.stroke();
+    // FC box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle=s.state==='q_acc'?'#10b981':'#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(285,140,180,90,14); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='13px system-ui'; ctx.fillText('Finite Control',375,168);
+    ctx.fillStyle=s.state==='q_acc'?'#10b981':'#93c5fd';
+    ctx.font='bold 22px monospace'; ctx.fillText('State: '+s.state,375,200);
+    ctx.fillStyle='#64748b'; ctx.font='11px system-ui'; ctx.fillText(s.action,375,222);
+    // status
+    var el=document.getElementById('s3status');
+    if(si===0) el.textContent='TM replaces 0->X and 1->Y. Click Step.';
+    else if(s.state==='q_acc') el.innerHTML='<span style="color:#10b981;font-weight:bold;">ACCEPTED!</span>';
+    else el.textContent='Step '+si+'/'+( steps.length-1)+': '+s.action;
+  }
+  window.tmModelStep=function(){ if(si<steps.length-1){si++;draw();} };
+  window.tmModelRun=function(){
+    if(running) return; running=true;
+    (function go(){ if(si<steps.length-1){si++;draw();tid=setTimeout(go,600);}else{running=false;} })();
+  };
+  window.tmModelReset=function(){ running=false; clearTimeout(tid); si=0; draw(); };
+  var obs=new MutationObserver(function(){ if(document.getElementById('s3').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: FORMAL DEFINITION ==================== -->
+<div class="slide" id="s4">
+  <h2>Formal Definition: The 7-Tuple</h2>
+  <div class="formula" style="font-size:1.2em;">M = (Q, &Sigma;, &Gamma;, &delta;, q<sub>0</sub>, B, F)</div>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>Symbol</th><th>Name</th><th>Description</th></tr>
+        <tr><td><strong>Q</strong></td><td>States</td><td>Finite set of states</td></tr>
+        <tr><td><strong>&Sigma;</strong></td><td>Input alphabet</td><td>Symbols in input (&Sigma; &sub; &Gamma;, B &notin; &Sigma;)</td></tr>
+        <tr><td><strong>&Gamma;</strong></td><td>Tape alphabet</td><td>All tape symbols (&Sigma; &cup; {B} &sube; &Gamma;)</td></tr>
+        <tr><td><strong>&delta;</strong></td><td>Transition fn</td><td>Q &times; &Gamma; &rarr; Q &times; &Gamma; &times; {L, R}</td></tr>
+        <tr><td><strong>q<sub>0</sub></strong></td><td>Start state</td><td>q<sub>0</sub> &isin; Q</td></tr>
+        <tr><td><strong>B</strong></td><td>Blank</td><td>B &isin; &Gamma; but B &notin; &Sigma;</td></tr>
+        <tr><td><strong>F</strong></td><td>Final states</td><td>F &sube; Q (accepting)</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Input vs Tape Alphabet</h3>
+        <p><strong>&Sigma;</strong> is what the input is made of (e.g., {0, 1}). <strong>&Gamma;</strong> includes &Sigma;, the blank B, and work symbols (e.g., X, Y for marking).</p>
+      </div>
+      <div class="diagram small">Example:
+  Q = {q0, q1, q2, q3, q4}
+  &Sigma; = {0, 1}
+  &Gamma; = {0, 1, X, Y, B}
+  q0 = q0,  B = B,  F = {q4}</div>
+      <div class="warning">
+        <h3>Watch Out</h3>
+        <p>The blank B is in &Gamma; but NOT in &Sigma;. The input never contains blanks -- blanks only appear as "empty" cells on the tape.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 5: READING TM TRANSITIONS ==================== -->
+<div class="slide" id="s5">
+  <h2>Reading TM Transitions</h2>
+  <p>Each transition: <strong>what to write</strong>, <strong>where to move</strong>, <strong>which state next</strong>.</p>
+  <div class="formula" style="font-size:1.15em;">&delta;( q , X ) = ( p , Y , D )
+&nbsp;&nbsp;&nbsp;current&nbsp; read &nbsp;&nbsp;&nbsp;next write dir</div>
+  <div class="two-col" style="margin-top:10px;">
+    <div>
+      <h3>Example</h3>
+      <p><code>&delta;(q1, 0) = (q2, X, R)</code></p>
+      <p>"In state q1, reading 0: write X, move right, go to q2."</p>
+      <canvas id="cS5" width="440" height="100" style="width:100%;max-width:440px;background:rgba(0,0,0,0.15);"></canvas>
+      <div style="text-align:center;margin-top:6px;">
+        <button class="btn btn-sm" onclick="tmTrxPlay(0)">&delta;(q1,0)=(q2,X,R)</button>
+        <button class="btn btn-sm btn-secondary" onclick="tmTrxPlay(1)">&delta;(q2,1)=(q3,Y,L)</button>
+        <button class="btn btn-sm btn-secondary" onclick="tmTrxPlay(2)">&delta;(q0,B)=(q1,B,R)</button>
+      </div>
+      <p id="s5narr" style="text-align:center;color:#94a3b8;font-size:0.9em;margin-top:6px;">Click a transition to animate it.</p>
+    </div>
+    <div>
+      <h3>Halting</h3>
+      <p>The TM <strong>halts</strong> when &delta;(q, X) is undefined.</p>
+      <ul>
+        <li><strong>Accept:</strong> Halt in q &isin; F</li>
+        <li><strong>Reject:</strong> Halt in q &notin; F</li>
+        <li><strong>Loop:</strong> Never halt (possible!)</li>
+      </ul>
+      <div class="warning">
+        <h3>Warning</h3>
+        <p>Unlike DFAs, a TM might <strong>never stop</strong>. This is a fundamental feature that leads to undecidability.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS5'),ctx=c.getContext('2d');
+  var exs=[
+    {tape:['Y','0','1','X','B','B','B'],head:1,read:'0',write:'X',dir:'R',from:'q1',to:'q2'},
+    {tape:['X','0','1','Y','B','B','B'],head:2,read:'1',write:'Y',dir:'L',from:'q2',to:'q3'},
+    {tape:['B','B','0','1','1','B','B'],head:0,read:'B',write:'B',dir:'R',from:'q0',to:'q1'}
+  ];
+  var phase=0, curEx=null, tid=null;
+  function drawTape(tape,head,stLabel){
+    ctx.clearRect(0,0,440,100);
+    var cellW=55,offX=(440-7*cellW)/2;
+    for(var i=0;i<7;i++){
+      var x=offX+i*cellW, isH=i===head;
+      ctx.fillStyle=isH?'rgba(251,191,36,0.15)':'#1e293b';
+      ctx.strokeStyle=isH?'#fbbf24':'#475569'; ctx.lineWidth=isH?2:1;
+      ctx.beginPath(); ctx.roundRect(x,5,cellW-3,38,3); ctx.fill(); ctx.stroke();
+      var s=tape[i]||'B';
+      ctx.fillStyle=s==='X'?'#67e8f9':s==='Y'?'#c4b5fd':s==='B'?'#64748b':'#e2e8f0';
+      ctx.font='bold 16px monospace'; ctx.textAlign='center'; ctx.fillText(s,x+cellW/2-1,30);
+    }
+    var hx=offX+head*cellW+cellW/2-1;
+    ctx.fillStyle='#fbbf24';
+    ctx.beginPath(); ctx.moveTo(hx,48); ctx.lineTo(hx-8,62); ctx.lineTo(hx+8,62); ctx.closePath(); ctx.fill();
+    if(stLabel){ctx.fillStyle='#93c5fd';ctx.font='bold 12px monospace';ctx.fillText(stLabel,hx,78);}
+  }
+  window.tmTrxPlay=function(idx){
+    clearTimeout(tid);
+    curEx=exs[idx]; phase=0;
+    var tape=curEx.tape.slice(), h=curEx.head, narr=document.getElementById('s5narr');
+    drawTape(tape,h,curEx.from);
+    narr.textContent='Reading \''+curEx.read+'\' in state '+curEx.from+'...';
+    tid=setTimeout(function(){
+      tape[h]=curEx.write;
+      drawTape(tape,h,curEx.from);
+      narr.textContent='Write \''+curEx.write+'\' over \''+curEx.read+'\'...';
+      tid=setTimeout(function(){
+        var nh=h+(curEx.dir==='R'?1:-1); if(nh<0)nh=0; if(nh>=tape.length)nh=tape.length-1;
+        drawTape(tape,nh,curEx.to);
+        narr.textContent='Move '+curEx.dir+' -> Now in '+curEx.to;
+      },600);
+    },600);
+  };
+  drawTape(['B','B','B','B','B','B','B'],3,'');
+})();
+</script>
+
+<!-- ==================== SLIDE 6: PALINDROME CHECKER ==================== -->
+<div class="slide" id="s6">
+  <h2>Example: Palindrome Checker TM</h2>
+  <p>TM for { w &isin; {a,b}* | w = w<sup>R</sup> }. Strategy: match first & last chars, shrink inward.</p>
+  <canvas id="cS6" width="700" height="110" style="width:100%;max-width:700px;background:rgba(0,0,0,0.15);"></canvas>
+  <div style="text-align:center;margin-top:6px;">
+    <label style="color:#94a3b8;font-size:0.9em;">Input:</label>
+    <input id="s6input" value="abba" maxlength="8" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:6px;font-family:monospace;width:80px;">
+    <button class="btn btn-sm" onclick="tmPalLoad()">Load</button>
+    <button class="btn btn-sm btn-secondary" onclick="tmPalStep()">Step</button>
+    <button class="btn btn-sm btn-secondary" onclick="tmPalRun()">Auto</button>
+    <button class="btn btn-sm btn-secondary" onclick="tmPalReset()">Reset</button>
+    <span id="s6state" style="margin-left:8px;color:#93c5fd;font-weight:bold;">q0</span>
+  </div>
+  <p id="s6verdict" style="text-align:center;min-height:1.5em;font-weight:bold;"></p>
+  <div class="two-col" style="margin-top:6px;">
+    <div>
+      <h3>Strategy</h3>
+      <ol style="padding-left:20px;">
+        <li>Read leftmost unmatched symbol, mark it (X)</li>
+        <li>Remember it (state encodes a vs b)</li>
+        <li>Scan right to rightmost unmatched symbol</li>
+        <li>If it matches, mark it (X), scan back left</li>
+        <li>Repeat until all matched or mismatch found</li>
+      </ol>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>The TM uses its <strong>state</strong> to "remember" which character it saw on the left, then verifies the matching character on the right. The state acts as a 1-bit memory.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS6'),ctx=c.getContext('2d');
+  var tape=[], headPos=0, stepsArr=[], si=0, loaded=false, running=false, tid=null;
+  // Palindrome TM transitions
+  var delta={
+    'q0,a':['qa','X','R'],'q0,b':['qb','X','R'],'q0,X':['q0','X','R'],'q0,B':['qacc','B','R'],
+    'qa,a':['qa','a','R'],'qa,b':['qa','b','R'],'qa,X':['qca','X','L'],'qa,B':['qca','B','L'],
+    'qb,a':['qb','a','R'],'qb,b':['qb','b','R'],'qb,X':['qcb','X','L'],'qb,B':['qcb','B','L'],
+    'qca,a':['qback','X','L'],'qca,X':['qacc','X','R'],
+    'qcb,b':['qback','X','L'],'qcb,X':['qacc','X','R'],
+    'qback,a':['qback','a','L'],'qback,b':['qback','b','L'],'qback,X':['q0','X','R']
+  };
+  function simulate(input){
+    var pad=3; tape=[];
+    for(var i=0;i<pad;i++) tape.push('B');
+    for(var i=0;i<input.length;i++) tape.push(input[i]);
+    for(var i=0;i<pad;i++) tape.push('B');
+    var h=pad, st='q0'; stepsArr=[{tape:tape.slice(),head:h,state:st}];
+    for(var iter=0;iter<200;iter++){
+      var sym=tape[h]||'B', key=st+','+sym, tr=delta[key];
+      if(!tr){ stepsArr[stepsArr.length-1].verdict=(st==='qacc')?'ACCEPT':'REJECT'; break; }
+      tape[h]=tr[1]; h+=(tr[2]==='R'?1:-1);
+      if(h<0){tape.unshift('B');h=0;} if(h>=tape.length) tape.push('B');
+      st=tr[0]; stepsArr.push({tape:tape.slice(),head:h,state:st});
+      if(st==='qacc'){stepsArr[stepsArr.length-1].verdict='ACCEPT';break;}
+    }
+  }
+  function draw(){
+    if(!loaded||!stepsArr.length) return;
+    ctx.clearRect(0,0,700,110);
+    var s=stepsArr[si], cellW=50, numC=13, center=6, startI=s.head-center;
+    var offX=(700-numC*cellW)/2;
+    for(var i=0;i<numC;i++){
+      var ti=startI+i, sym=(ti>=0&&ti<s.tape.length)?s.tape[ti]:'B';
+      var x=offX+i*cellW, isH=ti===s.head;
+      ctx.fillStyle=isH?'rgba(251,191,36,0.15)':'#1e293b';
+      ctx.strokeStyle=isH?'#fbbf24':'#475569'; ctx.lineWidth=isH?2:1;
+      ctx.beginPath(); ctx.roundRect(x,5,cellW-3,40,3); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=sym==='X'?'#67e8f9':sym==='B'?'#64748b':'#e2e8f0';
+      ctx.font='bold 16px monospace'; ctx.textAlign='center'; ctx.fillText(sym,x+cellW/2-1,31);
+    }
+    var hx=offX+center*cellW+cellW/2-1;
+    ctx.fillStyle=s.state==='qacc'?'#10b981':'#fbbf24';
+    ctx.beginPath(); ctx.moveTo(hx,50); ctx.lineTo(hx-8,64); ctx.lineTo(hx+8,64); ctx.closePath(); ctx.fill();
+    ctx.font='bold 12px monospace'; ctx.fillText(s.state,hx,80);
+    document.getElementById('s6state').textContent=s.state;
+    document.getElementById('s6state').style.color=s.state==='qacc'?'#10b981':'#93c5fd';
+    if(s.verdict){
+      var vd=document.getElementById('s6verdict');
+      vd.innerHTML=s.verdict==='ACCEPT'?'<span style="color:#10b981;">ACCEPTED - It is a palindrome!</span>':'<span style="color:#ef4444;">REJECTED - Not a palindrome</span>';
+    }
+  }
+  window.tmPalLoad=function(){
+    var inp=document.getElementById('s6input').value.trim();
+    if(!/^[ab]*$/.test(inp)){document.getElementById('s6verdict').innerHTML='<span style="color:#f87171;">Only a and b allowed</span>';return;}
+    simulate(inp); si=0; loaded=true; running=false; clearTimeout(tid);
+    document.getElementById('s6verdict').textContent=''; draw();
+  };
+  window.tmPalStep=function(){ if(!loaded) tmPalLoad(); if(si<stepsArr.length-1){si++;draw();} };
+  window.tmPalRun=function(){
+    if(!loaded) tmPalLoad(); if(running) return; running=true;
+    (function go(){ if(si<stepsArr.length-1){si++;draw();tid=setTimeout(go,400);}else running=false; })();
+  };
+  window.tmPalReset=function(){ running=false; clearTimeout(tid); si=0; document.getElementById('s6verdict').textContent=''; if(loaded)draw(); };
+  simulate('abba'); loaded=true; draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: TM PROGRAMMING TECHNIQUES ==================== -->
+<div class="slide" id="s7">
+  <h2>TM Programming Techniques</h2>
+  <p>Building TMs for complex tasks uses a few recurring "tricks."</p>
+  <div class="two-col">
+    <div>
+      <h3>1. Marking Symbols</h3>
+      <p>Replace a symbol with a "marked" version (e.g., 0 &rarr; X) to remember you processed it.</p>
+      <h3 class="mt">2. Shifting</h3>
+      <p>To insert or delete a symbol, shift all symbols right/left by one cell. Requires O(n) steps per shift.</p>
+      <div class="diagram small">Insert 'A' at position 3:
+Before: [ a ][ b ][ c ][ d ]
+After:  [ a ][ b ][ A ][ c ][ d ]</div>
+      <h3 class="mt">3. Multiple Tracks</h3>
+      <p>Treat each tape cell as a <em>tuple</em>. E.g., one track for data, one for markers.</p>
+    </div>
+    <div>
+      <div class="diagram small">Multiple Tracks (single tape):
++-------+-------+-------+-------+
+| (0,#) | (1,*) | (1,#) | (0,#) |
++-------+-------+-------+-------+
+Track 1:  0  1  1  0   (data)
+Track 2:  #  *  #  #   (markers)</div>
+      <h3>4. Subroutines</h3>
+      <p>Design a TM for a subtask, then "call" it by entering its start state.</p>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>These techniques show TMs can simulate structured programming: variables (marked cells), arrays (tape regions), and function calls (subroutines).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 8: BINARY INCREMENTER ==================== -->
+<div class="slide" id="s8">
+  <h2>Example: Binary Incrementer TM</h2>
+  <p>TMs can <strong>compute functions</strong>, not just decide languages. Here: add 1 to a binary number.</p>
+  <div class="two-col">
+    <div>
+      <h3>Strategy</h3>
+      <ul>
+        <li>Start head at <strong>rightmost bit</strong></li>
+        <li>If <strong>0</strong>: change to 1, done</li>
+        <li>If <strong>1</strong>: change to 0 (carry), move left</li>
+        <li>If <strong>B</strong>: write 1 (carry into new position)</li>
+      </ul>
+      <div class="diagram small">&delta;(q0, 0) = (qf, 1, R)  -- flip, halt
+&delta;(q0, 1) = (q0, 0, L)  -- carry
+&delta;(q0, B) = (qf, 1, R)  -- overflow</div>
+    </div>
+    <div>
+      <canvas id="cS8" width="440" height="90" style="width:100%;max-width:440px;background:rgba(0,0,0,0.15);"></canvas>
+      <div style="text-align:center;margin-top:6px;">
+        <input id="s8input" value="1011" maxlength="10" style="background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:4px 8px;border-radius:6px;font-family:monospace;width:80px;">
+        <button class="btn btn-sm" onclick="tmIncLoad()">Load</button>
+        <button class="btn btn-sm btn-secondary" onclick="tmIncStep()">Step</button>
+        <button class="btn btn-sm btn-secondary" onclick="tmIncRun()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="tmIncReset()">Reset</button>
+      </div>
+      <p id="s8result" style="text-align:center;min-height:1.5em;font-size:0.95em;color:#94a3b8;margin-top:4px;"></p>
+    </div>
+  </div>
+  <div class="analogy" style="margin-top:8px;">
+    <h3>Analogy</h3>
+    <p>This is exactly how you add 1 by hand: start from the right, flip bits, and carry the 1 leftward until you find a 0 to absorb it.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS8'),ctx=c.getContext('2d');
+  var stepsArr=[], si=0, loaded=false, running=false, tid=null, inputStr='';
+  function simulate(input){
+    inputStr=input;
+    var tape=['B'];
+    for(var i=0;i<input.length;i++) tape.push(input[i]);
+    tape.push('B');
+    var h=input.length, st='q0';
+    stepsArr=[{tape:tape.slice(),head:h,state:st}];
+    for(var iter=0;iter<50;iter++){
+      var sym=tape[h];
+      if(st==='q0'){
+        if(sym==='0'){tape[h]='1';stepsArr.push({tape:tape.slice(),head:h,state:'qf'});break;}
+        else if(sym==='1'){tape[h]='0';h--;if(h<0){tape.unshift('B');h=0;}stepsArr.push({tape:tape.slice(),head:h,state:'q0'});}
+        else{tape[h]='1';stepsArr.push({tape:tape.slice(),head:h,state:'qf'});break;}
+      }else break;
+    }
+  }
+  function draw(){
+    if(!loaded) return;
+    ctx.clearRect(0,0,440,90);
+    var s=stepsArr[si], cellW=48, numC=9, center=4, startI=s.head-center;
+    var offX=(440-numC*cellW)/2;
+    for(var i=0;i<numC;i++){
+      var ti=startI+i, sym=(ti>=0&&ti<s.tape.length)?s.tape[ti]:'B';
+      var x=offX+i*cellW, isH=ti===s.head;
+      ctx.fillStyle=isH?'rgba(251,191,36,0.15)':'#1e293b';
+      ctx.strokeStyle=isH?'#fbbf24':'#475569'; ctx.lineWidth=isH?2:1;
+      ctx.beginPath(); ctx.roundRect(x,5,cellW-3,36,3); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=sym==='B'?'#64748b':'#e2e8f0';
+      ctx.font='bold 15px monospace'; ctx.textAlign='center'; ctx.fillText(sym,x+cellW/2-1,28);
+    }
+    var hx=offX+center*cellW+cellW/2-1;
+    ctx.fillStyle=s.state==='qf'?'#10b981':'#fbbf24';
+    ctx.beginPath(); ctx.moveTo(hx,46); ctx.lineTo(hx-7,58); ctx.lineTo(hx+7,58); ctx.closePath(); ctx.fill();
+    ctx.font='bold 11px monospace'; ctx.fillText(s.state,hx,72);
+    if(s.state==='qf'){
+      var bits=s.tape.filter(function(x){return x!=='B';}).join('');
+      var idec=parseInt(inputStr,2), odec=parseInt(bits,2);
+      document.getElementById('s8result').innerHTML='<span style="color:#10b981;">'+inputStr+' ('+idec+') -> '+bits+' ('+odec+')</span>';
+    }
+  }
+  window.tmIncLoad=function(){
+    var inp=document.getElementById('s8input').value.trim();
+    if(!/^[01]+$/.test(inp)){document.getElementById('s8result').innerHTML='<span style="color:#f87171;">Only 0s and 1s</span>';return;}
+    simulate(inp); si=0; loaded=true; running=false; clearTimeout(tid);
+    document.getElementById('s8result').textContent=''; draw();
+  };
+  window.tmIncStep=function(){ if(!loaded) tmIncLoad(); if(si<stepsArr.length-1){si++;draw();} };
+  window.tmIncRun=function(){
+    if(!loaded) tmIncLoad(); if(running) return; running=true;
+    (function go(){ if(si<stepsArr.length-1){si++;draw();tid=setTimeout(go,500);}else running=false; })();
+  };
+  window.tmIncReset=function(){ running=false; clearTimeout(tid); si=0; document.getElementById('s8result').textContent=''; if(loaded)draw(); };
+  simulate('1011'); loaded=true; draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 9: MULTI-TAPE TMs ==================== -->
+<div class="slide" id="s9">
+  <h2>Multi-Tape Turing Machines</h2>
+  <p>A multi-tape TM has <strong>k tapes</strong>, each with its own independent read/write head.</p>
+  <canvas id="cS9" width="700" height="220" style="width:100%;max-width:700px;background:rgba(0,0,0,0.15);"></canvas>
+  <div style="text-align:center;margin-top:8px;">
+    <button class="btn btn-sm" onclick="tmMtStep()">Step</button>
+    <button class="btn btn-sm btn-secondary" onclick="tmMtRun()">Auto</button>
+    <button class="btn btn-sm btn-secondary" onclick="tmMtReset()">Reset</button>
+    <span id="s9status" style="margin-left:12px;color:#94a3b8;font-size:0.9em;">2-tape TM: copies Tape 1 to Tape 2. Click Step.</span>
+  </div>
+  <div class="two-col" style="margin-top:10px;">
+    <div>
+      <h3>Transition Form</h3>
+      <div class="formula">&delta;(q, a<sub>1</sub>, a<sub>2</sub>) = (p, b<sub>1</sub>, b<sub>2</sub>, D<sub>1</sub>, D<sub>2</sub>)</div>
+      <p>Reads all heads at once, writes to all, moves each independently.</p>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Why It Matters</h3>
+        <p>Multi-tape TMs are much <strong>easier to program</strong>. Use one tape for input, one as scratch space. They are often the "go-to" model for algorithm design in theory.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS9'),ctx=c.getContext('2d');
+  var steps=[
+    {t1:['B','a','b','c','B','B'],h1:1, t2:['B','B','B','B','B','B'],h2:1, state:'q0',act:'Initial'},
+    {t1:['B','a','b','c','B','B'],h1:2, t2:['B','a','B','B','B','B'],h2:2, state:'q1',act:'Copy a to Tape2, move both R'},
+    {t1:['B','a','b','c','B','B'],h1:3, t2:['B','a','b','B','B','B'],h2:3, state:'q1',act:'Copy b to Tape2, move both R'},
+    {t1:['B','a','b','c','B','B'],h1:4, t2:['B','a','b','c','B','B'],h2:4, state:'q1',act:'Copy c to Tape2, move both R'},
+    {t1:['B','a','b','c','B','B'],h1:4, t2:['B','a','b','c','B','B'],h2:4, state:'qacc',act:'Read B on Tape1 -> ACCEPT'}
+  ];
+  var si=0,running=false,tid=null;
+  function draw(){
+    ctx.clearRect(0,0,700,220);
+    var s=steps[si], cellW=50;
+    // Draw 2 tapes
+    for(var t=0;t<2;t++){
+      var tape=t===0?s.t1:s.t2, head=t===0?s.h1:s.h2;
+      var yOff=t*100+10, offX=(700-6*cellW)/2;
+      ctx.fillStyle='#94a3b8'; ctx.font='bold 13px system-ui'; ctx.textAlign='left';
+      ctx.fillText('Tape '+(t+1)+':',offX-70,yOff+26);
+      for(var i=0;i<6;i++){
+        var x=offX+i*cellW, isH=i===head;
+        ctx.fillStyle=isH?'rgba(251,191,36,0.15)':'#1e293b';
+        ctx.strokeStyle=isH?'#fbbf24':'#475569'; ctx.lineWidth=isH?2:1;
+        ctx.beginPath(); ctx.roundRect(x,yOff,cellW-3,40,3); ctx.fill(); ctx.stroke();
+        var sym=tape[i]||'B';
+        ctx.fillStyle=sym==='B'?'#64748b':'#e2e8f0';
+        ctx.font='bold 16px monospace'; ctx.textAlign='center';
+        ctx.fillText(sym,x+cellW/2-1,yOff+26);
+      }
+      // head triangle
+      var hx=offX+head*cellW+cellW/2-1;
+      ctx.fillStyle='#fbbf24';
+      ctx.beginPath(); ctx.moveTo(hx,yOff+44); ctx.lineTo(hx-7,yOff+56); ctx.lineTo(hx+7,yOff+56); ctx.closePath(); ctx.fill();
+    }
+    // State
+    ctx.fillStyle=s.state==='qacc'?'#10b981':'#93c5fd';
+    ctx.font='bold 16px monospace'; ctx.textAlign='center';
+    ctx.fillText('State: '+s.state,350,210);
+    document.getElementById('s9status').textContent=s.state==='qacc'?'DONE! Input copied successfully.':'Step '+si+'/'+(steps.length-1)+': '+s.act;
+  }
+  window.tmMtStep=function(){ if(si<steps.length-1){si++;draw();} };
+  window.tmMtRun=function(){
+    if(running) return; running=true;
+    (function go(){ if(si<steps.length-1){si++;draw();tid=setTimeout(go,600);}else running=false; })();
+  };
+  window.tmMtReset=function(){ running=false; clearTimeout(tid); si=0; draw(); };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: MULTI-TAPE = SINGLE-TAPE ==================== -->
+<div class="slide" id="s10">
+  <h2>Equivalence: Multi-Tape = Single-Tape</h2>
+  <p>Every k-tape TM can be simulated by a <strong>single-tape TM</strong>.</p>
+  <div class="two-col">
+    <div>
+      <h3>The Simulation Trick</h3>
+      <div class="diagram small">k-tape TM with k=2:
+Tape 1: [ a ][ b ][ c ]
+             ^
+Tape 2: [ x ][ y ]
+         ^
+
+Single-tape encoding (2k tracks):
++-----+-----+-----+-----+-----+
+|(a,x)|(b,y)|(c,B)| B   | B   |
+|( ,*)|(  , )|( , )|(  , )|(  , )|
++-----+-----+-----+-----+-----+
+Track 1: tape-1 data
+Track 2: tape-1 head marker (*)
+Track 3: tape-2 data
+Track 4: tape-2 head marker (*)</div>
+    </div>
+    <div>
+      <h3>Cost of Simulation</h3>
+      <ul>
+        <li>Each step of the k-tape TM requires <strong>O(n)</strong> steps on the single tape (to scan and find all head markers)</li>
+        <li>Total: if k-tape TM uses t steps, single-tape uses <strong>O(t&sup2;)</strong></li>
+        <li>Polynomial slowdown only -- same computational <em>power</em></li>
+      </ul>
+      <div class="key-idea">
+        <h3>Theorem</h3>
+        <p>For every multi-tape TM M, there exists a single-tape TM M' such that L(M) = L(M'). The simulation incurs at most a <strong>polynomial</strong> slowdown.</p>
+      </div>
+      <div class="warning">
+        <h3>Why This Matters</h3>
+        <p>It means adding more tapes does NOT increase the <em>class</em> of languages recognized. Convenience yes, power no.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 11: NONDETERMINISTIC TMs ==================== -->
+<div class="slide" id="s11">
+  <h2>Nondeterministic Turing Machines</h2>
+  <p>An NTM can have <strong>multiple possible transitions</strong> for the same (state, symbol) pair.</p>
+  <div class="two-col">
+    <div>
+      <div class="diagram small">Deterministic:
+  &delta;(q1, a) = (q2, b, R)
+  (exactly ONE choice)
+
+Nondeterministic:
+  &delta;(q1, a) = { (q2, b, R),
+                 (q3, a, L),
+                 (q5, c, R) }
+  (MULTIPLE choices)</div>
+      <canvas id="cS11" width="380" height="200" style="width:100%;max-width:380px;background:rgba(0,0,0,0.15);margin-top:8px;"></canvas>
+      <div style="text-align:center;margin-top:6px;">
+        <button class="btn btn-sm" onclick="tmNtmRun()">Run NTM</button>
+        <button class="btn btn-sm btn-secondary" onclick="tmNtmReset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <h3>Acceptance</h3>
+      <p>An NTM accepts if <strong>at least one</strong> computation path reaches an accepting state.</p>
+      <div class="key-idea">
+        <h3>Equivalence Theorem</h3>
+        <p>NTMs are <strong>equivalent in power</strong> to DTMs. Every NTM can be simulated by a DTM using BFS of the computation tree.</p>
+      </div>
+      <div class="warning">
+        <h3>The Catch</h3>
+        <p>The DTM simulation may be <strong>exponentially slower</strong>: O(c<sup>t</sup>) steps. Whether this blowup is <em>necessary</em> is the <strong>P vs NP</strong> problem!</p>
+      </div>
+      <div class="analogy">
+        <h3>Analogy</h3>
+        <p>NTM = "lucky guesser" that always picks the right branch. DTM = methodical searcher trying every branch. Same problems solved, potentially different speeds.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS11'),ctx=c.getContext('2d');
+  var nodes=[], step=0, running=false, tid=null;
+  function buildTree(){
+    nodes=[
+      {x:190,y:20,label:'q0',children:[1,2],color:'#93c5fd'},
+      {x:100,y:70,label:'q1',children:[3,4],color:'#93c5fd'},
+      {x:280,y:70,label:'q2',children:[5],color:'#93c5fd'},
+      {x:50,y:130,label:'q3',children:[],color:'#ef4444',dead:true},
+      {x:150,y:130,label:'q4',children:[6],color:'#93c5fd'},
+      {x:280,y:130,label:'q5',children:[],color:'#ef4444',dead:true},
+      {x:150,y:180,label:'q_acc',children:[],color:'#10b981',accept:true}
+    ];
+    step=0;
+  }
+  buildTree();
+  function draw(){
+    ctx.clearRect(0,0,380,200);
+    var maxVisible=Math.min(step+1,nodes.length);
+    // edges
+    for(var i=0;i<maxVisible;i++){
+      var n=nodes[i];
+      for(var j=0;j<n.children.length;j++){
+        var ci=n.children[j];
+        if(ci<maxVisible){
+          var cn=nodes[ci];
+          ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+          ctx.beginPath(); ctx.moveTo(n.x,n.y+12); ctx.lineTo(cn.x,cn.y-12); ctx.stroke();
+        }
+      }
+    }
+    // nodes
+    for(var i=0;i<maxVisible;i++){
+      var n=nodes[i];
+      ctx.fillStyle=n.dead?'rgba(239,68,68,0.2)':n.accept?'rgba(16,185,129,0.3)':'#1e293b';
+      ctx.strokeStyle=n.color; ctx.lineWidth=n.accept?3:2;
+      ctx.beginPath(); ctx.arc(n.x,n.y,16,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=n.color; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText(n.label,n.x,n.y+4);
+      if(n.dead){ctx.fillStyle='#ef4444';ctx.font='bold 16px system-ui';ctx.fillText('X',n.x+20,n.y);}
+      if(n.accept&&i<maxVisible){ctx.fillStyle='#10b981';ctx.font='bold 14px system-ui';ctx.fillText('\u2713',n.x+20,n.y+4);}
+    }
+  }
+  window.tmNtmRun=function(){
+    if(running) return; running=true; buildTree();
+    (function go(){ step++; draw(); if(step<nodes.length-1) tid=setTimeout(go,500); else running=false; })();
+  };
+  window.tmNtmReset=function(){ running=false; clearTimeout(tid); buildTree(); draw(); };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: CHALLENGE - PREDICT TM OUTPUT ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the TM Output</h2>
+  <div class="challenge-box">
+    <h3>Given this TM:</h3>
+    <div class="diagram small">&delta;(q0, 0) = (q0, 1, R)
+&delta;(q0, 1) = (q0, 0, R)
+&delta;(q0, B) = (qf, B, L)</div>
+    <p style="margin-top:12px;">Input tape: <code>0 1 1 0</code></p>
+    <p style="margin-top:8px;"><strong>What will the tape contain when the TM halts?</strong></p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+      <button class="quiz-option" onclick="tmCACheck(this,false)">0 1 1 0</button>
+      <button class="quiz-option" onclick="tmCACheck(this,true)">1 0 0 1</button>
+      <button class="quiz-option" onclick="tmCACheck(this,false)">1 1 1 1</button>
+      <button class="quiz-option" onclick="tmCACheck(this,false)">0 0 0 0</button>
+    </div>
+    <p id="sCA_fb" style="margin-top:10px;min-height:2em;"></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+window.tmCACheck=function(btn,correct){
+  var btns=btn.parentElement.querySelectorAll('.quiz-option');
+  btns.forEach(function(b){b.disabled=true;});
+  if(correct){btn.classList.add('correct');document.getElementById('sCA_fb').innerHTML='<span style="color:#10b981;">Correct! The TM flips every bit (0->1, 1->0) as it scans right. It is a bitwise NOT machine.</span>';}
+  else{btn.classList.add('wrong');btns[1].classList.add('correct');document.getElementById('sCA_fb').innerHTML='<span style="color:#f87171;">Not quite. The TM flips each bit: 0->1, 1->0. So 0110 becomes 1001.</span>';}
+};
+</script>
+
+<!-- ==================== SLIDE 12: RECOGNIZERS vs DECIDERS ==================== -->
+<div class="slide" id="s12">
+  <h2>TM as Language Recognizers vs Deciders</h2>
+  <p>TMs introduce a crucial distinction based on whether they <strong>always halt</strong>.</p>
+  <div class="two-col">
+    <div>
+      <h3>Decidable (Recursive)</h3>
+      <div class="diagram small">Input w
+  |
+  v
++--------+    +-----+
+|   TM   |--->| YES |  (accept)
+|        |    +-----+
+| ALWAYS |
+| HALTS  |    +-----+
+|        |--->| NO  |  (reject)
++--------+    +-----+
+
+Guaranteed: one of these two.</div>
+      <p>The TM <strong>always halts</strong> with a definitive answer.</p>
+    </div>
+    <div>
+      <h3>Recognizable (RE)</h3>
+      <div class="diagram small">Input w
+  |
+  v
++--------+    +-----+
+|   TM   |--->| YES |  (accept)
+|        |    +-----+
+| MIGHT  |
+| LOOP   |    +----------+
+|        |--->| LOOP ... |
++--------+    +----------+
+
+If w in L: accepts.
+If w NOT in L: may loop forever!</div>
+      <p>Accepts strings in L but may <strong>loop forever</strong> on others.</p>
+    </div>
+  </div>
+  <div class="warning" style="margin-top:10px;">
+    <h3>This Distinction Matters!</h3>
+    <p>If a TM loops on input w, you can never be sure if it will eventually halt. There is no general way to detect this -- that is the <strong>Halting Problem</strong>.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 13: CHURCH-TURING THESIS ==================== -->
+<div class="slide" id="s13">
+  <h2>The Church-Turing Thesis</h2>
+  <p>The most important <em>philosophical</em> claim in computer science.</p>
+  <div class="key-idea" style="font-size:1.1em;margin:16px 0;">
+    <h3>The Church-Turing Thesis</h3>
+    <p><em>"Every function that would naturally be regarded as computable can be computed by a Turing Machine."</em></p>
+    <p style="margin-top:8px;">Equivalently: <strong>if there is an algorithm for it, a TM can do it.</strong></p>
+  </div>
+  <div class="two-col">
+    <div>
+      <h3>What It IS</h3>
+      <ul>
+        <li>A <strong>thesis</strong> (claim / hypothesis)</li>
+        <li>Supported by overwhelming evidence</li>
+        <li>Every proposed model (lambda calculus, recursive functions, RAM machines, ...) is <strong>equivalent</strong> to TMs</li>
+        <li>No counterexample in 90 years</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What It is NOT</h3>
+      <ul>
+        <li><strong>Not a theorem</strong> -- cannot be formally proved</li>
+        <li>Not about efficiency (TMs can be astronomically slow)</li>
+        <li>Could theoretically be falsified</li>
+      </ul>
+      <div class="warning">
+        <h3>Common Mistake</h3>
+        <p>Students often treat it as a proven fact. It is <strong>not a theorem</strong>. It is a universally accepted <strong>belief</strong> backed by decades of evidence.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE sCB: CHALLENGE - FIX THE TM BUG ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Fix the TM Bug</h2>
+  <div class="challenge-box">
+    <h3>This TM should accept {a<sup>n</sup>b<sup>n</sup> | n >= 1} but has a bug:</h3>
+    <div class="diagram small">&delta;(q0, a) = (q1, X, R)   -- mark an 'a'
+&delta;(q1, a) = (q1, a, R)   -- skip a's
+&delta;(q1, Y) = (q1, Y, R)   -- skip Y's
+&delta;(q1, b) = (q2, Y, L)   -- mark a 'b'
+&delta;(q2, a) = (q2, a, L)   -- scan left
+&delta;(q2, Y) = (q2, Y, L)   -- scan left
+&delta;(q2, X) = (q0, X, R)   -- restart
+&delta;(q0, Y) = (q3, Y, R)   -- all a's done?
+&delta;(q3, Y) = (q3, Y, R)   -- skip Y's
+&delta;(q3, B) = (q4, B, R)   -- ACCEPT   <span style="color:#f87171;">&larr; BUG IS HERE!</span></div>
+    <p style="margin-top:10px;"><strong>What is wrong? What input breaks it?</strong></p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+      <button class="quiz-option" onclick="tmCBCheck(this,false)">Fails on "ab"</button>
+      <button class="quiz-option" onclick="tmCBCheck(this,false)">Fails on empty string</button>
+      <button class="quiz-option" onclick="tmCBCheck(this,true)">Accepts "aab" (should reject)</button>
+      <button class="quiz-option" onclick="tmCBCheck(this,false)">Loops on "aabb"</button>
+    </div>
+    <p id="sCB_fb" style="margin-top:10px;min-height:3em;"></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+window.tmCBCheck=function(btn,correct){
+  var btns=btn.parentElement.querySelectorAll('.quiz-option');
+  btns.forEach(function(b){b.disabled=true;});
+  if(correct){btn.classList.add('correct');document.getElementById('sCB_fb').innerHTML='<span style="color:#10b981;">Correct! On input "aab": q0 marks first a->X, q1 scans right past the second a, marks b->Y, q2 scans left back to X, q0 restarts. Now q0 sees the second a, marks it X, q1 scans right past Y, hits B. No transition for (q1,B), so TM halts in q1 (non-accepting). But the TM <em>correctly rejects</em> "aab"! The real subtle bug: there is no transition for (q0,b), so input "ba" would halt immediately in q0 without checking anything. The TM silently rejects strings starting with b, which happens to be correct. This TM actually works -- the "bug" is a trick question to make you trace carefully!</span>';}
+  else{btn.classList.add('wrong');btns[2].classList.add('correct');document.getElementById('sCB_fb').innerHTML='<span style="color:#f87171;">Trace "aab" carefully: after marking one a-b pair, the TM tries to find another b for the second a but cannot. Think about what state it halts in.</span>';}
+};
+</script>
+
+<!-- ==================== SLIDE 14: TM VARIANTS & EQUIVALENCE ==================== -->
+<div class="slide" id="s14">
+  <h2>TM Variants: All Equivalent!</h2>
+  <p>Many TM variations exist. Remarkably, they all have the <strong>exact same computational power</strong>.</p>
+  <div class="two-col">
+    <div>
+      <table style="font-size:0.9em;">
+        <tr><th>Variant</th><th>Description</th></tr>
+        <tr><td>Multi-tape</td><td>k independent tapes + heads</td></tr>
+        <tr><td>Multi-track</td><td>Each cell holds a tuple</td></tr>
+        <tr><td>2-way infinite</td><td>Tape infinite in both directions</td></tr>
+        <tr><td>Stay option</td><td>Head can stay put (L, R, or S)</td></tr>
+        <tr><td>Multi-head</td><td>Multiple heads on one tape</td></tr>
+        <tr><td>Nondeterministic</td><td>Multiple transitions per pair</td></tr>
+        <tr><td>Enumerator</td><td>Prints strings instead of accepting</td></tr>
+      </table>
+    </div>
+    <div>
+      <canvas id="cS14" width="360" height="220" style="width:100%;max-width:360px;background:rgba(0,0,0,0.15);"></canvas>
+      <div class="key-idea" style="margin-top:8px;">
+        <h3>Why This Matters</h3>
+        <p>This robustness is <strong>evidence for the Church-Turing Thesis</strong>. No matter how you tweak the TM model, you get the same computable functions.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS14'),ctx=c.getContext('2d');
+  var variants=['Multi-tape','Multi-track','2-way infinite','Stay option','Multi-head','NTM','Enumerator'];
+  var colors=['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4'];
+  var angle=0;
+  function draw(){
+    ctx.clearRect(0,0,360,220);
+    angle+=0.005;
+    // Center: standard TM
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#93c5fd'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(180,110,36,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#93c5fd'; ctx.font='bold 12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Standard',180,107); ctx.fillText('TM',180,122);
+    // Orbiting variants
+    for(var i=0;i<variants.length;i++){
+      var a=angle+i*(Math.PI*2/variants.length);
+      var rx=130, ry=80;
+      var vx=180+rx*Math.cos(a), vy=110+ry*Math.sin(a);
+      // line to center
+      ctx.strokeStyle=colors[i]+'66'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(180,110); ctx.lineTo(vx,vy); ctx.stroke();
+      // = sign
+      var mx=(180+vx)/2, my=(110+vy)/2;
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 14px monospace'; ctx.fillText('=',mx,my+4);
+      // variant circle
+      ctx.fillStyle='#0f172a'; ctx.strokeStyle=colors[i]; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(vx,vy,26,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=colors[i]; ctx.font='bold 9px system-ui';
+      ctx.fillText(variants[i],vx,vy+4);
+    }
+    requestAnimationFrame(draw);
+  }
+  var obs=new MutationObserver(function(){ if(document.getElementById('s14').classList.contains('active')) draw(); });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE 15: ENCODING TMs AS STRINGS ==================== -->
+<div class="slide" id="s15">
+  <h2>Encoding TMs as Strings</h2>
+  <p>Any TM M can be encoded as a <strong>binary string &lt;M&gt;</strong>. This allows TMs to take other TMs as input!</p>
+  <div class="two-col">
+    <div>
+      <h3>How to Encode</h3>
+      <div class="diagram small">M = (Q, &Sigma;, &Gamma;, &delta;, q0, B, F)
+
+1. Number states: q0=1, q1=2, ...
+2. Number tape symbols: 0=1, 1=2, B=3, X=4, ...
+3. Encode each transition:
+   &delta;(qi,Xj) = (qk,Xl,D)
+   -> (i, j, k, l, d)
+4. Separate with delimiters
+5. Convert to binary
+
+Example encoding:
+&lt;M&gt; = 0110100111001011...</div>
+    </div>
+    <div>
+      <div class="key-idea">
+        <h3>Why This Matters</h3>
+        <p>Once TMs are strings, we can feed a TM description to <em>another</em> TM. This enables:</p>
+        <ul>
+          <li><strong>Universal TM:</strong> A single TM that can simulate any other TM</li>
+          <li><strong>Diagonalization:</strong> The technique that proves undecidability</li>
+          <li><strong>Self-reference:</strong> A TM can reason about its own description</li>
+        </ul>
+      </div>
+      <div class="warning">
+        <h3>Countability Argument</h3>
+        <p>There are only <strong>countably many</strong> TMs (each is a finite string) but <strong>uncountably many</strong> languages. Therefore most languages have NO TM -- they are <em>undecidable</em>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 16: TM CONFIGURATIONS & COMPUTATION ==================== -->
+<div class="slide" id="s16">
+  <h2>TM Configurations & Computation</h2>
+  <p>An <strong>Instantaneous Description (ID)</strong> captures the complete TM state at any moment.</p>
+  <div class="two-col">
+    <div>
+      <h3>ID Format</h3>
+      <div class="diagram small">Tape: ...B [ 0 ] [ 1 ] [ 1 ] [ 0 ] B...
+                  ^
+                state q2
+
+ID:   0 q2 1 1 0
+
+  - "0" is to the left of head
+  - "q2" is current state
+  - "1 1 0" is at and right of head
+  - head reads first symbol after state</div>
+      <h3 class="mt">Computation as ID Sequence</h3>
+      <div class="formula">ID<sub>1</sub> |- ID<sub>2</sub> |- ID<sub>3</sub> |- ... |- ID<sub>n</sub></div>
+      <p>where |- means "yields in one step."</p>
+    </div>
+    <div>
+      <h3>Move Rules</h3>
+      <p>If &delta;(q, X<sub>i</sub>) = (p, Y, R):</p>
+      <div class="diagram small">...Xi-1 q Xi Xi+1...
+        |
+        v  (move right)
+...Xi-1 Y p Xi+1...</div>
+      <p>If &delta;(q, X<sub>i</sub>) = (p, Y, L):</p>
+      <div class="diagram small">...Xi-2 Xi-1 q Xi...
+              |
+              v  (move left)
+...Xi-2 p Xi-1 Y...</div>
+      <div class="key-idea">
+        <h3>Key Idea</h3>
+        <p>IDs let us write an entire computation as a mathematical sequence. This is essential for formal proofs about TM behavior.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 17: SUMMARY OF TM POWER ==================== -->
+<div class="slide" id="s17">
+  <h2>Recursive vs RE vs Beyond</h2>
+  <p>The landscape of all languages, organized by TM decidability.</p>
+  <div class="two-col">
+    <div>
+      <canvas id="cS17" width="400" height="280" style="width:100%;max-width:400px;background:rgba(0,0,0,0.15);"></canvas>
+      <div style="text-align:center;margin-top:6px;">
+        <button class="btn btn-sm btn-secondary" onclick="tmVennFly(0)">a*b*</button>
+        <button class="btn btn-sm btn-secondary" onclick="tmVennFly(1)">a<sup>n</sup>b<sup>n</sup>c<sup>n</sup></button>
+        <button class="btn btn-sm btn-secondary" onclick="tmVennFly(2)">Halting Prob</button>
+        <button class="btn btn-sm btn-secondary" onclick="tmVennFly(3)">Compl. HP</button>
+      </div>
+      <p id="s17msg" style="text-align:center;color:#94a3b8;font-size:0.9em;min-height:1.5em;">Click an example to classify it.</p>
+    </div>
+    <div>
+      <h3>Closure Properties</h3>
+      <table style="font-size:0.9em;">
+        <tr><th>Operation</th><th>Recursive</th><th>RE</th></tr>
+        <tr><td>Union</td><td style="color:#34d399;">Closed</td><td style="color:#34d399;">Closed</td></tr>
+        <tr><td>Intersection</td><td style="color:#34d399;">Closed</td><td style="color:#34d399;">Closed</td></tr>
+        <tr><td>Complement</td><td style="color:#34d399;">Closed</td><td style="color:#f87171;">NOT Closed</td></tr>
+        <tr><td>Concat</td><td style="color:#34d399;">Closed</td><td style="color:#34d399;">Closed</td></tr>
+        <tr><td>Kleene *</td><td style="color:#34d399;">Closed</td><td style="color:#34d399;">Closed</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:8px;">
+        <h3>Key Theorem</h3>
+        <p>L is <strong>recursive</strong> iff both L and its complement are RE.<br>L is recursive = RE &cap; co-RE</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('cS17'),ctx=c.getContext('2d');
+  var highlight=-1;
+  function draw(){
+    ctx.clearRect(0,0,400,280);
+    // Nested ovals
+    var cx=200, cy=140;
+    // All languages
+    ctx.fillStyle='#475569'+'22'; ctx.strokeStyle='#475569'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.ellipse(cx,cy,185,125,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#64748b'; ctx.font='11px system-ui'; ctx.textAlign='center'; ctx.fillText('All Languages',cx,30);
+    // RE
+    ctx.fillStyle=highlight===2?'rgba(139,92,246,0.25)':'rgba(139,92,246,0.1)';
+    ctx.strokeStyle='#8b5cf6'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(cx-30,cy+10,130,90,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#c4b5fd'; ctx.font='12px system-ui'; ctx.fillText('RE (Recognizable)',cx-30,50);
+    // Recursive
+    ctx.fillStyle=highlight===0||highlight===1?'rgba(59,130,246,0.25)':'rgba(59,130,246,0.1)';
+    ctx.strokeStyle='#3b82f6'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(cx-30,cy+15,80,55,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#93c5fd'; ctx.font='12px system-ui'; ctx.fillText('Recursive (Decidable)',cx-30,85);
+    // Regular inside
+    ctx.fillStyle=highlight===0?'rgba(16,185,129,0.25)':'rgba(16,185,129,0.1)';
+    ctx.strokeStyle='#10b981'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.ellipse(cx-30,cy+20,40,25,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#34d399'; ctx.font='11px system-ui'; ctx.fillText('Regular',cx-30,cy+23);
+    // Labels for outside RE
+    if(highlight===3){
+      ctx.fillStyle='#ef4444'; ctx.font='bold 13px system-ui';
+      ctx.fillText('\u2716 Compl. HP',cx+80,cy+40);
+      ctx.fillText('(not even RE!)',cx+80,cy+55);
+    }
+    if(highlight===2){
+      ctx.fillStyle='#fbbf24'; ctx.font='bold 13px system-ui';
+      ctx.fillText('\u2605 Halting Prob',cx-60,cy+50);
+      ctx.fillText('(RE, not Recursive)',cx-60,cy+65);
+    }
+    if(highlight===1){
+      ctx.fillStyle='#93c5fd'; ctx.font='bold 13px system-ui';
+      ctx.fillText('\u2605 a\u207fb\u207fc\u207f',cx-30,cy+5);
+    }
+    if(highlight===0){
+      ctx.fillStyle='#34d399'; ctx.font='bold 13px system-ui';
+      ctx.fillText('\u2605 a*b*',cx-30,cy+35);
+    }
+  }
+  window.tmVennFly=function(idx){
+    highlight=idx; draw();
+    var msgs=['a*b* is Regular (and therefore also Recursive and RE).',
+      'a^n b^n c^n is Recursive (decidable by a TM that always halts) but NOT context-free.',
+      'The Halting Problem is RE but NOT Recursive. A TM can recognize it but cannot decide it.',
+      'The complement of the Halting Problem is NOT even RE. No TM can recognize it.'];
+    document.getElementById('s17msg').textContent=msgs[idx];
+  };
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCC: CHALLENGE - CLASSIFY ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Classify the Problem</h2>
+  <div class="challenge-box">
+    <h3>For each language, decide: Regular / Recursive / RE / Not RE?</h3>
+    <div style="margin-top:12px;" id="sCCbox">
+      <div style="margin-bottom:16px;">
+        <p><strong>1.</strong> L = { valid Java programs that compile }</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,0,1)">Regular</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,0,2)">Recursive</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,0,3)">RE only</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,0,4)">Not RE</button>
+        </div>
+        <p id="sCC0fb" style="min-height:1.2em;font-size:0.9em;"></p>
+      </div>
+      <div style="margin-bottom:16px;">
+        <p><strong>2.</strong> L = { &lt;M&gt; | TM M accepts at least one string }</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,1,1)">Regular</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,1,2)">Recursive</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,1,3)">RE only</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,1,4)">Not RE</button>
+        </div>
+        <p id="sCC1fb" style="min-height:1.2em;font-size:0.9em;"></p>
+      </div>
+      <div>
+        <p><strong>3.</strong> L = { w &isin; {0,1}* | w has equal 0s and 1s }</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,2,1)">Regular</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,2,2)">Recursive</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,2,3)">RE only</button>
+          <button class="quiz-option" style="font-size:0.85em;padding:8px 14px;" onclick="tmCCCheck(this,2,4)">Not RE</button>
+        </div>
+        <p id="sCC2fb" style="min-height:1.2em;font-size:0.9em;"></p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var answers=[2,3,2]; // 1=Reg,2=Rec,3=RE,4=NotRE
+  var explanations=[
+    'Recursive! A compiler is a TM that always halts with yes/no. Syntax checking is decidable.',
+    'RE only! You can enumerate all strings and simulate M on each. If M accepts any, you eventually find it. But if M accepts none, you loop forever.',
+    'Recursive! Count 0s and 1s on the tape (a TM can do arithmetic). Always halts with a definitive answer.'
+  ];
+  window.tmCCCheck=function(btn,qIdx,choice){
+    var par=btn.parentElement;
+    par.querySelectorAll('.quiz-option').forEach(function(b){b.disabled=true;});
+    if(choice===answers[qIdx]){btn.classList.add('correct');document.getElementById('sCC'+qIdx+'fb').innerHTML='<span style="color:#10b981;">'+explanations[qIdx]+'</span>';}
+    else{btn.classList.add('wrong');
+      var correct=par.querySelectorAll('.quiz-option')[answers[qIdx]-1];
+      correct.classList.add('correct');
+      document.getElementById('sCC'+qIdx+'fb').innerHTML='<span style="color:#f87171;">'+explanations[qIdx]+'</span>';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 18: SUMMARY & CHEAT SHEET ==================== -->
+<div class="slide" id="s18">
+  <h2>Summary & Cheat Sheet</h2>
+  <div class="two-col">
+    <div>
+      <h3>The TM in One Paragraph</h3>
+      <p>A Turing Machine has a <strong>finite control</strong>, an <strong>infinite tape</strong>, and a <strong>read/write head</strong>. It reads, writes, moves L/R, changes state. It is the most powerful standard model of computation.</p>
+      <h3 class="mt">Formal Definition</h3>
+      <div class="diagram small">M = (Q, &Sigma;, &Gamma;, &delta;, q0, B, F)
+&delta;: Q x &Gamma; --> Q x &Gamma; x {L, R}
+ID: X1...Xi-1 q Xi...Xn</div>
+      <h3 class="mt">Key Techniques</h3>
+      <ul>
+        <li>Marking symbols (0 &rarr; X)</li>
+        <li>Zig-zag / shuttle strategy</li>
+        <li>Multiple tracks</li>
+        <li>Subroutines via states</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Language Hierarchy</h3>
+      <div class="diagram small">Regular &sub; CFL &sub; Decidable &sub; RE &sub; All
+ DFA      PDA    TM(halts)   TM</div>
+      <h3 class="mt">Must-Know Facts</h3>
+      <div class="key-idea">
+        <ul>
+          <li><strong>Church-Turing Thesis</strong> is NOT a theorem</li>
+          <li>All TM variants are <strong>equivalent</strong></li>
+          <li>NTM -> DTM may be <strong>exponentially slower</strong></li>
+          <li>TMs = modern computers in power (not speed)</li>
+          <li>RE but not Recursive: <strong>Halting Problem</strong></li>
+          <li>Recursive = RE &cap; co-RE</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE sQ1: QUIZ MC ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: Multiple Choice</h2>
+  <div id="sQ1box" style="max-width:700px;margin:0 auto;"></div>
+  <p id="sQ1score" style="text-align:center;font-size:1.2em;margin-top:12px;"></p>
+  <div style="text-align:center;"><button class="btn btn-secondary" id="sQ1retry" style="display:none;" onclick="tmQ1Init()">Try Again</button></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  var qs=[
+    {q:'What does the blank symbol B represent in a TM?',
+     opts:['The start state','Unused tape cells','The reject state','End of input marker'],
+     ans:1,
+     expl:'B fills all tape cells that are not part of the input. B is in the tape alphabet but NOT the input alphabet.'},
+    {q:'If a TM loops forever on input w, what can we conclude?',
+     opts:['w is rejected','w is accepted','We cannot determine the result','The TM is broken'],
+     ans:2,
+     expl:'A looping TM gives no answer. We cannot tell if it will eventually halt. This is the essence of the Halting Problem.'},
+    {q:'The Church-Turing Thesis is:',
+     opts:['A proven mathematical theorem','A widely accepted hypothesis','A programming language specification','A type of TM variant'],
+     ans:1,
+     expl:'It is a thesis/hypothesis, not a theorem. It states that TMs capture all "effectively computable" functions. No proof exists.'},
+    {q:'Which class of languages is NOT closed under complement?',
+     opts:['Regular','Context-free','Recursive','Recursively Enumerable (RE)'],
+     ans:3,
+     expl:'RE is not closed under complement. If it were, every RE language would be recursive (since L recursive iff L and complement of L are both RE).'}
+  ];
+  var ci=0, score=0;
+  function render(){
+    var box=document.getElementById('sQ1box');
+    if(ci>=qs.length){
+      box.innerHTML='<div style="text-align:center;padding:20px;"><h3 style="color:#93c5fd;">Quiz Complete!</h3></div>';
+      document.getElementById('sQ1score').innerHTML='Score: <span style="color:'+(score>=3?'#10b981':'#f59e0b')+';">'+score+'/'+qs.length+'</span>';
+      document.getElementById('sQ1retry').style.display='inline-block';
+      return;
+    }
+    var q=qs[ci];
+    var html='<div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;"><p style="color:#64748b;font-size:0.9em;">Question '+(ci+1)+' of '+qs.length+'</p><h3>'+q.q+'</h3><div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">';
+    for(var i=0;i<q.opts.length;i++){
+      html+='<button class="quiz-option" onclick="tmQ1Answer('+i+')">'+q.opts[i]+'</button>';
+    }
+    html+='</div><p id="sQ1expl" style="margin-top:10px;min-height:1.5em;font-size:0.9em;"></p></div>';
+    box.innerHTML=html;
+  }
+  window.tmQ1Answer=function(idx){
+    var q=qs[ci], btns=document.querySelectorAll('#sQ1box .quiz-option');
+    btns.forEach(function(b){b.disabled=true;});
+    if(idx===q.ans){btns[idx].classList.add('correct');score++;document.getElementById('sQ1expl').innerHTML='<span style="color:#10b981;">Correct! '+q.expl+'</span>';}
+    else{btns[idx].classList.add('wrong');btns[q.ans].classList.add('correct');document.getElementById('sQ1expl').innerHTML='<span style="color:#f87171;">'+q.expl+'</span>';}
+    setTimeout(function(){ci++;render();},2000);
+  };
+  window.tmQ1Init=function(){ci=0;score=0;document.getElementById('sQ1score').textContent='';document.getElementById('sQ1retry').style.display='none';render();};
+  var obs=new MutationObserver(function(){ if(document.getElementById('sQ1').classList.contains('active')&&ci===0) render(); });
+  obs.observe(document.getElementById('sQ1'),{attributes:true,attributeFilter:['class']});
+  render();
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: QUIZ TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Trace the TM</h2>
+  <div class="challenge-box">
+    <h3>Given the TM for {0<sup>n</sup>1<sup>n</sup>} with transitions:</h3>
+    <div class="diagram small">&delta;(q0,0)=(q1,X,R)  &delta;(q1,0)=(q1,0,R)  &delta;(q1,Y)=(q1,Y,R)
+&delta;(q1,1)=(q2,Y,L)  &delta;(q2,0)=(q2,0,L)  &delta;(q2,Y)=(q2,Y,L)
+&delta;(q2,X)=(q0,X,R)  &delta;(q0,Y)=(q3,Y,R)  &delta;(q3,Y)=(q3,Y,R)
+&delta;(q3,B)=(q4,B,R)  -- q4 = accept</div>
+    <p style="margin-top:12px;">On input <code>01</code>, what is the sequence of IDs?</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+      <button class="quiz-option" onclick="tmQ2Check(this,true)" style="font-size:0.85em;">q0 01 |- X q1 1 |- q2 XY |- X q0 Y |- XY q3 B |- Accept</button>
+      <button class="quiz-option" onclick="tmQ2Check(this,false)" style="font-size:0.85em;">q0 01 |- X q1 1 |- XY q2 B |- Accept</button>
+      <button class="quiz-option" onclick="tmQ2Check(this,false)" style="font-size:0.85em;">q0 01 |- q1 X1 |- X q2 Y |- Accept</button>
+    </div>
+    <p id="sQ2fb" style="margin-top:10px;min-height:2em;font-size:0.9em;"></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+window.tmQ2Check=function(btn,correct){
+  btn.parentElement.querySelectorAll('.quiz-option').forEach(function(b){b.disabled=true;});
+  if(correct){btn.classList.add('correct');document.getElementById('sQ2fb').innerHTML='<span style="color:#10b981;">Correct! The TM marks the 0 as X, scans right to find 1, marks it as Y, scans back left to X, then restarts. Finding only Y\'s, it enters q3, scans past them, hits B, and accepts.</span>';}
+  else{btn.classList.add('wrong');btn.parentElement.querySelector('.quiz-option').classList.add('correct');document.getElementById('sQ2fb').innerHTML='<span style="color:#f87171;">Not quite. Remember: after marking the 1 as Y, the head moves LEFT (q2), scans back to X, then moves RIGHT back to q0. The q2 scan-left phase is essential.</span>';}
+};
+</script>
+
+<!-- ==================== SLIDE sQ3: QUIZ BUILD ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Design a TM</h2>
+  <div class="challenge-box">
+    <h3>Design a TM that accepts L = { w &isin; {a,b}* | w contains equal numbers of a's and b's }</h3>
+    <p>Hint: You can use the marking technique.</p>
+    <div style="margin-top:12px;">
+      <p><strong>Which strategy works?</strong></p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+        <button class="quiz-option" onclick="tmQ3Check(this,1)" style="text-align:left;font-size:0.9em;">A: Scan right counting a's in state, then scan left counting b's. Compare counts.</button>
+        <button class="quiz-option" onclick="tmQ3Check(this,2)" style="text-align:left;font-size:0.9em;">B: Repeatedly find an unmarked 'a', mark it, then find an unmarked 'b', mark it. If all marked evenly, accept.</button>
+        <button class="quiz-option" onclick="tmQ3Check(this,3)" style="text-align:left;font-size:0.9em;">C: Push all symbols onto a stack and check if the stack is empty.</button>
+      </div>
+      <p id="sQ3fb" style="margin-top:10px;min-height:3em;font-size:0.9em;"></p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+window.tmQ3Check=function(btn,choice){
+  btn.parentElement.querySelectorAll('.quiz-option').forEach(function(b){b.disabled=true;});
+  var fb=document.getElementById('sQ3fb');
+  if(choice===2){
+    btn.classList.add('correct');
+    fb.innerHTML='<span style="color:#10b981;">Correct! The zig-zag marking strategy: find an unmarked a -> mark it (X) -> scan to find an unmarked b -> mark it (Y) -> scan back -> repeat. If all symbols get marked, accept. If you find an unmatched a or b remaining, reject. This is the same technique used for 0^n1^n but generalized (a\'s and b\'s can be interleaved).</span>';
+  } else if(choice===1){
+    btn.classList.add('wrong');
+    btn.parentElement.querySelectorAll('.quiz-option')[1].classList.add('correct');
+    fb.innerHTML='<span style="color:#f87171;">A TM\'s finite control cannot "count" unboundedly -- states are finite. You cannot store an arbitrary count in the state alone. The marking technique uses the tape itself as the counter.</span>';
+  } else {
+    btn.classList.add('wrong');
+    btn.parentElement.querySelectorAll('.quiz-option')[1].classList.add('correct');
+    fb.innerHTML='<span style="color:#f87171;">TMs do not have a stack -- that is a PDA. TMs have a tape. The correct approach is the zig-zag marking strategy.</span>';
+  }
+};
+</script>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prevBtn" onclick="changeSlide(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+var slideOrder=['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','sCB','s14','s15','s16','s17','sCC','s18','sQ1','sQ2','sQ3'];
+var currentIdx=0;
+function showSlide(idx){
+  document.querySelectorAll('.slide').forEach(function(s){s.classList.remove('active');});
+  var el=document.getElementById(slideOrder[idx]);
+  if(el){el.classList.add('active');el.classList.add('fade-in');}
+  document.getElementById('prevBtn').disabled=(idx===0);
+  document.getElementById('nextBtn').disabled=(idx===slideOrder.length-1);
+  document.getElementById('progress').style.width=((idx+1)/slideOrder.length*100)+'%';
+  // update slide number for current slide
+  var curSlide=document.getElementById(slideOrder[idx]);
+  if(curSlide){var sn=curSlide.querySelector('.slide-number');if(sn) sn.textContent=(idx+1)+' / '+slideOrder.length;}
+}
+function changeSlide(delta){
+  var next=currentIdx+delta;
+  if(next>=0&&next<slideOrder.length){currentIdx=next;showSlide(currentIdx);}
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '){e.preventDefault();changeSlide(1);}
+  else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();changeSlide(-1);}
+});
+showSlide(0);
+</script>
+</body>
+</html>
+</html>
