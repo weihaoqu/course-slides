@@ -1,0 +1,2467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 4: Abstract Interpretation — Enhanced</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden;height:100vh}
+  .slide{display:none;position:absolute;inset:0;padding:40px 56px;overflow-y:auto;opacity:0;transition:opacity .35s}
+  .slide.active{display:flex;flex-direction:column;opacity:1}
+  .slide.fade-in{opacity:1}
+  #progress-bar{position:fixed;top:0;left:0;width:100%;height:4px;background:rgba(255,255,255,.05);z-index:200}
+  #progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#38bdf8);transition:width .4s}
+  h1{font-size:2.6em;color:#38bdf8;margin-bottom:8px;font-weight:700}
+  h2{font-size:1.9em;color:#38bdf8;margin-bottom:14px;font-weight:700}
+  h3{font-size:1.15em;color:#a78bfa;margin:10px 0 6px}
+  p,li{font-size:1.05em;line-height:1.65;margin-bottom:6px;color:#cbd5e1}
+  ul,ol{padding-left:24px}
+  strong{color:#e2e8f0}
+  em{color:#f59e0b;font-style:normal;font-weight:600}
+  canvas{border-radius:12px}
+  .btn{padding:8px 18px;border:none;border-radius:8px;font-size:.88em;font-weight:600;cursor:pointer;color:#fff;background:linear-gradient(135deg,#6366f1,#8b5cf6);transition:all .2s}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(99,102,241,.4)}
+  .btn-sm{padding:6px 14px;font-size:.82em}
+  .btn-secondary{background:#334155;color:#cbd5e1}
+  .btn-secondary:hover{background:#475569}
+  .key-idea{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:12px 16px;margin:10px 0}
+  .warning{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px 16px;margin:10px 0}
+  .analogy{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.3);border-radius:10px;padding:12px 16px;margin:10px 0}
+  .code-block{background:rgba(0,0,0,.3);border:1px solid #334155;border-radius:10px;padding:14px 18px;margin:10px 0;overflow-x:auto}
+  .code-content{font-family:'JetBrains Mono',monospace;font-size:.85em;line-height:1.7}
+  .line{padding:1px 8px;border-left:3px solid transparent;border-radius:2px;white-space:pre}
+  .line.active{background:rgba(99,102,241,.15);border-left-color:#6366f1}
+  .line.highlight-green{background:rgba(34,197,94,.12);border-left-color:#22c55e}
+  .line.highlight-amber{background:rgba(245,158,11,.12);border-left-color:#f59e0b}
+  .line.highlight-red{background:rgba(239,68,68,.12);border-left-color:#ef4444}
+  .nav{position:fixed;bottom:20px;right:24px;display:flex;gap:8px;z-index:100}
+  .nav button{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:.95em;font-weight:600;cursor:pointer;transition:all .2s}
+  .nav button:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(99,102,241,.4)}
+  .nav button:disabled{opacity:.3;cursor:default;transform:none;box-shadow:none}
+  .slide-number{height:20px}
+  select{padding:6px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:.9em}
+  input[type="text"],input[type="number"]{padding:6px 10px;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:.9em}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ======================== s1: Title ======================== -->
+<div class="slide" id="s1" style="justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%)">
+  <div style="font-size:4.5em;margin-bottom:16px">&#128300;</div>
+  <h1 style="font-size:3.2em;margin-bottom:8px">Abstract Interpretation</h1>
+  <p style="font-size:1.4em;color:#a78bfa;margin-bottom:20px">Module 4 &mdash; Program Analysis Bootcamp</p>
+  <div style="display:flex;gap:28px;justify-content:center;margin-top:16px">
+    <div style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);border-radius:12px;padding:14px 22px;text-align:center">
+      <div style="font-size:1.8em;color:#6366f1">&plusmn;</div>
+      <div style="font-size:.85em;color:#94a3b8">Sign Domain</div>
+    </div>
+    <div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:14px 22px;text-align:center">
+      <div style="font-size:1.8em;color:#f59e0b">42</div>
+      <div style="font-size:.85em;color:#94a3b8">Constant Domain</div>
+    </div>
+    <div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:14px 22px;text-align:center">
+      <div style="font-size:1.8em;color:#22c55e">[a,b]</div>
+      <div style="font-size:.85em;color:#94a3b8">Interval Domain</div>
+    </div>
+  </div>
+  <p style="margin-top:28px;font-size:.95em;color:#64748b">Instructor: Weihao &nbsp;|&nbsp; Office Hours: By appointment, HH227</p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ======================== s2: Objectives + The Leap ======================== -->
+<div class="slide" id="s2">
+  <h2>The Leap from Module 3</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.5rem">
+    <div>
+      <h3>Module 3 tracked sets of names:</h3>
+      <div class="code-block" style="font-size:.82em">
+        <div class="code-content">
+<div class="line">Reaching Defs: {d1, d3, d5}</div>
+<div class="line">Live Variables: {x, y, temp}</div>
+        </div>
+      </div>
+      <h3>Module 4 tracks abstract values:</h3>
+      <div class="code-block" style="font-size:.82em">
+        <div class="code-content">
+<div class="line highlight-green">Sign:     x &rarr; Pos, y &rarr; Neg</div>
+<div class="line highlight-green">Constant: x &rarr; Const(42)</div>
+<div class="line highlight-green">Interval: x &rarr; [0, 100]</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Learning Objectives</h3>
+      <ul style="font-size:.92em">
+        <li><strong>Implement</strong> abstract domains (sign, constant, interval)</li>
+        <li><strong>Formalize</strong> Galois connections for soundness</li>
+        <li><strong>Apply</strong> widening to guarantee termination</li>
+        <li><strong>Build</strong> an abstract interpreter for div-by-zero</li>
+        <li><strong>Compare</strong> domains: precision vs cost</li>
+      </ul>
+      <div class="key-idea" style="margin-top:10px;font-size:.88em">
+        <strong>Same framework, richer information:</strong><br>
+        Analysis = Lattice + Transfer Functions + Fixpoint<br>
+        We keep the solver, but change <em>what</em> the lattice tracks.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ======================== s3: Motivating Example ======================== -->
+<div class="slide" id="s3">
+  <h2>Can This Crash?</h2>
+  <p>Step through with <em>sign analysis</em> to detect a division-by-zero <strong>before running</strong>:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.6rem">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s3code">
+<div class="line" id="s3L1">let analyze x y =</div>
+<div class="line" id="s3L2">  let a = x * x in</div>
+<div class="line" id="s3L3">  let b = a + 1 in</div>
+<div class="line" id="s3L4">  let c = y - y in</div>
+<div class="line" id="s3L5">  let result = b / c in</div>
+<div class="line" id="s3L6">  result</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:.6rem">
+        <button class="btn btn-sm" onclick="s3Step()">Step</button>
+        <button class="btn btn-sm" onclick="s3Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS3" width="440" height="280" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <div id="s3Log" style="background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;font-family:monospace;font-size:.78em;margin-top:8px;max-height:80px;overflow-y:auto;color:#94a3b8"></div>
+    </div>
+  </div>
+  <div class="analogy" style="margin-top:6px;font-size:.88em">
+    <strong>Module 3 says:</strong> "d4 reaches line 5" &mdash; true, but doesn't answer the safety question.<br>
+    <strong>Module 4 says:</strong> "c = Zero, so b/c is division by zero!" &mdash; bug found at compile time.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS3');const ctx=canvas.getContext('2d');
+  const log=document.getElementById('s3Log');
+  let stepIdx=0,timer=null;
+
+  const steps=[
+    {line:'s3L1',desc:'x,y are inputs → sign unknown: Top',env:{x:'Top',y:'Top'}},
+    {line:'s3L2',desc:'a = x * x → Top * Top = Top (sign analysis can\'t prove ≥0)',env:{x:'Top',y:'Top',a:'Top'}},
+    {line:'s3L3',desc:'b = a + 1 → Top + Pos = Top',env:{x:'Top',y:'Top',a:'Top',b:'Top'}},
+    {line:'s3L4',desc:'c = y - y → Top - Top = ... but wait: y - y is ALWAYS 0!',env:{x:'Top',y:'Top',a:'Top',b:'Top',c:'Zero'}},
+    {line:'s3L5',desc:'result = b / c → b / Zero = ⚠ DIVISION BY ZERO!',env:{x:'Top',y:'Top',a:'Top',b:'Top',c:'Zero',result:'ERROR'},error:true},
+  ];
+
+  const signColors={Top:'#94a3b8',Pos:'#22c55e',Neg:'#ef4444',Zero:'#f59e0b',Bot:'#64748b',ERROR:'#ef4444'};
+
+  function draw(s){
+    ctx.clearRect(0,0,440,280);
+    const env=s.env;const keys=Object.keys(env);
+    const startX=30,startY=20,barW=55,gap=10;
+    ctx.fillStyle='#94a3b8';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Abstract Environment (Sign Domain)',220,15);
+
+    keys.forEach((k,i)=>{
+      const x=startX+i*(barW+gap);const y=40;const h=180;
+      const v=env[k];
+      // bar background
+      ctx.beginPath();ctx.roundRect(x,y,barW,h,6);
+      ctx.fillStyle='rgba(0,0,0,.2)';ctx.fill();
+      // filled portion based on sign
+      const fillH=v==='ERROR'?h:v==='Top'?h:v==='Bot'?10:h*0.5;
+      const fillY=y+h-fillH;
+      ctx.beginPath();ctx.roundRect(x,fillY,barW,fillH,6);
+      ctx.fillStyle=(signColors[v]||'#6366f1')+'44';ctx.fill();
+      ctx.strokeStyle=signColors[v]||'#6366f1';ctx.lineWidth=2;ctx.stroke();
+      // variable name
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='center';
+      ctx.fillText(k,x+barW/2,y+h+18);
+      // sign value
+      ctx.fillStyle=signColors[v]||'#e2e8f0';ctx.font='bold 14px monospace';
+      ctx.fillText(v,x+barW/2,fillY+fillH/2+5);
+    });
+
+    // error flash
+    if(s.error){
+      ctx.fillStyle='#ef444444';ctx.fillRect(0,0,440,280);
+      ctx.fillStyle='#ef4444';ctx.font='bold 20px sans-serif';ctx.textAlign='center';
+      ctx.fillText('⚠ DIVISION BY ZERO DETECTED',220,265);
+    }
+  }
+
+  function clearHL(){document.querySelectorAll('#s3code .line').forEach(l=>{l.className='line'});}
+  function init(){stepIdx=0;clearHL();ctx.clearRect(0,0,440,280);log.innerHTML='';}
+
+  window.s3Step=function(){
+    if(stepIdx>=steps.length)return;
+    const s=steps[stepIdx];
+    clearHL();
+    const el=document.getElementById(s.line);
+    if(el)el.classList.add(s.error?'highlight-red':'active');
+    draw(s);
+    log.innerHTML+='<div'+(s.error?' style="color:#ef4444"':'')+'>'+s.desc+'</div>';
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+  window.s3Auto=function(){if(timer)return;timer=setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}s3Step();},1400);};
+  window.s3Reset=function(){if(timer){clearInterval(timer);timer=null;}init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s3').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ======================== s4: Concrete vs Abstract ======================== -->
+<div class="slide" id="s4">
+  <h2>Concrete vs Abstract Semantics</h2>
+  <p>We trade <em>precision</em> for <em>decidability</em>. Click each concrete value to see its abstraction:</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;margin-top:.6rem">
+    <div>
+      <canvas id="cS4" width="460" height="320" style="width:100%;background:rgba(0,0,0,.2);cursor:pointer"></canvas>
+    </div>
+    <div>
+      <div id="s4Info" style="background:rgba(0,0,0,.25);border-radius:10px;padding:14px 18px;min-height:120px;font-size:.9em">
+        <p style="color:#94a3b8">Click a concrete value on the left to see how it maps to the abstract world.</p>
+      </div>
+      <div class="key-idea" style="margin-top:10px;font-size:.88em">
+        <strong>The deal:</strong>
+        <ul>
+          <li><strong>Concrete:</strong> exact but undecidable (halting problem)</li>
+          <li><strong>Abstract:</strong> approximate but always terminates</li>
+        </ul>
+      </div>
+      <div class="warning" style="margin-top:8px;font-size:.88em">
+        <strong>Sound</strong> = if the analysis says "safe", the program truly is safe. We may get false alarms, but we <em>never miss real bugs</em>.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS4');const ctx=canvas.getContext('2d');
+  const info=document.getElementById('s4Info');
+
+  const items=[
+    {concrete:'42',sign:'Pos',constant:'Const(42)',interval:'[42,42]',x:60,y:40},
+    {concrete:'-7',sign:'Neg',constant:'Const(-7)',interval:'[-7,-7]',x:160,y:40},
+    {concrete:'0',sign:'Zero',constant:'Const(0)',interval:'[0,0]',x:260,y:40},
+    {concrete:'x*x',sign:'Top',constant:'Top',interval:'[0,+∞]',x:360,y:40},
+    {concrete:'42 + (-7)',sign:'Top',constant:'Const(35)',interval:'[35,35]',x:110,y:130},
+    {concrete:'42 * 42',sign:'Pos',constant:'Const(1764)',interval:'[1764,1764]',x:300,y:130},
+  ];
+
+  let selected=-1;
+
+  function draw(){
+    ctx.clearRect(0,0,460,320);
+    // title labels
+    ctx.fillStyle='#94a3b8';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('CONCRETE VALUES',230,25);
+
+    // divider
+    ctx.strokeStyle='#334155';ctx.lineWidth=1;ctx.setLineDash([6,4]);
+    ctx.beginPath();ctx.moveTo(20,200);ctx.lineTo(440,200);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#94a3b8';ctx.font='bold 12px sans-serif';
+    ctx.fillText('ABSTRACT DOMAINS',230,220);
+
+    // abstract domain labels
+    ctx.fillStyle='#6366f1';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Sign',100,245);
+    ctx.fillStyle='#f59e0b';ctx.fillText('Constant',230,245);
+    ctx.fillStyle='#22c55e';ctx.fillText('Interval',360,245);
+
+    // concrete items
+    items.forEach((it,i)=>{
+      const isSel=selected===i;
+      ctx.beginPath();ctx.roundRect(it.x-40,it.y,80,35,8);
+      ctx.fillStyle=isSel?'#38bdf833':'rgba(0,0,0,.2)';ctx.fill();
+      ctx.strokeStyle=isSel?'#38bdf8':'#475569';ctx.lineWidth=isSel?3:1.5;ctx.stroke();
+      ctx.fillStyle=isSel?'#38bdf8':'#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(it.concrete,it.x,it.y+17);
+    });
+
+    // show abstractions for selected
+    if(selected>=0){
+      const it=items[selected];
+      // sign
+      ctx.beginPath();ctx.roundRect(55,260,90,35,8);
+      ctx.fillStyle='#6366f122';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(it.sign,100,278);
+      // constant
+      ctx.beginPath();ctx.roundRect(175,260,110,35,8);
+      ctx.fillStyle='#f59e0b22';ctx.fill();ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.fillText(it.constant,230,278);
+      // interval
+      ctx.beginPath();ctx.roundRect(310,260,100,35,8);
+      ctx.fillStyle='#22c55e22';ctx.fill();ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.fillText(it.interval,360,278);
+
+      // arrows from concrete to each
+      ctx.strokeStyle='#38bdf844';ctx.lineWidth=1.5;
+      [100,230,360].forEach(tx=>{
+        ctx.beginPath();ctx.moveTo(it.x,it.y+35);ctx.lineTo(tx,260);ctx.stroke();
+      });
+      // alpha label
+      ctx.fillStyle='#38bdf8';ctx.font='bold 11px sans-serif';
+      ctx.fillText('α (abstraction)',it.x,it.y+50);
+    }
+  }
+
+  canvas.addEventListener('click',function(ev){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(ev.clientX-rect.left)*(460/rect.width),my=(ev.clientY-rect.top)*(320/rect.height);
+    let hit=-1;
+    items.forEach((it,i)=>{if(mx>=it.x-40&&mx<=it.x+40&&my>=it.y&&my<=it.y+35)hit=i;});
+    if(hit>=0){
+      selected=hit;draw();
+      const it=items[hit];
+      info.innerHTML='<strong style="color:#38bdf8">Concrete: '+it.concrete+'</strong><br>'+
+        '<div style="margin-top:8px"><span style="color:#6366f1">Sign:</span> <strong>'+it.sign+'</strong></div>'+
+        '<div><span style="color:#f59e0b">Constant:</span> <strong>'+it.constant+'</strong></div>'+
+        '<div><span style="color:#22c55e">Interval:</span> <strong>'+it.interval+'</strong></div>'+
+        (it.sign==='Top'?'<div style="margin-top:8px;color:#f59e0b;font-size:.88em">Sign analysis loses precision here — it can\'t determine the result.</div>':'');
+    }
+  });
+
+  function init(){selected=-1;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s4').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ======================== s5: Galois Connections ======================== -->
+<div class="slide" id="s5">
+  <h2>Galois Connections</h2>
+  <p>The formal bridge between concrete and abstract. Click a set to see <em>&alpha;</em> (abstraction) and <em>&gamma;</em> (concretization):</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.2rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS5" width="460" height="340" style="width:100%;background:rgba(0,0,0,.2);cursor:pointer"></canvas>
+    </div>
+    <div>
+      <div id="s5Info" style="background:rgba(0,0,0,.25);border-radius:10px;padding:14px 18px;min-height:140px;font-size:.9em">
+        <p style="color:#94a3b8">Click a concrete set or abstract value to see the &alpha;/&gamma; mapping.</p>
+      </div>
+      <div style="margin-top:10px">
+        <h3>Formal Definition</h3>
+        <div class="code-block" style="font-size:.82em">
+          <div class="code-content">
+<div class="line">&alpha;(c) &le; a  &hArr;  c &le; &gamma;(a)</div>
+<div class="line"></div>
+<div class="line">&alpha;: concrete set &rarr; best abstract value</div>
+<div class="line">&gamma;: abstract value &rarr; concrete set</div>
+          </div>
+        </div>
+      </div>
+      <div class="analogy" style="margin-top:8px;font-size:.88em">
+        <strong>Analogy:</strong> &alpha; is like rounding up (you may lose precision). &gamma; is like asking "what numbers could this represent?" The pair guarantees nothing slips through.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS5');const ctx=canvas.getContext('2d');
+  const info=document.getElementById('s5Info');
+
+  // Left column: concrete sets. Right column: abstract signs.
+  const concretes=[
+    {id:'c1',label:'{1, 2, 3}',x:100,y:50,abs:'Pos',gamma:'{1, 2, 3, 4, ...}'},
+    {id:'c2',label:'{-5, -1}',x:100,y:110,abs:'Neg',gamma:'{...,-2, -1}'},
+    {id:'c3',label:'{0}',x:100,y:170,abs:'Zero',gamma:'{0}'},
+    {id:'c4',label:'{-1, 0, 5}',x:100,y:230,abs:'Top',gamma:'ℤ (all integers)'},
+    {id:'c5',label:'{ }',x:100,y:290,abs:'Bot',gamma:'{ } (empty)'}
+  ];
+  const abstracts=[
+    {id:'a1',label:'Pos',x:360,y:70,gamma:'{1, 2, 3, ...}',color:'#22c55e'},
+    {id:'a2',label:'Neg',x:360,y:130,gamma:'{..., -2, -1}',color:'#ef4444'},
+    {id:'a3',label:'Zero',x:360,y:190,gamma:'{0}',color:'#f59e0b'},
+    {id:'a4',label:'Top',x:360,y:250,gamma:'ℤ (all integers)',color:'#94a3b8'},
+    {id:'a5',label:'Bot',x:360,y:310,gamma:'{ } (empty)',color:'#64748b'}
+  ];
+
+  let selected=null;// {type:'concrete'|'abstract', idx}
+
+  function draw(){
+    ctx.clearRect(0,0,460,340);
+    // column labels
+    ctx.fillStyle='#38bdf8';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Concrete Domain (C)',100,25);
+    ctx.fillStyle='#a78bfa';ctx.fillText('Abstract Domain (A)',360,25);
+    // arrow labels
+    ctx.fillStyle='#22c55e';ctx.font='bold 14px sans-serif';
+    ctx.fillText('α →',230,155);
+    ctx.fillStyle='#f59e0b';
+    ctx.fillText('← γ',230,185);
+
+    // concrete items
+    concretes.forEach((c,i)=>{
+      const isSel=selected&&selected.type==='concrete'&&selected.idx===i;
+      ctx.beginPath();ctx.roundRect(c.x-65,c.y-14,130,28,6);
+      ctx.fillStyle=isSel?'#38bdf833':'rgba(0,0,0,.15)';ctx.fill();
+      ctx.strokeStyle=isSel?'#38bdf8':'#475569';ctx.lineWidth=isSel?2.5:1;ctx.stroke();
+      ctx.fillStyle=isSel?'#38bdf8':'#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(c.label,c.x,c.y);
+    });
+    // abstract items
+    abstracts.forEach((a,i)=>{
+      const isSel=selected&&selected.type==='abstract'&&selected.idx===i;
+      ctx.beginPath();ctx.roundRect(a.x-45,a.y-14,90,28,6);
+      ctx.fillStyle=isSel?a.color+'44':a.color+'18';ctx.fill();
+      ctx.strokeStyle=a.color;ctx.lineWidth=isSel?2.5:1.5;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(a.label,a.x,a.y);
+    });
+
+    // draw arrow for selected
+    if(selected){
+      if(selected.type==='concrete'){
+        const c=concretes[selected.idx];
+        const ai=abstracts.findIndex(a=>a.label===c.abs);
+        if(ai>=0){
+          const a=abstracts[ai];
+          ctx.beginPath();ctx.moveTo(c.x+65,c.y);ctx.lineTo(a.x-45,a.y);
+          ctx.strokeStyle='#22c55e';ctx.lineWidth=2.5;ctx.stroke();
+          // arrowhead
+          const ang=Math.atan2(a.y-c.y,a.x-45-c.x-65);
+          ctx.beginPath();ctx.moveTo(a.x-45,a.y);
+          ctx.lineTo(a.x-45-10*Math.cos(ang-.3),a.y-10*Math.sin(ang-.3));
+          ctx.lineTo(a.x-45-10*Math.cos(ang+.3),a.y-10*Math.sin(ang+.3));
+          ctx.closePath();ctx.fillStyle='#22c55e';ctx.fill();
+        }
+      } else {
+        const a=abstracts[selected.idx];
+        // gamma arrow back
+        concretes.forEach(c=>{
+          if(c.abs===a.label){
+            ctx.beginPath();ctx.moveTo(a.x-45,a.y);ctx.lineTo(c.x+65,c.y);
+            ctx.strokeStyle='#f59e0b';ctx.lineWidth=2.5;ctx.stroke();
+          }
+        });
+      }
+    }
+  }
+
+  canvas.addEventListener('click',function(ev){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(ev.clientX-rect.left)*(460/rect.width),my=(ev.clientY-rect.top)*(340/rect.height);
+    let hit=null;
+    concretes.forEach((c,i)=>{if(mx>=c.x-65&&mx<=c.x+65&&my>=c.y-14&&my<=c.y+14)hit={type:'concrete',idx:i};});
+    abstracts.forEach((a,i)=>{if(mx>=a.x-45&&mx<=a.x+45&&my>=a.y-14&&my<=a.y+14)hit={type:'abstract',idx:i};});
+    if(hit){
+      selected=hit;draw();
+      if(hit.type==='concrete'){
+        const c=concretes[hit.idx];
+        info.innerHTML='<strong style="color:#38bdf8">Concrete: '+c.label+'</strong><br>'+
+          '<div style="margin-top:6px;color:#22c55e"><strong>&alpha;('+c.label+') = '+c.abs+'</strong><br><span style="color:#94a3b8;font-size:.85em">Best abstract value that covers this set</span></div>'+
+          '<div style="margin-top:6px;color:#f59e0b"><strong>&gamma;('+c.abs+') = '+c.gamma+'</strong><br><span style="color:#94a3b8;font-size:.85em">All concrete values represented by '+c.abs+'</span></div>';
+      } else {
+        const a=abstracts[hit.idx];
+        info.innerHTML='<strong style="color:'+a.color+'">Abstract: '+a.label+'</strong><br>'+
+          '<div style="margin-top:6px;color:#f59e0b"><strong>&gamma;('+a.label+') = '+a.gamma+'</strong><br><span style="color:#94a3b8;font-size:.85em">All concrete values this abstract value represents</span></div>';
+      }
+    }
+  });
+
+  function init(){selected=null;draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s5').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ======================== s6: Soundness ======================== -->
+<div class="slide" id="s6">
+  <h2>Soundness via Over-Approximation</h2>
+  <p>Abstract interpretation is <em>sound</em> because the abstract result always <strong>contains</strong> the concrete result:</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;margin-top:.6rem">
+    <div>
+      <canvas id="cS6" width="440" height="300" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+    </div>
+    <div>
+      <div style="margin-top:10px">
+        <div class="code-block" style="font-size:.85em">
+          <div class="code-content">
+<div class="line">If concrete computation produces v,</div>
+<div class="line">then v &isin; &gamma;(abstract_result).</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:12px">
+        <div class="key-idea" style="font-size:.88em">
+          <strong style="color:#22c55e">No false negatives:</strong><br>
+          We never miss a real bug.
+        </div>
+        <div class="warning" style="font-size:.88em">
+          <strong style="color:#ef4444">False positives possible:</strong><br>
+          We may warn about safe code.
+        </div>
+      </div>
+      <div class="analogy" style="margin-top:10px;font-size:.88em">
+        <strong>Analogy:</strong> A metal detector at the airport. It might beep for your belt buckle (false positive), but it will never miss a real weapon (no false negatives). That's soundness.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS6');const ctx=canvas.getContext('2d');
+
+  function draw(){
+    ctx.clearRect(0,0,440,300);
+    // Large circle: gamma(abstract)
+    ctx.beginPath();ctx.arc(220,150,120,0,Math.PI*2);
+    ctx.fillStyle='rgba(99,102,241,.1)';ctx.fill();
+    ctx.strokeStyle='#6366f1';ctx.lineWidth=2.5;ctx.setLineDash([8,4]);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#6366f1';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('γ(Pos) = {1, 2, 3, ...}',220,50);
+
+    // Small circle: concrete result
+    ctx.beginPath();ctx.arc(200,160,35,0,Math.PI*2);
+    ctx.fillStyle='rgba(34,197,94,.2)';ctx.fill();
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2.5;ctx.stroke();
+    ctx.fillStyle='#22c55e';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('{42}',200,160);
+    ctx.fillStyle='#94a3b8';ctx.font='11px sans-serif';
+    ctx.fillText('concrete result',200,185);
+
+    // subset arrow
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 16px sans-serif';
+    ctx.fillText('⊆',265,155);
+
+    // label
+    ctx.fillStyle='#22c55e';ctx.font='bold 12px sans-serif';
+    ctx.fillText('42 ∈ γ(Pos) ✓ SOUND',220,280);
+
+    // Outside example
+    ctx.beginPath();ctx.arc(380,200,18,0,Math.PI*2);
+    ctx.fillStyle='rgba(239,68,68,.2)';ctx.fill();ctx.strokeStyle='#ef4444';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#ef4444';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('-5',380,200);
+    ctx.fillStyle='#ef4444';ctx.font='10px sans-serif';
+    ctx.fillText('-5 ∉ γ(Pos)',385,225);
+  }
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s6').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ======================== s7: ABSTRACT_DOMAIN Signature ======================== -->
+<div class="slide" id="s7">
+  <h2>The ABSTRACT_DOMAIN Signature</h2>
+  <p>Module 4 extends Module 3's lattice with <em>widening</em> and <em>ordering</em>:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:.6rem">
+    <div>
+      <h3 style="color:#94a3b8">Module 3: LATTICE</h3>
+      <div class="code-block" style="font-size:.82em">
+        <div class="code-content">
+<div class="line">module type LATTICE = sig</div>
+<div class="line">  type t</div>
+<div class="line">  val bottom : t</div>
+<div class="line">  val top    : t</div>
+<div class="line">  val join   : t &rarr; t &rarr; t</div>
+<div class="line">  val meet   : t &rarr; t &rarr; t</div>
+<div class="line">  val equal  : t &rarr; t &rarr; bool</div>
+<div class="line">end</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#38bdf8">Module 4: ABSTRACT_DOMAIN</h3>
+      <div class="code-block" style="font-size:.82em">
+        <div class="code-content">
+<div class="line">module type ABSTRACT_DOMAIN = sig</div>
+<div class="line">  type t</div>
+<div class="line">  val bottom : t</div>
+<div class="line">  val top    : t</div>
+<div class="line">  val join   : t &rarr; t &rarr; t</div>
+<div class="line">  val meet   : t &rarr; t &rarr; t</div>
+<div class="line">  val equal  : t &rarr; t &rarr; bool</div>
+<div class="line highlight-green">  val leq    : t &rarr; t &rarr; bool</div>
+<div class="line highlight-green">  val widen  : t &rarr; t &rarr; t</div>
+<div class="line highlight-green">  val to_string : t &rarr; string</div>
+<div class="line">end</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:10px">
+    <div class="key-idea" style="font-size:.88em">
+      <strong>leq</strong> tests the partial order: does <code>a &le; b</code>? Needed for fixpoint checking.
+    </div>
+    <div class="warning" style="font-size:.88em">
+      <strong>widen</strong> accelerates convergence for infinite-height lattices (intervals). Without it, loops may never terminate.
+    </div>
+  </div>
+  <div class="analogy" style="margin-top:8px;font-size:.88em">
+    <strong>The abstract interpreter is a functor:</strong> same analysis code, parameterized by the domain. Swap <code>SignDomain</code> for <code>IntervalDomain</code> and get a different analysis for free.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ======================== s8: Sign Domain + Arithmetic ======================== -->
+<div class="slide" id="s8">
+  <h2>Sign Domain: Interactive Calculator</h2>
+  <p>The sign lattice has 5 elements. Pick two signs and an operation to see the result:</p>
+  <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:1.2rem;margin-top:.5rem">
+    <div>
+      <canvas id="cS8lattice" width="240" height="180" style="width:100%;background:rgba(0,0,0,.2)"></canvas>
+      <div style="display:flex;gap:.5rem;margin-top:10px;align-items:center;flex-wrap:wrap">
+        <select id="s8a" style="width:80px">
+          <option value="Bot">Bot</option><option value="Neg">Neg</option><option value="Zero">Zero</option><option value="Pos" selected>Pos</option><option value="Top">Top</option>
+        </select>
+        <select id="s8op" style="width:50px">
+          <option value="add">+</option><option value="sub">-</option><option value="mul" selected>×</option>
+        </select>
+        <select id="s8b" style="width:80px">
+          <option value="Bot">Bot</option><option value="Neg" selected>Neg</option><option value="Zero">Zero</option><option value="Pos">Pos</option><option value="Top">Top</option>
+        </select>
+        <button class="btn btn-sm" onclick="s8Calc()">=</button>
+        <span id="s8result" style="font-size:1.2em;font-weight:700;color:#f59e0b;margin-left:4px"></span>
+      </div>
+    </div>
+    <div>
+      <div id="s8table" style="background:rgba(0,0,0,.25);border-radius:10px;padding:12px;font-family:monospace;font-size:.78em;overflow-x:auto"></div>
+      <div id="s8explain" style="margin-top:8px;font-size:.88em;color:#94a3b8"></div>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:8px;font-size:.88em">
+    <strong>Key insight:</strong> <code>Neg × Neg = Pos</code> (negative times negative is positive). But <code>Pos + Neg = Top</code> (could be anything — we don't know magnitudes).
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const latticeCanvas=document.getElementById('cS8lattice');const lctx=latticeCanvas.getContext('2d');
+
+  // Draw sign lattice
+  function drawLattice(){
+    lctx.clearRect(0,0,240,180);
+    const nodes={Top:{x:120,y:20},Neg:{x:40,y:80},Zero:{x:120,y:80},Pos:{x:200,y:80},Bot:{x:120,y:150}};
+    const edges=[['Bot','Neg'],['Bot','Zero'],['Bot','Pos'],['Neg','Top'],['Zero','Top'],['Pos','Top']];
+    edges.forEach(([a,b])=>{
+      lctx.beginPath();lctx.moveTo(nodes[a].x,nodes[a].y);lctx.lineTo(nodes[b].x,nodes[b].y);
+      lctx.strokeStyle='#334155';lctx.lineWidth=1.5;lctx.stroke();
+    });
+    const colors={Top:'#94a3b8',Neg:'#ef4444',Zero:'#f59e0b',Pos:'#22c55e',Bot:'#64748b'};
+    Object.entries(nodes).forEach(([id,n])=>{
+      lctx.beginPath();lctx.arc(n.x,n.y,18,0,Math.PI*2);
+      lctx.fillStyle=colors[id]+'33';lctx.fill();lctx.strokeStyle=colors[id];lctx.lineWidth=2;lctx.stroke();
+      lctx.fillStyle='#e2e8f0';lctx.font='bold 11px monospace';lctx.textAlign='center';lctx.textBaseline='middle';
+      lctx.fillText(id,n.x,n.y);
+    });
+    lctx.fillStyle='#64748b';lctx.font='10px sans-serif';lctx.textAlign='left';
+    lctx.fillText('"could be anything"',148,18);
+    lctx.fillText('"unreachable"',148,153);
+  }
+
+  // Abstract arithmetic tables
+  const addT={
+    Bot:{Bot:'Bot',Neg:'Bot',Zero:'Bot',Pos:'Bot',Top:'Bot'},
+    Neg:{Bot:'Bot',Neg:'Neg',Zero:'Neg',Pos:'Top',Top:'Top'},
+    Zero:{Bot:'Bot',Neg:'Neg',Zero:'Zero',Pos:'Pos',Top:'Top'},
+    Pos:{Bot:'Bot',Neg:'Top',Zero:'Pos',Pos:'Pos',Top:'Top'},
+    Top:{Bot:'Bot',Neg:'Top',Zero:'Top',Pos:'Top',Top:'Top'}
+  };
+  const subT={
+    Bot:{Bot:'Bot',Neg:'Bot',Zero:'Bot',Pos:'Bot',Top:'Bot'},
+    Neg:{Bot:'Bot',Neg:'Top',Zero:'Neg',Pos:'Neg',Top:'Top'},
+    Zero:{Bot:'Bot',Neg:'Pos',Zero:'Zero',Pos:'Neg',Top:'Top'},
+    Pos:{Bot:'Bot',Neg:'Pos',Zero:'Pos',Pos:'Top',Top:'Top'},
+    Top:{Bot:'Bot',Neg:'Top',Zero:'Top',Pos:'Top',Top:'Top'}
+  };
+  const mulT={
+    Bot:{Bot:'Bot',Neg:'Bot',Zero:'Bot',Pos:'Bot',Top:'Bot'},
+    Neg:{Bot:'Bot',Neg:'Pos',Zero:'Zero',Pos:'Neg',Top:'Top'},
+    Zero:{Bot:'Bot',Neg:'Zero',Zero:'Zero',Pos:'Zero',Top:'Zero'},
+    Pos:{Bot:'Bot',Neg:'Neg',Zero:'Zero',Pos:'Pos',Top:'Top'},
+    Top:{Bot:'Bot',Neg:'Top',Zero:'Zero',Pos:'Top',Top:'Top'}
+  };
+  const tables={add:addT,sub:subT,mul:mulT};
+  const opNames={add:'Addition (+)',sub:'Subtraction (-)',mul:'Multiplication (×)'};
+  const signs=['Bot','Neg','Zero','Pos','Top'];
+  const signColors={Top:'#94a3b8',Neg:'#ef4444',Zero:'#f59e0b',Pos:'#22c55e',Bot:'#64748b'};
+
+  function renderTable(op,a,b){
+    const t=tables[op];
+    let html='<div style="margin-bottom:6px;color:#a78bfa;font-weight:600">'+opNames[op]+' Table:</div>';
+    html+='<table style="border-collapse:collapse;width:100%"><tr><th style="border:1px solid #334155;padding:3px 6px;background:#1e293b;color:#94a3b8;font-size:.9em">'+{add:'+',sub:'-',mul:'×'}[op]+'</th>';
+    signs.forEach(s=>{html+='<th style="border:1px solid #334155;padding:3px 6px;background:#1e293b;color:'+signColors[s]+'">'+s+'</th>';});
+    html+='</tr>';
+    signs.forEach(r=>{
+      html+='<tr><td style="border:1px solid #334155;padding:3px 6px;color:'+signColors[r]+';font-weight:600">'+r+'</td>';
+      signs.forEach(c=>{
+        const v=t[r][c];
+        const isHL=r===a&&c===b;
+        html+='<td style="border:1px solid #334155;padding:3px 6px;color:'+signColors[v]+';'+(isHL?'background:#f59e0b33;font-weight:700':'')+'">'+v+'</td>';
+      });
+      html+='</tr>';
+    });
+    html+='</table>';
+    document.getElementById('s8table').innerHTML=html;
+  }
+
+  window.s8Calc=function(){
+    const a=document.getElementById('s8a').value;
+    const op=document.getElementById('s8op').value;
+    const b=document.getElementById('s8b').value;
+    const result=tables[op][a][b];
+    document.getElementById('s8result').textContent=result;
+    document.getElementById('s8result').style.color=signColors[result];
+    renderTable(op,a,b);
+    const opSym={add:'+',sub:'-',mul:'×'}[op];
+    document.getElementById('s8explain').innerHTML=a+' '+opSym+' '+b+' = <strong style="color:'+signColors[result]+'">'+result+'</strong>';
+  };
+
+  function init(){drawLattice();renderTable('mul','Pos','Neg');s8Calc();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: Challenge — Abstract the Values ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A: Abstract the Values</h2>
+  <p style="color:#94a3b8;">Given concrete values, pick the <strong>most precise</strong> abstraction in each domain.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="font-size:1rem;color:#a78bfa;margin-bottom:0.8rem;">Concrete → Abstract</h3>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q1.</strong> Concrete set: <code style="color:#f59e0b;">{-3, -1, -7}</code></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Sign:</label>
+            <select id="sCAq1s" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="+">+</option><option value="-">−</option><option value="0">0</option><option value="T">⊤</option><option value="B">⊥</option>
+            </select></div>
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Constant:</label>
+            <select id="sCAq1c" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="-3">-3</option><option value="-1">-1</option><option value="T">⊤</option><option value="B">⊥</option>
+            </select></div>
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Interval:</label>
+            <select id="sCAq1i" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="[-7,-1]">[-7,-1]</option><option value="[-3,-1]">[-3,-1]</option><option value="[-∞,0]">[-∞,0]</option><option value="T">⊤</option>
+            </select></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q2.</strong> Concrete set: <code style="color:#f59e0b;">{5}</code></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Sign:</label>
+            <select id="sCAq2s" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="+">+</option><option value="-">−</option><option value="0">0</option><option value="T">⊤</option>
+            </select></div>
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Constant:</label>
+            <select id="sCAq2c" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="5">5</option><option value="T">⊤</option><option value="B">⊥</option>
+            </select></div>
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Interval:</label>
+            <select id="sCAq2i" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="[5,5]">[5,5]</option><option value="[0,5]">[0,5]</option><option value="[1,∞]">[1,∞]</option><option value="T">⊤</option>
+            </select></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q3.</strong> Concrete set: <code style="color:#f59e0b;">{-2, 0, 4}</code></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Sign:</label>
+            <select id="sCAq3s" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="+">+</option><option value="-">−</option><option value="0">0</option><option value="T">⊤</option>
+            </select></div>
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Constant:</label>
+            <select id="sCAq3c" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="0">0</option><option value="T">⊤</option><option value="B">⊥</option>
+            </select></div>
+          <div><label style="font-size:0.8rem;color:#94a3b8;">Interval:</label>
+            <select id="sCAq3i" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+              <option value="">--</option><option value="[-2,4]">[-2,4]</option><option value="[0,4]">[0,4]</option><option value="[-2,0]">[-2,0]</option><option value="T">⊤</option>
+            </select></div>
+        </div>
+      </div>
+
+      <button class="btn btn-sm" onclick="sCACheck()" style="margin-top:0.5rem;">Check All</button>
+    </div>
+
+    <div>
+      <h3 style="font-size:1rem;color:#38bdf8;margin-bottom:0.8rem;">Results</h3>
+      <div id="sCAresults" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:200px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Answer all questions and click "Check All"</p>
+      </div>
+
+      <div class="key-idea" style="margin-top:1rem;">
+        <strong>Key Rule:</strong> The abstraction α(S) must be the <em>smallest</em> (most precise) abstract value that contains all concrete values in S.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {
+    q1: {s:'-', c:'T', i:'[-7,-1]'},
+    q2: {s:'+', c:'5', i:'[5,5]'},
+    q3: {s:'T', c:'T', i:'[-2,4]'}
+  };
+  const explanations = {
+    q1: {s:'All negative → −', c:'Multiple values → ⊤ (not constant)', i:'Tightest interval covering -7 to -1'},
+    q2: {s:'Positive → +', c:'Single value → 5', i:'Single point → [5,5]'},
+    q3: {s:'Mixed signs → ⊤', c:'Multiple values → ⊤', i:'From -2 to 4 → [-2,4]'}
+  };
+
+  window.sCACheck = function(){
+    let html = '', score = 0, total = 9;
+    ['q1','q2','q3'].forEach((q,qi) => {
+      html += `<div style="margin-bottom:0.8rem;"><strong>Q${qi+1}:</strong><br>`;
+      ['s','c','i'].forEach(d => {
+        const sel = document.getElementById(`sCA${q}${d}`).value;
+        const correct = answers[q][d];
+        const ok = sel === correct;
+        if(ok) score++;
+        const dname = d==='s'?'Sign':d==='c'?'Constant':'Interval';
+        const color = sel==='' ? '#64748b' : ok ? '#22c55e' : '#ef4444';
+        html += `<span style="color:${color};font-size:0.82rem;">${dname}: ${sel||'—'} ${ok?'✓':'✗ ('+correct+')'}</span> `;
+        html += `<span style="color:#64748b;font-size:0.75rem;">— ${explanations[q][d]}</span><br>`;
+      });
+      html += '</div>';
+    });
+    html += `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;">${score}/${total} correct</div>`;
+    document.getElementById('sCAresults').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s9: Sign Domain Transfer Functions ==================== -->
+<div class="slide" id="s9">
+  <h2>Sign Domain: Transfer Functions</h2>
+  <p style="color:#94a3b8;">How do abstract operations map signs through assignments and arithmetic?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s9code">
+          <div class="line" id="s9L1">a = 5;</div>
+          <div class="line" id="s9L2">b = -3;</div>
+          <div class="line" id="s9L3">c = a + b;    // (+) + (−) = ⊤</div>
+          <div class="line" id="s9L4">d = a * b;    // (+) × (−) = (−)</div>
+          <div class="line" id="s9L5">e = b * b;    // (−) × (−) = (+)</div>
+          <div class="line" id="s9L6">f = c * d;    // ⊤ × (−) = ⊤</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s9Step()">Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+
+      <div class="warning" style="margin-top:0.8rem;">
+        <strong>Precision loss:</strong> (+) + (−) = ⊤ because the result could be positive, negative, or zero. Sign analysis can't determine which without concrete values.
+      </div>
+    </div>
+
+    <div>
+      <canvas id="cS9" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s9Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  const vars = ['a','b','c','d','e','f'];
+  const steps = [
+    {line:1, desc:'a = 5 → sign(5) = +', env:{a:'+'}},
+    {line:2, desc:'b = -3 → sign(-3) = −', env:{a:'+', b:'−'}},
+    {line:3, desc:'c = a+b → (+)+(−) = ⊤', env:{a:'+', b:'−', c:'⊤'}},
+    {line:4, desc:'d = a*b → (+)×(−) = −', env:{a:'+', b:'−', c:'⊤', d:'−'}},
+    {line:5, desc:'e = b*b → (−)×(−) = +', env:{a:'+', b:'−', c:'⊤', d:'−', e:'+'}},
+    {line:6, desc:'f = c*d → ⊤×(−) = ⊤', env:{a:'+', b:'−', c:'⊤', d:'−', e:'+', f:'⊤'}}
+  ];
+  let stepIdx = 0, timer = null;
+
+  function draw(env, highlightVar){
+    ctx.clearRect(0,0,520,370);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Abstract Environment (Sign Domain)', 260, 25);
+
+    const barW = 60, gap = 18, startX = 40, baseY = 320, maxH = 240;
+    vars.forEach((v,i) => {
+      const x = startX + i*(barW+gap);
+      const val = env[v] || '⊥';
+      const colors = {'+':'#22c55e','−':'#ef4444','0':'#38bdf8','⊤':'#f59e0b','⊥':'#334155'};
+      const heights = {'+':180,'−':180,'0':120,'⊤':240,'⊥':40};
+      const h = heights[val] || 40;
+      const col = colors[val] || '#334155';
+
+      // Bar
+      ctx.fillStyle = (v === highlightVar) ? col : col+'cc';
+      ctx.fillRect(x, baseY - h, barW, h);
+      if(v === highlightVar){
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.strokeRect(x, baseY - h, barW, h);
+      }
+
+      // Variable name
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(v, x + barW/2, baseY + 18);
+
+      // Value label
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
+      ctx.fillText(val, x + barW/2, baseY - h - 8);
+    });
+
+    // Legend
+    const legend = [{s:'+',c:'#22c55e'},{s:'−',c:'#ef4444'},{s:'0',c:'#38bdf8'},{s:'⊤',c:'#f59e0b'},{s:'⊥',c:'#334155'}];
+    ctx.font = '11px monospace'; ctx.textAlign = 'left';
+    legend.forEach((l,i) => {
+      ctx.fillStyle = l.c; ctx.fillRect(380, 45+i*18, 12, 12);
+      ctx.fillStyle = '#cbd5e1'; ctx.fillText(l.s === '⊤' ? '⊤ (any)' : l.s === '⊥' ? '⊥ (unset)' : l.s, 398, 55+i*18);
+    });
+  }
+
+  function init(){
+    stepIdx = 0;
+    document.querySelectorAll('#s9code .line').forEach(l => l.classList.remove('active'));
+    document.getElementById('s9Log').innerHTML = '';
+    draw({}, null);
+  }
+
+  window.s9Step = function(){
+    if(stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    document.querySelectorAll('#s9code .line').forEach(l => l.classList.remove('active'));
+    document.getElementById('s9L'+s.line).classList.add('active');
+    const changedVar = Object.keys(s.env).pop();
+    draw(s.env, changedVar);
+    const log = document.getElementById('s9Log');
+    log.innerHTML += `<div style="color:#38bdf8;">Step ${stepIdx+1}: ${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+  };
+  window.s9Auto = function(){
+    if(timer) return;
+    timer = setInterval(() => { if(stepIdx >= steps.length){clearInterval(timer);timer=null;return;} s9Step(); }, 1000);
+  };
+  window.s9Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} init();
+  };
+
+  const obs = new MutationObserver(() => {
+    if(document.getElementById('s9').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s9'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s10: Constant Propagation ==================== -->
+<div class="slide" id="s10">
+  <h2>Constant Propagation Domain</h2>
+  <p style="color:#94a3b8;">Track <em>exact</em> values when possible — lose precision only at merges with conflicting constants.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s10code">
+          <div class="line" id="s10L1">x = 10;</div>
+          <div class="line" id="s10L2">y = 20;</div>
+          <div class="line" id="s10L3">if (cond) {</div>
+          <div class="line" id="s10L4">  x = 10;  // same value!</div>
+          <div class="line" id="s10L5">} else {</div>
+          <div class="line" id="s10L6">  x = 30;  // different!</div>
+          <div class="line" id="s10L7">}</div>
+          <div class="line" id="s10L8">z = x + y; // x=⊤, y=20</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+
+      <div class="analogy" style="margin-top:0.8rem;">
+        <strong>Key insight:</strong> At merge points, if both branches assign the <em>same</em> constant → keep it. If they differ → ⊤. This is the <strong>join</strong> operation.
+      </div>
+    </div>
+
+    <div>
+      <canvas id="cS10" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s10Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+
+  const steps = [
+    {line:1, desc:'x = 10', env:{x:'10',y:'⊥',z:'⊥'}, phase:'init'},
+    {line:2, desc:'y = 20', env:{x:'10',y:'20',z:'⊥'}, phase:'init'},
+    {line:4, desc:'then-branch: x = 10 (still 10)', env:{x:'10',y:'20',z:'⊥'}, phase:'then', branchEnv:{x:'10'}},
+    {line:6, desc:'else-branch: x = 30', env:{x:'10',y:'20',z:'⊥'}, phase:'else', branchEnv:{x:'30'}},
+    {line:7, desc:'Merge: x = join(10,30) = ⊤ (conflict!)', env:{x:'⊤',y:'20',z:'⊥'}, phase:'merge'},
+    {line:8, desc:'z = x+y = ⊤+20 = ⊤', env:{x:'⊤',y:'20',z:'⊤'}, phase:'after'}
+  ];
+  let stepIdx = 0, timer = null;
+
+  function drawCFG(phase, branchEnv){
+    ctx.clearRect(0,0,520,370);
+    // CFG nodes
+    const nodes = [
+      {id:'entry', x:260, y:40, label:'x=10; y=20'},
+      {id:'cond', x:260, y:110, label:'if(cond)'},
+      {id:'then', x:140, y:190, label:'x=10'},
+      {id:'else', x:380, y:190, label:'x=30'},
+      {id:'merge', x:260, y:270, label:'merge'},
+      {id:'after', x:260, y:340, label:'z=x+y'}
+    ];
+    const edges = [['entry','cond'],['cond','then'],['cond','else'],['then','merge'],['else','merge'],['merge','after']];
+
+    // Draw edges
+    edges.forEach(([from,to]) => {
+      const n1 = nodes.find(n=>n.id===from), n2 = nodes.find(n=>n.id===to);
+      ctx.beginPath(); ctx.moveTo(n1.x, n1.y+18); ctx.lineTo(n2.x, n2.y-18);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+
+    // Draw nodes
+    const activeMap = {init:'entry', then:'then', else:'else', merge:'merge', after:'after'};
+    nodes.forEach(n => {
+      const isActive = (phase && (activeMap[phase] === n.id || (phase==='init' && n.id==='entry')));
+      ctx.beginPath();
+      const w = 100, h = 30;
+      ctx.roundRect(n.x-w/2, n.y-h/2, w, h, 6);
+      ctx.fillStyle = isActive ? '#f59e0b' : n.id==='merge' ? '#6366f1' : '#1e293b';
+      ctx.fill();
+      ctx.strokeStyle = isActive ? '#fbbf24' : '#475569'; ctx.lineWidth = isActive?2:1; ctx.stroke();
+      ctx.fillStyle = isActive ? '#000' : '#e2e8f0'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+
+    // Branch annotations
+    if(phase === 'then' && branchEnv){
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 11px monospace';
+      ctx.fillText('x → '+branchEnv.x, 140, 225);
+    }
+    if(phase === 'else' && branchEnv){
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 11px monospace';
+      ctx.fillText('x → '+branchEnv.x, 380, 225);
+    }
+    if(phase === 'merge'){
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'right';
+      ctx.fillText('x=10', 230, 255);
+      ctx.fillStyle = '#ef4444'; ctx.textAlign = 'left';
+      ctx.fillText('x=30', 290, 255);
+      ctx.fillStyle = '#f59e0b'; ctx.textAlign = 'center';
+      ctx.fillText('join → ⊤', 260, 295);
+    }
+  }
+
+  function init(){
+    stepIdx = 0;
+    document.querySelectorAll('#s10code .line').forEach(l => l.classList.remove('active'));
+    document.getElementById('s10Log').innerHTML = '';
+    drawCFG(null, null);
+  }
+
+  window.s10Step = function(){
+    if(stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    document.querySelectorAll('#s10code .line').forEach(l => l.classList.remove('active'));
+    document.getElementById('s10L'+s.line).classList.add('active');
+    drawCFG(s.phase, s.branchEnv);
+    const log = document.getElementById('s10Log');
+    const envStr = Object.entries(s.env).map(([k,v])=>`${k}=${v}`).join(', ');
+    log.innerHTML += `<div><span style="color:#38bdf8;">Step ${stepIdx+1}:</span> ${s.desc} → {${envStr}}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+  };
+  window.s10Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s10Step();}, 1200);
+  };
+  window.s10Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} init();
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s10').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s11: Interval Domain ==================== -->
+<div class="slide" id="s11">
+  <h2>Interval Domain & Operations</h2>
+  <p style="color:#94a3b8;">Track bounds [lo, hi] — the most practical domain for real-world analyzers.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="font-size:1rem;color:#a78bfa;margin-bottom:0.5rem;">Interval Calculator</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0.5rem;align-items:center;">
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Interval A:</label><br>
+            <span style="color:#e2e8f0;">[</span>
+            <input type="number" id="s11aLo" value="-3" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;">
+            <span style="color:#e2e8f0;">,</span>
+            <input type="number" id="s11aHi" value="5" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;">
+            <span style="color:#e2e8f0;">]</span>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Op:</label><br>
+            <select id="s11op" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;">
+              <option value="+">+</option><option value="-">−</option><option value="*">×</option><option value="join">⊔ join</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Interval B:</label><br>
+            <span style="color:#e2e8f0;">[</span>
+            <input type="number" id="s11bLo" value="1" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;">
+            <span style="color:#e2e8f0;">,</span>
+            <input type="number" id="s11bHi" value="4" style="width:50px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;">
+            <span style="color:#e2e8f0;">]</span>
+          </div>
+        </div>
+        <button class="btn btn-sm" onclick="s11Calc()" style="margin-top:0.8rem;">Compute</button>
+      </div>
+
+      <div id="s11result" style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:8px;padding:0.8rem;margin-top:0.8rem;font-family:monospace;color:#e2e8f0;min-height:60px;">
+        <span style="color:#64748b;">Click "Compute" to see the result</span>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong>Interval rules:</strong><br>
+        [a,b] + [c,d] = [a+c, b+d]<br>
+        [a,b] − [c,d] = [a−d, b−c]<br>
+        [a,b] × [c,d] = [min(ac,ad,bc,bd), max(ac,ad,bc,bd)]<br>
+        [a,b] ⊔ [c,d] = [min(a,c), max(b,d)]
+      </div>
+    </div>
+
+    <div>
+      <canvas id="cS11" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+
+  function drawNumberLine(intervals, label){
+    ctx.clearRect(0,0,520,370);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Number Line Visualization', 260, 25);
+
+    // Number line
+    const nlY = [100, 190, 300];
+    const labels = ['Interval A', 'Interval B', label || 'Result'];
+    const colors = ['#6366f1', '#a78bfa', '#f59e0b'];
+
+    // Find range for scaling
+    let allVals = [];
+    intervals.forEach(iv => { if(iv) { allVals.push(iv[0], iv[1]); }});
+    if(allVals.length === 0) return;
+    const minV = Math.min(...allVals) - 2;
+    const maxV = Math.max(...allVals) + 2;
+    const range = maxV - minV || 1;
+    const margin = 40, lineW = 440;
+
+    intervals.forEach((iv, idx) => {
+      if(!iv) return;
+      const y = nlY[idx];
+
+      // Label
+      ctx.fillStyle = colors[idx]; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(labels[idx], 10, y - 30);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '12px monospace';
+      ctx.fillText(`[${iv[0]}, ${iv[1]}]`, 130, y - 30);
+
+      // Number line
+      ctx.beginPath(); ctx.moveTo(margin, y); ctx.lineTo(margin+lineW, y);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1; ctx.stroke();
+
+      // Ticks
+      for(let v = Math.ceil(minV); v <= Math.floor(maxV); v++){
+        const x = margin + ((v - minV) / range) * lineW;
+        ctx.beginPath(); ctx.moveTo(x, y-4); ctx.lineTo(x, y+4);
+        ctx.strokeStyle = '#64748b'; ctx.stroke();
+        ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(v, x, y+15);
+      }
+
+      // Interval bar
+      const x1 = margin + ((iv[0] - minV) / range) * lineW;
+      const x2 = margin + ((iv[1] - minV) / range) * lineW;
+      ctx.fillStyle = colors[idx] + '66';
+      ctx.fillRect(x1, y-10, x2-x1, 20);
+      ctx.strokeStyle = colors[idx]; ctx.lineWidth = 2;
+      ctx.strokeRect(x1, y-10, x2-x1, 20);
+
+      // Endpoints
+      [x1, x2].forEach(x => {
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2);
+        ctx.fillStyle = colors[idx]; ctx.fill();
+      });
+    });
+  }
+
+  function init(){
+    drawNumberLine([[-3,5],[1,4]], null);
+  }
+
+  window.s11Calc = function(){
+    const aLo = parseInt(document.getElementById('s11aLo').value);
+    const aHi = parseInt(document.getElementById('s11aHi').value);
+    const bLo = parseInt(document.getElementById('s11bLo').value);
+    const bHi = parseInt(document.getElementById('s11bHi').value);
+    const op = document.getElementById('s11op').value;
+
+    if([aLo,aHi,bLo,bHi].some(isNaN)) return;
+
+    let rLo, rHi, opLabel, explanation;
+    if(op === '+'){
+      rLo = aLo+bLo; rHi = aHi+bHi;
+      opLabel = 'A + B'; explanation = `[${aLo}+${bLo}, ${aHi}+${bHi}] = [${rLo}, ${rHi}]`;
+    } else if(op === '-'){
+      rLo = aLo-bHi; rHi = aHi-bLo;
+      opLabel = 'A − B'; explanation = `[${aLo}−${bHi}, ${aHi}−${bLo}] = [${rLo}, ${rHi}]`;
+    } else if(op === '*'){
+      const products = [aLo*bLo, aLo*bHi, aHi*bLo, aHi*bHi];
+      rLo = Math.min(...products); rHi = Math.max(...products);
+      opLabel = 'A × B'; explanation = `min/max of {${products.join(',')}} = [${rLo}, ${rHi}]`;
+    } else {
+      rLo = Math.min(aLo, bLo); rHi = Math.max(aHi, bHi);
+      opLabel = 'A ⊔ B'; explanation = `[min(${aLo},${bLo}), max(${aHi},${bHi})] = [${rLo}, ${rHi}]`;
+    }
+
+    document.getElementById('s11result').innerHTML =
+      `<div style="color:#f59e0b;font-size:1.1rem;font-weight:bold;">${opLabel} = [${rLo}, ${rHi}]</div>` +
+      `<div style="color:#94a3b8;font-size:0.85rem;margin-top:0.3rem;">${explanation}</div>`;
+
+    drawNumberLine([[aLo,aHi],[bLo,bHi],[rLo,rHi]], opLabel);
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s11').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s12: Widening ==================== -->
+<div class="slide" id="s12">
+  <h2>Widening: Forcing Termination</h2>
+  <p style="color:#94a3b8;">Without widening, loops create infinitely ascending chains. Widening jumps to ∞ to guarantee convergence.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line">x = 0;</div>
+          <div class="line">while (x &lt; 100) {</div>
+          <div class="line">  x = x + 1;</div>
+          <div class="line">}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s12Toggle('no')" id="s12btnNo" style="opacity:1;">Without Widening</button>
+        <button class="btn btn-sm" onclick="s12Toggle('yes')" id="s12btnYes" style="opacity:0.6;">With Widening</button>
+        <button class="btn btn-sm" onclick="s12Step()">Step</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+
+      <div id="s12status" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.82rem;margin-top:0.8rem;color:#94a3b8;min-height:60px;">
+        Click "Step" to iterate the fixpoint. Toggle to compare with/without widening.
+      </div>
+    </div>
+
+    <div>
+      <canvas id="cS12" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+  let mode = 'no'; // 'no' or 'yes' (widening)
+  let iterations = [];
+  let stepIdx = 0;
+
+  const noWiden = [
+    {iter:0, lo:0, hi:0, label:'[0,0]'},
+    {iter:1, lo:0, hi:1, label:'[0,1]'},
+    {iter:2, lo:0, hi:2, label:'[0,2]'},
+    {iter:3, lo:0, hi:3, label:'[0,3]'},
+    {iter:4, lo:0, hi:4, label:'... keeps growing'},
+    {iter:5, lo:0, hi:50, label:'[0,50]'},
+    {iter:6, lo:0, hi:99, label:'[0,99]'},
+    {iter:7, lo:0, hi:100, label:'[0,100] ✓ fixed'}
+  ];
+
+  const yesWiden = [
+    {iter:0, lo:0, hi:0, label:'[0,0]'},
+    {iter:1, lo:0, hi:1, label:'[0,1]'},
+    {iter:2, lo:0, hi:Infinity, label:'[0,+∞] ← WIDEN!'},
+    {iter:3, lo:0, hi:Infinity, label:'[0,+∞] ✓ fixed'}
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    const data = iterations.slice(0, stepIdx);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(mode==='no' ? 'Without Widening (many iterations)' : 'With Widening (converges fast)', 260, 25);
+
+    if(data.length === 0) return;
+
+    // Draw iterations as bars
+    const maxDisplay = Math.min(data.length, 8);
+    const barH = 35, gap = 8, startY = 50;
+    const maxHi = mode==='no' ? 100 : 120;
+
+    data.slice(-maxDisplay).forEach((d, i) => {
+      const y = startY + i * (barH + gap);
+      const hiClamp = Math.min(d.hi === Infinity ? maxHi : d.hi, maxHi);
+      const loNorm = (d.lo / maxHi) * 400;
+      const hiNorm = (hiClamp / maxHi) * 400;
+      const x1 = 80 + loNorm;
+      const x2 = 80 + hiNorm;
+
+      // Iteration label
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(`iter ${d.iter}:`, 72, y + barH/2 + 4);
+
+      // Bar
+      ctx.fillStyle = d.hi === Infinity ? '#ef444488' : '#6366f188';
+      ctx.fillRect(x1, y, Math.max(x2 - x1, 4), barH);
+      ctx.strokeStyle = d.hi === Infinity ? '#ef4444' : '#818cf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x1, y, Math.max(x2 - x1, 4), barH);
+
+      // Label
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left';
+      ctx.fillText(d.label, x2 + 8, y + barH/2 + 4);
+    });
+
+    // Status
+    const last = data[data.length - 1];
+    if(last.label.includes('fixed') || last.label.includes('✓')){
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('✓ Fixpoint reached!', 260, 350);
+      ctx.fillText(`Total iterations: ${data.length}`, 260, 365);
+    }
+  }
+
+  function init(){
+    stepIdx = 0;
+    iterations = mode === 'no' ? noWiden : yesWiden;
+    draw();
+    document.getElementById('s12status').innerHTML = mode === 'no'
+      ? 'Without widening: the upper bound grows by 1 each iteration. Needs 100+ iterations!'
+      : 'With widening: when the bound grows, jump to +∞ immediately. Converges in 3 iterations!';
+  }
+
+  window.s12Toggle = function(m){
+    mode = m;
+    document.getElementById('s12btnNo').style.opacity = m==='no'?'1':'0.6';
+    document.getElementById('s12btnYes').style.opacity = m==='yes'?'1':'0.6';
+    init();
+  };
+  window.s12Step = function(){
+    if(stepIdx >= iterations.length) return;
+    stepIdx++;
+    draw();
+  };
+  window.s12Reset = function(){ init(); };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s12').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s13: Div-by-Zero Detection ==================== -->
+<div class="slide" id="s13">
+  <h2>Application: Division-by-Zero Detection</h2>
+  <p style="color:#94a3b8;">The whole point — use abstract domains to catch real bugs at compile time.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="font-size:1rem;color:#a78bfa;margin-bottom:0.5rem;">Check: Does the interval contain 0?</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+        <label style="font-size:0.85rem;color:#94a3b8;">Divisor interval:</label><br>
+        <span style="color:#e2e8f0;font-size:1.1rem;">[</span>
+        <input type="number" id="s13lo" value="-5" style="width:60px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:1rem;">
+        <span style="color:#e2e8f0;font-size:1.1rem;">,</span>
+        <input type="number" id="s13hi" value="3" style="width:60px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:1rem;">
+        <span style="color:#e2e8f0;font-size:1.1rem;">]</span>
+        <button class="btn btn-sm" onclick="s13Check()" style="margin-left:1rem;">Analyze</button>
+      </div>
+
+      <div id="s13result" style="border-radius:10px;padding:1rem;margin-top:1rem;min-height:100px;border:2px solid #475569;background:rgba(0,0,0,0.15);">
+        <span style="color:#64748b;">Enter an interval for the divisor and click "Analyze"</span>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-top:0.8rem;">
+        <h4 style="font-size:0.9rem;color:#38bdf8;margin:0 0 0.5rem;">Quick Examples:</h4>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-secondary" onclick="document.getElementById('s13lo').value='1';document.getElementById('s13hi').value='10';s13Check();">[1,10] Safe</button>
+          <button class="btn btn-sm btn-secondary" onclick="document.getElementById('s13lo').value='-5';document.getElementById('s13hi').value='5';s13Check();">[-5,5] Maybe</button>
+          <button class="btn btn-sm btn-secondary" onclick="document.getElementById('s13lo').value='0';document.getElementById('s13hi').value='0';s13Check();">[0,0] Always!</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <canvas id="cS13" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS13');
+  const ctx = canvas.getContext('2d');
+
+  function draw(lo, hi, verdict){
+    ctx.clearRect(0,0,520,370);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Division-by-Zero Analysis', 260, 25);
+
+    // Number line
+    const nlY = 180, margin = 60, lineW = 400;
+    const pad = Math.max(Math.abs(lo), Math.abs(hi), 5) + 3;
+    const minV = -pad, maxV = pad, range = maxV - minV;
+
+    // Line
+    ctx.beginPath(); ctx.moveTo(margin, nlY); ctx.lineTo(margin+lineW, nlY);
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Zero marker
+    const zeroX = margin + ((0 - minV) / range) * lineW;
+    ctx.beginPath(); ctx.moveTo(zeroX, nlY-40); ctx.lineTo(zeroX, nlY+40);
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.setLineDash([4,4]); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px monospace';
+    ctx.fillText('0 (danger!)', zeroX, nlY+55);
+
+    // Ticks
+    for(let v = Math.ceil(minV); v <= Math.floor(maxV); v++){
+      const x = margin + ((v - minV) / range) * lineW;
+      ctx.beginPath(); ctx.moveTo(x, nlY-4); ctx.lineTo(x, nlY+4);
+      ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1; ctx.stroke();
+      if(v % 2 === 0 || pad <= 8){
+        ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(v, x, nlY+16);
+      }
+    }
+
+    // Interval
+    if(lo !== null && hi !== null){
+      const x1 = margin + ((lo - minV) / range) * lineW;
+      const x2 = margin + ((hi - minV) / range) * lineW;
+      const containsZero = lo <= 0 && hi >= 0;
+      const isZero = lo === 0 && hi === 0;
+      const color = isZero ? '#ef4444' : containsZero ? '#f59e0b' : '#22c55e';
+
+      ctx.fillStyle = color + '44';
+      ctx.fillRect(x1, nlY-25, Math.max(x2-x1, 4), 50);
+      ctx.strokeStyle = color; ctx.lineWidth = 3;
+      ctx.strokeRect(x1, nlY-25, Math.max(x2-x1, 4), 50);
+
+      // Endpoints
+      [x1,x2].forEach(x => {
+        ctx.beginPath(); ctx.arc(x, nlY, 6, 0, Math.PI*2);
+        ctx.fillStyle = color; ctx.fill();
+      });
+
+      // Label
+      ctx.fillStyle = color; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(`[${lo}, ${hi}]`, (x1+x2)/2, nlY-35);
+    }
+
+    // Verdict
+    if(verdict){
+      const col = verdict.safe ? '#22c55e' : verdict.always ? '#ef4444' : '#f59e0b';
+      const icon = verdict.safe ? '✓ SAFE' : verdict.always ? '✗ ALWAYS DIVZERO' : '⚠ POSSIBLE DIVZERO';
+      ctx.fillStyle = col; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(icon, 260, 280);
+      ctx.font = '12px monospace'; ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(verdict.explain, 260, 305);
+    }
+  }
+
+  window.s13Check = function(){
+    const lo = parseInt(document.getElementById('s13lo').value);
+    const hi = parseInt(document.getElementById('s13hi').value);
+    if(isNaN(lo) || isNaN(hi)) return;
+
+    const containsZero = lo <= 0 && hi >= 0;
+    const isZero = lo === 0 && hi === 0;
+
+    let verdict, borderColor, html;
+    if(isZero){
+      verdict = {safe:false, always:true, explain:'Divisor is exactly 0 — guaranteed crash!'};
+      borderColor = '#ef4444';
+      html = `<div style="color:#ef4444;font-size:1.1rem;font-weight:bold;">✗ ALWAYS division by zero!</div>
+        <div style="color:#94a3b8;margin-top:0.5rem;">The interval [0,0] has only one value: zero. Every concrete execution divides by zero.</div>`;
+    } else if(containsZero){
+      verdict = {safe:false, always:false, explain:'Zero is within the interval — may crash on some inputs'};
+      borderColor = '#f59e0b';
+      html = `<div style="color:#f59e0b;font-size:1.1rem;font-weight:bold;">⚠ POSSIBLE division by zero</div>
+        <div style="color:#94a3b8;margin-top:0.5rem;">The interval [${lo},${hi}] contains 0. Some concrete values in this range will cause division by zero. A sound analyzer must warn here.</div>`;
+    } else {
+      verdict = {safe:true, always:false, explain:'Zero is outside the interval — guaranteed safe'};
+      borderColor = '#22c55e';
+      html = `<div style="color:#22c55e;font-size:1.1rem;font-weight:bold;">✓ SAFE — no division by zero</div>
+        <div style="color:#94a3b8;margin-top:0.5rem;">The interval [${lo},${hi}] does not contain 0. No concrete value in this range can cause division by zero.</div>`;
+    }
+
+    const res = document.getElementById('s13result');
+    res.style.borderColor = borderColor;
+    res.innerHTML = html;
+    draw(lo, hi, verdict);
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s13').classList.contains('active')){ draw(null,null,null); }
+  });
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  draw(null, null, null);
+})();
+</script>
+
+<!-- ==================== SLIDE s14: Domain Comparison ==================== -->
+<div class="slide" id="s14">
+  <h2>Domain Comparison & Hierarchy</h2>
+  <p style="color:#94a3b8;">Each domain makes a different <strong>precision vs cost</strong> tradeoff. Click a domain to explore.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS14" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+
+    <div>
+      <div id="s14detail" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;min-height:200px;">
+        <p style="color:#64748b;font-style:italic;">Click a domain on the left to see its details.</p>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-top:0.8rem;">
+        <h4 style="font-size:0.9rem;color:#38bdf8;margin:0 0 0.5rem;">For <code>x = -3</code>, each domain says:</h4>
+        <table style="width:100%;font-size:0.82rem;font-family:monospace;">
+          <tr><td style="color:#94a3b8;">Sign:</td><td style="color:#ef4444;">−</td><td style="color:#64748b;">(just the sign)</td></tr>
+          <tr><td style="color:#94a3b8;">Constant:</td><td style="color:#22c55e;">-3</td><td style="color:#64748b;">(exact value)</td></tr>
+          <tr><td style="color:#94a3b8;">Interval:</td><td style="color:#38bdf8;">[-3,-3]</td><td style="color:#64748b;">(tight bounds)</td></tr>
+          <tr><td style="color:#94a3b8;">Octagon:</td><td style="color:#a78bfa;">-3≤x≤-3, ±x±y≤c</td><td style="color:#64748b;">(relational)</td></tr>
+          <tr><td style="color:#94a3b8;">Polyhedra:</td><td style="color:#f472b6;">ax+by+cz≤d</td><td style="color:#64748b;">(full linear)</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS14');
+  const ctx = canvas.getContext('2d');
+
+  const domains = [
+    {name:'Sign', x:260, y:320, color:'#ef4444', cost:'O(n)', precision:'Low',
+     desc:'Tracks +, −, 0, ⊤, ⊥ per variable. Very fast but loses magnitude info. Good for sign-related checks.', example:'x∈{−}'},
+    {name:'Constant', x:140, y:240, color:'#22c55e', cost:'O(n)', precision:'Medium',
+     desc:'Tracks exact value or ⊤. Enables constant folding and dead code elimination. Loses info at any merge with different values.', example:'x=−3'},
+    {name:'Interval', x:380, y:240, color:'#38bdf8', cost:'O(n)', precision:'Medium',
+     desc:'Tracks [lo,hi] bounds per variable. Sweet spot for many analyses. Used in Astrée (proved A380 flight software). Non-relational.', example:'x∈[−3,−3]'},
+    {name:'Octagon', x:200, y:140, color:'#a78bfa', cost:'O(n³)', precision:'High',
+     desc:'Tracks constraints ±xᵢ±xⱼ ≤ c. Captures relationships like x≤y+5. Used in Astrée for some variables. Much more expensive.', example:'±x±y ≤ c'},
+    {name:'Polyhedra', x:320, y:60, color:'#f472b6', cost:'Exp', precision:'Very High',
+     desc:'Tracks arbitrary linear constraints a₁x₁+...+aₙxₙ ≤ b. Most precise non-relational domain. Exponential cost, only for small programs.', example:'ax+by ≤ c'}
+  ];
+
+  let selected = -1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+
+    // Arrow from less precise to more precise
+    const arrows = [[0,1],[0,2],[1,3],[2,3],[3,4]];
+    arrows.forEach(([from,to]) => {
+      const d1 = domains[from], d2 = domains[to];
+      ctx.beginPath(); ctx.moveTo(d1.x, d1.y-18); ctx.lineTo(d2.x, d2.y+18);
+      ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5; ctx.stroke();
+      // Arrowhead
+      const angle = Math.atan2(d2.y+18-d1.y, d2.x-d1.x);
+      const hx = d2.x - Math.cos(angle)*22, hy = d2.y+18 - Math.sin(angle)*22;
+      ctx.beginPath();
+      ctx.moveTo(d2.x - Math.cos(angle)*18, d2.y+18 - Math.sin(angle)*18);
+      ctx.lineTo(hx - Math.cos(angle-0.5)*8, hy - Math.sin(angle-0.5)*8);
+      ctx.lineTo(hx - Math.cos(angle+0.5)*8, hy - Math.sin(angle+0.5)*8);
+      ctx.closePath(); ctx.fillStyle = '#334155'; ctx.fill();
+    });
+
+    // Labels
+    ctx.fillStyle = '#64748b'; ctx.font = '10px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('Less precise', 10, 340);
+    ctx.fillText('Cheaper', 10, 354);
+    ctx.textAlign = 'right';
+    ctx.fillText('More precise', 510, 50);
+    ctx.fillText('More expensive', 510, 64);
+
+    // Nodes
+    domains.forEach((d,i) => {
+      const isSelected = i === selected;
+      ctx.beginPath(); ctx.arc(d.x, d.y, isSelected?26:22, 0, Math.PI*2);
+      ctx.fillStyle = isSelected ? d.color : d.color+'88';
+      ctx.fill();
+      if(isSelected){ ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.stroke(); }
+
+      ctx.fillStyle = '#fff'; ctx.font = `bold ${isSelected?12:11}px monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(d.name, d.x, d.y);
+
+      // Cost label
+      ctx.fillStyle = '#94a3b8'; ctx.font = '9px monospace'; ctx.textBaseline = 'top';
+      ctx.fillText(d.cost, d.x, d.y+26);
+    });
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 520/rect.width;
+    const mx = (e.clientX - rect.left)*scaleX;
+    const my = (e.clientY - rect.top)*(370/rect.height);
+
+    selected = -1;
+    domains.forEach((d,i) => {
+      if(Math.hypot(mx-d.x, my-d.y) < 28) selected = i;
+    });
+
+    draw();
+    const detail = document.getElementById('s14detail');
+    if(selected >= 0){
+      const d = domains[selected];
+      detail.innerHTML = `<h3 style="color:${d.color};margin:0 0 0.5rem;">${d.name} Domain</h3>
+        <div style="color:#e2e8f0;font-size:0.9rem;">${d.desc}</div>
+        <div style="margin-top:0.8rem;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div style="background:rgba(0,0,0,0.2);padding:0.5rem;border-radius:6px;">
+            <div style="color:#94a3b8;font-size:0.75rem;">Cost</div>
+            <div style="color:#e2e8f0;font-weight:bold;">${d.cost}</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);padding:0.5rem;border-radius:6px;">
+            <div style="color:#94a3b8;font-size:0.75rem;">Precision</div>
+            <div style="color:#e2e8f0;font-weight:bold;">${d.precision}</div>
+          </div>
+        </div>
+        <div style="margin-top:0.5rem;background:rgba(0,0,0,0.2);padding:0.5rem;border-radius:6px;">
+          <div style="color:#94a3b8;font-size:0.75rem;">Example: x = −3</div>
+          <div style="color:${d.color};font-family:monospace;font-weight:bold;">${d.example}</div>
+        </div>`;
+    } else {
+      detail.innerHTML = '<p style="color:#64748b;font-style:italic;">Click a domain on the left to see its details.</p>';
+    }
+  });
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s14').classList.contains('active')){ selected=-1; draw(); }
+  });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE sCB: Challenge — Apply Widening ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B: Apply Widening</h2>
+  <p style="color:#94a3b8;">Given a loop and interval analysis, predict what happens with and without widening.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block" style="margin-bottom:1rem;">
+        <div class="code-content">
+          <div class="line">y = 1;</div>
+          <div class="line">while (y &lt; 50) {</div>
+          <div class="line">  y = y * 2;</div>
+          <div class="line">}</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q1.</strong> Without widening, what is y's interval after iteration 3?</p>
+        <select id="sCBq1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="[1,4]">[1,4]</option>
+          <option value="[1,8]">[1,8]</option>
+          <option value="[2,8]">[2,8]</option>
+          <option value="[1,16]">[1,16]</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q2.</strong> With widening at iteration 2, what does y become?</p>
+        <select id="sCBq2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="[1,50]">[1,50]</option>
+          <option value="[1,100]">[1,100]</option>
+          <option value="[1,+inf]">[1,+∞]</option>
+          <option value="[2,+inf]">[2,+∞]</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q3.</strong> Is [1,+∞] a <em>sound</em> over-approximation for y after the loop?</p>
+        <select id="sCBq3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="yes">Yes — it contains all possible values</option>
+          <option value="no">No — it's too imprecise to be useful</option>
+          <option value="maybe">Maybe — depends on what we check</option>
+        </select>
+      </div>
+
+      <button class="btn btn-sm" onclick="sCBCheck()">Check All</button>
+    </div>
+
+    <div>
+      <div id="sCBresults" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:250px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Answer all questions and click "Check All"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'[1,8]', q2:'[1,+inf]', q3:'yes'};
+  const explanations = {
+    q1: 'Iter 0: [1,1], Iter 1: [1,2], Iter 2: [1,4], Iter 3: [1,8]. Each iteration doubles the upper bound via y*2.',
+    q2: 'At iter 2, old=[1,2], new=[1,4]. Upper bound grew (2→4), so widen: upper → +∞. Result: [1,+∞].',
+    q3: 'Yes! Soundness means every real value is contained. y is always ≥1 (starts at 1, only multiplied). [1,+∞] contains all reachable values. It\'s imprecise but SOUND.'
+  };
+
+  window.sCBCheck = function(){
+    let html = '', score = 0;
+    ['q1','q2','q3'].forEach((q,i) => {
+      const sel = document.getElementById('sCB'+q).value;
+      const correct = answers[q];
+      const ok = sel === correct;
+      if(ok) score++;
+      const color = sel==='' ? '#64748b' : ok ? '#22c55e' : '#ef4444';
+      const border = sel==='' ? '#475569' : ok ? '#22c55e' : '#ef4444';
+      document.getElementById('sCB'+q).style.borderColor = border;
+      html += `<div style="margin-bottom:0.8rem;padding:0.6rem;border-left:3px solid ${color};padding-left:0.8rem;">
+        <strong style="color:${color};">Q${i+1}: ${ok?'✓ Correct':'✗ Incorrect'}</strong>
+        ${!ok && sel ? `<span style="color:#94a3b8;"> (you said: ${sel}, answer: ${correct})</span>` : ''}
+        <div style="color:#94a3b8;font-size:0.82rem;margin-top:0.3rem;">${explanations[q]}</div>
+      </div>`;
+    });
+    html += `<div style="margin-top:0.5rem;padding:0.6rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;color:#e2e8f0;">${score}/3 correct</div>`;
+    document.getElementById('sCBresults').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s15: AI in Practice ==================== -->
+<div class="slide" id="s15">
+  <h2>Abstract Interpretation in Practice</h2>
+  <p style="color:#94a3b8;">Real tools that use abstract interpretation to find real bugs in real software.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS15" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+
+    <div>
+      <div id="s15detail" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;min-height:220px;">
+        <p style="color:#64748b;font-style:italic;">Click a tool on the left to learn about it.</p>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong>Common theme:</strong> All these tools trade precision for soundness — they may report false positives but never miss a real bug (within their scope).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+
+  const tools = [
+    {name:'Astrée', x:130, y:80, color:'#ef4444', domain:'Intervals + Octagons',
+     target:'Embedded C (avionics, automotive)', achievement:'Proved zero runtime errors in Airbus A380 flight control software. Zero false positives on that codebase.',
+     domains:'Intervals, Octagons, specialized floating-point domains', year:'2003'},
+    {name:'Infer', x:390, y:80, color:'#38bdf8', domain:'Separation logic',
+     target:'Mobile apps (Java, C, Obj-C)', achievement:'Used at Facebook/Meta on every code diff. Catches null pointer, memory leak, thread safety bugs before code review.',
+     domains:'Bi-abduction (separation logic), Pulse (ownership)', year:'2015'},
+    {name:'Polyspace', x:130, y:220, color:'#22c55e', domain:'Intervals + Polyhedra',
+     target:'Safety-critical C/C++', achievement:'MathWorks commercial tool. Used in automotive (ISO 26262) and medical devices. Color-codes every operation as safe/error/warning.',
+     domains:'Multiple abstract domains with domain functor combinations', year:'2000s'},
+    {name:'SLAM', x:390, y:220, color:'#a78bfa', domain:'Predicate abstraction',
+     target:'Windows device drivers', achievement:'Microsoft tool that verified Windows device drivers satisfy API protocols. Led to Static Driver Verifier shipped with Windows DDK.',
+     domains:'Predicate abstraction + CEGAR (counterexample-guided refinement)', year:'2001'},
+    {name:'Frama-C EVA', x:260, y:320, color:'#f59e0b', domain:'Intervals + Gauges',
+     target:'C programs (general)', achievement:'Open-source. Evolved Value Analysis plugin. Combines abstract interpretation with formal specification (ACSL annotations).',
+     domains:'Intervals, congruences, gauges for loop analysis', year:'2008'}
+  ];
+
+  let selected = -1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Click a tool to learn more', 260, 20);
+
+    tools.forEach((t,i) => {
+      const isSel = i === selected;
+      // Card background
+      ctx.fillStyle = isSel ? t.color+'33' : 'rgba(30,41,59,0.8)';
+      const w = 140, h = 60;
+      ctx.beginPath(); ctx.roundRect(t.x-w/2, t.y-h/2, w, h, 10); ctx.fill();
+      ctx.strokeStyle = isSel ? t.color : '#475569';
+      ctx.lineWidth = isSel ? 2.5 : 1;
+      ctx.stroke();
+
+      // Tool name
+      ctx.fillStyle = isSel ? '#fff' : t.color;
+      ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(t.name, t.x, t.y - 8);
+
+      // Domain hint
+      ctx.fillStyle = '#94a3b8'; ctx.font = '9px monospace';
+      ctx.fillText(t.domain, t.x, t.y + 12);
+    });
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (520/rect.width);
+    const my = (e.clientY - rect.top) * (370/rect.height);
+
+    selected = -1;
+    tools.forEach((t,i) => {
+      if(Math.abs(mx-t.x)<75 && Math.abs(my-t.y)<35) selected = i;
+    });
+    draw();
+
+    const detail = document.getElementById('s15detail');
+    if(selected >= 0){
+      const t = tools[selected];
+      detail.innerHTML = `<h3 style="color:${t.color};margin:0 0 0.5rem;">${t.name} <span style="color:#64748b;font-size:0.8rem;">(${t.year})</span></h3>
+        <div style="color:#94a3b8;font-size:0.8rem;margin-bottom:0.5rem;">Target: ${t.target}</div>
+        <div style="color:#e2e8f0;font-size:0.88rem;margin-bottom:0.8rem;">${t.achievement}</div>
+        <div style="background:rgba(0,0,0,0.2);padding:0.6rem;border-radius:6px;">
+          <div style="color:#94a3b8;font-size:0.75rem;">Abstract Domains Used</div>
+          <div style="color:${t.color};font-family:monospace;font-size:0.85rem;">${t.domains}</div>
+        </div>`;
+    } else {
+      detail.innerHTML = '<p style="color:#64748b;font-style:italic;">Click a tool on the left to learn about it.</p>';
+    }
+  });
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s15').classList.contains('active')){ selected=-1; draw(); }
+  });
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s16: Key Takeaways ==================== -->
+<div class="slide" id="s16">
+  <h2>Key Takeaways</h2>
+  <p style="color:#94a3b8;">The essential ideas from Module 4 — Abstract Interpretation.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="key-idea" style="margin-bottom:1rem;">
+        <strong>1. Abstraction trades precision for decidability</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">We can't analyze all possible concrete values (undecidable), so we group them into abstract values. The analysis always terminates and covers all cases.</span>
+      </div>
+
+      <div class="key-idea" style="margin-bottom:1rem;">
+        <strong>2. Galois connections formalize the abstraction</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">α (abstraction) maps concrete → abstract. γ (concretization) maps abstract → concrete. Soundness: concrete ⊆ γ(α(concrete)).</span>
+      </div>
+
+      <div class="key-idea" style="margin-bottom:1rem;">
+        <strong>3. Different domains = different tradeoffs</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">Sign (cheap, imprecise) → Constant → Interval → Octagon → Polyhedra (expensive, precise). Pick the domain that matches your analysis goal.</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="warning" style="margin-bottom:1rem;">
+        <strong>4. Widening ensures termination</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">Loops can create infinite ascending chains in the abstract domain. Widening jumps to a safe over-approximation (often ∞) to force convergence. Sound but less precise.</span>
+      </div>
+
+      <div class="analogy" style="margin-bottom:1rem;">
+        <strong>5. Sound ≠ Precise</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">A sound analysis never misses a real bug — but may report false positives. Like a metal detector at the airport: it catches all weapons but also your belt buckle.</span>
+      </div>
+
+      <div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:10px;padding:1rem;">
+        <strong style="color:#818cf8;">From M3 to M4:</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">M3 (Static Analysis) used sets of definitions/variables. M4 replaces those sets with abstract values from a domain — same framework (lattice + transfer + fixpoint), richer vocabulary.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s17: Next Module Preview ==================== -->
+<div class="slide" id="s17">
+  <h2>Looking Ahead: Module 5</h2>
+  <p style="color:#94a3b8;">From detecting bugs to detecting <strong>security vulnerabilities</strong>.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <h3 style="font-size:1rem;color:#a78bfa;margin-bottom:0.8rem;">What's Coming in Security Analysis</h3>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.5rem;">
+          <div style="background:#ef4444;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.9rem;">1</div>
+          <div><strong style="color:#e2e8f0;">Taint Analysis</strong><br><span style="color:#94a3b8;font-size:0.85rem;">Track untrusted data from sources (user input) to sinks (SQL queries, system calls)</span></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.5rem;">
+          <div style="background:#f59e0b;color:#000;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.9rem;">2</div>
+          <div><strong style="color:#e2e8f0;">Information Flow</strong><br><span style="color:#94a3b8;font-size:0.85rem;">Ensure secrets don't leak through public channels — noninterference property</span></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.5rem;">
+          <div style="background:#22c55e;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.9rem;">3</div>
+          <div><strong style="color:#e2e8f0;">OWASP & Real Vulns</strong><br><span style="color:#94a3b8;font-size:0.85rem;">SQL injection, XSS, command injection — analyzed as taint problems</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="analogy" style="margin-bottom:1rem;">
+        <strong>The connection:</strong> M3 gave us the framework (dataflow). M4 gave us abstract domains. M5 combines both: taint analysis IS a dataflow problem with abstract domain {tainted, untainted}. Everything builds on what you've learned!
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+        <h4 style="color:#38bdf8;margin:0 0 0.8rem;font-size:0.95rem;">Module Progression</h4>
+        <div style="font-family:monospace;font-size:0.85rem;line-height:1.8;">
+          <div style="color:#94a3b8;">M1: Foundations (ASTs, CFGs) <span style="color:#475569;">────</span></div>
+          <div style="color:#94a3b8;">M2: AST Construction <span style="color:#475569;">──────────</span></div>
+          <div style="color:#94a3b8;">M3: Static Analysis Framework <span style="color:#475569;">──</span></div>
+          <div style="color:#f59e0b;">M4: Abstract Interpretation ← <strong>YOU ARE HERE</strong></div>
+          <div style="color:#38bdf8;">M5: Security Analysis <span style="color:#475569;">────────</span> next</div>
+          <div style="color:#64748b;">M6: Tools & Integration <span style="color:#475569;">──────</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s18: What We Learned ==================== -->
+<div class="slide" id="s18">
+  <h2>What We Learned in Module 4</h2>
+  <p style="color:#94a3b8;">A complete summary of abstract interpretation concepts.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div>
+      <h3 style="font-size:0.95rem;color:#6366f1;margin-bottom:0.8rem;">Core Theory</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.6;">
+        <div style="color:#e2e8f0;">✓ Concrete vs Abstract worlds</div>
+        <div style="color:#e2e8f0;">✓ Galois connections (α, γ)</div>
+        <div style="color:#e2e8f0;">✓ Soundness via over-approximation</div>
+        <div style="color:#e2e8f0;">✓ ABSTRACT_DOMAIN signature</div>
+        <div style="color:#e2e8f0;">✓ Transfer functions on abstract values</div>
+        <div style="color:#e2e8f0;">✓ Widening for termination</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#22c55e;margin-bottom:0.8rem;">Domains Covered</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.6;">
+        <div style="color:#ef4444;">✓ Sign domain (+, −, 0, ⊤, ⊥)</div>
+        <div style="color:#22c55e;">✓ Constant propagation (c, ⊤, ⊥)</div>
+        <div style="color:#38bdf8;">✓ Interval domain ([lo, hi])</div>
+        <div style="color:#a78bfa;">✓ Octagon domain (±x±y ≤ c)</div>
+        <div style="color:#f472b6;">✓ Polyhedra domain (linear)</div>
+        <div style="color:#94a3b8;">✓ Precision vs cost hierarchy</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#f59e0b;margin-bottom:0.8rem;">Practical Skills</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.6;">
+        <div style="color:#e2e8f0;">✓ Division-by-zero detection</div>
+        <div style="color:#e2e8f0;">✓ Sign arithmetic tables</div>
+        <div style="color:#e2e8f0;">✓ Interval arithmetic rules</div>
+        <div style="color:#e2e8f0;">✓ Applying widening to loops</div>
+        <div style="color:#e2e8f0;">✓ Choosing the right domain</div>
+        <div style="color:#e2e8f0;">✓ Real-world tools (Astrée, Infer)</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1.2rem;">
+    <div style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:0.6rem 1.5rem;border-radius:8px;color:#fff;font-weight:bold;font-size:0.95rem;">
+      Abstract Interpretation = Sound Bug Detection at Scale
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE sCC: Challenge — Pick the Domain ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: Pick the Right Domain</h2>
+  <p style="color:#94a3b8;">For each scenario, choose the <strong>most appropriate</strong> abstract domain.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q1.</strong> You need to verify array index <code>i</code> is always in bounds <code>[0, n-1]</code>.</p>
+        <select id="sCCq1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select domain...</option>
+          <option value="sign">Sign</option>
+          <option value="constant">Constant Propagation</option>
+          <option value="interval">Interval</option>
+          <option value="octagon">Octagon</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q2.</strong> You need to prove <code>x ≤ y + 5</code> is always true (a relational property).</p>
+        <select id="sCCq2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select domain...</option>
+          <option value="sign">Sign</option>
+          <option value="constant">Constant Propagation</option>
+          <option value="interval">Interval</option>
+          <option value="octagon">Octagon</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q3.</strong> You're writing a quick checker: is the result of <code>a * b</code> ever negative?</p>
+        <select id="sCCq3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select domain...</option>
+          <option value="sign">Sign</option>
+          <option value="constant">Constant Propagation</option>
+          <option value="interval">Interval</option>
+          <option value="octagon">Octagon</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="margin:0 0 0.5rem;font-size:0.9rem;"><strong>Q4.</strong> You want to constant-fold <code>x = 3 + 4</code> at compile time.</p>
+        <select id="sCCq4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select domain...</option>
+          <option value="sign">Sign</option>
+          <option value="constant">Constant Propagation</option>
+          <option value="interval">Interval</option>
+          <option value="octagon">Octagon</option>
+        </select>
+      </div>
+
+      <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+    </div>
+
+    <div>
+      <div id="sCCresults" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:300px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Answer all questions and click "Check All"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'interval', q2:'octagon', q3:'sign', q4:'constant'};
+  const explanations = {
+    q1: 'Interval tracks [lo,hi] bounds — exactly what you need to check 0 ≤ i ≤ n-1. Sign only knows the sign; constant only works if i is always the same value.',
+    q2: 'Octagon tracks constraints of the form ±x±y ≤ c — perfect for x ≤ y+5 (which is x−y ≤ 5). Interval can\'t express relationships between variables.',
+    q3: 'Sign domain is the cheapest domain that can answer "is the result negative?" — it tracks +/−/0/⊤ and has multiplication rules. No need for intervals or octagons.',
+    q4: 'Constant propagation tracks exact values. If x = 3+4, it computes x = 7 and replaces all uses. This is the definition of constant folding.'
+  };
+
+  window.sCCCheck = function(){
+    let html = '', score = 0;
+    ['q1','q2','q3','q4'].forEach((q,i) => {
+      const sel = document.getElementById('sCC'+q).value;
+      const correct = answers[q];
+      const ok = sel === correct;
+      if(ok) score++;
+      const color = sel==='' ? '#64748b' : ok ? '#22c55e' : '#ef4444';
+      document.getElementById('sCC'+q).style.borderColor = sel===''?'#475569':ok?'#22c55e':'#ef4444';
+      html += `<div style="margin-bottom:0.8rem;padding:0.6rem;border-left:3px solid ${color};padding-left:0.8rem;">
+        <strong style="color:${color};">Q${i+1}: ${sel?ok?'✓ Correct':'✗ Incorrect':'— Not answered'}</strong>
+        ${!ok && sel ? `<span style="color:#94a3b8;"> (you: ${sel}, answer: ${correct})</span>` : ''}
+        <div style="color:#94a3b8;font-size:0.82rem;margin-top:0.3rem;">${explanations[q]}</div>
+      </div>`;
+    });
+    html += `<div style="margin-top:0.5rem;padding:0.6rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;color:#e2e8f0;">${score}/4 correct</div>`;
+    document.getElementById('sCCresults').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: Quiz — Multi-Question ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz 1: Concept Check</h2>
+  <p style="color:#94a3b8;">Test your understanding of abstract interpretation fundamentals.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1box1">
+      <p style="font-size:0.88rem;margin:0 0 0.8rem;"><strong>Q1.</strong> What does α (alpha) do in a Galois connection?</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q1" value="a"> Maps abstract → concrete</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q1" value="b"> Maps concrete → abstract</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q1" value="c"> Widens an interval</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q1" value="d"> Joins two lattice elements</label>
+      <div id="sQ1fb1" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1box2">
+      <p style="font-size:0.88rem;margin:0 0 0.8rem;"><strong>Q2.</strong> What does widening guarantee?</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q2" value="a"> More precise results</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q2" value="b"> Termination of fixpoint</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q2" value="c"> Zero false positives</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q2" value="d"> Completeness</label>
+      <div id="sQ1fb2" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1box3">
+      <p style="font-size:0.88rem;margin:0 0 0.8rem;"><strong>Q3.</strong> In sign domain, (+) + (−) = ?</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q3" value="a"> +</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q3" value="b"> −</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q3" value="c"> 0</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q3" value="d"> ⊤</label>
+      <div id="sQ1fb3" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <div id="sQ1score" style="margin-top:0.5rem;font-size:1rem;"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'b', q2:'b', q3:'d'};
+  const feedback = {
+    q1: {correct:'α maps concrete sets to abstract values (abstraction function).', wrong:'α is the abstraction function: concrete → abstract. γ goes the other way.'},
+    q2: {correct:'Widening forces the ascending chain to stabilize, guaranteeing termination.', wrong:'Widening guarantees termination by jumping to a safe over-approximation. It trades precision for convergence.'},
+    q3: {correct:'(+)+(−) could be positive, negative, or zero — so the result is ⊤ (any sign).', wrong:'3+(-5)=-2 (negative), 5+(-3)=2 (positive), 3+(-3)=0. All signs possible → ⊤.'}
+  };
+
+  window.sQ1Check = function(){
+    let score = 0;
+    [1,2,3].forEach(i => {
+      const sel = document.querySelector(`input[name="sQ1q${i}"]:checked`);
+      const val = sel ? sel.value : '';
+      const ok = val === answers['q'+i];
+      if(ok) score++;
+      const fb = document.getElementById('sQ1fb'+i);
+      const box = document.getElementById('sQ1box'+i);
+      fb.innerHTML = `<span style="color:${ok?'#22c55e':'#ef4444'};">${ok?'✓':'✗'} ${ok?feedback['q'+i].correct:feedback['q'+i].wrong}</span>`;
+      box.style.borderLeft = `3px solid ${val?ok?'#22c55e':'#ef4444':'#475569'}`;
+    });
+    document.getElementById('sQ1score').innerHTML = `<span style="color:${score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444'};font-weight:bold;">${score}/3 correct</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: Quiz — Trace Exercise ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz 2: Trace the Analysis</h2>
+  <p style="color:#94a3b8;">Given this code, trace the <strong>interval analysis</strong> at each line.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="sQ2code">
+          <div class="line" id="sQ2L1">x = 10;</div>
+          <div class="line" id="sQ2L2">y = -5;</div>
+          <div class="line" id="sQ2L3">z = x + y;  // [?, ?]</div>
+          <div class="line" id="sQ2L4">w = x * y;  // [?, ?]</div>
+          <div class="line" id="sQ2L5">r = z / w;  // safe?</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-top:1rem;">
+        <p style="font-size:0.88rem;margin:0 0 0.5rem;"><strong>Fill in the intervals:</strong></p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0.4rem 0.8rem;align-items:center;font-family:monospace;font-size:0.9rem;">
+          <span style="color:#94a3b8;">z =</span>
+          <span>[<input type="number" id="sQ2zlo" style="width:50px;padding:0.2rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;" placeholder="?">,
+          <input type="number" id="sQ2zhi" style="width:50px;padding:0.2rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;" placeholder="?">]</span>
+          <span style="color:#94a3b8;">w =</span>
+          <span>[<input type="number" id="sQ2wlo" style="width:50px;padding:0.2rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;" placeholder="?">,
+          <input type="number" id="sQ2whi" style="width:50px;padding:0.2rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;" placeholder="?">]</span>
+          <span style="color:#94a3b8;">div-by-zero?</span>
+          <select id="sQ2safe" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;">
+            <option value="">Select...</option>
+            <option value="safe">Safe — no div-by-zero</option>
+            <option value="maybe">Maybe — interval contains 0</option>
+            <option value="always">Always — divisor is exactly 0</option>
+          </select>
+        </div>
+        <button class="btn btn-sm" onclick="sQ2Check()" style="margin-top:0.8rem;">Check</button>
+      </div>
+    </div>
+
+    <div>
+      <div id="sQ2result" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:120px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Fill in intervals and click "Check"</p>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="sQ2Trace()">Show Step-by-Step Trace</button>
+      </div>
+      <div id="sQ2trace" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.8rem;max-height:180px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  window.sQ2Check = function(){
+    const zlo = parseInt(document.getElementById('sQ2zlo').value);
+    const zhi = parseInt(document.getElementById('sQ2zhi').value);
+    const wlo = parseInt(document.getElementById('sQ2wlo').value);
+    const whi = parseInt(document.getElementById('sQ2whi').value);
+    const safe = document.getElementById('sQ2safe').value;
+
+    let html = '', score = 0;
+    // z = 10+(-5) = [5,5]
+    const zOk = zlo === 5 && zhi === 5;
+    if(zOk) score++;
+    html += `<div style="margin-bottom:0.5rem;color:${zOk?'#22c55e':'#ef4444'};">${zOk?'✓':'✗'} z = [10,10]+[-5,-5] = [10+(-5), 10+(-5)] = <strong>[5,5]</strong></div>`;
+
+    // w = 10*(-5) = [-50,-50]
+    const wOk = wlo === -50 && whi === -50;
+    if(wOk) score++;
+    html += `<div style="margin-bottom:0.5rem;color:${wOk?'#22c55e':'#ef4444'};">${wOk?'✓':'✗'} w = [10,10]×[-5,-5] = min/max of {-50} = <strong>[-50,-50]</strong></div>`;
+
+    // Safe?
+    const safeOk = safe === 'safe';
+    if(safeOk) score++;
+    html += `<div style="margin-bottom:0.5rem;color:${safeOk?'#22c55e':'#ef4444'};">${safeOk?'✓':'✗'} w = [-50,-50] does NOT contain 0 → <strong>Safe!</strong></div>`;
+
+    html += `<div style="margin-top:0.8rem;padding:0.5rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;">${score}/3 correct</div>`;
+    document.getElementById('sQ2result').innerHTML = html;
+  };
+
+  window.sQ2Trace = function(){
+    const trace = document.getElementById('sQ2trace');
+    trace.style.display = 'block';
+    trace.innerHTML = `
+      <div style="color:#38bdf8;">Line 1: x = 10</div>
+      <div>  x → [10,10]</div>
+      <div style="color:#38bdf8;margin-top:0.3rem;">Line 2: y = -5</div>
+      <div>  y → [-5,-5]</div>
+      <div style="color:#38bdf8;margin-top:0.3rem;">Line 3: z = x + y</div>
+      <div>  [10,10] + [-5,-5] = [10+(-5), 10+(-5)] = [5,5]</div>
+      <div>  z → [5,5]</div>
+      <div style="color:#38bdf8;margin-top:0.3rem;">Line 4: w = x * y</div>
+      <div>  [10,10] × [-5,-5] = [min(-50), max(-50)] = [-50,-50]</div>
+      <div>  w → [-50,-50]</div>
+      <div style="color:#22c55e;margin-top:0.3rem;">Line 5: r = z / w</div>
+      <div>  Divisor w = [-50,-50], does not contain 0</div>
+      <div style="color:#22c55e;font-weight:bold;">  ✓ SAFE — no division by zero possible</div>
+    `;
+
+    // Highlight lines sequentially
+    let lineIdx = 0;
+    const lines = ['sQ2L1','sQ2L2','sQ2L3','sQ2L4','sQ2L5'];
+    const t = setInterval(()=>{
+      document.querySelectorAll('#sQ2code .line').forEach(l=>l.classList.remove('active'));
+      if(lineIdx < lines.length){
+        document.getElementById(lines[lineIdx]).classList.add('active');
+        lineIdx++;
+      } else { clearInterval(t); }
+    }, 800);
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: Quiz — Predict Output ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz 3: Choose the Analysis</h2>
+  <p style="color:#94a3b8;">For each bug-finding goal, pick the analysis technique and domain.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="font-size:0.88rem;margin:0 0 0.5rem;"><strong>Scenario 1:</strong> You're building a tool to detect integer overflow in a loop counter that increments from 0.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Domain:</label>
+            <select id="sQ3a1" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.8rem;">
+              <option value="">Select...</option><option value="sign">Sign</option><option value="interval">Interval</option><option value="constant">Constant</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Need widening?</label>
+            <select id="sQ3b1" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.8rem;">
+              <option value="">Select...</option><option value="yes">Yes</option><option value="no">No</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="font-size:0.88rem;margin:0 0 0.5rem;"><strong>Scenario 2:</strong> You want to replace <code>x = 7 * 3</code> with <code>x = 21</code> at compile time.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Domain:</label>
+            <select id="sQ3a2" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.8rem;">
+              <option value="">Select...</option><option value="sign">Sign</option><option value="interval">Interval</option><option value="constant">Constant</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Need widening?</label>
+            <select id="sQ3b2" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.8rem;">
+              <option value="">Select...</option><option value="yes">Yes</option><option value="no">No</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <p style="font-size:0.88rem;margin:0 0 0.5rem;"><strong>Scenario 3:</strong> A flight control system must guarantee <em>zero</em> runtime errors. Cost is not a concern.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Best tool:</label>
+            <select id="sQ3a3" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.8rem;">
+              <option value="">Select...</option><option value="infer">Facebook Infer</option><option value="astree">Astrée</option><option value="eslint">ESLint</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:#94a3b8;">Key property:</label>
+            <select id="sQ3b3" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.8rem;">
+              <option value="">Select...</option><option value="soundness">Soundness</option><option value="speed">Speed</option><option value="completeness">Completeness</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" onclick="sQ3Check()">Check All Answers</button>
+    </div>
+
+    <div>
+      <div id="sQ3results" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:300px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Answer all scenarios and click "Check All Answers"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = [
+    {a:'interval', b:'yes'},
+    {a:'constant', b:'no'},
+    {a:'astree', b:'soundness'}
+  ];
+  const explanations = [
+    'Interval domain tracks bounds → can check if counter exceeds MAX_INT. Loop requires widening to terminate.',
+    'Constant propagation tracks exact values → can compute 7*3=21 at compile time. No loop → no widening needed.',
+    'Astrée was literally built for this — proved A380 flight software. Soundness is the key property: no real bug is ever missed.'
+  ];
+
+  window.sQ3Check = function(){
+    let html = '', score = 0, total = 6;
+    [1,2,3].forEach((i,idx) => {
+      const a = document.getElementById('sQ3a'+i).value;
+      const b = document.getElementById('sQ3b'+i).value;
+      const aOk = a === answers[idx].a;
+      const bOk = b === answers[idx].b;
+      if(aOk) score++;
+      if(bOk) score++;
+
+      const aCol = a?aOk?'#22c55e':'#ef4444':'#64748b';
+      const bCol = b?bOk?'#22c55e':'#ef4444':'#64748b';
+
+      html += `<div style="margin-bottom:1rem;padding:0.6rem;border-left:3px solid ${aOk&&bOk?'#22c55e':aOk||bOk?'#f59e0b':'#ef4444'};padding-left:0.8rem;">
+        <strong>Scenario ${i}:</strong><br>
+        <span style="color:${aCol};font-size:0.82rem;">${a?aOk?'✓':'✗':'-'} ${i===3?'Tool':'Domain'}: ${a||'—'} ${!aOk&&a?'(answer: '+answers[idx].a+')':''}</span><br>
+        <span style="color:${bCol};font-size:0.82rem;">${b?bOk?'✓':'✗':'-'} ${i===3?'Property':i===1?'Widening':'Widening'}: ${b||'—'} ${!bOk&&b?'(answer: '+answers[idx].b+')':''}</span>
+        <div style="color:#94a3b8;font-size:0.8rem;margin-top:0.3rem;">${explanations[idx]}</div>
+      </div>`;
+    });
+    html += `<div style="padding:0.6rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;color:#e2e8f0;">${score}/${total} correct</div>`;
+    document.getElementById('sQ3results').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','s13','s14','sCB','s15','s16','s17','s18','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const newIdx = currentIdx + dir;
+  if (newIdx < 0 || newIdx >= slideOrder.length) return;
+  currentIdx = newIdx;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

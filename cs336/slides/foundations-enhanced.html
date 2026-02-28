@@ -1,0 +1,2760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 1: Foundations of Program Analysis — Enhanced</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.05); z-index: 200; }
+  #progress { height: 100%; width: 0; background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa); transition: width 0.3s ease; }
+
+  .slide {
+    display: none;
+    position: absolute;
+    inset: 0;
+    padding: 44px 56px;
+    background: #0f172a;
+    overflow-y: auto;
+    flex-direction: column;
+  }
+  .slide.active { display: flex; }
+  .slide.fade-in { animation: fadeIn 0.35s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  h1 { font-size: 2.8em; color: #38bdf8; margin-bottom: 8px; font-weight: 700; }
+  h2 { font-size: 1.9em; color: #38bdf8; margin-bottom: 16px; border-bottom: 3px solid #6366f1; padding-bottom: 8px; display: inline-block; }
+  h3 { font-size: 1.25em; color: #a78bfa; margin: 12px 0 6px; }
+  p, li { font-size: 1.1em; line-height: 1.65; margin-bottom: 8px; color: #e2e8f0; }
+  ul, ol { padding-left: 26px; }
+  strong { color: #38bdf8; }
+  em { color: #f59e0b; font-style: normal; font-weight: 600; }
+
+  .btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 10px 22px; font-size: 0.95em; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    font-weight: 600;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.4); }
+  .btn-sm { padding: 7px 16px; font-size: 0.85em; border-radius: 6px; }
+  .btn-secondary { background: #334155; }
+  .btn-secondary:hover { background: #475569; box-shadow: none; transform: none; }
+
+  .key-idea {
+    border-left: 4px solid #22c55e; background: rgba(34,197,94,0.08);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 10px 10px 0;
+  }
+  .warning {
+    border-left: 4px solid #ef4444; background: rgba(239,68,68,0.08);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 10px 10px 0;
+  }
+  .analogy {
+    border-left: 4px solid #a78bfa; background: rgba(167,139,250,0.08);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 10px 10px 0;
+  }
+
+  .code-block {
+    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    padding: 0; margin: 12px 0; overflow: hidden;
+  }
+  .code-header {
+    background: #334155; padding: 6px 14px; font-size: 0.8em; color: #94a3b8;
+    font-family: monospace; border-bottom: 1px solid #475569;
+  }
+  .code-content { padding: 14px 18px; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; }
+  .line { padding: 1px 6px; border-left: 3px solid transparent; transition: all 0.25s; border-radius: 2px; }
+  .line.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; }
+  .line.error { background: rgba(239,68,68,0.12); border-left-color: #ef4444; }
+
+  .slide-number { height: 0; }
+
+  canvas { border-radius: 12px; }
+
+  /* Title slide special */
+  .title-slide {
+    justify-content: center; align-items: center; text-align: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+  }
+  .title-slide h1 { color: #e2e8f0; font-size: 3.2em; border: none; }
+  .title-slide h2 { color: #a78bfa; border: none; font-size: 1.5em; font-weight: 400; }
+
+  /* Navigation */
+  .nav {
+    position: fixed; bottom: 20px; right: 24px;
+    display: flex; gap: 8px; z-index: 100;
+  }
+  .nav button {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white; border: none; border-radius: 8px;
+    padding: 10px 20px; font-size: 0.95em; cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    font-weight: 600;
+  }
+  .nav button:hover { transform: translateY(-1px); }
+  .nav button:disabled { opacity: 0.25; cursor: default; transform: none; }
+
+  .counter {
+    position: fixed; bottom: 24px; left: 24px;
+    font-size: 0.85em; color: #64748b; z-index: 100; font-family: monospace;
+  }
+
+  /* Log panel */
+  .log-panel {
+    background: rgba(0,0,0,0.25); border-radius: 8px; padding: 10px 12px;
+    font-family: monospace; font-size: 0.78em; max-height: 140px;
+    overflow-y: auto; color: #94a3b8; line-height: 1.6;
+  }
+  .log-panel .log-entry { margin-bottom: 2px; }
+  .log-panel .highlight { color: #f59e0b; }
+  .log-panel .success { color: #22c55e; }
+  .log-panel .error-text { color: #ef4444; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+<div class="counter" id="counter"></div>
+
+<!-- ==================== s1: TITLE ==================== -->
+<div class="slide title-slide" id="s1">
+  <div style="margin-bottom:12px;">
+    <span style="font-size:3em;">&#128300;</span>
+  </div>
+  <h1>Program Analysis for Beginners</h1>
+  <h2>Module 1: Foundations of Program Analysis</h2>
+  <p style="margin-top:28px;font-size:1.1em;color:#94a3b8;">
+    <strong style="color:#cbd5e1;">Instructor:</strong> Weihao &nbsp;|&nbsp;
+    <strong style="color:#cbd5e1;">Office Hours:</strong> By appointment, HH227
+  </p>
+  <p style="margin-top:14px;font-size:0.85em;color:#64748b;">Use arrow keys or buttons to navigate</p>
+</div>
+
+<!-- ==================== s2: LEARNING OBJECTIVES ==================== -->
+<div class="slide" id="s2">
+  <h2>Learning Objectives</h2>
+  <p style="color:#94a3b8;margin-bottom:18px;">By the end of this module, you will be able to:</p>
+  <ul style="margin-bottom:20px;">
+    <li><strong>Define</strong> program analysis and distinguish between static and dynamic approaches</li>
+    <li><strong>Classify</strong> different types of program analysis techniques by their goals</li>
+    <li><strong>Evaluate</strong> the trade-offs between soundness, completeness, and performance</li>
+    <li><strong>Apply</strong> basic analysis concepts to simple code examples</li>
+  </ul>
+  <div class="key-idea">
+    <strong>Key Idea:</strong> Program analysis is the backbone of every modern development tool — from your IDE's autocomplete to CI/CD security gates. Understanding it unlocks how all those tools actually work under the hood.
+  </div>
+</div>
+
+<!-- ==================== s3: WHAT IS PROGRAM ANALYSIS? ==================== -->
+<div class="slide" id="s3">
+  <h2>What is Program Analysis?</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;flex:1;">
+    <div>
+      <p><strong>Program Analysis</strong> is the process of automatically analyzing the behavior of computer programs.</p>
+      <ul style="margin-top:12px;">
+        <li><strong>Goal:</strong> Understand what a program does without (necessarily) executing it</li>
+        <li><strong>Purpose:</strong> Find bugs, optimize performance, verify correctness</li>
+        <li><strong>Scope:</strong> From simple syntax checking to complex security analysis</li>
+      </ul>
+      <div class="analogy" style="margin-top:16px;">
+        <strong>Analogy:</strong> Think of a building inspector examining blueprints (static) vs. stress-testing the actual structure (dynamic). Both find problems, but at different stages and costs.
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;">
+      <canvas id="cS3" width="440" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS3');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 340);
+
+    // Center node
+    const cx = 220, cy = 160;
+    ctx.beginPath(); ctx.arc(cx, cy, 42, 0, Math.PI*2);
+    ctx.fillStyle = '#6366f1'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Program', cx, cy - 8);
+    ctx.fillText('Analysis', cx, cy + 8);
+
+    // Satellite nodes
+    const nodes = [
+      { label: 'Find Bugs', x: 90, y: 55, color: '#ef4444' },
+      { label: 'Optimize', x: 350, y: 55, color: '#22c55e' },
+      { label: 'Security', x: 60, y: 260, color: '#f59e0b' },
+      { label: 'Verify', x: 380, y: 260, color: '#38bdf8' },
+      { label: 'Understand', x: 220, y: 310, color: '#a78bfa' },
+    ];
+
+    nodes.forEach(n => {
+      // Edge
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(n.x, n.y);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+      // Node
+      ctx.beginPath(); ctx.arc(n.x, n.y, 32, 0, Math.PI*2);
+      ctx.fillStyle = n.color; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s3').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s3'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s4: WHY PA + REAL-WORLD FAILURES ==================== -->
+<div class="slide" id="s4">
+  <h2>Why Program Analysis? Real-World Failures</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Click <em>Step</em> to walk through historic software disasters that could have been prevented.</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS4" width="480" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s4Step()">Step</button>
+        <button class="btn btn-sm" onclick="s4Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s4Detail" style="background:#1e293b;border-radius:10px;padding:16px;min-height:180px;border:1px solid #334155;">
+        <p style="color:#64748b;font-style:italic;">Press Step to begin the timeline...</p>
+      </div>
+      <div class="warning" style="margin-top:12px;">
+        <strong>The cost of NOT analyzing:</strong> These incidents caused billions in damages and, in some cases, loss of life. Automated analysis catches the patterns that humans miss.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+  const detail = document.getElementById('s4Detail');
+
+  const incidents = [
+    { year: '1996', name: 'Ariane 5', cause: 'Integer overflow', cost: '$370M',
+      desc: 'A 64-bit float was cast to a 16-bit integer. The rocket self-destructed 37 seconds after launch. Static analysis of the type conversion would have flagged this instantly.',
+      color: '#ef4444', analysis: 'Type analysis' },
+    { year: '2012', name: 'Knight Capital', cause: 'Dead code activation', cost: '$440M',
+      desc: 'Old test code was accidentally deployed to production. In 45 minutes, the firm lost $440M. Dead code detection — a basic static analysis — would have prevented this.',
+      color: '#f59e0b', analysis: 'Dead code detection' },
+    { year: '2014', name: 'Heartbleed', cause: 'Buffer over-read', cost: 'Billions',
+      desc: 'A missing bounds check in OpenSSL leaked private keys from server memory. Buffer analysis tools like Coverity or AddressSanitizer catch this class of bug routinely.',
+      color: '#a78bfa', analysis: 'Buffer analysis' },
+    { year: '2018', name: 'Boeing 737 MAX', cause: 'Sensor logic error', cost: '$20B+',
+      desc: 'MCAS relied on a single sensor with no redundancy check. 346 people died. Dataflow analysis of sensor inputs would have revealed the single point of failure.',
+      color: '#38bdf8', analysis: 'Dataflow analysis' },
+    { year: '2020', name: 'SolarWinds', cause: 'Supply chain attack', cost: '$100M+',
+      desc: 'Malicious code was injected into the build pipeline. Taint analysis and integrity checking of the build process could have detected the unauthorized modifications.',
+      color: '#22c55e', analysis: 'Taint analysis' },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 320);
+    const y0 = 160, xStart = 50, xEnd = 430;
+    const gap = (xEnd - xStart) / (incidents.length - 1);
+
+    // Timeline line
+    ctx.beginPath(); ctx.moveTo(xStart - 20, y0); ctx.lineTo(xEnd + 20, y0);
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 3; ctx.stroke();
+
+    incidents.forEach((inc, i) => {
+      const x = xStart + i * gap;
+      const active = i < stepIdx;
+      const current = i === stepIdx - 1;
+
+      // Tick mark
+      ctx.beginPath(); ctx.moveTo(x, y0 - 10); ctx.lineTo(x, y0 + 10);
+      ctx.strokeStyle = active ? inc.color : '#475569'; ctx.lineWidth = 2; ctx.stroke();
+
+      // Circle
+      ctx.beginPath(); ctx.arc(x, y0, current ? 18 : 12, 0, Math.PI * 2);
+      ctx.fillStyle = active ? inc.color : '#1e293b';
+      ctx.strokeStyle = active ? inc.color : '#475569'; ctx.lineWidth = 2;
+      ctx.fill(); ctx.stroke();
+
+      if (current) {
+        // Pulse ring
+        ctx.beginPath(); ctx.arc(x, y0, 24, 0, Math.PI * 2);
+        ctx.strokeStyle = inc.color; ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.3; ctx.stroke(); ctx.globalAlpha = 1;
+      }
+
+      // Year label
+      ctx.fillStyle = active ? '#e2e8f0' : '#64748b';
+      ctx.font = active ? 'bold 12px monospace' : '11px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(inc.year, x, y0 + 22);
+
+      // Name above
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = active ? inc.color : '#64748b';
+      ctx.font = active ? 'bold 11px sans-serif' : '10px sans-serif';
+      ctx.fillText(inc.name, x, y0 - 18);
+
+      // Cost below year
+      if (active) {
+        ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace';
+        ctx.textBaseline = 'top';
+        ctx.fillText(inc.cost, x, y0 + 38);
+      }
+    });
+
+    // Title
+    ctx.fillStyle = '#64748b'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('SOFTWARE FAILURE TIMELINE', 20, 12);
+
+    // Step counter
+    ctx.textAlign = 'right';
+    ctx.fillText(stepIdx + ' / ' + incidents.length, 460, 12);
+  }
+
+  function updateDetail() {
+    if (stepIdx === 0) {
+      detail.innerHTML = '<p style="color:#64748b;font-style:italic;">Press Step to begin the timeline...</p>';
+      return;
+    }
+    const inc = incidents[stepIdx - 1];
+    detail.innerHTML = `
+      <h3 style="color:${inc.color};margin-bottom:8px;">${inc.year}: ${inc.name}</h3>
+      <p style="margin-bottom:6px;"><strong>Root cause:</strong> ${inc.cause}</p>
+      <p style="margin-bottom:6px;"><strong>Cost:</strong> <span style="color:#f59e0b;">${inc.cost}</span></p>
+      <p style="margin-bottom:10px;color:#94a3b8;font-size:0.95em;">${inc.desc}</p>
+      <div style="background:rgba(99,102,241,0.1);padding:8px 12px;border-radius:6px;border:1px solid #6366f1;">
+        <strong style="color:#818cf8;">Prevention:</strong> <span style="color:#e2e8f0;">${inc.analysis}</span>
+      </div>
+    `;
+  }
+
+  window.s4Step = function() {
+    if (stepIdx >= incidents.length) return;
+    stepIdx++;
+    draw(); updateDetail();
+  };
+  window.s4Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= incidents.length) { clearInterval(timer); timer = null; return; }
+      s4Step();
+    }, 1500);
+  };
+  window.s4Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0;
+    draw(); updateDetail();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s4').classList.contains('active')) { draw(); updateDetail(); }
+  });
+  obs.observe(document.getElementById('s4'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s5: REAL-WORLD IMPACT ==================== -->
+<div class="slide" id="s5">
+  <h2>Real-World Impact</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">Program analysis powers tools you use every day — often without realizing it.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS5" width="440" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="background:#1e293b;padding:14px;border-radius:10px;border-left:3px solid #6366f1;">
+          <h3 style="font-size:1em;color:#818cf8;margin:0 0 6px;">IDEs</h3>
+          <p style="font-size:0.9em;color:#94a3b8;margin:0;">IntelliSense, error highlighting, refactoring suggestions</p>
+        </div>
+        <div style="background:#1e293b;padding:14px;border-radius:10px;border-left:3px solid #22c55e;">
+          <h3 style="font-size:1em;color:#22c55e;margin:0 0 6px;">Compilers</h3>
+          <p style="font-size:0.9em;color:#94a3b8;margin:0;">Dead code elimination, constant folding, optimization</p>
+        </div>
+        <div style="background:#1e293b;padding:14px;border-radius:10px;border-left:3px solid #ef4444;">
+          <h3 style="font-size:1em;color:#ef4444;margin:0 0 6px;">Security</h3>
+          <p style="font-size:0.9em;color:#94a3b8;margin:0;">Vulnerability scanners, malware detection, taint tracking</p>
+        </div>
+        <div style="background:#1e293b;padding:14px;border-radius:10px;border-left:3px solid #f59e0b;">
+          <h3 style="font-size:1em;color:#f59e0b;margin:0 0 6px;">DevOps</h3>
+          <p style="font-size:0.9em;color:#94a3b8;margin:0;">CI/CD quality gates, SonarQube, Semgrep, linters</p>
+        </div>
+      </div>
+      <div class="key-idea" style="margin-top:14px;">
+        <strong>Key Idea:</strong> Every time your IDE underlines a bug before you run the code — that's program analysis at work.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 320);
+    const cx = 220, cy = 145;
+
+    // Center: "Your Code"
+    ctx.beginPath(); ctx.arc(cx, cy, 36, 0, Math.PI*2);
+    ctx.fillStyle = '#6366f1'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Your', cx, cy - 7); ctx.fillText('Code', cx, cy + 8);
+
+    const sectors = [
+      { label: 'IDE', sub: 'Static', x: 100, y: 50, color: '#818cf8', icon: '{}' },
+      { label: 'Compiler', sub: 'Static', x: 340, y: 50, color: '#22c55e', icon: '>>>' },
+      { label: 'CI/CD', sub: 'Static+Dyn', x: 380, y: 200, color: '#f59e0b', icon: '|||' },
+      { label: 'Security', sub: 'Static', x: 220, y: 290, color: '#ef4444', icon: '!!!' },
+      { label: 'Monitor', sub: 'Dynamic', x: 60, y: 200, color: '#38bdf8', icon: '~~~' },
+    ];
+
+    sectors.forEach(s => {
+      // Dashed line
+      ctx.beginPath(); ctx.setLineDash([4, 4]);
+      ctx.moveTo(cx, cy); ctx.lineTo(s.x, s.y);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Node
+      ctx.beginPath(); ctx.arc(s.x, s.y, 28, 0, Math.PI*2);
+      ctx.fillStyle = s.color; ctx.globalAlpha = 0.15; ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.fillStyle = s.color; ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(s.label, s.x, s.y - 5);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '9px monospace';
+      ctx.fillText(s.sub, s.x, s.y + 10);
+    });
+
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('ANALYSIS ECOSYSTEM', 16, 10);
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s5').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s5'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s6: TWO MAIN APPROACHES ==================== -->
+<div class="slide" id="s6">
+  <h2>Two Main Approaches</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;flex:1;">
+    <div>
+      <canvas id="cS6" width="440" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s6Toggle('static')" id="s6BtnStatic">Static Analysis</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Toggle('dynamic')" id="s6BtnDynamic">Dynamic Analysis</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Toggle('both')" id="s6BtnBoth">Compare</button>
+      </div>
+    </div>
+    <div id="s6Info">
+      <div style="background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155;">
+        <h3 style="color:#6366f1;margin-top:0;">Static Analysis</h3>
+        <p style="font-size:0.95em;"><strong>Examines code without execution</strong></p>
+        <ul style="font-size:0.9em;">
+          <li>Analyzes source code, bytecode, or binary</li>
+          <li>Catches errors before runtime</li>
+          <li>No test inputs or execution environment needed</li>
+          <li>Can reason about <em>all possible paths</em></li>
+        </ul>
+        <p style="font-size:0.85em;color:#94a3b8;margin-top:8px;">
+          <strong style="color:#6366f1;">Example:</strong> Checking for null pointer dereferences by tracing variable assignments through all branches.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS6');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('s6Info');
+  let mode = 'static';
+
+  const infoContent = {
+    static: `<div style="background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155;">
+      <h3 style="color:#6366f1;margin-top:0;">Static Analysis</h3>
+      <p style="font-size:0.95em;"><strong>Examines code without execution</strong></p>
+      <ul style="font-size:0.9em;">
+        <li>Analyzes source code, bytecode, or binary</li>
+        <li>Catches errors before runtime</li>
+        <li>No test inputs or execution environment needed</li>
+        <li>Can reason about <em>all possible paths</em></li>
+      </ul>
+      <p style="font-size:0.85em;color:#94a3b8;margin-top:8px;">
+        <strong style="color:#6366f1;">Example:</strong> Checking for null pointer dereferences by tracing variable assignments through all branches.
+      </p></div>`,
+    dynamic: `<div style="background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155;">
+      <h3 style="color:#22c55e;margin-top:0;">Dynamic Analysis</h3>
+      <p style="font-size:0.95em;"><strong>Observes behavior during execution</strong></p>
+      <ul style="font-size:0.9em;">
+        <li>Requires running the program with test inputs</li>
+        <li>Catches runtime-specific issues (leaks, races)</li>
+        <li>Sees actual execution paths and values</li>
+        <li>Only covers <em>tested paths</em></li>
+      </ul>
+      <p style="font-size:0.85em;color:#94a3b8;margin-top:8px;">
+        <strong style="color:#22c55e;">Example:</strong> Detecting memory leaks by monitoring allocation/deallocation during a test run.
+      </p></div>`,
+    both: `<div style="background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155;">
+      <h3 style="color:#f59e0b;margin-top:0;">Why Both Matter</h3>
+      <p style="font-size:0.95em;">Neither approach alone is sufficient:</p>
+      <ul style="font-size:0.9em;">
+        <li><strong style="color:#6366f1;">Static</strong> can reason about ALL paths but may raise <span style="color:#ef4444;">false alarms</span></li>
+        <li><strong style="color:#22c55e;">Dynamic</strong> is precise for tested paths but <span style="color:#ef4444;">misses untested ones</span></li>
+        <li>Modern toolchains combine both for maximum coverage</li>
+      </ul>
+      <div class="analogy" style="margin-top:10px;">
+        <strong>Analogy:</strong> Static = reading a recipe and spotting errors. Dynamic = cooking the dish and tasting it. You need both to get it right.
+      </div></div>`
+  };
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 340);
+
+    // Root
+    const rx = 220, ry = 50;
+    ctx.beginPath(); ctx.roundRect(rx - 70, ry - 20, 140, 40, 8);
+    ctx.fillStyle = '#334155'; ctx.fill();
+    ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Program Analysis', rx, ry);
+
+    // Static branch
+    const sx = 130, sy = 140;
+    const isStatic = mode === 'static' || mode === 'both';
+    ctx.beginPath(); ctx.moveTo(rx, ry + 20); ctx.lineTo(sx, sy - 20);
+    ctx.strokeStyle = isStatic ? '#6366f1' : '#334155'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(sx - 60, sy - 20, 120, 40, 8);
+    ctx.fillStyle = isStatic ? '#6366f1' : '#1e293b'; ctx.fill();
+    ctx.strokeStyle = isStatic ? '#818cf8' : '#334155'; ctx.stroke();
+    ctx.fillStyle = isStatic ? '#fff' : '#64748b'; ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('Static', sx, sy);
+
+    // Static children
+    const staticKids = ['Source Code', 'All Paths', 'No Execution'];
+    staticKids.forEach((label, i) => {
+      const kx = 50 + i * 80, ky = 230;
+      ctx.beginPath(); ctx.moveTo(sx, sy + 20); ctx.lineTo(kx, ky - 14);
+      ctx.strokeStyle = isStatic ? '#6366f1' : '#1e293b'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(kx - 38, ky - 14, 76, 28, 6);
+      ctx.fillStyle = isStatic ? 'rgba(99,102,241,0.15)' : 'rgba(0,0,0,0.2)'; ctx.fill();
+      ctx.fillStyle = isStatic ? '#818cf8' : '#475569'; ctx.font = '10px sans-serif';
+      ctx.fillText(label, kx, ky);
+    });
+
+    // Dynamic branch
+    const dx = 310, dy = 140;
+    const isDynamic = mode === 'dynamic' || mode === 'both';
+    ctx.beginPath(); ctx.moveTo(rx, ry + 20); ctx.lineTo(dx, dy - 20);
+    ctx.strokeStyle = isDynamic ? '#22c55e' : '#334155'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(dx - 60, dy - 20, 120, 40, 8);
+    ctx.fillStyle = isDynamic ? '#22c55e' : '#1e293b'; ctx.fill();
+    ctx.strokeStyle = isDynamic ? '#4ade80' : '#334155'; ctx.stroke();
+    ctx.fillStyle = isDynamic ? '#fff' : '#64748b'; ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('Dynamic', dx, dy);
+
+    // Dynamic children
+    const dynKids = ['Test Inputs', 'Tested Paths', 'Actual Values'];
+    dynKids.forEach((label, i) => {
+      const kx = 230 + i * 80, ky = 230;
+      ctx.beginPath(); ctx.moveTo(dx, dy + 20); ctx.lineTo(kx, ky - 14);
+      ctx.strokeStyle = isDynamic ? '#22c55e' : '#1e293b'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(kx - 38, ky - 14, 76, 28, 6);
+      ctx.fillStyle = isDynamic ? 'rgba(34,197,94,0.15)' : 'rgba(0,0,0,0.2)'; ctx.fill();
+      ctx.fillStyle = isDynamic ? '#4ade80' : '#475569'; ctx.font = '10px sans-serif';
+      ctx.fillText(label, kx, ky);
+    });
+
+    // VS badge (compare mode)
+    if (mode === 'both') {
+      ctx.beginPath(); ctx.arc(220, 140, 16, 0, Math.PI*2);
+      ctx.fillStyle = '#f59e0b'; ctx.fill();
+      ctx.fillStyle = '#000'; ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('VS', 220, 140);
+    }
+
+    // Bottom: pros/cons
+    if (mode !== 'both') {
+      const active = mode === 'static';
+      const pros = active ? ['Fast', 'Complete coverage', 'Early detection'] : ['Precise', 'Real values', 'Runtime bugs'];
+      const cons = active ? ['False positives', 'No runtime info'] : ['Incomplete coverage', 'Needs test inputs'];
+      ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('PROS', 30, 280);
+      ctx.fillStyle = active ? '#6366f1' : '#22c55e'; ctx.font = '11px sans-serif';
+      pros.forEach((p, i) => ctx.fillText('+ ' + p, 30, 298 + i * 16));
+      ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+      ctx.fillText('CONS', 260, 280);
+      ctx.fillStyle = '#ef4444'; ctx.font = '11px sans-serif';
+      cons.forEach((c, i) => ctx.fillText('- ' + c, 260, 298 + i * 16));
+    }
+  }
+
+  window.s6Toggle = function(m) {
+    mode = m;
+    info.innerHTML = infoContent[m];
+    document.getElementById('s6BtnStatic').className = m === 'static' ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+    document.getElementById('s6BtnDynamic').className = m === 'dynamic' ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+    document.getElementById('s6BtnBoth').className = m === 'both' ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s6').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s6'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s7: STATIC ANALYSIS EXAMPLE ==================== -->
+<div class="slide" id="s7">
+  <h2>Static Analysis: Null Pointer Detection</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Step through how a static analyzer traces null-safety through code branches.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div class="code-block">
+        <div class="code-header">processUser.java</div>
+        <div class="code-content" id="s7Code">
+          <div class="line" id="s7L1"><span style="color:#94a3b8;">1</span>  <span style="color:#c792ea;">public void</span> <span style="color:#82aaff;">processUser</span>(<span style="color:#ffcb6b;">User</span> user) {</div>
+          <div class="line" id="s7L2"><span style="color:#94a3b8;">2</span>    <span style="color:#c792ea;">if</span> (user.getName() != <span style="color:#f78c6c;">null</span>) {</div>
+          <div class="line" id="s7L3"><span style="color:#94a3b8;">3</span>      System.out.println(user.getName());</div>
+          <div class="line" id="s7L4"><span style="color:#94a3b8;">4</span>    }</div>
+          <div class="line" id="s7L5"><span style="color:#94a3b8;">5</span>    <span style="color:#546e7a;">// After the if-block...</span></div>
+          <div class="line" id="s7L6"><span style="color:#94a3b8;">6</span>    <span style="color:#c792ea;">int</span> len = user.getName().length();</div>
+          <div class="line" id="s7L7"><span style="color:#94a3b8;">7</span>  }</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s7Step()">Step</button>
+        <button class="btn btn-sm" onclick="s7Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS7" width="400" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="log-panel" id="s7Log" style="margin-top:10px;min-height:100px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Analyzer will trace null-safety...</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS7');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s7Log');
+  const lines = ['s7L1','s7L2','s7L3','s7L4','s7L5','s7L6','s7L7'];
+
+  const steps = [
+    { line: 0, hl: [0], status: 'enter', msg: '<span class="highlight">Entering</span> processUser — user.getName() could be null or non-null',
+      branches: [{label:'getName()',state:'unknown',color:'#f59e0b'}] },
+    { line: 1, hl: [1], status: 'check', msg: '<span class="highlight">Null check:</span> if getName() != null → splits into two branches',
+      branches: [{label:'TRUE branch',state:'non-null',color:'#22c55e'},{label:'FALSE branch',state:'null',color:'#ef4444'}] },
+    { line: 2, hl: [2], status: 'safe', msg: '<span class="success">Safe:</span> Inside TRUE branch — getName() guaranteed non-null here',
+      branches: [{label:'TRUE branch',state:'non-null ✓',color:'#22c55e'}] },
+    { line: 3, hl: [3], status: 'exit-if', msg: 'Exiting if-block — both branches <span class="highlight">merge</span>',
+      branches: [{label:'TRUE path',state:'non-null',color:'#22c55e'},{label:'FALSE path',state:'null',color:'#ef4444'},{label:'merged',state:'maybe-null',color:'#f59e0b'}] },
+    { line: 5, hl: [5], status: 'danger', msg: '<span class="error-text">BUG FOUND!</span> getName().length() called — but getName() could be null (from FALSE branch)!',
+      branches: [{label:'getName()',state:'NULLABLE!',color:'#ef4444'}] },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function clearHighlights() {
+    lines.forEach(id => {
+      document.getElementById(id).classList.remove('active', 'error');
+    });
+  }
+
+  function drawBranches(branches) {
+    ctx.clearRect(0, 0, 400, 200);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('NULL-SAFETY STATE', 12, 10);
+
+    const total = branches.length;
+    const gap = 400 / (total + 1);
+    branches.forEach((b, i) => {
+      const x = gap * (i + 1), y = 100;
+      ctx.beginPath(); ctx.roundRect(x - 55, y - 30, 110, 60, 10);
+      ctx.fillStyle = b.color; ctx.globalAlpha = 0.12; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = b.color; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = b.color; ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(b.label, x, y - 10);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '11px monospace';
+      ctx.fillText(b.state, x, y + 12);
+    });
+
+    // Arrow showing merge if 3 branches
+    if (total === 3) {
+      ctx.beginPath(); ctx.moveTo(gap, 130); ctx.lineTo(gap * 3, 130);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(gap * 1.5, 130); ctx.lineTo(gap * 3 - 55, 100);
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(gap * 2.5, 130); ctx.lineTo(gap * 3 - 55, 100);
+      ctx.stroke();
+    }
+  }
+
+  window.s7Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    clearHighlights();
+    s.hl.forEach(i => {
+      const cls = s.status === 'danger' ? 'error' : 'active';
+      document.getElementById(lines[i]).classList.add(cls);
+    });
+    drawBranches(s.branches);
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+  };
+  window.s7Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s7Step();
+    }, 1400);
+  };
+  window.s7Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; clearHighlights();
+    ctx.clearRect(0, 0, 400, 200);
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Analyzer will trace null-safety...</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s7').classList.contains('active')) {
+      if (stepIdx === 0) { ctx.clearRect(0, 0, 400, 200); }
+      else { drawBranches(steps[stepIdx - 1].branches); }
+    }
+  });
+  obs.observe(document.getElementById('s7'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== s8: DYNAMIC ANALYSIS STEP-THROUGH ==================== -->
+<div class="slide" id="s8">
+  <h2>Dynamic Analysis: Watching Execution</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Step through <code style="background:#1e293b;padding:2px 6px;border-radius:4px;color:#f59e0b;">fibonacci(5)</code> and watch the call stack explode — a profiler catches this at runtime.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div class="code-block">
+        <div class="code-header">fibonacci.ml</div>
+        <div class="code-content" id="s8Code">
+          <div class="line" id="s8L1"><span style="color:#94a3b8;">1</span>  <span style="color:#c792ea;">let rec</span> <span style="color:#82aaff;">fibonacci</span> n =</div>
+          <div class="line" id="s8L2"><span style="color:#94a3b8;">2</span>    <span style="color:#c792ea;">if</span> n <= <span style="color:#f78c6c;">1</span> <span style="color:#c792ea;">then</span> n</div>
+          <div class="line" id="s8L3"><span style="color:#94a3b8;">3</span>    <span style="color:#c792ea;">else</span></div>
+          <div class="line" id="s8L4"><span style="color:#94a3b8;">4</span>      fibonacci (n<span style="color:#89ddff;">-</span><span style="color:#f78c6c;">1</span>) <span style="color:#89ddff;">+</span> fibonacci (n<span style="color:#89ddff;">-</span><span style="color:#f78c6c;">2</span>)</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s8Step()">Step</button>
+        <button class="btn btn-sm" onclick="s8Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+      <div class="analogy" style="margin-top:12px;font-size:0.9em;">
+        <strong>Why dynamic analysis catches this:</strong> Static analysis sees recursion, but a profiler <em>measures</em> the exponential blowup — 15 calls for fib(5), but 2.7 billion for fib(50).
+      </div>
+    </div>
+    <div>
+      <canvas id="cS8" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="log-panel" id="s8Log" style="margin-top:10px;min-height:80px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Dynamic profiler ready...</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s8Log');
+  const codeLines = ['s8L1','s8L2','s8L3','s8L4'];
+
+  // Precompute: build the call tree for fib(5) level by level
+  // We'll show it as a binary tree growing step by step
+  const steps = [
+    { calls: [{n:5,x:210,y:30,l:null,r:null}], highlight: 3, msg:'<span class="highlight">Call</span> fibonacci(5) — n>1, so we recurse', callCount:1 },
+    { calls: [{n:5,x:210,y:30},{n:4,x:120,y:80},{n:3,x:300,y:80}], highlight: 3, msg:'<span class="highlight">Branching:</span> fib(4) + fib(3) — 2 new calls', callCount:3 },
+    { calls: [{n:5,x:210,y:30},{n:4,x:120,y:80},{n:3,x:300,y:80},{n:3,x:70,y:130},{n:2,x:170,y:130}],
+      highlight: 3, msg:'<span class="highlight">fib(4)</span> → fib(3) + fib(2) — tree is growing...', callCount:5 },
+    { calls: [{n:5,x:210,y:30},{n:4,x:120,y:80},{n:3,x:300,y:80},{n:3,x:70,y:130},{n:2,x:170,y:130},
+      {n:2,x:260,y:130},{n:1,x:340,y:130}],
+      highlight: 3, msg:'<span class="highlight">fib(3)</span> → fib(2) + fib(1) — notice <span class="error-text">fib(3) computed TWICE</span>', callCount:7 },
+    { calls: [{n:5,x:210,y:30},{n:4,x:120,y:80},{n:3,x:300,y:80},{n:3,x:70,y:130},{n:2,x:170,y:130},
+      {n:2,x:260,y:130},{n:1,x:340,y:130,base:true},
+      {n:2,x:40,y:180},{n:1,x:100,y:180,base:true},{n:1,x:150,y:180,base:true},{n:0,x:190,y:180,base:true}],
+      highlight: 1, msg:'Base cases reached (n≤1). <span class="highlight">11 calls</span> for fib(5)!', callCount:11 },
+    { calls: [{n:5,x:210,y:30},{n:4,x:120,y:80},{n:3,x:300,y:80},{n:3,x:70,y:130},{n:2,x:170,y:130},
+      {n:2,x:260,y:130},{n:1,x:340,y:130,base:true},
+      {n:2,x:40,y:180},{n:1,x:100,y:180,base:true},{n:1,x:150,y:180,base:true},{n:0,x:190,y:180,base:true},
+      {n:1,x:240,y:180,base:true},{n:0,x:280,y:180,base:true}],
+      highlight: -1, msg:'<span class="error-text">Profiler alert:</span> 15 total calls, O(2^n) growth. fib(40) = 2.05 sec, fib(50) = hours!', callCount:15 },
+  ];
+
+  // Parent edges
+  const edges = [
+    [0,1],[0,2], // fib5 -> fib4, fib3
+    [1,3],[1,4], // fib4 -> fib3, fib2
+    [2,5],[2,6], // fib3(right) -> fib2, fib1
+    [3,7],[3,8], // fib3(left) -> fib2, fib1
+    [4,9],[4,10], // fib2(left) -> fib1, fib0
+    [5,11],[5,12], // fib2(right) -> fib1, fib0
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, 420, 280);
+    if (stepIdx === 0) {
+      ctx.fillStyle = '#64748b'; ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Press Step to trace fibonacci(5)', 210, 140);
+      return;
+    }
+
+    const step = steps[stepIdx - 1];
+    const nodes = step.calls;
+
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('CALL TREE — ' + step.callCount + ' calls', 12, 8);
+
+    // Draw edges
+    edges.forEach(([pi, ci]) => {
+      if (pi < nodes.length && ci < nodes.length) {
+        ctx.beginPath(); ctx.moveTo(nodes[pi].x, nodes[pi].y + 14);
+        ctx.lineTo(nodes[ci].x, nodes[ci].y - 14);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.2; ctx.stroke();
+      }
+    });
+
+    // Draw nodes
+    nodes.forEach((node, i) => {
+      const isNew = i >= (stepIdx > 1 ? steps[stepIdx - 2].calls.length : 0);
+      const isBase = node.base;
+      ctx.beginPath(); ctx.arc(node.x, node.y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = isBase ? '#22c55e' : isNew ? '#f59e0b' : '#6366f1';
+      ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(node.n, node.x, node.y);
+    });
+
+    // Exponential growth indicator
+    if (stepIdx >= 5) {
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.fillText('O(2^n) growth!', 408, 8);
+
+      // Mini bar chart showing growth
+      const vals = [1, 3, 5, 15, 177, '2.7B'];
+      const labels = ['fib(1)', 'fib(3)', 'fib(5)', 'fib(10)', 'fib(30)', 'fib(50)'];
+      const heights = [2, 6, 10, 30, 80, 120];
+      const bx = 320, by = 268;
+      ctx.fillStyle = '#64748b'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+      labels.forEach((l, i) => {
+        const x = bx + i * 18;
+        const h = Math.min(heights[i], 120);
+        ctx.fillStyle = i < 3 ? '#6366f1' : '#ef4444';
+        ctx.fillRect(x - 5, by - h, 10, h);
+        ctx.fillStyle = '#64748b'; ctx.font = '7px monospace';
+        ctx.fillText(l.replace('fib','f'), x, by + 6);
+      });
+    }
+  }
+
+  function clearHL() {
+    codeLines.forEach(id => document.getElementById(id).classList.remove('active','error'));
+  }
+
+  window.s8Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    clearHL();
+    if (s.highlight >= 0) document.getElementById(codeLines[s.highlight]).classList.add('active');
+    if (stepIdx === steps.length - 1) document.getElementById(codeLines[3]).classList.add('error');
+    stepIdx++;
+    draw();
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+  };
+  window.s8Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s8Step();
+    }, 1200);
+  };
+  window.s8Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; clearHL();
+    draw();
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Dynamic profiler ready...</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s8').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s8'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCA: CHALLENGE — CLASSIFY STATIC VS DYNAMIC ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Static or Dynamic?</h2>
+  <p style="color:#94a3b8;margin-bottom:14px;">For each scenario, decide whether it describes <strong style="color:#6366f1;">static</strong> or <strong style="color:#22c55e;">dynamic</strong> analysis. Select your answer, then click <em>Check All</em>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+    <div id="sCA_q1" style="background:#1e293b;padding:14px 16px;border-radius:10px;border:2px solid #334155;">
+      <p style="margin-bottom:8px;font-size:0.95em;"><strong style="color:#f59e0b;">1.</strong> A tool scans your source code and warns that a variable might be used before it's assigned a value.</p>
+      <select id="sCA_a1" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.9em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="static">Static Analysis</option>
+        <option value="dynamic">Dynamic Analysis</option>
+      </select>
+    </div>
+    <div id="sCA_q2" style="background:#1e293b;padding:14px 16px;border-radius:10px;border:2px solid #334155;">
+      <p style="margin-bottom:8px;font-size:0.95em;"><strong style="color:#f59e0b;">2.</strong> While running your test suite, a tool detects that your program allocates memory but never frees it.</p>
+      <select id="sCA_a2" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.9em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="static">Static Analysis</option>
+        <option value="dynamic">Dynamic Analysis</option>
+      </select>
+    </div>
+    <div id="sCA_q3" style="background:#1e293b;padding:14px 16px;border-radius:10px;border:2px solid #334155;">
+      <p style="margin-bottom:8px;font-size:0.95em;"><strong style="color:#f59e0b;">3.</strong> A CI/CD gate rejects your pull request because it detects a possible SQL injection in a query builder function — without running any tests.</p>
+      <select id="sCA_a3" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.9em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="static">Static Analysis</option>
+        <option value="dynamic">Dynamic Analysis</option>
+      </select>
+    </div>
+    <div id="sCA_q4" style="background:#1e293b;padding:14px 16px;border-radius:10px;border:2px solid #334155;">
+      <p style="margin-bottom:8px;font-size:0.95em;"><strong style="color:#f59e0b;">4.</strong> A profiler measures that a specific function takes 3.2 seconds with a 10,000-element input list.</p>
+      <select id="sCA_a4" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.9em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="static">Static Analysis</option>
+        <option value="dynamic">Dynamic Analysis</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-bottom:12px;">
+    <button class="btn btn-sm" onclick="sCACheck()">Check All</button>
+    <button class="btn btn-sm btn-secondary" onclick="sCAReset()">Reset</button>
+    <span id="sCAScore" style="margin-left:12px;font-weight:600;font-size:0.95em;align-self:center;"></span>
+  </div>
+  <div id="sCAExplain" style="display:none;" class="key-idea">
+    <strong>Explanations:</strong><br>
+    <strong>1. Static</strong> — Uninitialized variable detection analyzes code paths without running.<br>
+    <strong>2. Dynamic</strong> — Memory leak detection requires observing actual allocations at runtime (e.g., Valgrind).<br>
+    <strong>3. Static</strong> — SQL injection detected by analyzing data flow in source code (e.g., Semgrep).<br>
+    <strong>4. Dynamic</strong> — Profiling measures actual execution time with real inputs.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCA_a1:'static', sCA_a2:'dynamic', sCA_a3:'static', sCA_a4:'dynamic'};
+  window.sCACheck = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const qDiv = sel.closest('[id^="sCA_q"]');
+      if (sel.value === correct) {
+        qDiv.style.borderColor = '#22c55e';
+        score++;
+      } else if (sel.value) {
+        qDiv.style.borderColor = '#ef4444';
+      } else {
+        qDiv.style.borderColor = '#f59e0b';
+      }
+    });
+    document.getElementById('sCAScore').textContent = score + '/4';
+    document.getElementById('sCAScore').style.color = score === 4 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+    document.getElementById('sCAExplain').style.display = 'block';
+  };
+  window.sCAReset = function() {
+    ['sCA_a1','sCA_a2','sCA_a3','sCA_a4'].forEach(id => document.getElementById(id).value = '');
+    ['sCA_q1','sCA_q2','sCA_q3','sCA_q4'].forEach(id => document.getElementById(id).style.borderColor = '#334155');
+    document.getElementById('sCAScore').textContent = '';
+    document.getElementById('sCAExplain').style.display = 'none';
+  };
+})();
+</script>
+
+<!-- ==================== s9: STATIC VS DYNAMIC COMPARISON ==================== -->
+<div class="slide" id="s9">
+  <h2>Static vs Dynamic: Head-to-Head</h2>
+  <p style="color:#94a3b8;margin-bottom:10px;">Compare how each approach handles the same program properties.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS9" width="440" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s9Toggle('coverage')" id="s9Btn0">Coverage</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Toggle('precision')" id="s9Btn1">Precision</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Toggle('speed')" id="s9Btn2">Speed</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Toggle('cost')" id="s9Btn3">Cost</button>
+      </div>
+    </div>
+    <div>
+      <div id="s9Detail" style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;min-height:200px;">
+      </div>
+      <div class="analogy" style="margin-top:12px;font-size:0.9em;">
+        <strong>Analogy:</strong> Static analysis is like reviewing a map for wrong turns. Dynamic analysis is like driving the route and hitting actual potholes. The map catches everything theoretically; the drive catches what matters practically.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  const detail = document.getElementById('s9Detail');
+  let mode = 'coverage';
+
+  const data = {
+    coverage: {
+      static: 95, dynamic: 40, label: 'Path Coverage',
+      staticLabel: 'All possible paths', dynamicLabel: 'Only executed paths',
+      detail: `<h3 style="color:#38bdf8;margin-top:0;">Coverage</h3>
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+          <tr><th style="background:#334155;color:#e2e8f0;padding:8px;text-align:left;">Aspect</th><th style="background:#6366f1;color:#fff;padding:8px;">Static</th><th style="background:#22c55e;color:#fff;padding:8px;">Dynamic</th></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #334155;">Paths analyzed</td><td style="padding:8px;border-bottom:1px solid #334155;color:#6366f1;">All possible</td><td style="padding:8px;border-bottom:1px solid #334155;color:#22c55e;">Only tested</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #334155;">Dead code</td><td style="padding:8px;border-bottom:1px solid #334155;color:#6366f1;">Detected</td><td style="padding:8px;border-bottom:1px solid #334155;color:#ef4444;">Missed</td></tr>
+          <tr><td style="padding:8px;">Edge cases</td><td style="padding:8px;color:#6366f1;">Reasoned about</td><td style="padding:8px;color:#22c55e;">Only if tested</td></tr>
+        </table>`
+    },
+    precision: {
+      static: 55, dynamic: 90, label: 'Precision',
+      staticLabel: 'May over-approximate', dynamicLabel: 'Exact runtime values',
+      detail: `<h3 style="color:#38bdf8;margin-top:0;">Precision</h3>
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+          <tr><th style="background:#334155;color:#e2e8f0;padding:8px;text-align:left;">Aspect</th><th style="background:#6366f1;color:#fff;padding:8px;">Static</th><th style="background:#22c55e;color:#fff;padding:8px;">Dynamic</th></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #334155;">False positives</td><td style="padding:8px;border-bottom:1px solid #334155;color:#ef4444;">Common</td><td style="padding:8px;border-bottom:1px solid #334155;color:#22c55e;">Rare</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #334155;">False negatives</td><td style="padding:8px;border-bottom:1px solid #334155;color:#22c55e;">Rare (if sound)</td><td style="padding:8px;border-bottom:1px solid #334155;color:#ef4444;">Common</td></tr>
+          <tr><td style="padding:8px;">Values</td><td style="padding:8px;color:#6366f1;">Approximated</td><td style="padding:8px;color:#22c55e;">Exact</td></tr>
+        </table>`
+    },
+    speed: {
+      static: 80, dynamic: 45, label: 'Analysis Speed',
+      staticLabel: 'Generally fast', dynamicLabel: 'Depends on execution',
+      detail: `<h3 style="color:#38bdf8;margin-top:0;">Speed</h3>
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+          <tr><th style="background:#334155;color:#e2e8f0;padding:8px;text-align:left;">Aspect</th><th style="background:#6366f1;color:#fff;padding:8px;">Static</th><th style="background:#22c55e;color:#fff;padding:8px;">Dynamic</th></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #334155;">Typical time</td><td style="padding:8px;border-bottom:1px solid #334155;color:#6366f1;">Seconds–minutes</td><td style="padding:8px;border-bottom:1px solid #334155;color:#22c55e;">Minutes–hours</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #334155;">Scales with</td><td style="padding:8px;border-bottom:1px solid #334155;color:#6366f1;">Code size</td><td style="padding:8px;border-bottom:1px solid #334155;color:#22c55e;">Test suite size</td></tr>
+          <tr><td style="padding:8px;">Setup needed</td><td style="padding:8px;color:#6366f1;">Minimal</td><td style="padding:8px;color:#22c55e;">Full environment</td></tr>
+        </table>`
+    },
+    cost: {
+      static: 70, dynamic: 60, label: 'Setup Cost',
+      staticLabel: 'Low (just source code)', dynamicLabel: 'Higher (runtime env needed)',
+      detail: `<h3 style="color:#38bdf8;margin-top:0;">Setup Cost</h3>
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+          <tr><th style="background:#334155;color:#e2e8f0;padding:8px;text-align:left;">Aspect</th><th style="background:#6366f1;color:#fff;padding:8px;">Static</th><th style="background:#22c55e;color:#fff;padding:8px;">Dynamic</th></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #334155;">Requires</td><td style="padding:8px;border-bottom:1px solid #334155;color:#6366f1;">Source/bytecode</td><td style="padding:8px;border-bottom:1px solid #334155;color:#22c55e;">Running environment</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #334155;">Test inputs</td><td style="padding:8px;border-bottom:1px solid #334155;color:#6366f1;">Not needed</td><td style="padding:8px;border-bottom:1px solid #334155;color:#ef4444;">Required</td></tr>
+          <tr><td style="padding:8px;">Integration</td><td style="padding:8px;color:#6366f1;">IDE/CI plugin</td><td style="padding:8px;color:#22c55e;">Test framework</td></tr>
+        </table>`
+    }
+  };
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 340);
+    const d = data[mode];
+
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(d.label.toUpperCase() + ' COMPARISON', 16, 12);
+
+    // Bar chart
+    const barW = 120, maxH = 200, bx1 = 100, bx2 = 250, by = 280;
+
+    // Static bar
+    const sh = (d.static / 100) * maxH;
+    ctx.beginPath(); ctx.roundRect(bx1 - barW/2, by - sh, barW, sh, [8,8,0,0]);
+    ctx.fillStyle = '#6366f1'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(d.static + '%', bx1, by - sh / 2);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Static', bx1, by + 10);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+    ctx.fillText(d.staticLabel, bx1, by + 28);
+
+    // Dynamic bar
+    const dh = (d.dynamic / 100) * maxH;
+    ctx.beginPath(); ctx.roundRect(bx2 - barW/2, by - dh, barW, dh, [8,8,0,0]);
+    ctx.fillStyle = '#22c55e'; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(d.dynamic + '%', bx2, by - dh / 2);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 13px sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Dynamic', bx2, by + 10);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+    ctx.fillText(d.dynamicLabel, bx2, by + 28);
+
+    // Winner indicator
+    const winner = d.static > d.dynamic ? 'Static wins' : d.dynamic > d.static ? 'Dynamic wins' : 'Tie';
+    const wColor = d.static > d.dynamic ? '#6366f1' : '#22c55e';
+    ctx.fillStyle = wColor; ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(winner, 425, 12);
+
+    detail.innerHTML = d.detail;
+  }
+
+  const buttons = ['s9Btn0','s9Btn1','s9Btn2','s9Btn3'];
+  const modes = ['coverage','precision','speed','cost'];
+
+  window.s9Toggle = function(m) {
+    mode = m;
+    buttons.forEach((b, i) => {
+      document.getElementById(b).className = modes[i] === m ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+    });
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s9').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s9'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s10: THREE CORE OBJECTIVES ==================== -->
+<div class="slide" id="s10">
+  <h2>Three Core Objectives</h2>
+  <p style="color:#94a3b8;margin-bottom:10px;">Every program analysis technique serves one (or more) of these goals. Click each to explore.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS10" width="420" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div id="s10Info">
+      <div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a segment to explore</h3>
+        <p style="color:#64748b;">Each objective targets different kinds of program defects and uses different analysis techniques.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('s10Info');
+  let selected = -1;
+
+  const sectors = [
+    { label: 'Correctness', color: '#6366f1', angle0: -Math.PI/2, angle1: Math.PI*2/3 - Math.PI/2,
+      icon: '✓', examples: ['Type errors', 'Null dereferences', 'Logic errors', 'Unreachable code'],
+      tools: ['TypeScript', 'mypy', 'Infer', 'OCaml type system'],
+      desc: 'Ensuring the program does what it\'s supposed to do. Type systems are the most widely deployed correctness analysis.' },
+    { label: 'Security', color: '#ef4444', angle0: Math.PI*2/3 - Math.PI/2, angle1: Math.PI*4/3 - Math.PI/2,
+      icon: '🛡', examples: ['SQL injection', 'XSS', 'Buffer overflow', 'Path traversal'],
+      tools: ['Semgrep', 'CodeQL', 'Snyk', 'Taint analysis'],
+      desc: 'Finding vulnerabilities that attackers can exploit. Security analysis often uses taint tracking to follow untrusted data through the program.' },
+    { label: 'Performance', color: '#22c55e', angle0: Math.PI*4/3 - Math.PI/2, angle1: Math.PI*2 - Math.PI/2,
+      icon: '⚡', examples: ['Memory leaks', 'Algorithmic complexity', 'Resource contention', 'Cache misses'],
+      tools: ['Valgrind', 'perf', 'Chrome DevTools', 'Profilers'],
+      desc: 'Identifying bottlenecks and resource waste. Often requires dynamic analysis to measure actual runtime behavior.' },
+  ];
+
+  const cx = 210, cy = 175, R = 120;
+
+  function draw() {
+    ctx.clearRect(0, 0, 420, 340);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('ANALYSIS OBJECTIVES', 12, 10);
+
+    sectors.forEach((s, i) => {
+      const isSelected = selected === i;
+      const r = isSelected ? R + 10 : R;
+
+      // Sector
+      ctx.beginPath(); ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, s.angle0, s.angle1);
+      ctx.closePath();
+      ctx.fillStyle = s.color; ctx.globalAlpha = isSelected ? 0.35 : 0.15;
+      ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = s.color; ctx.lineWidth = isSelected ? 3 : 1.5; ctx.stroke();
+
+      // Label
+      const midAngle = (s.angle0 + s.angle1) / 2;
+      const lx = cx + Math.cos(midAngle) * (r * 0.6);
+      const ly = cy + Math.sin(midAngle) * (r * 0.6);
+      ctx.fillStyle = isSelected ? '#e2e8f0' : s.color;
+      ctx.font = isSelected ? 'bold 14px sans-serif' : '13px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(s.label, lx, ly);
+    });
+
+    // Center circle
+    ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e293b'; ctx.fill();
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Program', cx, cy - 6); ctx.fillText('Analysis', cx, cy + 7);
+  }
+
+  function showInfo(i) {
+    if (i < 0) {
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a segment to explore</h3>
+        <p style="color:#64748b;">Each objective targets different kinds of program defects and uses different analysis techniques.</p></div>`;
+      return;
+    }
+    const s = sectors[i];
+    info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid ${s.color};">
+      <h3 style="color:${s.color};margin-top:0;">${s.icon} ${s.label}</h3>
+      <p style="font-size:0.95em;margin-bottom:10px;">${s.desc}</p>
+      <h3 style="font-size:0.9em;color:#94a3b8;">Detects:</h3>
+      <ul style="font-size:0.9em;margin-bottom:10px;">${s.examples.map(e => `<li>${e}</li>`).join('')}</ul>
+      <h3 style="font-size:0.9em;color:#94a3b8;">Tools:</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">${s.tools.map(t => `<span style="background:rgba(0,0,0,0.3);padding:4px 10px;border-radius:12px;font-size:0.8em;color:${s.color};border:1px solid ${s.color}40;">${t}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 420 / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleX;
+    const angle = Math.atan2(my - cy, mx - cx);
+    const dist = Math.sqrt((mx - cx) ** 2 + (my - cy) ** 2);
+    if (dist > R + 20 || dist < 30) { selected = -1; draw(); showInfo(-1); return; }
+
+    // Normalize angle to match sector ranges
+    let a = angle;
+    for (let i = 0; i < sectors.length; i++) {
+      let a0 = sectors[i].angle0, a1 = sectors[i].angle1;
+      // Normalize
+      let check = a;
+      if (a0 < a1) {
+        if (check >= a0 && check < a1) { selected = i; break; }
+      } else {
+        if (check >= a0 || check < a1) { selected = i; break; }
+      }
+    }
+    draw(); showInfo(selected);
+  });
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s10').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s10'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s11: SOUNDNESS & COMPLETENESS ==================== -->
+<div class="slide" id="s11">
+  <h2>Soundness & Completeness</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Two fundamental properties of any analysis. Drag the bug icons to see which category they fall into.</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS11" width="450" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s11Toggle('sound')">Sound Analysis</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Toggle('complete')">Complete Analysis</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Toggle('both')">The Tension</button>
+      </div>
+    </div>
+    <div id="s11Info">
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('s11Info');
+  let mode = 'sound';
+
+  const infoContent = {
+    sound: `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #6366f1;">
+      <h3 style="color:#6366f1;margin-top:0;">Sound Analysis</h3>
+      <p style="font-size:0.95em;margin-bottom:10px;"><strong>Never misses a real bug.</strong> If the analysis says "all clear," you can trust it.</p>
+      <div class="key-idea" style="margin:10px 0;">
+        <strong>Sound = No false negatives</strong><br>
+        Every real bug IS reported (but some reports may be false alarms).
+      </div>
+      <p style="font-size:0.9em;color:#94a3b8;"><strong>Trade-off:</strong> May cry wolf — reporting potential bugs that aren't actually real. Developers may get "alert fatigue."</p>
+      <p style="font-size:0.9em;color:#94a3b8;margin-top:8px;"><strong>Example:</strong> A null-pointer analyzer that flags EVERY possible null access — even ones guarded by checks it can't reason about.</p>
+    </div>`,
+    complete: `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #22c55e;">
+      <h3 style="color:#22c55e;margin-top:0;">Complete Analysis</h3>
+      <p style="font-size:0.95em;margin-bottom:10px;"><strong>Never reports a false alarm.</strong> Every reported bug is a real bug.</p>
+      <div class="key-idea" style="margin:10px 0;">
+        <strong>Complete = No false positives</strong><br>
+        Every report IS a real bug (but some real bugs may be missed).
+      </div>
+      <p style="font-size:0.9em;color:#94a3b8;"><strong>Trade-off:</strong> May miss real bugs to avoid false alarms. Silence doesn't mean safety.</p>
+      <p style="font-size:0.9em;color:#94a3b8;margin-top:8px;"><strong>Example:</strong> Testing with specific inputs — every failure found is a real bug, but untested paths may hide more.</p>
+    </div>`,
+    both: `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #f59e0b;">
+      <h3 style="color:#f59e0b;margin-top:0;">The Fundamental Tension</h3>
+      <p style="font-size:0.95em;margin-bottom:10px;">For non-trivial program properties, you <strong style="color:#ef4444;">cannot have both</strong> perfect soundness AND perfect completeness.</p>
+      <div class="warning" style="margin:10px 0;">
+        <strong>Rice's Theorem:</strong> All non-trivial semantic properties of programs are undecidable. Perfect analysis is mathematically impossible.
+      </div>
+      <p style="font-size:0.9em;color:#94a3b8;">Every real tool picks a point on the spectrum:</p>
+      <ul style="font-size:0.85em;color:#94a3b8;">
+        <li><strong style="color:#6366f1;">Compilers</strong> — lean toward soundness (reject possibly-bad code)</li>
+        <li><strong style="color:#22c55e;">Testing</strong> — lean toward completeness (every failure is real)</li>
+        <li><strong style="color:#f59e0b;">Linters</strong> — pragmatic middle ground</li>
+      </ul>
+    </div>`
+  };
+
+  function draw() {
+    ctx.clearRect(0, 0, 450, 340);
+
+    if (mode === 'sound') {
+      // Venn: Reported bugs (big circle) fully contains Real bugs (small circle)
+      ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText('SOUND ANALYSIS', 16, 10);
+
+      // Reported (large)
+      ctx.beginPath(); ctx.arc(225, 170, 130, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(99,102,241,0.1)'; ctx.fill();
+      ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#6366f1'; ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText('Reported Issues', 225, 52);
+
+      // Real (smaller, inside)
+      ctx.beginPath(); ctx.arc(225, 190, 70, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(239,68,68,0.15)'; ctx.fill();
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('Real Bugs', 225, 185);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+      ctx.fillText('ALL captured ✓', 225, 200);
+
+      // False positives region label
+      ctx.fillStyle = '#818cf8'; ctx.font = '11px sans-serif';
+      ctx.fillText('False Positives', 225, 90);
+      ctx.fillText('(false alarms)', 225, 104);
+
+      // Legend
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('✓ No false negatives', 16, 310);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('⚠ May have false positives', 220, 310);
+
+    } else if (mode === 'complete') {
+      ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText('COMPLETE ANALYSIS', 16, 10);
+
+      // Real bugs (large)
+      ctx.beginPath(); ctx.arc(225, 170, 130, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(239,68,68,0.08)'; ctx.fill();
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#ef4444'; ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText('Real Bugs', 225, 52);
+
+      // Reported (smaller, inside)
+      ctx.beginPath(); ctx.arc(225, 190, 70, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(34,197,94,0.15)'; ctx.fill();
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('Reported', 225, 185);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+      ctx.fillText('ALL accurate ✓', 225, 200);
+
+      // Missed bugs label
+      ctx.fillStyle = '#ef4444'; ctx.font = '11px sans-serif';
+      ctx.fillText('Missed Bugs', 225, 90);
+      ctx.fillText('(false negatives)', 225, 104);
+
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('✓ No false positives', 16, 310);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('⚠ May have false negatives', 220, 310);
+
+    } else {
+      // Both: show the tension
+      ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText('THE IMPOSSIBLE IDEAL', 16, 10);
+
+      // Spectrum bar
+      const bx = 60, by = 60, bw = 330, bh = 30;
+      const grad = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+      grad.addColorStop(0, '#6366f1'); grad.addColorStop(1, '#22c55e');
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 8);
+      ctx.fillStyle = grad; ctx.globalAlpha = 0.3; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1; ctx.stroke();
+
+      ctx.fillStyle = '#6366f1'; ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText('SOUND', bx, by + bh + 8);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+      ctx.fillText('(catch everything)', bx, by + bh + 22);
+
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('COMPLETE', bx + bw, by + bh + 8);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+      ctx.fillText('(only real bugs)', bx + bw, by + bh + 22);
+
+      // Tool markers
+      const tools = [
+        { name: 'Compiler Type Check', pos: 0.15, color: '#6366f1' },
+        { name: 'Infer / Coverity', pos: 0.35, color: '#818cf8' },
+        { name: 'Linters (ESLint)', pos: 0.5, color: '#f59e0b' },
+        { name: 'Testing', pos: 0.8, color: '#22c55e' },
+      ];
+      tools.forEach(t => {
+        const tx = bx + t.pos * bw;
+        ctx.beginPath(); ctx.arc(tx, by + bh/2, 6, 0, Math.PI*2);
+        ctx.fillStyle = t.color; ctx.fill();
+        // Line down
+        ctx.beginPath(); ctx.moveTo(tx, by + bh); ctx.lineTo(tx, 160 + tools.indexOf(t) * 36);
+        ctx.strokeStyle = t.color; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.stroke();
+        ctx.setLineDash([]);
+        // Label
+        ctx.fillStyle = t.color; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(t.name, tx, 164 + tools.indexOf(t) * 36);
+      });
+
+      // Rice's theorem box
+      ctx.beginPath(); ctx.roundRect(60, 285, 330, 40, 8);
+      ctx.fillStyle = 'rgba(239,68,68,0.08)'; ctx.fill();
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Rice\'s Theorem: Perfect sound + complete is impossible', 225, 305);
+    }
+  }
+
+  window.s11Toggle = function(m) {
+    mode = m;
+    info.innerHTML = infoContent[m];
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s11').classList.contains('active')) { draw(); info.innerHTML = infoContent[mode]; }
+  });
+  obs.observe(document.getElementById('s11'), {attributes: true, attributeFilter: ['class']});
+  draw();
+  info.innerHTML = infoContent[mode];
+})();
+</script>
+
+<!-- ==================== s12: THE FUNDAMENTAL TRADE-OFF ==================== -->
+<div class="slide" id="s12">
+  <h2>The Fundamental Trade-off</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Move the slider to see how adjusting the analysis threshold affects false positives and false negatives.</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS12" width="450" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+        <span style="color:#6366f1;font-size:0.85em;font-weight:600;">Sound</span>
+        <input type="range" id="s12Slider" min="0" max="100" value="50"
+          style="flex:1;accent-color:#a78bfa;" oninput="s12Update()">
+        <span style="color:#22c55e;font-size:0.85em;font-weight:600;">Complete</span>
+      </div>
+    </div>
+    <div>
+      <div id="s12Stats" style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+      </div>
+      <div class="key-idea" style="margin-top:12px;font-size:0.9em;">
+        <strong>Key Insight:</strong> There's no "best" position — it depends on context. Safety-critical systems lean sound (better safe than sorry). Developer tools lean complete (avoid alert fatigue).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+  const stats = document.getElementById('s12Stats');
+
+  function draw() {
+    const val = parseInt(document.getElementById('s12Slider').value);
+    const soundness = 100 - val; // 0=fully complete, 100=fully sound
+    const completeness = val;
+
+    ctx.clearRect(0, 0, 450, 320);
+
+    // "Bugs" in the program (fixed positions)
+    const bugs = [
+      {x:80, y:80, real:true}, {x:160, y:60, real:true}, {x:300, y:90, real:true},
+      {x:380, y:70, real:true}, {x:120, y:140, real:true}, {x:250, y:150, real:true},
+      {x:350, y:160, real:true}, {x:60, y:200, real:true},
+      // False positive candidates
+      {x:200, y:80, real:false}, {x:400, y:140, real:false}, {x:140, y:210, real:false},
+      {x:310, y:220, real:false}, {x:50, y:130, real:false},
+    ];
+
+    const realBugs = bugs.filter(b => b.real);
+    const fakeBugs = bugs.filter(b => !b.real);
+
+    // How many real bugs are caught (soundness → more caught)
+    const caughtReal = Math.round(realBugs.length * (1 - val / 130)); // More sound = more caught
+    // How many false positives (soundness → more FP)
+    const falsePos = Math.round(fakeBugs.length * (1 - val / 110));
+
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('REPORTED ISSUES VISUALIZATION', 16, 10);
+
+    // Detection boundary (oval that shifts)
+    const bx = 225, by = 150;
+    const rx = 180 - val * 0.6, ry = 120 - val * 0.3;
+    ctx.beginPath(); ctx.ellipse(bx, by, Math.max(rx, 60), Math.max(ry, 50), 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(99,102,241,0.06)'; ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#64748b'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Detection boundary', bx, by + Math.max(ry, 50) + 8);
+
+    // Draw bugs
+    bugs.forEach((b, i) => {
+      const inBoundary = ((b.x - bx) ** 2 / Math.max(rx, 60) ** 2 + (b.y - by) ** 2 / Math.max(ry, 50) ** 2) <= 1;
+      const caught = inBoundary;
+
+      if (b.real) {
+        // Real bug
+        ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = caught ? '#ef4444' : 'rgba(239,68,68,0.2)';
+        ctx.fill();
+        if (!caught) { ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1; ctx.setLineDash([2,2]); ctx.stroke(); ctx.setLineDash([]); }
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('B', b.x, b.y);
+      } else {
+        // Not a real bug
+        ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = caught ? 'rgba(249,115,22,0.6)' : 'rgba(100,116,139,0.15)';
+        ctx.fill();
+        if (caught) { ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1; ctx.stroke(); }
+        ctx.fillStyle = caught ? '#fff' : '#475569'; ctx.font = '8px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('~', b.x, b.y);
+      }
+    });
+
+    // Legend
+    const ly = 280;
+    ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(30, ly, 6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('Real bug (caught)', 42, ly);
+
+    ctx.fillStyle = 'rgba(239,68,68,0.2)'; ctx.beginPath(); ctx.arc(170, ly, 6, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1; ctx.setLineDash([2,2]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#94a3b8'; ctx.fillText('Real bug (missed)', 182, ly);
+
+    ctx.fillStyle = 'rgba(249,115,22,0.6)'; ctx.beginPath(); ctx.arc(320, ly, 6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#94a3b8'; ctx.fillText('False positive', 332, ly);
+
+    // Count
+    const inBound = bugs.filter(b => ((b.x-bx)**2/Math.max(rx,60)**2 + (b.y-by)**2/Math.max(ry,50)**2) <= 1);
+    const caughtRealCount = inBound.filter(b => b.real).length;
+    const fpCount = inBound.filter(b => !b.real).length;
+    const missedCount = realBugs.length - caughtRealCount;
+
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(`Caught: ${caughtRealCount}/${realBugs.length}  FP: ${fpCount}  Missed: ${missedCount}`, 435, 10);
+
+    // Stats panel
+    const pct = Math.round(caughtRealCount / realBugs.length * 100);
+    const fpRate = inBound.length > 0 ? Math.round(fpCount / inBound.length * 100) : 0;
+    stats.innerHTML = `
+      <h3 style="color:#a78bfa;margin-top:0;">Analysis Metrics</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;">
+          <div style="font-size:1.8em;font-weight:700;color:#6366f1;">${pct}%</div>
+          <div style="font-size:0.8em;color:#94a3b8;">Bug Detection Rate</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;">
+          <div style="font-size:1.8em;font-weight:700;color:${fpRate > 30 ? '#ef4444' : '#22c55e'};">${fpRate}%</div>
+          <div style="font-size:0.8em;color:#94a3b8;">False Positive Rate</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;">
+          <div style="font-size:1.8em;font-weight:700;color:${missedCount > 2 ? '#ef4444' : '#22c55e'};">${missedCount}</div>
+          <div style="font-size:0.8em;color:#94a3b8;">Missed Bugs</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;">
+          <div style="font-size:1.8em;font-weight:700;color:#f59e0b;">${fpCount}</div>
+          <div style="font-size:0.8em;color:#94a3b8;">False Alarms</div>
+        </div>
+      </div>
+      <p style="font-size:0.85em;color:#94a3b8;margin-top:10px;">
+        ${val < 30 ? '⬅ Very sound — catches almost everything, but many false alarms. Good for safety-critical systems.' :
+          val > 70 ? '➡ Very complete — precise reports, but misses real bugs. Good for developer tools.' :
+          '↔ Balanced — practical trade-off used by most linters and CI tools.'}
+      </p>
+    `;
+  }
+
+  window.s12Update = function() { draw(); };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s12').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s12'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCB: CHALLENGE — SOUNDNESS/COMPLETENESS SCENARIOS ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Sound, Complete, or Neither?</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">For each analysis tool description, classify it. Then click <em>Check All</em>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div id="sCB_q1" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">1.</strong> A type checker rejects programs that <em>might</em> have type errors, even if some rejected programs would actually run fine.</p>
+      <select id="sCB_a1" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="sound">Sound (catches all bugs, may false-positive)</option>
+        <option value="complete">Complete (no false positives, may miss bugs)</option>
+        <option value="neither">Neither</option>
+      </select>
+    </div>
+    <div id="sCB_q2" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">2.</strong> A test suite with 85% code coverage. Every failing test reveals a genuine bug, but some untested paths have hidden issues.</p>
+      <select id="sCB_a2" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="sound">Sound (catches all bugs, may false-positive)</option>
+        <option value="complete">Complete (no false positives, may miss bugs)</option>
+        <option value="neither">Neither</option>
+      </select>
+    </div>
+    <div id="sCB_q3" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">3.</strong> A heuristic linter that catches common patterns like "= instead of ==" but sometimes misses real bugs and occasionally flags correct code.</p>
+      <select id="sCB_a3" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="sound">Sound (catches all bugs, may false-positive)</option>
+        <option value="complete">Complete (no false positives, may miss bugs)</option>
+        <option value="neither">Neither</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-bottom:12px;">
+    <button class="btn btn-sm" onclick="sCBCheck()">Check All</button>
+    <button class="btn btn-sm btn-secondary" onclick="sCBReset()">Reset</button>
+    <span id="sCBScore" style="margin-left:12px;font-weight:600;font-size:0.95em;align-self:center;"></span>
+  </div>
+  <div id="sCBExplain" style="display:none;" class="key-idea">
+    <strong>Explanations:</strong><br>
+    <strong>1. Sound</strong> — It rejects ALL possibly-buggy programs (no real type error escapes), but some rejections are false positives.<br>
+    <strong>2. Complete</strong> — Every failing test IS a real bug (no false positives), but untested paths mean real bugs are missed.<br>
+    <strong>3. Neither</strong> — It both misses real bugs AND sometimes flags correct code. Most heuristic linters are neither perfectly sound nor complete.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCB_a1:'sound', sCB_a2:'complete', sCB_a3:'neither'};
+  window.sCBCheck = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const qDiv = sel.closest('[id^="sCB_q"]');
+      if (sel.value === correct) { qDiv.style.borderColor = '#22c55e'; score++; }
+      else if (sel.value) { qDiv.style.borderColor = '#ef4444'; }
+      else { qDiv.style.borderColor = '#f59e0b'; }
+    });
+    document.getElementById('sCBScore').textContent = score + '/3';
+    document.getElementById('sCBScore').style.color = score === 3 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+    document.getElementById('sCBExplain').style.display = 'block';
+  };
+  window.sCBReset = function() {
+    ['sCB_a1','sCB_a2','sCB_a3'].forEach(id => document.getElementById(id).value = '');
+    ['sCB_q1','sCB_q2','sCB_q3'].forEach(id => document.getElementById(id).style.borderColor = '#334155');
+    document.getElementById('sCBScore').textContent = '';
+    document.getElementById('sCBExplain').style.display = 'none';
+  };
+})();
+</script>
+
+<!-- ==================== s13: ANALYSIS SCOPE LEVELS ==================== -->
+<div class="slide" id="s13">
+  <h2>Analysis Scope Levels</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Click each scope level to see what it analyzes and its trade-offs.</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS13" width="440" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div id="s13Info">
+      <div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a scope level</h3>
+        <p style="color:#64748b;">Broader scope = more accurate but more expensive.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS13');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('s13Info');
+  let selected = -1;
+
+  const levels = [
+    { label: 'Intraprocedural', y: 170, r: 50, color: '#6366f1',
+      desc: 'Analyzes single functions in isolation. Fast and scalable, but blind to cross-function data flow.',
+      pros: ['Very fast', 'Scales to huge codebases', 'Simple to implement'],
+      cons: ['Cannot track data across calls', 'Misses inter-function bugs'],
+      examples: ['Uninitialized variables', 'Dead code within a function', 'Simple null checks'] },
+    { label: 'Interprocedural', y: 170, r: 100, color: '#f59e0b',
+      desc: 'Tracks information across function calls. Essential for security analysis like taint tracking.',
+      pros: ['Tracks data flow across calls', 'Catches more real bugs', 'Essential for taint analysis'],
+      cons: ['Slower — must build call graph', 'Context sensitivity is expensive'],
+      examples: ['Taint tracking (source → sink)', 'Use-after-free across calls', 'Resource leak detection'] },
+    { label: 'Whole-Program', y: 170, r: 150, color: '#22c55e',
+      desc: 'Analyzes the entire application including libraries. Most precise but most expensive.',
+      pros: ['Maximum precision', 'Catches system-level issues', 'Full context awareness'],
+      cons: ['Very expensive (time + memory)', 'May not scale to large apps', 'Needs all source code'],
+      examples: ['Global dead code elimination', 'Whole-app optimization', 'Complete call graph analysis'] },
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 340);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('ANALYSIS SCOPE — Click to explore', 16, 10);
+
+    const cx = 220, cy = 170;
+
+    // Draw from outermost to innermost
+    for (let i = levels.length - 1; i >= 0; i--) {
+      const lv = levels[i];
+      const isSel = selected === i;
+      ctx.beginPath(); ctx.arc(cx, cy, lv.r, 0, Math.PI * 2);
+      ctx.fillStyle = lv.color; ctx.globalAlpha = isSel ? 0.2 : 0.06;
+      ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = lv.color; ctx.lineWidth = isSel ? 3 : 1.5;
+      ctx.setLineDash(isSel ? [] : [4, 4]); ctx.stroke(); ctx.setLineDash([]);
+
+      // Label
+      ctx.fillStyle = isSel ? '#e2e8f0' : lv.color;
+      ctx.font = isSel ? 'bold 12px sans-serif' : '11px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const ly = cy - lv.r + 16;
+      ctx.fillText(lv.label, cx, ly);
+    }
+
+    // Center icon
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('f(x)', cx, cy);
+
+    // Arrows showing expansion
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('← Broader scope, more cost →', 130, 320);
+
+    // Cost/accuracy indicator
+    const barX = 30, barY = 50, barH = 240;
+    ctx.beginPath(); ctx.moveTo(barX, barY); ctx.lineTo(barX, barY + barH);
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 2; ctx.stroke();
+    levels.forEach((lv, i) => {
+      const y = barY + 30 + i * 90;
+      ctx.beginPath(); ctx.arc(barX, y, 4, 0, Math.PI*2);
+      ctx.fillStyle = lv.color; ctx.fill();
+    });
+    ctx.fillStyle = '#64748b'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+    ctx.save(); ctx.translate(14, 170); ctx.rotate(-Math.PI/2);
+    ctx.fillText('COST & PRECISION →', 0, 0);
+    ctx.restore();
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 440 / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleX;
+    const cx = 220, cy = 170;
+    const dist = Math.sqrt((mx - cx) ** 2 + (my - cy) ** 2);
+
+    if (dist <= 50) selected = 0;
+    else if (dist <= 100) selected = 1;
+    else if (dist <= 150) selected = 2;
+    else selected = -1;
+
+    draw();
+
+    if (selected >= 0) {
+      const lv = levels[selected];
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid ${lv.color};">
+        <h3 style="color:${lv.color};margin-top:0;">${lv.label}</h3>
+        <p style="font-size:0.95em;margin-bottom:10px;">${lv.desc}</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <h3 style="font-size:0.85em;color:#22c55e;">Pros</h3>
+            <ul style="font-size:0.85em;">${lv.pros.map(p => `<li style="color:#94a3b8;">${p}</li>`).join('')}</ul>
+          </div>
+          <div>
+            <h3 style="font-size:0.85em;color:#ef4444;">Cons</h3>
+            <ul style="font-size:0.85em;">${lv.cons.map(c => `<li style="color:#94a3b8;">${c}</li>`).join('')}</ul>
+          </div>
+        </div>
+        <h3 style="font-size:0.85em;color:#94a3b8;">Detects:</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">${lv.examples.map(e => `<span style="background:rgba(0,0,0,0.3);padding:4px 10px;border-radius:12px;font-size:0.78em;color:${lv.color};border:1px solid ${lv.color}40;">${e}</span>`).join('')}</div>
+      </div>`;
+    } else {
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a scope level</h3>
+        <p style="color:#64748b;">Broader scope = more accurate but more expensive.</p></div>`;
+    }
+  });
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s13').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s13'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s14: INTRA VS INTERPROCEDURAL ==================== -->
+<div class="slide" id="s14">
+  <h2>Intra vs Interprocedural: Side by Side</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Step through to see how each scope level analyzes the same taint-tracking problem.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;flex:1;">
+    <div>
+      <h3 style="color:#6366f1;font-size:0.95em;margin-bottom:4px;">Intraprocedural (function-local)</h3>
+      <div class="code-block" style="margin:0;">
+        <div class="code-header">query.ml — local view</div>
+        <div class="code-content" id="s14CodeA">
+          <div class="line" id="s14A1"><span style="color:#94a3b8;">1</span>  <span style="color:#c792ea;">let</span> <span style="color:#82aaff;">query</span> user_input =</div>
+          <div class="line" id="s14A2"><span style="color:#94a3b8;">2</span>    <span style="color:#c792ea;">let</span> safe = sanitize user_input <span style="color:#c792ea;">in</span></div>
+          <div class="line" id="s14A3"><span style="color:#94a3b8;">3</span>    Db.execute (Printf.sprintf</div>
+          <div class="line" id="s14A4"><span style="color:#94a3b8;">4</span>      <span style="color:#c3e88d;">"SELECT * WHERE name='%s'"</span> safe)</div>
+        </div>
+      </div>
+      <div class="log-panel" id="s14LogA" style="margin-top:6px;min-height:70px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Intraprocedural view...</div>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#22c55e;font-size:0.95em;margin-bottom:4px;">Interprocedural (cross-function)</h3>
+      <div class="code-block" style="margin:0;">
+        <div class="code-header">query.ml — full view</div>
+        <div class="code-content" id="s14CodeB">
+          <div class="line" id="s14B1"><span style="color:#94a3b8;">1</span>  <span style="color:#c792ea;">let</span> <span style="color:#82aaff;">sanitize</span> input =</div>
+          <div class="line" id="s14B2"><span style="color:#94a3b8;">2</span>    String.concat <span style="color:#c3e88d;">"''"</span> (String.split_on_char <span style="color:#c3e88d;">'\''</span> input)</div>
+          <div class="line" id="s14B3"><span style="color:#94a3b8;">3</span>  <span style="color:#c792ea;">let</span> <span style="color:#82aaff;">query</span> user_input =</div>
+          <div class="line" id="s14B4"><span style="color:#94a3b8;">4</span>    <span style="color:#c792ea;">let</span> safe = sanitize user_input <span style="color:#c792ea;">in</span></div>
+          <div class="line" id="s14B5"><span style="color:#94a3b8;">5</span>    Db.execute (Printf.sprintf</div>
+          <div class="line" id="s14B6"><span style="color:#94a3b8;">6</span>      <span style="color:#c3e88d;">"SELECT * WHERE name='%s'"</span> safe)</div>
+        </div>
+      </div>
+      <div class="log-panel" id="s14LogB" style="margin-top:6px;min-height:70px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Interprocedural view...</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-top:8px;">
+    <button class="btn btn-sm" onclick="s14Step()">Step</button>
+    <button class="btn btn-sm" onclick="s14Auto()">Auto Play</button>
+    <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+    <span id="s14Status" style="margin-left:12px;font-size:0.9em;color:#94a3b8;align-self:center;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const logA = document.getElementById('s14LogA');
+  const logB = document.getElementById('s14LogB');
+  const status = document.getElementById('s14Status');
+
+  const aLines = ['s14A1','s14A2','s14A3','s14A4'];
+  const bLines = ['s14B1','s14B2','s14B3','s14B4','s14B5','s14B6'];
+
+  const steps = [
+    { aHL:[0], bHL:[2], aMsg:'<span class="highlight">Enter</span> query() — user_input is <span class="error-text">TAINTED</span> (from user)',
+      bMsg:'<span class="highlight">Enter</span> query() — user_input is <span class="error-text">TAINTED</span> (from user)' },
+    { aHL:[1], bHL:[3], aMsg:'safe = sanitize(user_input) — <span class="highlight">sanitize is unknown!</span> Cannot track taint.',
+      bMsg:'safe = sanitize(user_input) — following into sanitize()...' },
+    { aHL:[1], bHL:[0,1], aMsg:'Intraprocedural: must <span class="error-text">assume safe is still tainted</span> (conservative)',
+      bMsg:'<span class="success">Inside sanitize:</span> escapes single quotes, removing SQL injection vector' },
+    { aHL:[2,3], bHL:[3,4,5], aMsg:'Db.execute with tainted data → <span class="error-text">FALSE ALARM: possible SQL injection!</span>',
+      bMsg:'safe is <span class="success">CLEAN</span> (sanitize verified). Db.execute is safe. <span class="success">No alarm.</span>' },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function clearHL() {
+    aLines.forEach(id => document.getElementById(id).classList.remove('active','error'));
+    bLines.forEach(id => document.getElementById(id).classList.remove('active','error'));
+  }
+
+  window.s14Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    clearHL();
+    s.aHL.forEach(i => document.getElementById(aLines[i]).classList.add(stepIdx === 3 ? 'error' : 'active'));
+    s.bHL.forEach(i => document.getElementById(bLines[i]).classList.add(stepIdx === 2 && i <= 1 ? 'active' : stepIdx === 3 ? 'active' : 'active'));
+    if (stepIdx === 3) {
+      s.aHL.forEach(i => document.getElementById(aLines[i]).classList.add('error'));
+    }
+    logA.innerHTML += `<div class="log-entry">${s.aMsg}</div>`;
+    logB.innerHTML += `<div class="log-entry">${s.bMsg}</div>`;
+    logA.scrollTop = logA.scrollHeight;
+    logB.scrollTop = logB.scrollHeight;
+
+    if (stepIdx === 3) {
+      status.innerHTML = '<strong style="color:#f59e0b;">Result:</strong> Intraprocedural raises a <span style="color:#ef4444;">false alarm</span>. Interprocedural knows it\'s <span style="color:#22c55e;">safe</span>.';
+    }
+    stepIdx++;
+  };
+  window.s14Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s14Step();
+    }, 1500);
+  };
+  window.s14Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; clearHL();
+    logA.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Intraprocedural view...</div>';
+    logB.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Interprocedural view...</div>';
+    status.innerHTML = '';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s14').classList.contains('active')) { /* keep state */ }
+  });
+  obs.observe(document.getElementById('s14'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== s15: MODERN ANALYSIS ECOSYSTEM ==================== -->
+<div class="slide" id="s15">
+  <h2>Modern Analysis Ecosystem</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Click each stage of the development pipeline to see which analysis tools apply.</p>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS15" width="480" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div id="s15Info">
+      <div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a pipeline stage</h3>
+        <p style="color:#64748b;">Analysis tools integrate at every phase of the Software Development Life Cycle.</p>
+      </div>
+      <div class="key-idea" style="margin-top:12px;font-size:0.9em;">
+        <strong>Key Insight:</strong> Earlier detection = cheaper fixes. A bug found in design costs 100x less to fix than one found in production.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('s15Info');
+  let selected = -1;
+
+  const stages = [
+    { label: 'Design', x: 60, y: 80, color: '#a78bfa', icon: '📐',
+      type: 'Static', tools: ['STRIDE', 'Attack Trees', 'Threat Modeling'],
+      desc: 'Before writing code, analyze the design for potential security threats and architectural weaknesses.',
+      examples: 'Threat models identify attack surfaces. STRIDE categorizes threats (Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation).' },
+    { label: 'Develop', x: 160, y: 80, color: '#6366f1', icon: '💻',
+      type: 'Static', tools: ['ESLint', 'mypy', 'TypeScript', 'IDE Plugins'],
+      desc: 'As you write code, static analysis runs in real-time via IDE plugins and linters.',
+      examples: 'TypeScript catches type errors. ESLint flags suspicious patterns. IDE underlines potential null dereferences.' },
+    { label: 'Test', x: 260, y: 80, color: '#22c55e', icon: '🧪',
+      type: 'Static + Dynamic', tools: ['pytest-cov', 'AFL (Fuzzer)', 'Jest', 'Property Testing'],
+      desc: 'Both static (coverage analysis) and dynamic (fuzzing, test execution) techniques verify behavior.',
+      examples: 'Coverage tools measure how much code tests exercise. Fuzzers generate random inputs to find crashes.' },
+    { label: 'CI/CD', x: 360, y: 80, color: '#f59e0b', icon: '🔄',
+      type: 'Static', tools: ['SonarQube', 'Semgrep', 'CodeQL', 'Snyk'],
+      desc: 'Automated quality gates block merges if analysis detects issues. The last line of defense before deployment.',
+      examples: 'SonarQube enforces code quality. Semgrep finds security patterns. Snyk scans dependencies for known vulnerabilities.' },
+    { label: 'Deploy', x: 420, y: 80, color: '#ef4444', icon: '🚀',
+      type: 'Dynamic', tools: ['APM (DataDog)', 'Valgrind', 'Sentry', 'Prometheus'],
+      desc: 'In production, dynamic monitoring watches for runtime issues, performance degradation, and errors.',
+      examples: 'APM tools track response times. Sentry captures runtime errors. Prometheus alerts on resource usage spikes.' },
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 340);
+
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('SOFTWARE DEVELOPMENT PIPELINE', 16, 10);
+
+    // Pipeline arrow
+    ctx.beginPath(); ctx.moveTo(40, 80); ctx.lineTo(440, 80);
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 3; ctx.stroke();
+    // Arrowhead
+    ctx.beginPath(); ctx.moveTo(440, 80); ctx.lineTo(432, 74); ctx.lineTo(432, 86); ctx.closePath();
+    ctx.fillStyle = '#334155'; ctx.fill();
+
+    stages.forEach((s, i) => {
+      const isSel = selected === i;
+      // Node circle
+      ctx.beginPath(); ctx.arc(s.x, s.y, isSel ? 28 : 22, 0, Math.PI * 2);
+      ctx.fillStyle = s.color; ctx.globalAlpha = isSel ? 0.3 : 0.12;
+      ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = s.color; ctx.lineWidth = isSel ? 3 : 2; ctx.stroke();
+
+      // Icon
+      ctx.fillStyle = '#e2e8f0'; ctx.font = isSel ? '16px sans-serif' : '14px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(s.icon, s.x, s.y);
+
+      // Label
+      ctx.fillStyle = isSel ? '#e2e8f0' : s.color;
+      ctx.font = isSel ? 'bold 12px sans-serif' : '11px sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.fillText(s.label, s.x, s.y + 30);
+
+      // Analysis type badge
+      ctx.fillStyle = '#94a3b8'; ctx.font = '9px monospace';
+      ctx.fillText(s.type, s.x, s.y + 46);
+    });
+
+    // Bottom: analysis type bar
+    const barY = 180;
+    // Static region
+    ctx.beginPath(); ctx.roundRect(40, barY, 340, 28, 6);
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#6366f1'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('Static Analysis Range', 50, barY + 14);
+
+    // Dynamic region
+    ctx.beginPath(); ctx.roundRect(240, barY + 36, 200, 28, 6);
+    ctx.fillStyle = 'rgba(34,197,94,0.08)'; ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#22c55e'; ctx.font = '10px sans-serif';
+    ctx.fillText('Dynamic Analysis Range', 250, barY + 50);
+
+    // Cost curve
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('BUG FIX COST', 16, 260);
+    const costY = 290, costH = 40;
+    const costPoints = [
+      {x:60, h:4}, {x:160, h:10}, {x:260, h:18}, {x:360, h:28}, {x:420, h:40}
+    ];
+    ctx.beginPath();
+    ctx.moveTo(costPoints[0].x, costY + costH - costPoints[0].h);
+    costPoints.forEach(p => ctx.lineTo(p.x, costY + costH - p.h));
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Cost labels
+    const costLabels = ['$1', '$10', '$100', '$1K', '$10K'];
+    costPoints.forEach((p, i) => {
+      ctx.beginPath(); ctx.arc(p.x, costY + costH - p.h, 3, 0, Math.PI*2);
+      ctx.fillStyle = '#ef4444'; ctx.fill();
+      ctx.fillStyle = '#94a3b8'; ctx.font = '9px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(costLabels[i], p.x, costY + costH + 4);
+    });
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 480 / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleX;
+
+    selected = -1;
+    stages.forEach((s, i) => {
+      if (Math.sqrt((mx - s.x)**2 + (my - s.y)**2) < 30) selected = i;
+    });
+
+    draw();
+
+    if (selected >= 0) {
+      const s = stages[selected];
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid ${s.color};">
+        <h3 style="color:${s.color};margin-top:0;">${s.icon} ${s.label} Phase</h3>
+        <p style="font-size:0.85em;color:#94a3b8;margin-bottom:6px;"><strong>Analysis type:</strong> ${s.type}</p>
+        <p style="font-size:0.95em;margin-bottom:10px;">${s.desc}</p>
+        <p style="font-size:0.9em;color:#94a3b8;margin-bottom:10px;">${s.examples}</p>
+        <h3 style="font-size:0.85em;color:#94a3b8;">Tools:</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">${s.tools.map(t =>
+          `<span style="background:rgba(0,0,0,0.3);padding:4px 10px;border-radius:12px;font-size:0.8em;color:${s.color};border:1px solid ${s.color}40;">${t}</span>`
+        ).join('')}</div>
+      </div>
+      <div class="key-idea" style="margin-top:12px;font-size:0.9em;">
+        <strong>Key Insight:</strong> Earlier detection = cheaper fixes. A bug found in design costs 100x less to fix than one found in production.
+      </div>`;
+    } else {
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a pipeline stage</h3>
+        <p style="color:#64748b;">Analysis tools integrate at every phase of the SDLC.</p></div>
+      <div class="key-idea" style="margin-top:12px;font-size:0.9em;">
+        <strong>Key Insight:</strong> Earlier detection = cheaper fixes. A bug found in design costs 100x less to fix than one found in production.
+      </div>`;
+    }
+  });
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s15').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s15'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s16: PA VS TESTING VS DEBUGGING ==================== -->
+<div class="slide" id="s16">
+  <h2>Program Analysis vs Testing vs Debugging</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Three complementary approaches. Hover over each to see how they relate.</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS16" width="440" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div>
+      <div id="s16Info" style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;min-height:180px;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a circle to compare</h3>
+        <p style="color:#64748b;">These three approaches cover different aspects of software quality. They complement each other — no single approach is sufficient alone.</p>
+      </div>
+      <div class="analogy" style="margin-top:12px;font-size:0.9em;">
+        <strong>Analogy:</strong> <strong style="color:#6366f1;">Analysis</strong> = Doctor reading your X-ray. <strong style="color:#22c55e;">Testing</strong> = Running on a treadmill while monitored. <strong style="color:#f59e0b;">Debugging</strong> = Diagnosing why you collapsed during the run.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('s16Info');
+  let selected = -1;
+
+  const circles = [
+    { label: 'Program\nAnalysis', x: 220, y: 120, r: 90, color: '#6366f1',
+      desc: '<strong>Examines all paths</strong> from source code to find all possible issues.',
+      how: 'Reads code structure, builds models, reasons about behavior without executing.',
+      scope: 'All possible execution paths',
+      strength: 'Finds bugs in code never reached by tests',
+      weakness: 'May report false positives' },
+    { label: 'Testing', x: 140, y: 240, r: 90, color: '#22c55e',
+      desc: '<strong>Runs selected paths</strong> with specific test cases to find failures.',
+      how: 'Executes the program with chosen inputs and checks outputs against expectations.',
+      scope: 'Only tested execution paths',
+      strength: 'Every failure found is a real bug',
+      weakness: 'Cannot cover all possible inputs' },
+    { label: 'Debugging', x: 300, y: 240, r: 90, color: '#f59e0b',
+      desc: '<strong>Traces a single failure path</strong> backward to find the root cause.',
+      how: 'Uses breakpoints, logging, and step-through to understand why a specific failure occurred.',
+      scope: 'One specific execution path',
+      strength: 'Pinpoints the exact root cause',
+      weakness: 'Only works after a failure is observed' },
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 340);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('COMPLEMENTARY APPROACHES', 16, 10);
+
+    circles.forEach((c, i) => {
+      const isSel = selected === i;
+      ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      ctx.fillStyle = c.color; ctx.globalAlpha = isSel ? 0.2 : 0.07;
+      ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = c.color; ctx.lineWidth = isSel ? 3 : 1.5; ctx.stroke();
+
+      // Label
+      ctx.fillStyle = isSel ? '#e2e8f0' : c.color;
+      ctx.font = isSel ? 'bold 14px sans-serif' : '13px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const lines = c.label.split('\n');
+      lines.forEach((line, li) => {
+        ctx.fillText(line, c.x, c.y + (li - (lines.length-1)/2) * 18);
+      });
+    });
+
+    // Overlap labels
+    ctx.fillStyle = '#94a3b8'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Find bugs', 175, 175);
+    ctx.fillText('Fix bugs', 265, 175);
+    ctx.fillText('Verify', 220, 260);
+
+    // Scope arrows
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('All paths ← Scope → One path', 220, 326);
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 440 / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleX;
+
+    selected = -1;
+    // Check closest circle
+    let minDist = Infinity;
+    circles.forEach((c, i) => {
+      const d = Math.sqrt((mx - c.x)**2 + (my - c.y)**2);
+      if (d < c.r && d < minDist) { selected = i; minDist = d; }
+    });
+
+    draw();
+
+    if (selected >= 0) {
+      const c = circles[selected];
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid ${c.color};">
+        <h3 style="color:${c.color};margin-top:0;">${c.label.replace('\n', ' ')}</h3>
+        <p style="font-size:0.95em;margin-bottom:8px;">${c.desc}</p>
+        <p style="font-size:0.9em;color:#94a3b8;margin-bottom:6px;"><strong>How:</strong> ${c.how}</p>
+        <p style="font-size:0.9em;color:#94a3b8;margin-bottom:6px;"><strong>Scope:</strong> ${c.scope}</p>
+        <p style="font-size:0.9em;color:#22c55e;margin-bottom:4px;"><strong>Strength:</strong> ${c.strength}</p>
+        <p style="font-size:0.9em;color:#ef4444;"><strong>Weakness:</strong> ${c.weakness}</p>
+      </div>`;
+    } else {
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a circle to compare</h3>
+        <p style="color:#64748b;">These three approaches cover different aspects of software quality. They complement each other — no single approach is sufficient alone.</p></div>`;
+    }
+  });
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s16').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s16'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCC: CHALLENGE — MATCH TOOLS TO SDLC ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Match Tools to Pipeline Stage</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">For each tool, select the SDLC stage where it primarily applies.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div id="sCC_q1" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.95em;margin-bottom:8px;"><strong style="color:#f59e0b;">1.</strong> <code style="background:#0f172a;padding:2px 8px;border-radius:4px;color:#a78bfa;">SonarQube</code> — automated code quality scanner</p>
+      <select id="sCC_a1" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="design">Design</option>
+        <option value="develop">Development</option>
+        <option value="cicd">CI/CD</option>
+        <option value="production">Production</option>
+      </select>
+    </div>
+    <div id="sCC_q2" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.95em;margin-bottom:8px;"><strong style="color:#f59e0b;">2.</strong> <code style="background:#0f172a;padding:2px 8px;border-radius:4px;color:#a78bfa;">TypeScript</code> — static type checker</p>
+      <select id="sCC_a2" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="design">Design</option>
+        <option value="develop">Development</option>
+        <option value="cicd">CI/CD</option>
+        <option value="production">Production</option>
+      </select>
+    </div>
+    <div id="sCC_q3" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.95em;margin-bottom:8px;"><strong style="color:#f59e0b;">3.</strong> <code style="background:#0f172a;padding:2px 8px;border-radius:4px;color:#a78bfa;">Sentry</code> — runtime error monitoring</p>
+      <select id="sCC_a3" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="design">Design</option>
+        <option value="develop">Development</option>
+        <option value="cicd">CI/CD</option>
+        <option value="production">Production</option>
+      </select>
+    </div>
+    <div id="sCC_q4" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.95em;margin-bottom:8px;"><strong style="color:#f59e0b;">4.</strong> <code style="background:#0f172a;padding:2px 8px;border-radius:4px;color:#a78bfa;">STRIDE</code> — threat modeling framework</p>
+      <select id="sCC_a4" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="design">Design</option>
+        <option value="develop">Development</option>
+        <option value="cicd">CI/CD</option>
+        <option value="production">Production</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-bottom:12px;">
+    <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+    <button class="btn btn-sm btn-secondary" onclick="sCCReset()">Reset</button>
+    <span id="sCCScore" style="margin-left:12px;font-weight:600;font-size:0.95em;align-self:center;"></span>
+  </div>
+  <div id="sCCExplain" style="display:none;" class="key-idea">
+    <strong>Explanations:</strong><br>
+    <strong>1. CI/CD</strong> — SonarQube runs as a quality gate in the CI/CD pipeline, blocking merges that fail quality checks.<br>
+    <strong>2. Development</strong> — TypeScript runs in the IDE and during compilation, catching type errors as you write code.<br>
+    <strong>3. Production</strong> — Sentry captures runtime errors in deployed applications (dynamic monitoring).<br>
+    <strong>4. Design</strong> — STRIDE is applied during architecture/design reviews to identify threat categories before any code is written.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCC_a1:'cicd', sCC_a2:'develop', sCC_a3:'production', sCC_a4:'design'};
+  window.sCCCheck = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const qDiv = sel.closest('[id^="sCC_q"]');
+      if (sel.value === correct) { qDiv.style.borderColor = '#22c55e'; score++; }
+      else if (sel.value) { qDiv.style.borderColor = '#ef4444'; }
+      else { qDiv.style.borderColor = '#f59e0b'; }
+    });
+    document.getElementById('sCCScore').textContent = score + '/4';
+    document.getElementById('sCCScore').style.color = score === 4 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+    document.getElementById('sCCExplain').style.display = 'block';
+  };
+  window.sCCReset = function() {
+    ['sCC_a1','sCC_a2','sCC_a3','sCC_a4'].forEach(id => document.getElementById(id).value = '');
+    ['sCC_q1','sCC_q2','sCC_q3','sCC_q4'].forEach(id => document.getElementById(id).style.borderColor = '#334155');
+    document.getElementById('sCCScore').textContent = '';
+    document.getElementById('sCCExplain').style.display = 'none';
+  };
+})();
+</script>
+
+<!-- ==================== s17: KEY TAKEAWAYS ==================== -->
+<div class="slide" id="s17">
+  <h2>Key Takeaways</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px;">
+    <div class="key-idea">
+      <strong>1. Program analysis automates</strong> code understanding and bug detection — scaling beyond what humans can review manually.
+    </div>
+    <div class="key-idea">
+      <strong>2. Static analysis</strong> examines code structure without running it; <strong>dynamic analysis</strong> observes actual execution. Use both.
+    </div>
+    <div class="warning">
+      <strong>3. Perfect analysis is impossible</strong> — Rice's Theorem guarantees you can't have both perfect soundness and completeness for non-trivial properties.
+    </div>
+    <div style="border-left:4px solid #f59e0b;background:rgba(245,158,11,0.08);padding:14px 18px;border-radius:0 10px 10px 0;">
+      <strong style="color:#f59e0b;">4. Trade-offs are real:</strong> Sound tools catch everything (but cry wolf). Complete tools are precise (but miss things). Choose based on context.
+    </div>
+    <div style="border-left:4px solid #38bdf8;background:rgba(56,189,248,0.08);padding:14px 18px;border-radius:0 10px 10px 0;">
+      <strong style="color:#38bdf8;">5. Scope matters:</strong> Intraprocedural is fast but limited. Interprocedural catches cross-function bugs. Whole-program is most precise but expensive.
+    </div>
+    <div class="analogy">
+      <strong>6. Analysis at every stage</strong> — from IDE linting (design) to production monitoring (deploy). Earlier detection = cheaper fixes.
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s18: NEXT SESSION PREVIEW ==================== -->
+<div class="slide" id="s18">
+  <h2>Next Session Preview</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:12px;">
+    <div>
+      <h3 style="color:#6366f1;">Module 2: Code Representation &amp; ASTs</h3>
+      <ul style="margin-top:10px;">
+        <li>How programs are represented internally as <strong>Abstract Syntax Trees</strong></li>
+        <li>Building and traversing ASTs in OCaml</li>
+        <li>Hands-on: Writing your first code transformer</li>
+      </ul>
+      <div style="border-left:4px solid #38bdf8;background:rgba(56,189,248,0.08);padding:14px 18px;margin-top:16px;border-radius:0 10px 10px 0;">
+        <strong style="color:#38bdf8;">Prep:</strong> Review basic tree data structures (nodes, children, traversal). If you know recursion, you're ready.
+      </div>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155;">
+        <h3 style="color:#a78bfa;margin-top:0;">Why ASTs matter</h3>
+        <p style="font-size:0.95em;color:#94a3b8;">Every tool we discussed today — linters, type checkers, compilers, security scanners — works by building and analyzing an AST. Module 2 shows you how to build one yourself.</p>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:14px;margin-top:12px;font-family:monospace;font-size:0.85em;color:#94a3b8;line-height:1.6;">
+<span style="color:#64748b;">Source code:</span>  <span style="color:#c3e88d;">x + 1</span><br>
+<span style="color:#64748b;">      ↓ parse</span><br>
+<span style="color:#64748b;">AST:</span>       <span style="color:#f59e0b;">BinOp</span>(<span style="color:#6366f1;">+</span>)<br>
+          <span style="color:#64748b;">├──</span> <span style="color:#22c55e;">Var</span>(<span style="color:#c3e88d;">"x"</span>)<br>
+          <span style="color:#64748b;">└──</span> <span style="color:#22c55e;">Int</span>(<span style="color:#f78c6c;">1</span>)
+        </div>
+      </div>
+      <p style="margin-top:14px;color:#94a3b8;font-size:0.9em;">
+        <strong style="color:#e2e8f0;">Office Hours:</strong> By appointment, HH227<br>
+        <strong style="color:#e2e8f0;">Resources:</strong> Course GitHub repository
+      </p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== sQ1: QUIZ — MULTIPLE CHOICE ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz 1: Core Concepts</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">Test your understanding. Select one answer per question, then click <em>Check Answers</em>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div style="background:#1e293b;padding:14px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#6366f1;">Q1.</strong> Which is a key advantage of <em>static</em> analysis over dynamic analysis?</p>
+      <div id="sQ1_q1">
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q1" value="a" style="margin-right:8px;">Precise runtime values</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q1" value="b" style="margin-right:8px;">Coverage of all possible paths</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q1" value="c" style="margin-right:8px;">Detects memory leaks easily</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q1" value="d" style="margin-right:8px;">No false positives</label>
+      </div>
+      <div id="sQ1_f1" style="display:none;font-size:0.8em;margin-top:6px;padding:6px 8px;border-radius:6px;"></div>
+    </div>
+    <div style="background:#1e293b;padding:14px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#6366f1;">Q2.</strong> A <em>sound</em> analysis guarantees that:</p>
+      <div id="sQ1_q2">
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q2" value="a" style="margin-right:8px;">No false positives</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q2" value="b" style="margin-right:8px;">No false negatives</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q2" value="c" style="margin-right:8px;">Fast execution</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q2" value="d" style="margin-right:8px;">Both sound and complete</label>
+      </div>
+      <div id="sQ1_f2" style="display:none;font-size:0.8em;margin-top:6px;padding:6px 8px;border-radius:6px;"></div>
+    </div>
+    <div style="background:#1e293b;padding:14px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#6366f1;">Q3.</strong> Interprocedural analysis differs from intraprocedural by:</p>
+      <div id="sQ1_q3">
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q3" value="a" style="margin-right:8px;">Running the program</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q3" value="b" style="margin-right:8px;">Tracking data across function calls</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q3" value="c" style="margin-right:8px;">Using dynamic analysis only</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;transition:all 0.2s;">
+          <input type="radio" name="q3" value="d" style="margin-right:8px;">Being faster than intraprocedural</label>
+      </div>
+      <div id="sQ1_f3" style="display:none;font-size:0.8em;margin-top:6px;padding:6px 8px;border-radius:6px;"></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <button class="btn btn-sm" onclick="sQ1Check()">Check Answers</button>
+    <button class="btn btn-sm btn-secondary" onclick="sQ1Reset()">Reset</button>
+    <span id="sQ1Score" style="margin-left:12px;font-weight:700;font-size:1.1em;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {q1:'b', q2:'b', q3:'b'};
+  const explanations = {
+    q1: 'Static analysis can reason about ALL code paths without executing — its key advantage. Dynamic only covers tested paths.',
+    q2: 'Sound = no false negatives. If the analysis says "clean," it truly is. It may still have false positives (false alarms).',
+    q3: 'Interprocedural tracks information ACROSS function boundaries (call graphs), while intraprocedural stays within a single function.'
+  };
+
+  window.sQ1Check = function() {
+    let score = 0;
+    [1,2,3].forEach(n => {
+      const selected = document.querySelector(`input[name="q${n}"]:checked`);
+      const fb = document.getElementById(`sQ1_f${n}`);
+      fb.style.display = 'block';
+      if (!selected) {
+        fb.textContent = 'No answer selected.';
+        fb.style.background = 'rgba(245,158,11,0.1)'; fb.style.color = '#f59e0b';
+        return;
+      }
+      if (selected.value === answers[`q${n}`]) {
+        score++;
+        fb.textContent = '✓ Correct! ' + explanations[`q${n}`];
+        fb.style.background = 'rgba(34,197,94,0.1)'; fb.style.color = '#22c55e';
+      } else {
+        fb.textContent = '✗ Incorrect. ' + explanations[`q${n}`];
+        fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.color = '#ef4444';
+      }
+    });
+    const scoreEl = document.getElementById('sQ1Score');
+    scoreEl.textContent = score + '/3';
+    scoreEl.style.color = score === 3 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+  };
+  window.sQ1Reset = function() {
+    [1,2,3].forEach(n => {
+      document.querySelectorAll(`input[name="q${n}"]`).forEach(r => r.checked = false);
+      const fb = document.getElementById(`sQ1_f${n}`); fb.style.display = 'none';
+    });
+    document.getElementById('sQ1Score').textContent = '';
+  };
+})();
+</script>
+
+<!-- ==================== sQ2: QUIZ — CLASSIFY THE ANALYSIS ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz 2: Classify the Analysis</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">Read each code snippet and scenario. Identify the analysis type and what it catches.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div id="sQ2_q1" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <div class="code-block" style="margin:0 0 10px;">
+        <div class="code-content" style="padding:10px 14px;font-size:0.8em;">
+          <div class="line"><span style="color:#546e7a;">// Tool output:</span></div>
+          <div class="line"><span style="color:#f59e0b;">WARNING</span>: Variable 'count' used</div>
+          <div class="line">before assignment on line 12.</div>
+          <div class="line"><span style="color:#94a3b8;">(No code was executed.)</span></div>
+        </div>
+      </div>
+      <p style="font-size:0.85em;margin-bottom:6px;"><strong style="color:#f59e0b;">Type?</strong></p>
+      <select id="sQ2_a1" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="static-correct">Static / Correctness</option>
+        <option value="static-security">Static / Security</option>
+        <option value="dynamic-correct">Dynamic / Correctness</option>
+        <option value="dynamic-perf">Dynamic / Performance</option>
+      </select>
+    </div>
+    <div id="sQ2_q2" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <div class="code-block" style="margin:0 0 10px;">
+        <div class="code-content" style="padding:10px 14px;font-size:0.8em;">
+          <div class="line"><span style="color:#546e7a;">// Tool output:</span></div>
+          <div class="line"><span style="color:#ef4444;">ALERT</span>: User input flows to</div>
+          <div class="line">SQL query without sanitization.</div>
+          <div class="line">Source: req.body → Sink: db.query()</div>
+        </div>
+      </div>
+      <p style="font-size:0.85em;margin-bottom:6px;"><strong style="color:#f59e0b;">Type?</strong></p>
+      <select id="sQ2_a2" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="static-correct">Static / Correctness</option>
+        <option value="static-security">Static / Security</option>
+        <option value="dynamic-correct">Dynamic / Correctness</option>
+        <option value="dynamic-perf">Dynamic / Performance</option>
+      </select>
+    </div>
+    <div id="sQ2_q3" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <div class="code-block" style="margin:0 0 10px;">
+        <div class="code-content" style="padding:10px 14px;font-size:0.8em;">
+          <div class="line"><span style="color:#546e7a;">// Tool output (during test run):</span></div>
+          <div class="line"><span style="color:#ef4444;">LEAK</span>: 2,048 bytes allocated at</div>
+          <div class="line">malloc() line 45, never freed.</div>
+          <div class="line"><span style="color:#94a3b8;">Detected by: Valgrind memcheck</span></div>
+        </div>
+      </div>
+      <p style="font-size:0.85em;margin-bottom:6px;"><strong style="color:#f59e0b;">Type?</strong></p>
+      <select id="sQ2_a3" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="static-correct">Static / Correctness</option>
+        <option value="static-security">Static / Security</option>
+        <option value="dynamic-correct">Dynamic / Correctness</option>
+        <option value="dynamic-perf">Dynamic / Performance</option>
+      </select>
+    </div>
+    <div id="sQ2_q4" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <div class="code-block" style="margin:0 0 10px;">
+        <div class="code-content" style="padding:10px 14px;font-size:0.8em;">
+          <div class="line"><span style="color:#546e7a;">// Tool output (profiler):</span></div>
+          <div class="line"><span style="color:#f59e0b;">HOT</span>: sort_list() called 10,000x</div>
+          <div class="line">Total: 4.2s (78% of runtime)</div>
+          <div class="line"><span style="color:#94a3b8;">Suggestion: O(n²) → O(n log n)</span></div>
+        </div>
+      </div>
+      <p style="font-size:0.85em;margin-bottom:6px;"><strong style="color:#f59e0b;">Type?</strong></p>
+      <select id="sQ2_a4" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="static-correct">Static / Correctness</option>
+        <option value="static-security">Static / Security</option>
+        <option value="dynamic-correct">Dynamic / Correctness</option>
+        <option value="dynamic-perf">Dynamic / Performance</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <button class="btn btn-sm" onclick="sQ2Check()">Check Answers</button>
+    <button class="btn btn-sm btn-secondary" onclick="sQ2Reset()">Reset</button>
+    <span id="sQ2Score" style="margin-left:12px;font-weight:700;font-size:1.1em;"></span>
+  </div>
+  <div id="sQ2Explain" style="display:none;margin-top:10px;" class="key-idea">
+    <strong>Explanations:</strong><br>
+    <strong>1. Static/Correctness</strong> — Uninitialized variable detected without execution = static analysis for correctness.<br>
+    <strong>2. Static/Security</strong> — Taint tracking (source→sink) without execution = static security analysis.<br>
+    <strong>3. Dynamic/Correctness</strong> — Valgrind monitors actual memory at runtime = dynamic correctness (memory safety).<br>
+    <strong>4. Dynamic/Performance</strong> — Profiler measures actual runtime = dynamic performance analysis.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sQ2_a1:'static-correct', sQ2_a2:'static-security', sQ2_a3:'dynamic-correct', sQ2_a4:'dynamic-perf'};
+  window.sQ2Check = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const qDiv = sel.closest('[id^="sQ2_q"]');
+      if (sel.value === correct) { qDiv.style.borderColor = '#22c55e'; score++; }
+      else if (sel.value) { qDiv.style.borderColor = '#ef4444'; }
+      else { qDiv.style.borderColor = '#f59e0b'; }
+    });
+    document.getElementById('sQ2Score').textContent = score + '/4';
+    document.getElementById('sQ2Score').style.color = score === 4 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+    document.getElementById('sQ2Explain').style.display = 'block';
+  };
+  window.sQ2Reset = function() {
+    ['sQ2_a1','sQ2_a2','sQ2_a3','sQ2_a4'].forEach(id => document.getElementById(id).value = '');
+    ['sQ2_q1','sQ2_q2','sQ2_q3','sQ2_q4'].forEach(id => document.getElementById(id).style.borderColor = '#334155');
+    document.getElementById('sQ2Score').textContent = '';
+    document.getElementById('sQ2Explain').style.display = 'none';
+  };
+})();
+</script>
+
+<!-- ==================== sQ3: QUIZ — TRADE-OFF REASONING ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz 3: Trade-off Reasoning</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">Given each scenario, decide which analysis property matters most and predict the outcome.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div id="sQ3_q1" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">Scenario 1:</strong> You're building a <em>pacemaker</em> controller. A missed bug could kill a patient. Which property do you prioritize?</p>
+      <select id="sQ3_a1" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="sound">Soundness (catch ALL possible bugs)</option>
+        <option value="complete">Completeness (only report real bugs)</option>
+        <option value="speed">Speed (fast analysis)</option>
+      </select>
+    </div>
+    <div id="sQ3_q2" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">Scenario 2:</strong> Your team gets 500+ false alarm alerts per day. Developers have stopped reading them. What should change?</p>
+      <select id="sQ3_a2" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="more-sound">Make the analysis MORE sound</option>
+        <option value="more-complete">Make the analysis MORE complete (fewer false positives)</option>
+        <option value="disable">Disable the analysis entirely</option>
+      </select>
+    </div>
+    <div id="sQ3_q3" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">Scenario 3:</strong> A security scanner reports 0 vulnerabilities. Can you conclude the code is secure?</p>
+      <select id="sQ3_a3" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="yes-sound">Yes — if the scanner is sound</option>
+        <option value="yes-complete">Yes — if the scanner is complete</option>
+        <option value="no">No — never with certainty</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <button class="btn btn-sm" onclick="sQ3Check()">Check Answers</button>
+    <button class="btn btn-sm btn-secondary" onclick="sQ3Reset()">Reset</button>
+    <span id="sQ3Score" style="margin-left:12px;font-weight:700;font-size:1.1em;"></span>
+  </div>
+  <div id="sQ3Explain" style="display:none;margin-top:10px;" class="key-idea">
+    <strong>Explanations:</strong><br>
+    <strong>1. Soundness</strong> — In safety-critical systems, you MUST catch every possible bug, even at the cost of false alarms. A missed bug in a pacemaker can be fatal. You can manually review false positives, but you can't recover from a missed critical bug.<br>
+    <strong>2. More complete</strong> — "Alert fatigue" means developers ignore ALL warnings, including real ones. Reducing false positives (moving toward completeness) restores trust in the tool. Disabling analysis entirely is worse than tuning it.<br>
+    <strong>3. Yes — if the scanner is sound</strong> — A SOUND scanner guarantees: if it says "no bugs," there truly are none. A complete scanner only guarantees that reported bugs are real — it could miss vulnerabilities silently. So "0 findings from a sound tool" = genuine safety. "0 findings from a complete tool" = might just mean untested paths.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sQ3_a1:'sound', sQ3_a2:'more-complete', sQ3_a3:'yes-sound'};
+  window.sQ3Check = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const qDiv = sel.closest('[id^="sQ3_q"]');
+      if (sel.value === correct) { qDiv.style.borderColor = '#22c55e'; score++; }
+      else if (sel.value) { qDiv.style.borderColor = '#ef4444'; }
+      else { qDiv.style.borderColor = '#f59e0b'; }
+    });
+    document.getElementById('sQ3Score').textContent = score + '/3';
+    document.getElementById('sQ3Score').style.color = score === 3 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+    document.getElementById('sQ3Explain').style.display = 'block';
+  };
+  window.sQ3Reset = function() {
+    ['sQ3_a1','sQ3_a2','sQ3_a3'].forEach(id => document.getElementById(id).value = '');
+    ['sQ3_q1','sQ3_q2','sQ3_q3'].forEach(id => document.getElementById(id).style.borderColor = '#334155');
+    document.getElementById('sQ3Score').textContent = '';
+    document.getElementById('sQ3Explain').style.display = 'none';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','sCB','s13','s14','s15','s16','sCC','s17','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active','fade-in'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+  document.getElementById('counter').textContent = (idx + 1) + ' / ' + slideOrder.length;
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); navigate(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); navigate(-1); }
+  if (e.key === 'Home') { e.preventDefault(); currentIdx = 0; showSlide(0); }
+  if (e.key === 'End') { e.preventDefault(); currentIdx = slideOrder.length - 1; showSlide(currentIdx); }
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) navigate(dx < 0 ? 1 : -1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

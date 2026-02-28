@@ -1,0 +1,2294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 6: Tools Implementation & Integration — Enhanced</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #progress-bar {
+    position: fixed; top: 0; left: 0; width: 100%; height: 4px;
+    background: rgba(255,255,255,0.05); z-index: 200;
+  }
+  #progress {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #6366f1, #f59e0b);
+    transition: width 0.3s ease;
+  }
+  .slide {
+    display: none; position: fixed; inset: 0;
+    padding: 32px 48px 60px;
+    overflow-y: auto;
+    background: #0f172a;
+  }
+  .slide.active { display: block; }
+  .slide.fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  h1 { font-size: 2.2rem; color: #38bdf8; margin-bottom: 0.5rem; font-weight: 700; }
+  h2 { font-size: 1.55rem; color: #38bdf8; margin-bottom: 0.6rem; font-weight: 700; }
+  h3 { font-size: 1.1rem; color: #a78bfa; margin-bottom: 0.4rem; }
+  p { font-size: 0.95rem; line-height: 1.6; margin-bottom: 0.5rem; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; background: rgba(99,102,241,0.15); padding: 1px 5px; border-radius: 4px; font-size: 0.88em; color: #f59e0b; }
+
+  .btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 0.5rem 1.2rem; font-size: 0.9rem; cursor: pointer;
+    font-weight: 600; transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.82rem; border-radius: 6px; }
+  .btn-secondary { background: #334155; }
+  .btn-secondary:hover { background: #475569; }
+
+  .key-idea {
+    border-left: 4px solid #22c55e; background: rgba(34,197,94,0.08);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin: 0.6rem 0;
+    font-size: 0.9rem;
+  }
+  .warning {
+    border-left: 4px solid #ef4444; background: rgba(239,68,68,0.08);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin: 0.6rem 0;
+    font-size: 0.9rem;
+  }
+  .analogy {
+    border-left: 4px solid #a78bfa; background: rgba(167,139,250,0.08);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin: 0.6rem 0;
+    font-size: 0.9rem;
+  }
+
+  .code-block {
+    background: rgba(0,0,0,0.3); border: 1px solid #334155;
+    border-radius: 10px; padding: 0.8rem; margin: 0.5rem 0;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem;
+    overflow-x: auto;
+  }
+  .code-content .line {
+    padding: 2px 8px; border-left: 3px solid transparent;
+    white-space: pre; line-height: 1.55; transition: all 0.2s;
+  }
+  .code-content .line.active {
+    background: rgba(99,102,241,0.15); border-left-color: #6366f1;
+  }
+  .code-content .line.dead {
+    background: rgba(239,68,68,0.1); border-left-color: #ef4444;
+    text-decoration: line-through; opacity: 0.6;
+  }
+  .code-content .line.warn {
+    background: rgba(245,158,11,0.1); border-left-color: #f59e0b;
+  }
+
+  .nav {
+    position: fixed; bottom: 16px; right: 20px;
+    display: flex; gap: 8px; z-index: 200;
+  }
+  .nav button {
+    background: rgba(99,102,241,0.8); color: #fff; border: none;
+    border-radius: 8px; padding: 8px 18px; font-size: 0.9rem;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .nav button:hover { background: #6366f1; }
+  .nav button:disabled { opacity: 0.3; cursor: default; }
+
+  .slide-number { position: absolute; bottom: 12px; left: 20px; color: #475569; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE s1: Title ==================== -->
+<div class="slide" id="s1">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;">
+    <h1 style="font-size:2.8rem;margin-bottom:0.3rem;">Tools Implementation & Integration</h1>
+    <p style="color:#94a3b8;font-size:1.15rem;margin-bottom:1.5rem;">Module 6 — Program Analysis Bootcamp</p>
+    <p style="color:#cbd5e1;font-size:1rem;margin-bottom:2rem;">From individual analyses to integrated tools</p>
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+      <div style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#ef4444;font-weight:bold;font-size:0.95rem;">Security</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">Taint Analysis (M5)</div>
+      </div>
+      <div style="color:#f59e0b;font-size:2rem;display:flex;align-items:center;">+</div>
+      <div style="background:rgba(245,158,11,0.15);border:1px solid #f59e0b;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#f59e0b;font-weight:bold;font-size:0.95rem;">Safety</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">Sign Domain (M4)</div>
+      </div>
+      <div style="color:#f59e0b;font-size:2rem;display:flex;align-items:center;">+</div>
+      <div style="background:rgba(99,102,241,0.15);border:1px solid #6366f1;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#818cf8;font-weight:bold;font-size:0.95rem;">Code Quality</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">Dead Code (AST)</div>
+      </div>
+      <div style="color:#22c55e;font-size:2rem;display:flex;align-items:center;">=</div>
+      <div style="background:rgba(34,197,94,0.15);border:1px solid #22c55e;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#22c55e;font-weight:bold;font-size:0.95rem;">Integrated Tool</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">Pipeline (M6)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s2: Objectives + Leap ==================== -->
+<div class="slide" id="s2">
+  <h2>Learning Objectives</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <ol style="font-size:0.88rem;line-height:1.8;padding-left:1.2rem;color:#cbd5e1;">
+        <li>Define <strong style="color:#f59e0b;">unified finding types</strong> that standardize outputs across passes</li>
+        <li>Implement <strong style="color:#f59e0b;">dead code detection</strong> as a purely AST-level analysis</li>
+        <li>Build <strong style="color:#f59e0b;">analysis passes</strong> using record-based, composable architecture</li>
+        <li>Compose <strong style="color:#f59e0b;">multiple passes</strong> and merge results</li>
+        <li>Design <strong style="color:#f59e0b;">configurable pipelines</strong> that select and filter</li>
+        <li>Generate <strong style="color:#f59e0b;">structured reports</strong> in text and JSON</li>
+      </ol>
+    </div>
+
+    <div>
+      <div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:10px;padding:1rem;">
+        <h3 style="color:#818cf8;margin-bottom:0.6rem;font-size:1rem;">The Full Journey</h3>
+        <div style="font-family:monospace;font-size:0.82rem;line-height:2;">
+          <div style="color:#64748b;">M1: Foundations (ASTs, CFGs)</div>
+          <div style="color:#64748b;">M2: AST Construction</div>
+          <div style="color:#64748b;">M3: Static Analysis Framework</div>
+          <div style="color:#64748b;">M4: Abstract Interpretation → <span style="color:#f59e0b;">Safety pass</span></div>
+          <div style="color:#64748b;">M5: Security Analysis → <span style="color:#ef4444;">Security pass</span></div>
+          <div style="color:#22c55e;">M6: Compose everything → <strong>Integrated tool</strong></div>
+        </div>
+      </div>
+
+      <div class="analogy" style="margin-top:0.8rem;">
+        <strong>Like building a car:</strong> M2-M5 built individual components (engine, brakes, steering). M6 assembles them into a working vehicle with a dashboard and controls.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s3: Motivating Example ==================== -->
+<div class="slide" id="s3">
+  <h2>One Program, Three Bug Classes</h2>
+  <p style="color:#94a3b8;">Click each analysis pass to see what it finds in the same code.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s3code">
+          <div class="line" id="s3L1">func handler(request):</div>
+          <div class="line" id="s3L2">  user_input = get_param("q")       <span style="color:#64748b;">-- source</span></div>
+          <div class="line" id="s3L3">  query = "SELECT..." + user_input</div>
+          <div class="line" id="s3L4">  exec_query(query)                 <span style="color:#64748b;">-- sink</span></div>
+          <div class="line" id="s3L5">  ratio = user_input / 0            <span style="color:#64748b;">-- div-by-0</span></div>
+          <div class="line" id="s3L6">  return ratio</div>
+          <div class="line" id="s3L7">  dead_var = 42                     <span style="color:#64748b;">-- dead</span></div>
+          <div class="line" id="s3L8">  log(dead_var)                     <span style="color:#64748b;">-- dead</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.8rem;">
+        <button class="btn btn-sm" style="background:#ef4444;" onclick="s3Show('security')">Security Pass</button>
+        <button class="btn btn-sm" style="background:#f59e0b;color:#000;" onclick="s3Show('safety')">Safety Pass</button>
+        <button class="btn btn-sm" style="background:#6366f1;" onclick="s3Show('dead')">Dead Code Pass</button>
+        <button class="btn btn-sm" style="background:#22c55e;color:#000;" onclick="s3Show('all')">Run All</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Show('none')">Reset</button>
+      </div>
+    </div>
+
+    <div>
+      <div id="s3findings" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:280px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Click a pass button to see what it detects.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const findings = {
+    security: [{sev:'Critical',cat:'Security',pass:'taint',msg:'Tainted data reaches sink \'exec_query\' (sql-injection)',lines:[2,3,4],color:'#ef4444'}],
+    safety: [{sev:'High',cat:'Safety',pass:'safety',msg:'Division by zero in expression',lines:[5],color:'#f59e0b'}],
+    dead: [
+      {sev:'Medium',cat:'CodeQuality',pass:'dead_code',msg:'Unreachable code after return (line 7)',lines:[7],color:'#6366f1'},
+      {sev:'Medium',cat:'CodeQuality',pass:'dead_code',msg:'Unreachable code after return (line 8)',lines:[8],color:'#6366f1'},
+      {sev:'Low',cat:'CodeQuality',pass:'dead_code',msg:'Unused variable \'dead_var\'',lines:[7],color:'#818cf8'}
+    ]
+  };
+
+  window.s3Show = function(mode){
+    document.querySelectorAll('#s3code .line').forEach(l=>{l.classList.remove('active','dead','warn');});
+    let active = [];
+    if(mode === 'security') active = findings.security;
+    else if(mode === 'safety') active = findings.safety;
+    else if(mode === 'dead') active = findings.dead;
+    else if(mode === 'all') active = [...findings.security,...findings.safety,...findings.dead];
+
+    // Highlight lines
+    active.forEach(f=>{
+      f.lines.forEach(l=>{
+        const el = document.getElementById('s3L'+l);
+        if(f.cat==='CodeQuality') el.classList.add('dead');
+        else if(f.cat==='Safety') el.classList.add('warn');
+        else el.classList.add('active');
+      });
+    });
+
+    const div = document.getElementById('s3findings');
+    if(active.length === 0){
+      div.innerHTML = '<p style="color:#64748b;font-style:italic;">Click a pass button to see what it detects.</p>';
+      return;
+    }
+
+    // Sort by severity
+    const sevOrder = {Critical:0,High:1,Medium:2,Low:3,Info:4};
+    active.sort((a,b)=>sevOrder[a.sev]-sevOrder[b.sev]);
+
+    let html = `<div style="color:#94a3b8;font-size:0.8rem;margin-bottom:0.5rem;">${active.length} finding${active.length>1?'s':''} (sorted by severity):</div>`;
+    active.forEach((f,i)=>{
+      const sevColors = {Critical:'#ef4444',High:'#f59e0b',Medium:'#6366f1',Low:'#818cf8',Info:'#64748b'};
+      html += `<div style="background:rgba(0,0,0,0.2);border-left:3px solid ${f.color};border-radius:0 6px 6px 0;padding:0.5rem 0.8rem;margin-bottom:0.4rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="background:${sevColors[f.sev]};color:#fff;padding:1px 8px;border-radius:10px;font-size:0.72rem;font-weight:bold;">${f.sev}</span>
+          <span style="color:#64748b;font-size:0.75rem;">${f.cat} / ${f.pass}</span>
+        </div>
+        <div style="color:#e2e8f0;font-size:0.82rem;margin-top:0.3rem;">${f.msg}</div>
+      </div>`;
+    });
+
+    if(mode === 'all'){
+      html += `<div class="key-idea" style="margin-top:0.5rem;font-size:0.82rem;"><strong>This is M6's goal:</strong> One program, one scan, all findings unified and sorted.</div>`;
+    }
+    div.innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s4: Unified Finding Types ==================== -->
+<div class="slide" id="s4">
+  <h2>Unified Finding Types</h2>
+  <p style="color:#94a3b8;">All passes must speak the same language — a unified <code>finding</code> record.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line" style="color:#a78bfa;">type severity =</div>
+          <div class="line">  Critical | High | Medium | Low | Info</div>
+          <div class="line"></div>
+          <div class="line" style="color:#a78bfa;">type category =</div>
+          <div class="line">  Security | Safety | CodeQuality | Performance</div>
+          <div class="line"></div>
+          <div class="line" style="color:#38bdf8;">type finding = {</div>
+          <div class="line">  id         : int;</div>
+          <div class="line">  category   : category;</div>
+          <div class="line">  severity   : severity;</div>
+          <div class="line">  pass_name  : string;</div>
+          <div class="line">  location   : string;</div>
+          <div class="line">  message    : string;</div>
+          <div class="line">  suggestion : string option;</div>
+          <div class="line" style="color:#38bdf8;">}</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">Why unify?</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:0.8rem;">
+        <div style="font-family:monospace;font-size:0.82rem;color:#94a3b8;">
+          <div style="color:#ef4444;">Without: Safety → warning strings</div>
+          <div style="color:#ef4444;">         Taint  → vulnerability records</div>
+          <div style="color:#ef4444;">         Dead   → location lists</div>
+          <div style="color:#64748b;margin:0.3rem 0;">Cannot sort, filter, or deduplicate!</div>
+          <div style="color:#22c55e;margin-top:0.5rem;">With: All passes → finding list</div>
+          <div style="color:#22c55e;">      Sort + filter + dedup = trivial</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;">
+          <div style="color:#ef4444;font-weight:bold;font-size:0.82rem;">Severity</div>
+          <div style="font-size:0.78rem;color:#94a3b8;line-height:1.6;">
+            <span style="color:#ef4444;">Critical</span> — Exploitable flaw<br>
+            <span style="color:#f59e0b;">High</span> — Likely crash<br>
+            <span style="color:#6366f1;">Medium</span> — Code quality<br>
+            <span style="color:#818cf8;">Low/Info</span> — Suggestions
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;">
+          <div style="color:#22c55e;font-weight:bold;font-size:0.82rem;">Category</div>
+          <div style="font-size:0.78rem;color:#94a3b8;line-height:1.6;">
+            <span style="color:#ef4444;">Security</span> — Injection, leaks<br>
+            <span style="color:#f59e0b;">Safety</span> — Div-by-zero, null<br>
+            <span style="color:#6366f1;">CodeQuality</span> — Dead code<br>
+            <span style="color:#818cf8;">Performance</span> — Redundant ops
+          </div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        Same idea as <strong>SARIF</strong> (Static Analysis Results Interchange Format) used by real tools.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s5: Finding Operations ==================== -->
+<div class="slide" id="s5">
+  <h2>Finding Operations</h2>
+  <p style="color:#94a3b8;">Sort, filter, and deduplicate — because all passes produce the same type.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">Sample Findings</h3>
+      <div id="s5list" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:0.8rem;font-size:0.8rem;max-height:260px;overflow-y:auto;"></div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s5Op('sort')">Sort by Severity</button>
+        <button class="btn btn-sm" onclick="s5Op('filterHigh')">Filter ≥ High</button>
+        <button class="btn btn-sm" onclick="s5Op('filterSec')">Security Only</button>
+        <button class="btn btn-sm" onclick="s5Op('dedup')">Deduplicate</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Op('reset')">Reset</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="code-block" style="font-size:0.78rem;">
+        <div class="code-content">
+          <div class="line" id="s5c1">let compare_by_severity f1 f2 =</div>
+          <div class="line" id="s5c2">  compare (sev_to_int f1.severity)</div>
+          <div class="line" id="s5c3">          (sev_to_int f2.severity)</div>
+          <div class="line" id="s5c4"></div>
+          <div class="line" id="s5c5">let filter_by_severity threshold findings =</div>
+          <div class="line" id="s5c6">  List.filter (fun f -></div>
+          <div class="line" id="s5c7">    sev_to_int f.severity &lt;= sev_to_int threshold</div>
+          <div class="line" id="s5c8">  ) findings</div>
+          <div class="line" id="s5c9"></div>
+          <div class="line" id="s5c10">let filter_by_category cats findings =</div>
+          <div class="line" id="s5c11">  List.filter (fun f -></div>
+          <div class="line" id="s5c12">    List.mem f.category cats) findings</div>
+          <div class="line" id="s5c13"></div>
+          <div class="line" id="s5c14">let deduplicate findings =</div>
+          <div class="line" id="s5c15">  (* key = (message, location) *)</div>
+          <div class="line" id="s5c16">  filter_unique_by key findings</div>
+        </div>
+      </div>
+
+      <div id="s5status" style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:8px;padding:0.6rem;margin-top:0.5rem;font-size:0.82rem;color:#94a3b8;min-height:40px;">
+        Click an operation to see it applied.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const original = [
+    {id:1,sev:'Medium',cat:'CodeQuality',pass:'dead_code',msg:'Unused var \'y\'',loc:'compute'},
+    {id:2,sev:'Critical',cat:'Security',pass:'taint',msg:'SQLi in exec_query',loc:'handler'},
+    {id:3,sev:'High',cat:'Safety',pass:'safety',msg:'Division by zero',loc:'handler'},
+    {id:4,sev:'Medium',cat:'CodeQuality',pass:'dead_code',msg:'Unreachable after return',loc:'handler'},
+    {id:5,sev:'Critical',cat:'Security',pass:'taint',msg:'SQLi in exec_query',loc:'handler'},
+    {id:6,sev:'Low',cat:'CodeQuality',pass:'dead_code',msg:'Unused param \'b\'',loc:'compute'}
+  ];
+  let current = [...original];
+
+  const sevColors = {Critical:'#ef4444',High:'#f59e0b',Medium:'#6366f1',Low:'#818cf8',Info:'#64748b'};
+  const sevOrder = {Critical:0,High:1,Medium:2,Low:3,Info:4};
+
+  function render(){
+    const div = document.getElementById('s5list');
+    if(current.length === 0){
+      div.innerHTML = '<div style="color:#64748b;font-style:italic;">No findings match the filter.</div>';
+      return;
+    }
+    div.innerHTML = current.map(f=>
+      `<div style="background:rgba(0,0,0,0.2);border-left:3px solid ${sevColors[f.sev]};border-radius:0 6px 6px 0;padding:0.4rem 0.6rem;margin-bottom:0.3rem;">
+        <span style="background:${sevColors[f.sev]};color:#fff;padding:1px 6px;border-radius:8px;font-size:0.7rem;">${f.sev}</span>
+        <span style="color:#94a3b8;font-size:0.75rem;margin-left:0.3rem;">${f.cat}/${f.pass}</span>
+        <div style="color:#e2e8f0;font-size:0.8rem;">${f.msg} <span style="color:#64748b;">in ${f.loc}</span></div>
+      </div>`
+    ).join('');
+  }
+
+  function highlightCode(lines){
+    for(let i=1;i<=16;i++) document.getElementById('s5c'+i).classList.remove('active');
+    lines.forEach(l=>document.getElementById('s5c'+l).classList.add('active'));
+  }
+
+  window.s5Op = function(op){
+    if(op==='reset'){
+      current=[...original]; highlightCode([]);
+      document.getElementById('s5status').innerHTML='Reset to original 6 findings (unsorted, with duplicates).';
+    } else if(op==='sort'){
+      current.sort((a,b)=>sevOrder[a.sev]-sevOrder[b.sev]);
+      highlightCode([1,2,3]);
+      document.getElementById('s5status').innerHTML='<span style="color:#22c55e;">Sorted by severity</span> — Critical first, Low last. 6 findings.';
+    } else if(op==='filterHigh'){
+      current=current.filter(f=>sevOrder[f.sev]<=1);
+      highlightCode([5,6,7,8]);
+      document.getElementById('s5status').innerHTML=`<span style="color:#f59e0b;">Filtered ≥ High</span> — ${current.length} findings remain (dropped Medium, Low).`;
+    } else if(op==='filterSec'){
+      current=current.filter(f=>f.cat==='Security');
+      highlightCode([10,11,12]);
+      document.getElementById('s5status').innerHTML=`<span style="color:#ef4444;">Security only</span> — ${current.length} findings remain.`;
+    } else if(op==='dedup'){
+      const seen=new Set(); const deduped=[];
+      current.forEach(f=>{const k=f.msg+f.loc;if(!seen.has(k)){seen.add(k);deduped.push(f);}});
+      const removed = current.length-deduped.length;
+      current=deduped;
+      highlightCode([14,15,16]);
+      document.getElementById('s5status').innerHTML=`<span style="color:#a78bfa;">Deduplicated</span> — removed ${removed} duplicate(s). ${current.length} findings remain.`;
+    }
+    render();
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s5').classList.contains('active')){ current=[...original]; highlightCode([]); render(); document.getElementById('s5status').innerHTML='Click an operation to see it applied.'; }
+  });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  render();
+})();
+</script>
+
+<!-- ==================== SLIDE s6: Analysis Pass Architecture ==================== -->
+<div class="slide" id="s6">
+  <h2>Analysis Pass Architecture</h2>
+  <p style="color:#94a3b8;">Each analysis is packaged as a <strong>record</strong> with a uniform interface.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line" style="color:#38bdf8;">type analysis_pass = {</div>
+          <div class="line">  name     : string;</div>
+          <div class="line">  category : category;</div>
+          <div class="line" style="color:#f59e0b;">  run      : program -> finding list;</div>
+          <div class="line" style="color:#38bdf8;">}</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:0.95rem;color:#22c55e;margin:0.8rem 0 0.5rem;">Benefits</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;">
+        <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem;font-size:0.82rem;">
+          <div style="color:#22c55e;font-weight:bold;">Uniform</div>
+          <div style="color:#94a3b8;">Every pass is <code style="font-size:0.75rem;">program → finding list</code></div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem;font-size:0.82rem;">
+          <div style="color:#22c55e;font-weight:bold;">Composable</div>
+          <div style="color:#94a3b8;">Combine via list ops</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem;font-size:0.82rem;">
+          <div style="color:#22c55e;font-weight:bold;">Configurable</div>
+          <div style="color:#94a3b8;">Enable/disable at runtime</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem;font-size:0.82rem;">
+          <div style="color:#22c55e;font-weight:bold;">Extensible</div>
+          <div style="color:#94a3b8;">Add passes without changing pipeline</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#f59e0b;margin-bottom:0.5rem;">Record vs Functor</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
+        <div style="background:rgba(34,197,94,0.08);border:1px solid #22c55e;border-radius:8px;padding:0.8rem;">
+          <div style="color:#22c55e;font-weight:bold;font-size:0.88rem;margin-bottom:0.3rem;">Record (our choice)</div>
+          <div class="code-block" style="font-size:0.75rem;margin:0;border-color:#22c55e33;">
+            <div class="code-content">
+              <div class="line">let pass = {</div>
+              <div class="line">  name = "safety";</div>
+              <div class="line">  run = analyze_safety</div>
+              <div class="line">}</div>
+            </div>
+          </div>
+          <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.3rem;">Runtime flexible, first-class values, easy to store in lists</div>
+        </div>
+        <div style="background:rgba(239,68,68,0.08);border:1px solid #ef4444;border-radius:8px;padding:0.8rem;">
+          <div style="color:#ef4444;font-weight:bold;font-size:0.88rem;margin-bottom:0.3rem;">Functor (heavier)</div>
+          <div class="code-block" style="font-size:0.75rem;margin:0;border-color:#ef444433;">
+            <div class="code-content">
+              <div class="line">module type PASS = sig</div>
+              <div class="line">  val name : string</div>
+              <div class="line">  val run : ...</div>
+              <div class="line">end</div>
+            </div>
+          </div>
+          <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.3rem;">Compile-time only, can't store different passes in same list</div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        Records give us <strong>runtime flexibility</strong> that functors cannot — critical for configurable pipelines.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s7: Dead Code Detection ==================== -->
+<div class="slide" id="s7">
+  <h2>Dead Code Detection</h2>
+  <p style="color:#94a3b8;">A purely AST-level analysis — no abstract domains needed.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s7code">
+          <div class="line" id="s7L1">func compute(a, b):</div>
+          <div class="line" id="s7L2">  x = a + b</div>
+          <div class="line" id="s7L3">  y = 42              <span style="color:#64748b;">-- unused?</span></div>
+          <div class="line" id="s7L4">  return x</div>
+          <div class="line" id="s7L5">  z = x * 2           <span style="color:#64748b;">-- after return?</span></div>
+          <div class="line" id="s7L6">  log(z)              <span style="color:#64748b;">-- after return?</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s7Step()">Step</button>
+        <button class="btn btn-sm" onclick="s7Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+
+      <div id="s7Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:80px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">Detection Strategy</h3>
+      <table style="width:100%;font-size:0.8rem;border-collapse:collapse;">
+        <tr><td style="padding:0.4rem;border-bottom:1px solid #334155;color:#ef4444;font-weight:bold;">Pattern</td><td style="padding:0.4rem;border-bottom:1px solid #334155;color:#94a3b8;">Severity</td></tr>
+        <tr><td style="padding:0.4rem;border-bottom:1px solid #334155;color:#e2e8f0;">Unreachable after <code>Return</code></td><td style="padding:0.4rem;border-bottom:1px solid #334155;"><span style="background:#6366f1;color:#fff;padding:1px 6px;border-radius:8px;font-size:0.72rem;">Medium</span></td></tr>
+        <tr><td style="padding:0.4rem;border-bottom:1px solid #334155;color:#e2e8f0;">Unused variables</td><td style="padding:0.4rem;border-bottom:1px solid #334155;"><span style="background:#818cf8;color:#fff;padding:1px 6px;border-radius:8px;font-size:0.72rem;">Low</span></td></tr>
+        <tr><td style="padding:0.4rem;color:#e2e8f0;">Unused parameters</td><td style="padding:0.4rem;"><span style="background:#64748b;color:#fff;padding:1px 6px;border-radius:8px;font-size:0.72rem;">Info</span></td></tr>
+      </table>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-top:0.8rem;">
+        <div style="color:#a78bfa;font-weight:bold;font-size:0.85rem;margin-bottom:0.3rem;">Algorithm:</div>
+        <ol style="font-size:0.82rem;color:#94a3b8;padding-left:1.2rem;line-height:1.7;">
+          <li>Walk AST → find <code>Return</code> + trailing stmts</li>
+          <li>Collect <strong>assigned</strong> vars and <strong>used</strong> vars</li>
+          <li>Unused = assigned − used (set difference)</li>
+        </ol>
+      </div>
+
+      <div id="s7findings" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;margin-top:0.5rem;font-size:0.82rem;min-height:50px;">
+        <span style="color:#64748b;">Step through to see findings accumulate.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const steps = [
+    {desc:'Scan for return: found at line 4', highlights:[[4,'active']], findings:[]},
+    {desc:'Lines 5-6 are after return → unreachable!', highlights:[[4,'active'],[5,'dead'],[6,'dead']], findings:['[Medium] Unreachable code after return (line 5)','[Medium] Unreachable code after return (line 6)']},
+    {desc:'Collect assigned: {x, y, z}  Used: {a, b, x, z}', highlights:[[2,'active'],[3,'warn']], findings:['[Medium] Unreachable code after return (line 5)','[Medium] Unreachable code after return (line 6)']},
+    {desc:'Unused = assigned − used = {y} → finding!', highlights:[[3,'dead'],[5,'dead'],[6,'dead']], findings:['[Medium] Unreachable code after return (line 5)','[Medium] Unreachable code after return (line 6)','[Low] Unused variable \'y\' in compute']}
+  ];
+  let stepIdx = 0, timer = null;
+
+  function init(){
+    stepIdx = 0;
+    document.querySelectorAll('#s7code .line').forEach(l=>{l.classList.remove('active','dead','warn');});
+    document.getElementById('s7Log').innerHTML = '';
+    document.getElementById('s7findings').innerHTML = '<span style="color:#64748b;">Step through to see findings accumulate.</span>';
+  }
+
+  window.s7Step = function(){
+    if(stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    document.querySelectorAll('#s7code .line').forEach(l=>{l.classList.remove('active','dead','warn');});
+    s.highlights.forEach(([line,cls])=>document.getElementById('s7L'+line).classList.add(cls));
+    const log = document.getElementById('s7Log');
+    log.innerHTML += `<div style="color:#38bdf8;">Step ${stepIdx+1}: ${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+    if(s.findings.length > 0){
+      document.getElementById('s7findings').innerHTML = s.findings.map(f=>`<div style="color:${f.includes('Medium')?'#6366f1':'#818cf8'};font-size:0.8rem;">${f}</div>`).join('');
+    }
+    stepIdx++;
+  };
+  window.s7Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s7Step();}, 1200);
+  };
+  window.s7Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} init();
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s7').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s8: Safety & Security Passes ==================== -->
+<div class="slide" id="s8">
+  <h2>Wrapping M4 & M5 as Passes</h2>
+  <p style="color:#94a3b8;">Existing analyses become passes by wrapping them and converting results to <code>finding</code> records.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <h3 style="font-size:0.95rem;color:#f59e0b;margin-bottom:0.5rem;">Safety Pass (Sign Domain → Findings)</h3>
+      <div class="code-block" style="font-size:0.78rem;">
+        <div class="code-content">
+          <div class="line" style="color:#f59e0b;">let safety_pass = {</div>
+          <div class="line">  name = "safety";</div>
+          <div class="line">  category = Safety;</div>
+          <div class="line">  run = fun program -></div>
+          <div class="line">    List.concat_map (fun func -></div>
+          <div class="line">      let env = <span style="color:#f59e0b;">SignDomain.analyze</span> func in</div>
+          <div class="line">      check_divisions env func</div>
+          <div class="line">    ) program.functions</div>
+          <div class="line" style="color:#f59e0b;">}</div>
+        </div>
+      </div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;font-size:0.8rem;margin-top:0.3rem;">
+        <span style="color:#f59e0b;">Detection:</span>
+        <span style="color:#94a3b8;">divisor = Zero → <span style="color:#ef4444;">High</span>, divisor = Top → <span style="color:#6366f1;">Medium</span></span>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#ef4444;margin-bottom:0.5rem;">Security Pass (Taint Domain → Findings)</h3>
+      <div class="code-block" style="font-size:0.78rem;">
+        <div class="code-content">
+          <div class="line" style="color:#ef4444;">let security_pass config = {</div>
+          <div class="line">  name = "taint";</div>
+          <div class="line">  category = Security;</div>
+          <div class="line">  run = fun program -></div>
+          <div class="line">    List.concat_map (fun func -></div>
+          <div class="line">      let env = <span style="color:#ef4444;">TaintDomain.analyze</span> config func in</div>
+          <div class="line">      check_sinks env config func</div>
+          <div class="line">    ) program.functions</div>
+          <div class="line" style="color:#ef4444;">}</div>
+        </div>
+      </div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;font-size:0.8rem;margin-top:0.3rem;">
+        <span style="color:#ef4444;">Detection:</span>
+        <span style="color:#94a3b8;">tainted arg at sink → <span style="color:#ef4444;">Critical</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="key-idea" style="margin-top:0.8rem;">
+    <strong>The analysis code is unchanged from M4/M5.</strong> The pass just wraps it and converts results to unified <code>finding</code> records. This is the power of good abstractions.
+  </div>
+</div>
+
+<!-- ==================== SLIDE sCA: CHALLENGE — CLASSIFY THE FINDING ==================== -->
+<div class="slide" id="sCA">
+  <h2>🎯 Challenge A: Classify the Finding</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">For each scenario, choose the correct <strong>severity</strong> and <strong>category</strong>.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+    <!-- Scenario 1 -->
+    <div id="sCA-q1" style="background:#1e293b;border-radius:10px;padding:1rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;color:#f59e0b;font-weight:600;margin-bottom:0.5rem;">Scenario 1</div>
+      <p style="font-size:0.82rem;color:#cbd5e1;margin-bottom:0.8rem;">A variable <code style="color:#f472b6;">user_input</code> flows directly into <code style="color:#f472b6;">exec()</code> without any sanitization.</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <select id="sCA-sev1" style="padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Severity…</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+          <option value="Info">Info</option>
+        </select>
+        <select id="sCA-cat1" style="padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Category…</option>
+          <option value="Security">Security</option>
+          <option value="Safety">Safety</option>
+          <option value="Quality">Quality</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Scenario 2 -->
+    <div id="sCA-q2" style="background:#1e293b;border-radius:10px;padding:1rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;color:#f59e0b;font-weight:600;margin-bottom:0.5rem;">Scenario 2</div>
+      <p style="font-size:0.82rem;color:#cbd5e1;margin-bottom:0.8rem;">Function <code style="color:#f472b6;">compute(x)</code> is defined but never called anywhere in the program.</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <select id="sCA-sev2" style="padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Severity…</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+          <option value="Info">Info</option>
+        </select>
+        <select id="sCA-cat2" style="padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Category…</option>
+          <option value="Security">Security</option>
+          <option value="Safety">Safety</option>
+          <option value="Quality">Quality</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Scenario 3 -->
+    <div id="sCA-q3" style="background:#1e293b;border-radius:10px;padding:1rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;color:#f59e0b;font-weight:600;margin-bottom:0.5rem;">Scenario 3</div>
+      <p style="font-size:0.82rem;color:#cbd5e1;margin-bottom:0.8rem;">Division by variable <code style="color:#f472b6;">y</code> where sign analysis shows <code style="color:#f472b6;">y</code> could be zero.</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <select id="sCA-sev3" style="padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Severity…</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+          <option value="Info">Info</option>
+        </select>
+        <select id="sCA-cat3" style="padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Category…</option>
+          <option value="Security">Security</option>
+          <option value="Safety">Safety</option>
+          <option value="Quality">Quality</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Scenario 4 -->
+    <div id="sCA-q4" style="background:#1e293b;border-radius:10px;padding:1rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;color:#f59e0b;font-weight:600;margin-bottom:0.5rem;">Scenario 4</div>
+      <p style="font-size:0.82rem;color:#cbd5e1;margin-bottom:0.8rem;">Variable <code style="color:#f472b6;">count</code> is assigned on line 3 but overwritten on line 4 without being read.</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <select id="sCA-sev4" style="padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Severity…</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+          <option value="Info">Info</option>
+        </select>
+        <select id="sCA-cat4" style="padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Category…</option>
+          <option value="Security">Security</option>
+          <option value="Safety">Safety</option>
+          <option value="Quality">Quality</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn btn-sm" onclick="sCACheck()">Check All</button>
+  </div>
+  <div id="sCA-feedback" style="margin-top:0.8rem;font-size:0.82rem;color:#94a3b8;text-align:center;"></div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers = [
+    {sev:'High', cat:'Security', explain:'Unsanitized input → exec() is a critical command injection (CWE-78)'},
+    {sev:'Info', cat:'Quality', explain:'Dead code — not dangerous, just maintenance noise'},
+    {sev:'High', cat:'Safety', explain:'Potential division by zero is a runtime crash — safety issue'},
+    {sev:'Low', cat:'Quality', explain:'Dead store — value is wasted. Quality issue, low severity'}
+  ];
+  window.sCACheck = function(){
+    let score = 0;
+    for(let i=1;i<=4;i++){
+      const sev = document.getElementById('sCA-sev'+i).value;
+      const cat = document.getElementById('sCA-cat'+i).value;
+      const el = document.getElementById('sCA-q'+i);
+      const a = answers[i-1];
+      if(sev===a.sev && cat===a.cat){
+        el.style.borderColor='#22c55e';
+        score++;
+      } else {
+        el.style.borderColor='#ef4444';
+      }
+    }
+    let html = '<strong>'+score+'/4</strong> — ';
+    if(score===4) html += '<span style="color:#22c55e;">Perfect! You nailed the classification.</span>';
+    else {
+      html += 'Review: ';
+      answers.forEach((a,i)=>{ html += '<br>• Scenario '+(i+1)+': '+a.explain; });
+    }
+    document.getElementById('sCA-feedback').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s9: MULTI-PASS COMPOSITION ==================== -->
+<div class="slide" id="s9">
+  <h2>Multi-Pass Composition</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Run multiple analysis passes over the same AST and <strong>merge</strong> their findings into a unified report.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS9" width="480" height="360" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s9Step()">Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.72rem;">
+        <div class="code-content">
+          <div class="line" id="s9L0">let run_all passes ast =</div>
+          <div class="line" id="s9L1">  let all_findings =</div>
+          <div class="line" id="s9L2">    List.concat_map</div>
+          <div class="line" id="s9L3">      (fun p -> p.run ast)</div>
+          <div class="line" id="s9L4">      passes</div>
+          <div class="line" id="s9L5">  in</div>
+          <div class="line" id="s9L6">  sort_findings all_findings</div>
+        </div>
+      </div>
+      <div id="s9Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;color:#94a3b8;margin-top:0.8rem;max-height:130px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  const passes = [
+    {name:'Dead Code', color:'#a78bfa', findings:['Unused var x (L3, Info)', 'Dead fn compute (L8, Info)']},
+    {name:'Safety', color:'#22c55e', findings:['Div-by-zero y (L5, High)']},
+    {name:'Security', color:'#ef4444', findings:['Tainted input→exec (L12, High)', 'Tainted input→query (L15, Med)']}
+  ];
+  let stepIdx=0, timer=null;
+  const steps = [];
+  // step 0: show AST
+  steps.push({pass:-1, finding:-1, msg:'AST ready for analysis'});
+  passes.forEach((p,pi)=>{
+    steps.push({pass:pi, finding:-1, msg:'Running '+p.name+' pass...'});
+    p.findings.forEach((f,fi)=>{
+      steps.push({pass:pi, finding:fi, msg:'  Found: '+f});
+    });
+  });
+  steps.push({pass:3, finding:-1, msg:'Sorting all findings by severity...'});
+  steps.push({pass:4, finding:-1, msg:'Done! 5 findings merged & sorted.'});
+
+  function draw(){
+    ctx.clearRect(0,0,480,360);
+    // AST box
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    roundRect(ctx,20,140,100,60,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#e2e8f0'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+    ctx.fillText('AST',70,175);
+
+    // Passes
+    passes.forEach((p,i)=>{
+      const x=170, y=30+i*115, w=110, h=50;
+      ctx.fillStyle = stepIdx>0 && steps[stepIdx].pass>=i ? p.color+'33' : '#1e293b';
+      ctx.strokeStyle = steps[stepIdx].pass===i ? p.color : '#475569';
+      ctx.lineWidth = steps[stepIdx].pass===i ? 3 : 1.5;
+      roundRect(ctx,x,y,w,h,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = steps[stepIdx].pass===i ? '#fff' : '#cbd5e1';
+      ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText(p.name,x+w/2,y+h/2+4);
+      // Arrow from AST
+      ctx.beginPath(); ctx.moveTo(120,170); ctx.lineTo(x,y+h/2);
+      ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.stroke();
+    });
+
+    // Findings collector
+    const fx=330, fy=20, fw=140, fh=320;
+    ctx.fillStyle='#1e293b'; ctx.strokeStyle='#334155'; ctx.lineWidth=2;
+    roundRect(ctx,fx,fy,fw,fh,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#38bdf8'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+    ctx.fillText('Findings',fx+fw/2,fy+18);
+
+    // Draw collected findings
+    let fy2=fy+30;
+    passes.forEach((p,pi)=>{
+      p.findings.forEach((f,fi)=>{
+        const collected = steps[stepIdx].pass > pi || (steps[stepIdx].pass===pi && steps[stepIdx].finding>=fi);
+        if(collected){
+          ctx.fillStyle=p.color+'44';
+          roundRect(ctx,fx+6,fy2,fw-12,22,4); ctx.fill();
+          ctx.fillStyle=p.color; ctx.font='9px monospace'; ctx.textAlign='left';
+          ctx.fillText(f.substring(0,22),fx+10,fy2+15);
+          fy2+=26;
+        }
+      });
+    });
+
+    // Arrows from passes to findings
+    passes.forEach((p,i)=>{
+      const py=30+i*115+25;
+      ctx.beginPath(); ctx.moveTo(280,py); ctx.lineTo(330,py);
+      ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.stroke();
+    });
+  }
+
+  function roundRect(c,x,y,w,h,r){
+    c.beginPath(); c.moveTo(x+r,y); c.lineTo(x+w-r,y);
+    c.quadraticCurveTo(x+w,y,x+w,y+r); c.lineTo(x+w,y+h-r);
+    c.quadraticCurveTo(x+w,y+h,x+w-r,y+h); c.lineTo(x+r,y+h);
+    c.quadraticCurveTo(x,y+h,x,y+h-r); c.lineTo(x,y+r);
+    c.quadraticCurveTo(x,y,x+r,y); c.closePath();
+  }
+
+  function highlightCode(){
+    for(let i=0;i<=6;i++) document.getElementById('s9L'+i).classList.remove('active');
+    const s=steps[stepIdx];
+    if(s.pass>=0 && s.pass<3){
+      if(s.finding===-1){ document.getElementById('s9L3').classList.add('active'); }
+      else { document.getElementById('s9L2').classList.add('active'); document.getElementById('s9L3').classList.add('active'); }
+    } else if(s.pass===3){ document.getElementById('s9L6').classList.add('active'); }
+    else if(s.pass===4){ document.getElementById('s9L0').classList.add('active'); }
+  }
+
+  function init(){
+    stepIdx=0; if(timer){clearInterval(timer);timer=null;}
+    document.getElementById('s9Log').innerHTML='';
+    draw(); highlightCode();
+  }
+
+  window.s9Step = function(){
+    if(stepIdx>=steps.length-1) return;
+    stepIdx++;
+    draw(); highlightCode();
+    const log=document.getElementById('s9Log');
+    log.innerHTML+='<div style="color:'+(steps[stepIdx].pass>=0&&steps[stepIdx].pass<3?passes[Math.min(steps[stepIdx].pass,2)].color:'#38bdf8')+'">'+steps[stepIdx].msg+'</div>';
+    log.scrollTop=log.scrollHeight;
+  };
+  window.s9Auto = function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;} s9Step(); },700);
+  };
+  window.s9Reset = function(){ init(); };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s10: MULTI-PASS WORKED EXAMPLE ==================== -->
+<div class="slide" id="s10">
+  <h2>Worked Example: Three-Pass Analysis</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Watch as dead code, safety, and security passes analyze the same program — findings accumulate in a unified table.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div class="code-block" style="font-size:0.72rem;">
+        <div class="code-content">
+          <div class="line" id="s10L1"><span style="color:#64748b;">1</span>  let x = input()</div>
+          <div class="line" id="s10L2"><span style="color:#64748b;">2</span>  let y = 0</div>
+          <div class="line" id="s10L3"><span style="color:#64748b;">3</span>  let z = 42</div>
+          <div class="line" id="s10L4"><span style="color:#64748b;">4</span>  let w = x / y</div>
+          <div class="line" id="s10L5"><span style="color:#64748b;">5</span>  exec(x)</div>
+          <div class="line" id="s10L6"><span style="color:#64748b;">6</span>  print(w)</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+      <div id="s10Status" style="margin-top:0.6rem;font-size:0.82rem;color:#94a3b8;"></div>
+    </div>
+    <div>
+      <div style="font-size:0.8rem;font-weight:600;color:#38bdf8;margin-bottom:0.4rem;">Findings Table</div>
+      <div id="s10Table" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;max-height:250px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="color:#94a3b8;border-bottom:1px solid #334155;">
+              <th style="text-align:left;padding:0.3rem;">Line</th>
+              <th style="text-align:left;padding:0.3rem;">Severity</th>
+              <th style="text-align:left;padding:0.3rem;">Category</th>
+              <th style="text-align:left;padding:0.3rem;">Message</th>
+            </tr>
+          </thead>
+          <tbody id="s10Tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const steps = [
+    {msg:'Starting Dead Code pass...', lines:[], finding:null, passColor:'#a78bfa'},
+    {msg:'Dead Code: z assigned L3, never read', lines:[3], finding:{line:3,sev:'Info',cat:'Quality',msg:'Dead store: z never read',color:'#a78bfa'}},
+    {msg:'Dead Code pass complete.', lines:[], finding:null},
+    {msg:'Starting Safety pass...', lines:[], finding:null, passColor:'#22c55e'},
+    {msg:'Safety: y=0 on L2, x/y on L4 → div-by-zero!', lines:[2,4], finding:{line:4,sev:'High',cat:'Safety',msg:'Division by zero (y=0)',color:'#22c55e'}},
+    {msg:'Safety pass complete.', lines:[], finding:null},
+    {msg:'Starting Security pass...', lines:[], finding:null, passColor:'#ef4444'},
+    {msg:'Security: input() on L1 → tainted x', lines:[1], finding:null},
+    {msg:'Security: tainted x flows to exec(x) on L5!', lines:[1,5], finding:{line:5,sev:'High',cat:'Security',msg:'Tainted input → exec()',color:'#ef4444'}},
+    {msg:'Security pass complete.', lines:[], finding:null},
+    {msg:'All passes done. Sorting by severity...', lines:[], finding:null},
+    {msg:'✓ 3 findings: 2 High, 1 Info', lines:[], finding:null}
+  ];
+  let stepIdx=-1, timer=null, findings=[];
+
+  function highlightLines(lineNums){
+    for(let i=1;i<=6;i++){
+      const el=document.getElementById('s10L'+i);
+      el.classList.remove('active');
+      el.style.background='';
+    }
+    lineNums.forEach(n=>{
+      document.getElementById('s10L'+n).classList.add('active');
+    });
+  }
+
+  function renderTable(){
+    const tbody=document.getElementById('s10Tbody');
+    tbody.innerHTML='';
+    findings.forEach(f=>{
+      const sevColor=f.sev==='High'?'#ef4444':f.sev==='Medium'?'#f59e0b':'#94a3b8';
+      tbody.innerHTML+='<tr style="border-bottom:1px solid #1e293b;"><td style="padding:0.3rem;color:#cbd5e1;">L'+f.line+'</td><td style="padding:0.3rem;color:'+sevColor+';font-weight:600;">'+f.sev+'</td><td style="padding:0.3rem;color:'+f.color+';">'+f.cat+'</td><td style="padding:0.3rem;color:#e2e8f0;">'+f.msg+'</td></tr>';
+    });
+  }
+
+  function init(){
+    stepIdx=-1; findings=[]; if(timer){clearInterval(timer);timer=null;}
+    highlightLines([]);
+    renderTable();
+    document.getElementById('s10Status').innerHTML='<span style="color:#94a3b8;">Click Step to begin analysis</span>';
+  }
+
+  window.s10Step = function(){
+    if(stepIdx>=steps.length-1) return;
+    stepIdx++;
+    const s=steps[stepIdx];
+    highlightLines(s.lines);
+    if(s.finding){ findings.push(s.finding); renderTable(); }
+    const c=s.passColor||'#94a3b8';
+    document.getElementById('s10Status').innerHTML='<span style="color:'+c+';">'+s.msg+'</span>';
+  };
+  window.s10Auto = function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;} s10Step(); },900);
+  };
+  window.s10Reset = function(){ init(); };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s11: CONFIGURATION TYPES ==================== -->
+<div class="slide" id="s11">
+  <h2>Configuration Types & Builder</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">A <strong>config record</strong> controls which passes run, what severity to filter, and output format. Build configs with the <code style="color:#f472b6;">|></code> pipeline operator.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div class="code-block" style="font-size:0.72rem;">
+        <div class="code-content">
+          <div class="line" id="s11L0">type config = {</div>
+          <div class="line" id="s11L1">  passes: analysis_pass list;</div>
+          <div class="line" id="s11L2">  min_severity: severity;</div>
+          <div class="line" id="s11L3">  output_format: format;</div>
+          <div class="line" id="s11L4">  dedup: bool;</div>
+          <div class="line" id="s11L5">}</div>
+          <div class="line" id="s11L6"></div>
+          <div class="line" id="s11L7">let my_config =</div>
+          <div class="line" id="s11L8">  default_config</div>
+          <div class="line" id="s11L9">  |> add_pass dead_code</div>
+          <div class="line" id="s11L10">  |> add_pass safety</div>
+          <div class="line" id="s11L11">  |> add_pass security</div>
+          <div class="line" id="s11L12">  |> set_min_severity Medium</div>
+          <div class="line" id="s11L13">  |> set_format JSON</div>
+          <div class="line" id="s11L14">  |> enable_dedup</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Interactive Config Builder</div>
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;">
+        <div style="margin-bottom:0.6rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">Passes:</span>
+          <div style="display:flex;gap:0.4rem;margin-top:0.3rem;flex-wrap:wrap;">
+            <label style="color:#cbd5e1;font-size:0.78rem;display:flex;align-items:center;gap:0.3rem;"><input type="checkbox" id="s11-dc" checked onchange="s11Update()"> Dead Code</label>
+            <label style="color:#cbd5e1;font-size:0.78rem;display:flex;align-items:center;gap:0.3rem;"><input type="checkbox" id="s11-sf" checked onchange="s11Update()"> Safety</label>
+            <label style="color:#cbd5e1;font-size:0.78rem;display:flex;align-items:center;gap:0.3rem;"><input type="checkbox" id="s11-sc" checked onchange="s11Update()"> Security</label>
+          </div>
+        </div>
+        <div style="margin-bottom:0.6rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">Min Severity:</span>
+          <select id="s11-sev" onchange="s11Update()" style="margin-left:0.4rem;padding:0.2rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="Info">Info</option>
+            <option value="Low">Low</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="High">High</option>
+          </select>
+        </div>
+        <div style="margin-bottom:0.6rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">Format:</span>
+          <select id="s11-fmt" onchange="s11Update()" style="margin-left:0.4rem;padding:0.2rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="Text">Text</option>
+            <option value="JSON" selected>JSON</option>
+          </select>
+        </div>
+        <div style="margin-bottom:0.6rem;">
+          <label style="color:#cbd5e1;font-size:0.78rem;display:flex;align-items:center;gap:0.3rem;"><input type="checkbox" id="s11-dd" checked onchange="s11Update()"> Enable dedup</label>
+        </div>
+      </div>
+      <div id="s11Preview" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;color:#a78bfa;margin-top:0.6rem;white-space:pre;"></div>
+    </div>
+  </div>
+
+  <div class="analogy" style="margin-top:0.8rem;">
+    <strong>Analogy:</strong> Think of config like a coffee order — you pick the beans (passes), grind size (severity filter), and cup type (output format). The barista (pipeline) follows your spec exactly.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  function update(){
+    let code = 'default_config';
+    if(document.getElementById('s11-dc').checked) code+='\n|> add_pass dead_code';
+    if(document.getElementById('s11-sf').checked) code+='\n|> add_pass safety';
+    if(document.getElementById('s11-sc').checked) code+='\n|> add_pass security';
+    const sev=document.getElementById('s11-sev').value;
+    if(sev!=='Info') code+='\n|> set_min_severity '+sev;
+    const fmt=document.getElementById('s11-fmt').value;
+    code+='\n|> set_format '+fmt;
+    if(document.getElementById('s11-dd').checked) code+='\n|> enable_dedup';
+    document.getElementById('s11Preview').textContent=code;
+
+    // Highlight matching code lines
+    for(let i=0;i<=14;i++){
+      const el=document.getElementById('s11L'+i);
+      if(el) el.classList.remove('active');
+    }
+    if(document.getElementById('s11-dc').checked) document.getElementById('s11L9').classList.add('active');
+    if(document.getElementById('s11-sf').checked) document.getElementById('s11L10').classList.add('active');
+    if(document.getElementById('s11-sc').checked) document.getElementById('s11L11').classList.add('active');
+  }
+  window.s11Update = update;
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))update();});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  update();
+})();
+</script>
+
+<!-- ==================== SLIDE s12: APPLYING FILTERS ==================== -->
+<div class="slide" id="s12">
+  <h2>Applying Filters</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Filters <strong>reduce noise</strong> by removing low-severity findings, duplicates, and excluded categories. Toggle filters to see the effect live.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">All Findings (7)</div>
+      <div id="s12All" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;"></div>
+    </div>
+    <div>
+      <div style="font-size:0.82rem;font-weight:600;color:#22c55e;margin-bottom:0.5rem;">Filtered Findings (<span id="s12Count">7</span>)</div>
+      <div id="s12Filtered" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;"></div>
+    </div>
+  </div>
+
+  <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.8rem;display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;">
+    <div>
+      <span style="color:#94a3b8;font-size:0.78rem;">Min Severity:</span>
+      <select id="s12-sev" onchange="s12Filter()" style="margin-left:0.3rem;padding:0.2rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="0">Info</option>
+        <option value="1">Low</option>
+        <option value="2" selected>Medium</option>
+        <option value="3">High</option>
+      </select>
+    </div>
+    <div>
+      <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="s12-dedup" checked onchange="s12Filter()"> Dedup</label>
+    </div>
+    <div>
+      <span style="color:#94a3b8;font-size:0.78rem;">Exclude:</span>
+      <label style="color:#cbd5e1;font-size:0.78rem;margin-left:0.3rem;"><input type="checkbox" id="s12-exQ" onchange="s12Filter()"> Quality</label>
+      <label style="color:#cbd5e1;font-size:0.78rem;margin-left:0.3rem;"><input type="checkbox" id="s12-exSf" onchange="s12Filter()"> Safety</label>
+      <label style="color:#cbd5e1;font-size:0.78rem;margin-left:0.3rem;"><input type="checkbox" id="s12-exSc" onchange="s12Filter()"> Security</label>
+    </div>
+  </div>
+
+  <div class="key-idea" style="margin-top:0.8rem;">
+    <strong>Key Idea:</strong> Filters run <em>after</em> all passes complete. This means you can re-filter the same results without re-running analysis — fast iteration on what matters.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const allFindings = [
+    {line:3, sev:0, sevL:'Info', cat:'Quality', msg:'Dead store: z unused', color:'#a78bfa'},
+    {line:4, sev:3, sevL:'High', cat:'Safety', msg:'Division by zero', color:'#22c55e'},
+    {line:5, sev:3, sevL:'High', cat:'Security', msg:'Tainted input → exec()', color:'#ef4444'},
+    {line:7, sev:1, sevL:'Low', cat:'Quality', msg:'Unused import: List', color:'#a78bfa'},
+    {line:9, sev:2, sevL:'Medium', cat:'Security', msg:'Tainted input → query()', color:'#ef4444'},
+    {line:9, sev:2, sevL:'Medium', cat:'Security', msg:'Tainted input → query()', color:'#ef4444'}, // duplicate
+    {line:12,sev:1, sevL:'Low', cat:'Safety', msg:'Possible null deref', color:'#22c55e'}
+  ];
+
+  function renderFindings(list, target){
+    const el=document.getElementById(target);
+    if(list.length===0){ el.innerHTML='<span style="color:#64748b;">No findings match filters</span>'; return; }
+    el.innerHTML=list.map(f=>{
+      const sevColor=f.sev>=3?'#ef4444':f.sev>=2?'#f59e0b':f.sev>=1?'#94a3b8':'#64748b';
+      return '<div style="padding:0.25rem 0;border-bottom:1px solid #1e293b;display:flex;gap:0.5rem;"><span style="color:#64748b;min-width:25px;">L'+f.line+'</span><span style="color:'+sevColor+';min-width:42px;font-weight:600;">'+f.sevL+'</span><span style="color:'+f.color+';min-width:58px;">'+f.cat+'</span><span style="color:#e2e8f0;">'+f.msg+'</span></div>';
+    }).join('');
+  }
+
+  function init(){
+    renderFindings(allFindings,'s12All');
+    s12Filter();
+  }
+
+  window.s12Filter = function(){
+    const minSev=parseInt(document.getElementById('s12-sev').value);
+    const dedup=document.getElementById('s12-dedup').checked;
+    const exQ=document.getElementById('s12-exQ').checked;
+    const exSf=document.getElementById('s12-exSf').checked;
+    const exSc=document.getElementById('s12-exSc').checked;
+
+    let filtered=allFindings.filter(f=>f.sev>=minSev);
+    if(exQ) filtered=filtered.filter(f=>f.cat!=='Quality');
+    if(exSf) filtered=filtered.filter(f=>f.cat!=='Safety');
+    if(exSc) filtered=filtered.filter(f=>f.cat!=='Security');
+    if(dedup){
+      const seen=new Set();
+      filtered=filtered.filter(f=>{
+        const key=f.line+f.msg;
+        if(seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+    }
+    renderFindings(filtered,'s12Filtered');
+    document.getElementById('s12Count').textContent=filtered.length;
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s13: PIPELINE ARCHITECTURE ==================== -->
+<div class="slide" id="s13">
+  <h2>Pipeline Architecture</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The full pipeline: <strong>Parse → Analyze → Filter → Deduplicate → Sort → Report</strong>. Each stage is a pure function — easy to test and compose.</p>
+
+  <div style="margin-top:0.5rem;">
+    <canvas id="cS13" width="700" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-top:0.8rem;justify-content:center;">
+    <button class="btn btn-sm" onclick="s13Step()">Step</button>
+    <button class="btn btn-sm" onclick="s13Auto()">Auto Play</button>
+    <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+  </div>
+  <div id="s13Status" style="text-align:center;margin-top:0.6rem;font-size:0.82rem;color:#94a3b8;"></div>
+
+  <div class="code-block" style="font-size:0.72rem;margin-top:0.6rem;">
+    <div class="code-content">
+      <div class="line" id="s13L0">let run_pipeline config source =</div>
+      <div class="line" id="s13L1">  source</div>
+      <div class="line" id="s13L2">  |> parse</div>
+      <div class="line" id="s13L3">  |> run_passes config.passes</div>
+      <div class="line" id="s13L4">  |> filter_by_severity config.min_severity</div>
+      <div class="line" id="s13L5">  |> (if config.dedup then dedup else Fun.id)</div>
+      <div class="line" id="s13L6">  |> sort_findings</div>
+      <div class="line" id="s13L7">  |> report config.output_format</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS13');
+  const ctx=canvas.getContext('2d');
+  const stages=[
+    {name:'Source',x:20,w:80,color:'#64748b',desc:'Raw program text'},
+    {name:'Parse',x:120,w:80,color:'#38bdf8',desc:'Build AST from source'},
+    {name:'Analyze',x:220,w:90,color:'#6366f1',desc:'Run all passes → findings'},
+    {name:'Filter',x:330,w:80,color:'#f59e0b',desc:'Remove low-severity'},
+    {name:'Dedup',x:430,w:75,color:'#a78bfa',desc:'Remove duplicates'},
+    {name:'Sort',x:525,w:70,color:'#22c55e',desc:'Order by severity'},
+    {name:'Report',x:615,w:75,color:'#f472b6',desc:'Format output'}
+  ];
+  const counts=[1,1,7,5,4,4,4]; // data items at each stage
+  let stepIdx=-1, timer=null;
+
+  function roundRect(c,x,y,w,h,r){
+    c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,700,300);
+    stages.forEach((s,i)=>{
+      const active=i<=stepIdx;
+      const current=i===stepIdx;
+      // Box
+      ctx.fillStyle=active?s.color+'33':'#1e293b';
+      ctx.strokeStyle=current?s.color:'#475569';
+      ctx.lineWidth=current?3:1.5;
+      roundRect(ctx,s.x,80,s.w,60,10);ctx.fill();ctx.stroke();
+      // Label
+      ctx.fillStyle=active?'#fff':'#94a3b8';
+      ctx.font='bold 12px monospace';ctx.textAlign='center';
+      ctx.fillText(s.name,s.x+s.w/2,115);
+      // Count bubble
+      if(active){
+        ctx.beginPath();ctx.arc(s.x+s.w/2,155,14,0,Math.PI*2);
+        ctx.fillStyle=s.color;ctx.fill();
+        ctx.fillStyle='#fff';ctx.font='bold 11px monospace';
+        ctx.fillText(counts[i],s.x+s.w/2,159);
+      }
+      // Arrow to next
+      if(i<stages.length-1){
+        const nx=stages[i+1].x;
+        ctx.beginPath();ctx.moveTo(s.x+s.w,110);ctx.lineTo(nx,110);
+        ctx.strokeStyle=i<stepIdx?'#38bdf8':'#334155';ctx.lineWidth=2;ctx.stroke();
+        // arrowhead
+        ctx.beginPath();ctx.moveTo(nx-8,105);ctx.lineTo(nx,110);ctx.lineTo(nx-8,115);
+        ctx.strokeStyle=i<stepIdx?'#38bdf8':'#334155';ctx.lineWidth=2;ctx.stroke();
+      }
+      // Description below
+      if(current){
+        ctx.fillStyle='#cbd5e1';ctx.font='11px monospace';
+        ctx.fillText(s.desc,s.x+s.w/2,195);
+      }
+    });
+    // Title
+    ctx.fillStyle='#38bdf8';ctx.font='bold 14px monospace';ctx.textAlign='center';
+    ctx.fillText('Analysis Pipeline',350,40);
+  }
+
+  function highlightCode(){
+    for(let i=0;i<=7;i++){
+      const el=document.getElementById('s13L'+i);
+      if(el) el.classList.remove('active');
+    }
+    if(stepIdx>=0 && stepIdx<=6){
+      document.getElementById('s13L'+(stepIdx+1)).classList.add('active');
+    }
+  }
+
+  function init(){
+    stepIdx=-1;if(timer){clearInterval(timer);timer=null;}
+    draw();highlightCode();
+    document.getElementById('s13Status').innerHTML='Click Step to trace data through the pipeline';
+  }
+
+  window.s13Step=function(){
+    if(stepIdx>=stages.length-1) return;
+    stepIdx++;draw();highlightCode();
+    const s=stages[stepIdx];
+    document.getElementById('s13Status').innerHTML='<span style="color:'+s.color+';">'+s.name+': '+s.desc+' → '+counts[stepIdx]+' item'+(counts[stepIdx]>1?'s':'')+'</span>';
+  };
+  window.s13Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=stages.length-1){clearInterval(timer);timer=null;return;}s13Step();},1000);
+  };
+  window.s13Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s14: REPORTING — TEXT VS JSON ==================== -->
+<div class="slide" id="s14">
+  <h2>Reporting: Text vs JSON</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The same findings can be rendered as <strong>human-readable text</strong> or <strong>machine-readable JSON</strong>. Toggle to compare both formats.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" id="s14BtnText" onclick="s14Toggle('text')" style="opacity:1;">Text</button>
+        <button class="btn btn-sm btn-secondary" id="s14BtnJSON" onclick="s14Toggle('json')">JSON</button>
+        <button class="btn btn-sm btn-secondary" id="s14BtnStats" onclick="s14Toggle('stats')">Stats</button>
+      </div>
+      <div id="s14Output" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-family:monospace;font-size:0.7rem;color:#e2e8f0;white-space:pre;max-height:280px;overflow-y:auto;line-height:1.5;"></div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.72rem;">
+        <div class="code-content">
+          <div class="line" id="s14L0">let report format findings =</div>
+          <div class="line" id="s14L1">  match format with</div>
+          <div class="line" id="s14L2">  | Text -></div>
+          <div class="line" id="s14L3">    findings</div>
+          <div class="line" id="s14L4">    |> List.map format_text_line</div>
+          <div class="line" id="s14L5">    |> String.concat "\n"</div>
+          <div class="line" id="s14L6">  | JSON -></div>
+          <div class="line" id="s14L7">    findings</div>
+          <div class="line" id="s14L8">    |> List.map to_json_obj</div>
+          <div class="line" id="s14L9">    |> wrap_in_array</div>
+          <div class="line" id="s14L10">    |> json_to_string</div>
+          <div class="line" id="s14L11">  | Stats -></div>
+          <div class="line" id="s14L12">    findings</div>
+          <div class="line" id="s14L13">    |> group_by_severity</div>
+          <div class="line" id="s14L14">    |> format_summary</div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong>Key Idea:</strong> The report function is the <em>last</em> stage in the pipeline. It doesn't modify findings — it just serializes them. This separation means you can add new formats without touching analysis logic.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const findings=[
+    {line:4,sev:'High',cat:'Safety',msg:'Division by zero (y=0)'},
+    {line:5,sev:'High',cat:'Security',msg:'Tainted input → exec()'},
+    {line:9,sev:'Medium',cat:'Security',msg:'Tainted input → query()'},
+    {line:3,sev:'Info',cat:'Quality',msg:'Dead store: z unused'}
+  ];
+
+  const textOutput=findings.map(f=>'['+f.sev.toUpperCase()+'] L'+f.line+' ('+f.cat+'): '+f.msg).join('\n')+'\n\n── Summary ──\nTotal: 4 findings\nHigh: 2  Medium: 1  Info: 1';
+
+  const jsonOutput=JSON.stringify({findings:findings.map(f=>({line:f.line,severity:f.sev.toLowerCase(),category:f.cat.toLowerCase(),message:f.msg})),summary:{total:4,high:2,medium:1,info:1}},null,2);
+
+  const statsOutput='══════════════════════════════\n  Analysis Summary Report\n══════════════════════════════\n\n  By Severity:\n  ┌──────────┬───────┐\n  │ High     │   2   │  ████████████\n  │ Medium   │   1   │  ██████\n  │ Info     │   1   │  ██████\n  └──────────┴───────┘\n\n  By Category:\n  ┌──────────┬───────┐\n  │ Security │   2   │  ████████████\n  │ Safety   │   1   │  ██████\n  │ Quality  │   1   │  ██████\n  └──────────┴───────┘\n\n  Total: 4 findings';
+
+  window.s14Toggle=function(mode){
+    const out=document.getElementById('s14Output');
+    document.getElementById('s14BtnText').className='btn btn-sm'+(mode==='text'?'':' btn-secondary');
+    document.getElementById('s14BtnJSON').className='btn btn-sm'+(mode==='json'?'':' btn-secondary');
+    document.getElementById('s14BtnStats').className='btn btn-sm'+(mode==='stats'?'':' btn-secondary');
+
+    for(let i=0;i<=14;i++){const el=document.getElementById('s14L'+i);if(el)el.classList.remove('active');}
+
+    if(mode==='text'){
+      out.textContent=textOutput;
+      [2,3,4,5].forEach(i=>document.getElementById('s14L'+i).classList.add('active'));
+    } else if(mode==='json'){
+      out.textContent=jsonOutput;
+      [6,7,8,9,10].forEach(i=>document.getElementById('s14L'+i).classList.add('active'));
+    } else {
+      out.textContent=statsOutput;
+      [11,12,13,14].forEach(i=>document.getElementById('s14L'+i).classList.add('active'));
+    }
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))s14Toggle('text');});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  s14Toggle('text');
+})();
+</script>
+
+<!-- ==================== SLIDE sCB: CHALLENGE — BUILD A PIPELINE CONFIG ==================== -->
+<div class="slide" id="sCB">
+  <h2>🎯 Challenge B: Build a Pipeline Config</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">A team needs a CI/CD security gate. Build the config that meets their requirements.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:1rem;">
+        <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.6rem;">Requirements:</div>
+        <ul style="color:#cbd5e1;font-size:0.8rem;list-style:none;padding:0;margin:0;">
+          <li style="margin-bottom:0.4rem;">✅ Must check for security vulnerabilities</li>
+          <li style="margin-bottom:0.4rem;">✅ Must check for runtime safety issues</li>
+          <li style="margin-bottom:0.4rem;">❌ No dead code analysis (too noisy for CI)</li>
+          <li style="margin-bottom:0.4rem;">✅ Only report Medium severity and above</li>
+          <li style="margin-bottom:0.4rem;">✅ Remove duplicate findings</li>
+          <li style="margin-bottom:0.4rem;">✅ Output must be JSON (for CI parsing)</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Your Config:</div>
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;">
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">Passes:</span>
+          <div style="display:flex;gap:0.5rem;margin-top:0.3rem;">
+            <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="sCB-dc"> Dead Code</label>
+            <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="sCB-sf"> Safety</label>
+            <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="sCB-sc"> Security</label>
+          </div>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">Min Severity:</span>
+          <select id="sCB-sev" style="margin-left:0.3rem;padding:0.2rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="Info">Info</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="sCB-dd"> Enable dedup</label>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">Format:</span>
+          <select id="sCB-fmt" style="margin-left:0.3rem;padding:0.2rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="Text">Text</option>
+            <option value="JSON">JSON</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="sCBCheck()">Check Config</button>
+      </div>
+      <div id="sCB-feedback" style="margin-top:0.6rem;font-size:0.82rem;color:#94a3b8;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  window.sCBCheck = function(){
+    const dc=document.getElementById('sCB-dc').checked;
+    const sf=document.getElementById('sCB-sf').checked;
+    const sc=document.getElementById('sCB-sc').checked;
+    const sev=document.getElementById('sCB-sev').value;
+    const dd=document.getElementById('sCB-dd').checked;
+    const fmt=document.getElementById('sCB-fmt').value;
+
+    let errors=[];
+    if(dc) errors.push('Dead Code should be OFF (too noisy for CI)');
+    if(!sf) errors.push('Safety pass must be ON');
+    if(!sc) errors.push('Security pass must be ON');
+    if(sev!=='Medium') errors.push('Min severity should be Medium');
+    if(!dd) errors.push('Dedup should be ON');
+    if(fmt!=='JSON') errors.push('Format should be JSON for CI parsing');
+
+    const fb=document.getElementById('sCB-feedback');
+    if(errors.length===0){
+      fb.innerHTML='<span style="color:#22c55e;font-weight:600;">✓ Perfect config! This would work great in a CI/CD pipeline.</span>';
+    } else {
+      fb.innerHTML='<span style="color:#ef4444;font-weight:600;">'+errors.length+' issue'+(errors.length>1?'s':'')+':</span><br>'+errors.map(e=>'<span style="color:#f59e0b;">• '+e+'</span>').join('<br>');
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s15: REAL-WORLD TOOLS ==================== -->
+<div class="slide" id="s15">
+  <h2>Real-World Static Analysis Tools</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Production tools implement exactly the pipeline we built — with richer rules, IDE integration, and CI/CD hooks. Click each to explore.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS15" width="460" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;" onclick="s15Click(event)"></canvas>
+    </div>
+    <div id="s15Detail" style="background:#1e293b;border-radius:10px;padding:1rem;font-size:0.8rem;color:#cbd5e1;">
+      <div style="color:#94a3b8;font-style:italic;">Click a tool on the left to see details.</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS15');
+  const ctx=canvas.getContext('2d');
+  const tools=[
+    {name:'Semgrep',x:30,y:30,w:180,h:65,color:'#22c55e',
+     desc:'<strong style="color:#22c55e;">Semgrep</strong><br><span style="color:#94a3b8;">Type:</span> Pattern-based<br><span style="color:#94a3b8;">Languages:</span> 30+ (Python, JS, Java, Go…)<br><span style="color:#94a3b8;">Key feature:</span> Custom rules in YAML — write patterns that look like code<br><span style="color:#94a3b8;">Our parallel:</span> Like our <code style="color:#f472b6;">analysis_pass</code> records — each rule is a self-contained checker<br><span style="color:#94a3b8;">CI/CD:</span> GitHub Actions, GitLab CI, pre-commit hooks'},
+    {name:'CodeQL',x:240,y:30,w:190,h:65,color:'#6366f1',
+     desc:'<strong style="color:#6366f1;">CodeQL</strong><br><span style="color:#94a3b8;">Type:</span> Query-based (Datalog-like)<br><span style="color:#94a3b8;">Languages:</span> C/C++, Java, Python, JS, Go, Ruby<br><span style="color:#94a3b8;">Key feature:</span> Write queries over a database of code facts — like SQL for source code<br><span style="color:#94a3b8;">Our parallel:</span> Like our taint analysis — tracks data flow through the program<br><span style="color:#94a3b8;">CI/CD:</span> GitHub native (code scanning)'},
+    {name:'SonarQube',x:30,y:130,w:180,h:65,color:'#f59e0b',
+     desc:'<strong style="color:#f59e0b;">SonarQube</strong><br><span style="color:#94a3b8;">Type:</span> Multi-category (bugs, vulns, smells)<br><span style="color:#94a3b8;">Languages:</span> 25+ with deep Java/C# support<br><span style="color:#94a3b8;">Key feature:</span> Quality gates — blocks merge if too many issues<br><span style="color:#94a3b8;">Our parallel:</span> Like our full pipeline with config filters + severity thresholds<br><span style="color:#94a3b8;">CI/CD:</span> Jenkins, Azure DevOps, GitHub Actions'},
+    {name:'Infer',x:240,y:130,w:190,h:65,color:'#ef4444',
+     desc:'<strong style="color:#ef4444;">Meta Infer</strong><br><span style="color:#94a3b8;">Type:</span> Abstract interpretation (separation logic)<br><span style="color:#94a3b8;">Languages:</span> C, C++, Objective-C, Java<br><span style="color:#94a3b8;">Key feature:</span> Finds null pointer, memory leak, thread safety bugs at scale<br><span style="color:#94a3b8;">Our parallel:</span> Directly implements M4 abstract interpretation concepts<br><span style="color:#94a3b8;">Used by:</span> Meta (Facebook), Amazon, Uber'},
+    {name:'ESLint/\nRuff',x:30,y:230,w:180,h:65,color:'#a78bfa',
+     desc:'<strong style="color:#a78bfa;">ESLint / Ruff</strong><br><span style="color:#94a3b8;">Type:</span> Linters (fast, AST-pattern-based)<br><span style="color:#94a3b8;">Languages:</span> JavaScript/TypeScript (ESLint), Python (Ruff)<br><span style="color:#94a3b8;">Key feature:</span> Fast feedback loop — runs on save in IDE<br><span style="color:#94a3b8;">Our parallel:</span> Like our dead code pass — AST-level checks, no dataflow<br><span style="color:#94a3b8;">CI/CD:</span> Pre-commit hooks, IDE extensions'},
+    {name:'SARIF',x:240,y:230,w:190,h:65,color:'#f472b6',
+     desc:'<strong style="color:#f472b6;">SARIF (Standard)</strong><br><span style="color:#94a3b8;">Type:</span> Interchange format (not a tool)<br><span style="color:#94a3b8;">Spec:</span> OASIS standard JSON format for analysis results<br><span style="color:#94a3b8;">Key feature:</span> Universal format — any tool can produce, any viewer can consume<br><span style="color:#94a3b8;">Our parallel:</span> Exactly our JSON report format — standardized finding objects<br><span style="color:#94a3b8;">Used by:</span> GitHub code scanning, VS Code SARIF Viewer'}
+  ];
+  let selected=-1;
+
+  function roundRect(c,x,y,w,h,r){
+    c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,460,340);
+    tools.forEach((t,i)=>{
+      ctx.fillStyle=i===selected?t.color+'44':'#1e293b';
+      ctx.strokeStyle=i===selected?t.color:'#475569';
+      ctx.lineWidth=i===selected?3:1.5;
+      roundRect(ctx,t.x,t.y,t.w,t.h,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle=i===selected?'#fff':'#cbd5e1';
+      ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      const lines=t.name.split('\n');
+      lines.forEach((ln,li)=>{
+        ctx.fillText(ln,t.x+t.w/2,t.y+t.h/2+(li-(lines.length-1)/2)*16);
+      });
+    });
+    // Title
+    ctx.fillStyle='#38bdf8';ctx.font='bold 13px monospace';ctx.textAlign='center';
+    ctx.fillText('Click a tool to explore',230,325);
+  }
+
+  window.s15Click=function(e){
+    const rect=canvas.getBoundingClientRect();
+    const sx=460/rect.width;
+    const mx=(e.clientX-rect.left)*sx, my=(e.clientY-rect.top)*sx;
+    for(let i=0;i<tools.length;i++){
+      const t=tools[i];
+      if(mx>=t.x&&mx<=t.x+t.w&&my>=t.y&&my<=t.y+t.h){
+        selected=i;draw();
+        document.getElementById('s15Detail').innerHTML=t.desc;
+        return;
+      }
+    }
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active')){selected=-1;draw();document.getElementById('s15Detail').innerHTML='<div style="color:#94a3b8;font-style:italic;">Click a tool on the left to see details.</div>';}});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s16: PUTTING IT ALL TOGETHER ==================== -->
+<div class="slide" id="s16">
+  <h2>Putting It All Together</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Watch the complete pipeline process a real program — from source code to final report.</p>
+
+  <div style="margin-top:0.5rem;">
+    <canvas id="cS16" width="700" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-top:0.6rem;justify-content:center;">
+    <button class="btn btn-sm" onclick="s16Step()">Step</button>
+    <button class="btn btn-sm" onclick="s16Auto()">Auto Play</button>
+    <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+  </div>
+  <div id="s16Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;color:#94a3b8;margin-top:0.6rem;max-height:100px;overflow-y:auto;"></div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS16');
+  const ctx=canvas.getContext('2d');
+
+  const stages=[
+    {label:'Source',x:10,color:'#64748b'},
+    {label:'Parse',x:110,color:'#38bdf8'},
+    {label:'Dead\nCode',x:210,color:'#a78bfa'},
+    {label:'Safety',x:310,color:'#22c55e'},
+    {label:'Security',x:410,color:'#ef4444'},
+    {label:'Filter',x:510,color:'#f59e0b'},
+    {label:'Report',x:610,color:'#f472b6'}
+  ];
+
+  const steps=[
+    {stage:0,msg:'Source: 12 lines of OCaml code',data:'12 lines'},
+    {stage:1,msg:'Parse: Built AST with 8 nodes',data:'8 nodes'},
+    {stage:2,msg:'Dead Code: Found 2 issues (unused var, dead fn)',data:'+2 findings'},
+    {stage:3,msg:'Safety: Found 1 issue (possible div-by-zero)',data:'+1 finding'},
+    {stage:4,msg:'Security: Found 2 issues (taint→exec, taint→query)',data:'+2 findings'},
+    {stage:5,msg:'Filter: min_severity=Medium → removed 2 Info findings',data:'3 remain'},
+    {stage:6,msg:'Report: Generated JSON with 3 findings',data:'JSON output'}
+  ];
+
+  let stepIdx=-1,timer=null;
+
+  function roundRect(c,x,y,w,h,r){
+    c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,700,280);
+    stages.forEach((s,i)=>{
+      const active=i<=stepIdx;
+      const current=i===stepIdx;
+      const w=80,h=55,y=60;
+      ctx.fillStyle=active?s.color+'33':'#1e293b';
+      ctx.strokeStyle=current?s.color:'#475569';
+      ctx.lineWidth=current?3:1.5;
+      roundRect(ctx,s.x,y,w,h,10);ctx.fill();ctx.stroke();
+
+      ctx.fillStyle=active?'#fff':'#94a3b8';
+      ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      const lines=s.label.split('\n');
+      lines.forEach((ln,li)=>{ctx.fillText(ln,s.x+w/2,y+h/2+(li-(lines.length-1)/2)*14);});
+
+      // Data bubble
+      if(active && i<=stepIdx){
+        const step=steps[i];
+        ctx.fillStyle=s.color;ctx.font='9px monospace';
+        ctx.fillText(step.data,s.x+w/2,y+h+18);
+      }
+
+      // Arrow
+      if(i<stages.length-1){
+        const nx=stages[i+1].x;
+        ctx.beginPath();ctx.moveTo(s.x+w,y+h/2);ctx.lineTo(nx,y+h/2);
+        ctx.strokeStyle=i<stepIdx?'#38bdf8':'#334155';ctx.lineWidth=2;ctx.stroke();
+        ctx.beginPath();ctx.moveTo(nx-7,y+h/2-5);ctx.lineTo(nx,y+h/2);ctx.lineTo(nx-7,y+h/2+5);
+        ctx.strokeStyle=i<stepIdx?'#38bdf8':'#334155';ctx.lineWidth=2;ctx.stroke();
+      }
+    });
+
+    // Findings bar chart at bottom
+    if(stepIdx>=2){
+      ctx.fillStyle='#94a3b8';ctx.font='bold 10px monospace';ctx.textAlign='center';
+      ctx.fillText('Findings Accumulation',350,170);
+      const barY=185,barH=60,barW=50,gap=20;
+      const passFindings=[
+        {label:'Dead',count:2,color:'#a78bfa'},
+        {label:'Safety',count:1,color:'#22c55e'},
+        {label:'Security',count:2,color:'#ef4444'}
+      ];
+      const total=stepIdx>=5?3:5; // after filter, 3 remain
+      const startX=200;
+      passFindings.forEach((p,i)=>{
+        if(stepIdx<i+2) return;
+        const x=startX+i*(barW+gap);
+        let h2=p.count/3*barH;
+        if(stepIdx>=5 && i===0) h2=0; // filtered out
+        ctx.fillStyle=p.color+'66';
+        roundRect(ctx,x,barY+barH-h2,barW,h2,4);ctx.fill();
+        ctx.fillStyle=p.color;ctx.font='bold 10px monospace';
+        if(h2>0) ctx.fillText(stepIdx>=5&&i===0?'0':p.count,x+barW/2,barY+barH-h2-8);
+        ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+        ctx.fillText(p.label,x+barW/2,barY+barH+14);
+      });
+    }
+  }
+
+  function init(){
+    stepIdx=-1;if(timer){clearInterval(timer);timer=null;}
+    document.getElementById('s16Log').innerHTML='';
+    draw();
+  }
+
+  window.s16Step=function(){
+    if(stepIdx>=steps.length-1)return;
+    stepIdx++;draw();
+    const s=steps[stepIdx];
+    const log=document.getElementById('s16Log');
+    log.innerHTML+='<div style="color:'+stages[s.stage].color+';">'+s.msg+'</div>';
+    log.scrollTop=log.scrollHeight;
+  };
+  window.s16Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s16Step();},900);
+  };
+  window.s16Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s16').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s17: KEY TAKEAWAYS ==================== -->
+<div class="slide" id="s17">
+  <h2>Key Takeaways</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div class="key-idea">
+      <strong>1. Unified Finding Types</strong><br>
+      A single <code style="color:#f472b6;">finding</code> record with severity + category + location works for <em>all</em> analysis types. Standardization enables composition.
+    </div>
+    <div class="key-idea">
+      <strong>2. Pass Architecture</strong><br>
+      Each analysis is a self-contained <code style="color:#f472b6;">analysis_pass</code> — a record with <code>name</code> and <code>run</code>. Wrap any M3–M5 analysis into this interface.
+    </div>
+    <div class="key-idea">
+      <strong>3. Configuration-Driven</strong><br>
+      Pipeline behavior is controlled by a config record — which passes, severity filters, output format. No code changes needed to adjust behavior.
+    </div>
+    <div class="key-idea">
+      <strong>4. Composable Pipeline</strong><br>
+      Parse → Analyze → Filter → Dedup → Sort → Report. Each stage is a pure function connected by <code style="color:#f472b6;">|></code>. Easy to test, extend, reorder.
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top:1rem;">
+    <strong>Common Mistake:</strong> Don't skip the filter/dedup stages! Without them, multi-pass analysis produces noisy, duplicate-heavy reports that developers ignore. Signal-to-noise ratio matters.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE s18: BOOTCAMP COMPLETE ==================== -->
+<div class="slide" id="s18">
+  <h2>🎓 Bootcamp Complete!</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">You've built a complete program analysis toolkit from the ground up.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-top:0.5rem;">
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;border-left:3px solid #38bdf8;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;margin-bottom:0.4rem;">M1: Foundations</div>
+      <div style="font-size:0.75rem;color:#94a3b8;">✅ OCaml, ASTs, CFGs</div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;border-left:3px solid #6366f1;">
+      <div style="font-weight:600;color:#6366f1;font-size:0.85rem;margin-bottom:0.4rem;">M2: AST Analysis</div>
+      <div style="font-size:0.75rem;color:#94a3b8;">✅ Visitors, patterns, transforms</div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;border-left:3px solid #a78bfa;">
+      <div style="font-weight:600;color:#a78bfa;font-size:0.85rem;margin-bottom:0.4rem;">M3: Static Analysis</div>
+      <div style="font-size:0.75rem;color:#94a3b8;">✅ Dataflow, reaching defs, liveness</div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;border-left:3px solid #22c55e;">
+      <div style="font-weight:600;color:#22c55e;font-size:0.85rem;margin-bottom:0.4rem;">M4: Abstract Interp.</div>
+      <div style="font-size:0.75rem;color:#94a3b8;">✅ Lattices, domains, widening</div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;border-left:3px solid #ef4444;">
+      <div style="font-weight:600;color:#ef4444;font-size:0.85rem;margin-bottom:0.4rem;">M5: Security Analysis</div>
+      <div style="font-size:0.75rem;color:#94a3b8;">✅ Taint tracking, OWASP, sanitizers</div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;border-left:3px solid #f59e0b;">
+      <div style="font-weight:600;color:#f59e0b;font-size:0.85rem;margin-bottom:0.4rem;">M6: Tools Integration</div>
+      <div style="font-size:0.75rem;color:#94a3b8;">✅ Findings, passes, pipelines</div>
+    </div>
+  </div>
+
+  <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:12px;padding:1rem;margin-top:1rem;text-align:center;">
+    <div style="font-size:1.1rem;font-weight:700;color:#fff;">You can now build real static analysis tools!</div>
+    <div style="font-size:0.82rem;color:#e2e8f0;margin-top:0.3rem;">From parsing source code to generating actionable security reports — the full pipeline is yours.</div>
+  </div>
+
+  <div class="analogy" style="margin-top:0.8rem;">
+    <strong>Final Analogy:</strong> You started as someone who could read a blueprint (AST). Now you can run the entire quality inspection factory — multiple inspectors (passes), a unified defect report (findings), configurable assembly line (pipeline), and formatted output for the customer (reporting).
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE sCC: CHALLENGE — DEBUG THE PIPELINE ==================== -->
+<div class="slide" id="sCC">
+  <h2>🎯 Challenge C: Debug the Pipeline</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Each pipeline has a bug. Identify what's wrong and pick the fix.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <!-- Bug 1 -->
+    <div id="sCC-q1" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#ef4444;margin-bottom:0.4rem;">Bug 1: Missing Findings</div>
+      <div class="code-block" style="font-size:0.68rem;margin-bottom:0.5rem;">
+        <div class="code-content">
+          <div class="line">source |> parse</div>
+          <div class="line">|> run_passes [security]</div>
+          <div class="line">|> filter_by_severity High</div>
+          <div class="line">|> report Text</div>
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.4rem;">Team says: "We're missing medium-severity SQL injection findings!"</p>
+      <select id="sCC-a1" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Pick the fix…</option>
+        <option value="a">Add safety pass to find SQL injections</option>
+        <option value="b">Change filter to Medium severity</option>
+        <option value="c">Remove the filter entirely</option>
+        <option value="d">Switch to JSON output</option>
+      </select>
+    </div>
+
+    <!-- Bug 2 -->
+    <div id="sCC-q2" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#ef4444;margin-bottom:0.4rem;">Bug 2: Duplicate Alerts</div>
+      <div class="code-block" style="font-size:0.68rem;margin-bottom:0.5rem;">
+        <div class="code-content">
+          <div class="line">source |> parse</div>
+          <div class="line">|> run_passes [safety; security]</div>
+          <div class="line">|> sort_findings</div>
+          <div class="line">|> report JSON</div>
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.4rem;">Team says: "Same finding appears twice in the report!"</p>
+      <select id="sCC-a2" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Pick the fix…</option>
+        <option value="a">Add dedup before sort</option>
+        <option value="b">Remove one of the passes</option>
+        <option value="c">Add a severity filter</option>
+        <option value="d">Switch to Text output</option>
+      </select>
+    </div>
+
+    <!-- Bug 3 -->
+    <div id="sCC-q3" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#ef4444;margin-bottom:0.4rem;">Bug 3: Wrong Order</div>
+      <div class="code-block" style="font-size:0.68rem;margin-bottom:0.5rem;">
+        <div class="code-content">
+          <div class="line">source |> parse</div>
+          <div class="line">|> run_passes [dead_code; safety]</div>
+          <div class="line">|> report Text</div>
+          <div class="line">|> filter_by_severity Medium</div>
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.4rem;">Team says: "Filter doesn't work — all findings still show up!"</p>
+      <select id="sCC-a3" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Pick the fix…</option>
+        <option value="a">Change filter to High severity</option>
+        <option value="b">Move filter before report</option>
+        <option value="c">Add dedup after filter</option>
+        <option value="d">Remove the dead_code pass</option>
+      </select>
+    </div>
+
+    <!-- Bug 4 -->
+    <div id="sCC-q4" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#ef4444;margin-bottom:0.4rem;">Bug 4: No Output</div>
+      <div class="code-block" style="font-size:0.68rem;margin-bottom:0.5rem;">
+        <div class="code-content">
+          <div class="line">source |> parse</div>
+          <div class="line">|> run_passes []</div>
+          <div class="line">|> filter_by_severity Info</div>
+          <div class="line">|> report JSON</div>
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.4rem;">Team says: "Report is always empty — no findings at all!"</p>
+      <select id="sCC-a4" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Pick the fix…</option>
+        <option value="a">Remove the severity filter</option>
+        <option value="b">Add actual passes to the list</option>
+        <option value="c">Switch to Text format</option>
+        <option value="d">Add dedup stage</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:0.8rem;">
+    <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCC-feedback" style="margin-top:0.6rem;font-size:0.82rem;color:#94a3b8;text-align:center;"></div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers=['b','a','b','b'];
+  const explains=[
+    'Filter is set to High — Medium findings are being dropped. Lower the threshold to Medium.',
+    'Missing dedup stage! Both passes might find the same issue. Add dedup before sort.',
+    'Filter runs AFTER report — but report already serialized the output. Pipeline order matters: filter before report.',
+    'The passes list is empty []! No passes = no findings. Add the actual analysis passes.'
+  ];
+  window.sCCCheck=function(){
+    let score=0;
+    for(let i=1;i<=4;i++){
+      const val=document.getElementById('sCC-a'+i).value;
+      const el=document.getElementById('sCC-q'+i);
+      if(val===answers[i-1]){el.style.borderColor='#22c55e';score++;}
+      else{el.style.borderColor='#ef4444';}
+    }
+    let html='<strong>'+score+'/4</strong> — ';
+    if(score===4) html+='<span style="color:#22c55e;">Perfect debugging! You understand pipeline composition.</span>';
+    else{
+      html+='Review:<br>';
+      explains.forEach((e,i)=>{html+='<span style="color:#f59e0b;">Bug '+(i+1)+': '+e+'</span><br>';});
+    }
+    document.getElementById('sCC-feedback').innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: QUIZ — CONCEPT CHECK ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz 1: Concept Check</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <!-- Q1 -->
+    <div id="sQ1-q1" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Q1: Finding Record</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Which field is NOT part of our unified finding type?</p>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;">
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r1" value="a"> severity</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r1" value="b"> category</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r1" value="c"> author</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r1" value="d"> location</label>
+      </div>
+      <div id="sQ1-f1" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div id="sQ1-q2" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Q2: Pipeline Order</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">What is the correct pipeline stage order?</p>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;">
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r2" value="a"> Parse→Report→Analyze→Filter</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r2" value="b"> Parse→Analyze→Filter→Report</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r2" value="c"> Analyze→Parse→Report→Filter</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r2" value="d"> Filter→Parse→Analyze→Report</label>
+      </div>
+      <div id="sQ1-f2" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div id="sQ1-q3" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Q3: Pass Wrapping</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Why wrap M4/M5 analyses as analysis_pass records?</p>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;">
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r3" value="a"> Makes them run faster</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r3" value="b"> Uniform interface for composition</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r3" value="c"> Required by OCaml compiler</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r3" value="d"> Reduces memory usage</label>
+      </div>
+      <div id="sQ1-f3" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn btn-sm" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-size:0.9rem;font-weight:600;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers={sQ1r1:'c',sQ1r2:'b',sQ1r3:'b'};
+  const feedback=[
+    {correct:'Our finding has severity, category, location, and message — but no author field.',wrong:'author is not a standard finding field.'},
+    {correct:'Parse first (build AST), then analyze, then filter noise, then report.',wrong:'You must parse before analyzing, and filter before reporting.'},
+    {correct:'A uniform {name; run} interface lets run_all iterate over any mix of passes.',wrong:'It\'s about composability — a common interface for heterogeneous analyses.'}
+  ];
+  window.sQ1Check=function(){
+    let score=0;
+    const keys=['sQ1r1','sQ1r2','sQ1r3'];
+    keys.forEach((k,i)=>{
+      const sel=document.querySelector('input[name="'+k+'"]:checked');
+      const fb=document.getElementById('sQ1-f'+(i+1));
+      const card=document.getElementById('sQ1-q'+(i+1));
+      if(!sel){fb.innerHTML='<span style="color:#f59e0b;">Please select an answer</span>';return;}
+      if(sel.value===answers[k]){
+        score++;card.style.borderColor='#22c55e';
+        fb.innerHTML='<span style="color:#22c55e;">✓ '+feedback[i].correct+'</span>';
+      } else {
+        card.style.borderColor='#ef4444';
+        fb.innerHTML='<span style="color:#ef4444;">✗ '+feedback[i].wrong+'</span>';
+      }
+    });
+    document.getElementById('sQ1Score').innerHTML='<span style="color:'+(score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444')+';">'+score+'/3</span>';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: QUIZ — PIPELINE TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz 2: Pipeline Trace</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Given this config and program, predict what the final report contains.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div class="code-block" style="font-size:0.72rem;margin-bottom:0.6rem;">
+        <div class="code-content">
+          <div class="line" style="color:#94a3b8;">(* Config *)</div>
+          <div class="line">passes = [dead_code; security]</div>
+          <div class="line">min_severity = Medium</div>
+          <div class="line">dedup = true</div>
+          <div class="line">format = Text</div>
+        </div>
+      </div>
+      <div class="code-block" style="font-size:0.72rem;">
+        <div class="code-content">
+          <div class="line"><span style="color:#64748b;">1</span>  let a = input()</div>
+          <div class="line"><span style="color:#64748b;">2</span>  let b = 10</div>
+          <div class="line"><span style="color:#64748b;">3</span>  let c = 20</div>
+          <div class="line"><span style="color:#64748b;">4</span>  exec(a)</div>
+          <div class="line"><span style="color:#64748b;">5</span>  query(a)</div>
+          <div class="line"><span style="color:#64748b;">6</span>  print(b)</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Your Prediction:</div>
+      <p style="font-size:0.78rem;color:#94a3b8;margin-bottom:0.4rem;">How many findings in the final report?</p>
+      <input type="number" id="sQ2-count" min="0" max="10" style="width:60px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+
+      <p style="font-size:0.78rem;color:#94a3b8;margin-top:0.6rem;margin-bottom:0.4rem;">Which findings survive? (check all that apply)</p>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;">
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="sQ2-f1"> Dead store: c (L3, Info, Quality)</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="sQ2-f2"> Taint: input→exec (L4, High, Security)</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="sQ2-f3"> Taint: input→query (L5, Medium, Security)</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="checkbox" id="sQ2-f4"> Dead store: b (L2, Info, Quality)</label>
+      </div>
+
+      <div style="margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="sQ2Check()">Check</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ2Reveal()" style="margin-left:0.5rem;">Show Trace</button>
+      </div>
+      <div id="sQ2-feedback" style="margin-top:0.6rem;font-size:0.8rem;color:#94a3b8;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  window.sQ2Check=function(){
+    const count=parseInt(document.getElementById('sQ2-count').value);
+    const f1=document.getElementById('sQ2-f1').checked;
+    const f2=document.getElementById('sQ2-f2').checked;
+    const f3=document.getElementById('sQ2-f3').checked;
+    const f4=document.getElementById('sQ2-f4').checked;
+
+    // Dead code finds: c unused (Info), b is used by print so NOT dead
+    // Security finds: input→exec (High), input→query (Medium)
+    // Filter ≥Medium: removes c (Info). b is not a finding.
+    // Dedup: no duplicates. Result: 2 findings (exec High, query Medium)
+    const correctCount=2;
+    const correctChecks=(!f1 && f2 && f3 && !f4);
+
+    const fb=document.getElementById('sQ2-feedback');
+    if(count===correctCount && correctChecks){
+      fb.innerHTML='<span style="color:#22c55e;font-weight:600;">✓ Perfect! Dead code finds c (Info) — filtered out by min_severity=Medium. b is NOT dead (used on L6). Two security findings survive.</span>';
+    } else {
+      let hints=[];
+      if(count!==correctCount) hints.push('Count should be 2');
+      if(f1) hints.push('c is Info severity — filtered out by Medium threshold');
+      if(!f2) hints.push('input→exec is High — passes the filter');
+      if(!f3) hints.push('input→query is Medium — passes the filter');
+      if(f4) hints.push('b is used on L6 (print(b)) — NOT a dead store!');
+      fb.innerHTML='<span style="color:#ef4444;">Not quite:</span><br>'+hints.map(h=>'<span style="color:#f59e0b;">• '+h+'</span>').join('<br>');
+    }
+  };
+
+  window.sQ2Reveal=function(){
+    document.getElementById('sQ2-feedback').innerHTML=
+      '<div style="border-left:3px solid #38bdf8;padding-left:0.8rem;margin-top:0.3rem;">'+
+      '<div style="color:#a78bfa;">1. Dead Code pass → c unused (L3, Info) ✓ b used on L6 ✗</div>'+
+      '<div style="color:#ef4444;">2. Security pass → input→exec (L4, High), input→query (L5, Med)</div>'+
+      '<div style="color:#f59e0b;">3. Filter ≥Medium → removes c (Info). 2 remain.</div>'+
+      '<div style="color:#22c55e;">4. Dedup → no duplicates. Final: 2 findings.</div>'+
+      '<div style="color:#f472b6;">5. Report Text → [HIGH] L4: Tainted input → exec() | [MEDIUM] L5: Tainted input → query()</div>'+
+      '</div>';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: QUIZ — DESIGN DECISIONS ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz 3: Design Decisions</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">For each real-world scenario, choose the best design approach.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <!-- Scenario 1 -->
+    <div id="sQ3-q1" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Scenario 1: New Analysis</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Your team writes a new "complexity analysis" that measures function complexity. How should you integrate it?</p>
+      <select id="sQ3-a1" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Choose…</option>
+        <option value="a">Modify the pipeline function to add a special case</option>
+        <option value="b">Create an analysis_pass record and add to config.passes</option>
+        <option value="c">Write a separate standalone tool</option>
+        <option value="d">Add complexity checks inside the safety pass</option>
+      </select>
+      <div id="sQ3-f1" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Scenario 2 -->
+    <div id="sQ3-q2" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Scenario 2: CI Performance</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">CI takes 10 minutes because dead code analysis is slow on large codebases. What's the best fix?</p>
+      <select id="sQ3-a2" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Choose…</option>
+        <option value="a">Delete the dead code pass entirely</option>
+        <option value="b">Remove it from the CI config, keep it for local dev</option>
+        <option value="c">Run it less frequently (weekly instead of per-commit)</option>
+        <option value="d">Both B and C are reasonable approaches</option>
+      </select>
+      <div id="sQ3-f2" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Scenario 3 -->
+    <div id="sQ3-q3" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Scenario 3: Output Format</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Your tool needs to work with both GitHub code scanning AND a custom dashboard. What output strategy?</p>
+      <select id="sQ3-a3" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Choose…</option>
+        <option value="a">Output SARIF for GitHub, custom JSON for dashboard</option>
+        <option value="b">Only output Text — both can parse it</option>
+        <option value="c">Output one format and write converters</option>
+        <option value="d">A — multiple report formats from the same findings</option>
+      </select>
+      <div id="sQ3-f3" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Scenario 4 -->
+    <div id="sQ3-q4" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Scenario 4: False Positives</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Developers complain about too many false positives from the safety pass. Best approach?</p>
+      <select id="sQ3-a4" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Choose…</option>
+        <option value="a">Disable the safety pass</option>
+        <option value="b">Raise min_severity to High in config</option>
+        <option value="c">Improve the analysis precision (narrower abstractions)</option>
+        <option value="d">B for short-term relief, C for long-term fix</option>
+      </select>
+      <div id="sQ3-f4" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:0.8rem;">
+    <button class="btn btn-sm" onclick="sQ3Check()">Check Answers</button>
+    <span id="sQ3Score" style="margin-left:1rem;font-size:0.9rem;font-weight:600;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers=['b','d','d','d'];
+  const feedback=[
+    {correct:'Wrap it as an analysis_pass record — the whole point of our architecture is extensibility without modifying the pipeline.',wrong:'Create a new analysis_pass record. The pipeline stays unchanged — just add to config.passes.'},
+    {correct:'Both are valid! Config-driven design lets you have different configs for different contexts (CI vs local vs nightly).',wrong:'Configuration is the answer — remove from CI config and/or run on a schedule. The pass itself is fine.'},
+    {correct:'Multiple report formats from the same findings — that\'s exactly what our report stage does. One analysis, many outputs.',wrong:'Output SARIF for GitHub + custom JSON for dashboard. The report stage supports multiple formats from same findings.'},
+    {correct:'Short-term: raise severity filter. Long-term: improve analysis precision. Both use the architecture we built.',wrong:'Raise severity filter for quick relief, but invest in better abstractions (M4!) for lasting improvement.'}
+  ];
+  window.sQ3Check=function(){
+    let score=0;
+    for(let i=1;i<=4;i++){
+      const val=document.getElementById('sQ3-a'+i).value;
+      const card=document.getElementById('sQ3-q'+i);
+      const fb=document.getElementById('sQ3-f'+i);
+      if(val===answers[i-1]){
+        score++;card.style.borderColor='#22c55e';
+        fb.innerHTML='<span style="color:#22c55e;">✓ '+feedback[i-1].correct+'</span>';
+      } else {
+        card.style.borderColor='#ef4444';
+        fb.innerHTML='<span style="color:#ef4444;">✗ '+feedback[i-1].wrong+'</span>';
+      }
+    }
+    document.getElementById('sQ3Score').innerHTML='<span style="color:'+(score===4?'#22c55e':score>=3?'#f59e0b':'#ef4444')+';">'+score+'/4</span>';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','s13','s14','sCB','s15','s16','s17','s18','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const newIdx = currentIdx + dir;
+  if (newIdx < 0 || newIdx >= slideOrder.length) return;
+  currentIdx = newIdx;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

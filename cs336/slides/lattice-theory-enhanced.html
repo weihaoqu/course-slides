@@ -1,0 +1,2688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lattice Theory for Program Analysis</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;height:100vh;}
+  #progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:100;}
+  #progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#38bdf8);transition:width 0.3s;}
+  .slide{display:none;padding:2rem 3rem;height:100vh;overflow-y:auto;}
+  .slide.active{display:block;}
+  .slide.fade-in{animation:fadeIn 0.3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  h2{font-size:1.65rem;background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.6rem;}
+  .nav{position:fixed;bottom:1.5rem;right:2rem;display:flex;gap:0.5rem;z-index:50;}
+  .nav button{padding:0.5rem 1.2rem;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;background:#1e293b;color:#94a3b8;transition:all 0.2s;}
+  .nav button:hover:not(:disabled){background:#334155;color:#e2e8f0;}
+  .nav button:disabled{opacity:0.3;cursor:not-allowed;}
+  .btn{padding:0.5rem 1.2rem;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;transition:all 0.2s;}
+  .btn:hover{opacity:0.9;transform:translateY(-1px);}
+  .btn-sm{padding:0.35rem 0.9rem;font-size:0.78rem;}
+  .btn-secondary{background:#334155;color:#cbd5e1;}
+  .btn-secondary:hover{background:#475569;}
+  .key-idea{background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.85rem;color:#cbd5e1;}
+  .warning{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.85rem;color:#cbd5e1;}
+  .analogy{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.85rem;color:#cbd5e1;}
+  .code-block{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:0.8rem;overflow-x:auto;}
+  .code-content{font-family:monospace;font-size:0.82rem;line-height:1.6;}
+  .line{padding:0.1rem 0.5rem;border-left:3px solid transparent;white-space:pre;}
+  .line.active{background:rgba(99,102,241,0.15);border-left-color:#6366f1;}
+  .slide-number{}
+  code{background:rgba(99,102,241,0.15);padding:0.15rem 0.4rem;border-radius:4px;font-family:monospace;font-size:0.85em;color:#f472b6;}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE s1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:85vh;text-align:center;">
+    <div style="font-size:0.85rem;color:#6366f1;text-transform:uppercase;letter-spacing:3px;margin-bottom:1rem;">Fundamentals Deep Dive</div>
+    <h1 style="font-size:2.8rem;background:linear-gradient(135deg,#38bdf8,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1rem;">Lattice Theory</h1>
+    <p style="font-size:1.15rem;color:#94a3b8;max-width:600px;">The mathematical backbone of every program analysis</p>
+
+    <div style="display:flex;gap:0.8rem;margin-top:2rem;flex-wrap:wrap;justify-content:center;">
+      <span style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.78rem;color:#38bdf8;">Partial Orders</span>
+      <span style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.78rem;color:#818cf8;">Join & Meet</span>
+      <span style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.78rem;color:#a78bfa;">Fixed Points</span>
+      <span style="background:rgba(244,114,182,0.15);border:1px solid rgba(244,114,182,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.78rem;color:#f472b6;">Convergence</span>
+    </div>
+
+    <div style="margin-top:2.5rem;">
+      <canvas id="cS1" width="400" height="180" style="background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS1');
+  const ctx=canvas.getContext('2d');
+  // Animated lattice structure — a diamond lattice pulsing
+  const nodes=[
+    {x:200,y:25,label:'⊤',color:'#f472b6'},
+    {x:100,y:85,label:'a',color:'#6366f1'},
+    {x:300,y:85,label:'b',color:'#6366f1'},
+    {x:200,y:145,label:'⊥',color:'#38bdf8'}
+  ];
+  const edges=[[3,1],[3,2],[1,0],[2,0]];
+  let pulse=0;
+  function draw(){
+    ctx.clearRect(0,0,400,180);
+    // Edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const r=18+Math.sin(pulse+i*0.8)*3;
+      ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);
+      ctx.fillStyle=n.color+'88';ctx.fill();
+      ctx.strokeStyle=n.color;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.label,n.x,n.y);
+    });
+    pulse+=0.04;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s2: WHY LATTICES? ==================== -->
+<div class="slide" id="s2">
+  <h2>Why Lattices?</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Every analysis in the bootcamp uses the <strong>same mathematical structure</strong> — a lattice. Recognizing this pattern is the key to understanding all of program analysis.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <div style="background:#1e293b;border-radius:10px;padding:1rem;border-top:3px solid #38bdf8;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.9rem;margin-bottom:0.4rem;">M3: Dataflow Analysis</div>
+      <canvas id="cS2a" width="200" height="130" style="width:100%;background:rgba(0,0,0,0.15);border-radius:8px;"></canvas>
+      <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.4rem;">Powerset lattice of definitions — tracking which definitions <em>may</em> reach a point</div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:1rem;border-top:3px solid #22c55e;">
+      <div style="font-weight:600;color:#22c55e;font-size:0.9rem;margin-bottom:0.4rem;">M4: Abstract Interpretation</div>
+      <canvas id="cS2b" width="200" height="130" style="width:100%;background:rgba(0,0,0,0.15);border-radius:8px;"></canvas>
+      <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.4rem;">Sign lattice — abstracting integer values to {Neg, Zero, Pos}</div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:1rem;border-top:3px solid #ef4444;">
+      <div style="font-weight:600;color:#ef4444;font-size:0.9rem;margin-bottom:0.4rem;">M5: Taint Analysis</div>
+      <canvas id="cS2c" width="200" height="130" style="width:100%;background:rgba(0,0,0,0.15);border-radius:8px;"></canvas>
+      <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.4rem;">Taint lattice — tracking whether data is safe or attacker-controlled</div>
+    </div>
+  </div>
+
+  <div class="analogy" style="margin-top:1rem;">
+    <strong>Analogy:</strong> Lattices are to program analysis what <em>number systems</em> are to arithmetic. Just as you can add, subtract, and compare numbers, lattices give you <code>join</code>, <code>meet</code>, and <code>≤</code> — the operations every analysis needs. Learn lattice theory once, and every analysis becomes a variation on the same theme.
+  </div>
+
+  <div class="key-idea" style="margin-top:0.6rem;">
+    <strong>Key Idea:</strong> All three lattices share the same structure: a bottom (⊥), a top (⊤), and a way to combine values (join ⊔). The analysis <em>domain</em> changes, but the <em>math</em> stays the same.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  // Powerset of {d1, d2}
+  const c1=document.getElementById('cS2a').getContext('2d');
+  function drawPowerset(){
+    c1.clearRect(0,0,200,130);
+    const nodes=[{x:100,y:15,l:'{d1,d2}',c:'#38bdf8'},{x:45,y:65,l:'{d1}',c:'#818cf8'},{x:155,y:65,l:'{d2}',c:'#818cf8'},{x:100,y:115,l:'∅',c:'#64748b'}];
+    const edges=[[3,1],[3,2],[1,0],[2,0]];
+    edges.forEach(([a,b])=>{c1.beginPath();c1.moveTo(nodes[a].x,nodes[a].y);c1.lineTo(nodes[b].x,nodes[b].y);c1.strokeStyle='#475569';c1.lineWidth=1.5;c1.stroke();});
+    nodes.forEach(n=>{c1.beginPath();c1.arc(n.x,n.y,4,0,Math.PI*2);c1.fillStyle=n.c;c1.fill();c1.fillStyle=n.c;c1.font='bold 10px monospace';c1.textAlign='center';c1.fillText(n.l,n.x,n.y-10);});
+  }
+  drawPowerset();
+
+  // Sign lattice
+  const c2=document.getElementById('cS2b').getContext('2d');
+  function drawSign(){
+    c2.clearRect(0,0,200,130);
+    const nodes=[{x:100,y:15,l:'⊤',c:'#22c55e'},{x:40,y:65,l:'Neg',c:'#ef4444'},{x:100,y:65,l:'Zero',c:'#f59e0b'},{x:160,y:65,l:'Pos',c:'#22c55e'},{x:100,y:115,l:'⊥',c:'#64748b'}];
+    const edges=[[4,1],[4,2],[4,3],[1,0],[2,0],[3,0]];
+    edges.forEach(([a,b])=>{c2.beginPath();c2.moveTo(nodes[a].x,nodes[a].y);c2.lineTo(nodes[b].x,nodes[b].y);c2.strokeStyle='#475569';c2.lineWidth=1.5;c2.stroke();});
+    nodes.forEach(n=>{c2.beginPath();c2.arc(n.x,n.y,4,0,Math.PI*2);c2.fillStyle=n.c;c2.fill();c2.fillStyle=n.c;c2.font='bold 10px monospace';c2.textAlign='center';c2.fillText(n.l,n.x,n.y-10);});
+  }
+  drawSign();
+
+  // Taint lattice
+  const c3=document.getElementById('cS2c').getContext('2d');
+  function drawTaint(){
+    c3.clearRect(0,0,200,130);
+    const nodes=[{x:100,y:15,l:'⊤',c:'#f472b6'},{x:55,y:65,l:'Clean',c:'#22c55e'},{x:145,y:65,l:'Tainted',c:'#ef4444'},{x:100,y:115,l:'⊥',c:'#64748b'}];
+    const edges=[[3,1],[3,2],[1,0],[2,0]];
+    edges.forEach(([a,b])=>{c3.beginPath();c3.moveTo(nodes[a].x,nodes[a].y);c3.lineTo(nodes[b].x,nodes[b].y);c3.strokeStyle='#475569';c3.lineWidth=1.5;c3.stroke();});
+    nodes.forEach(n=>{c3.beginPath();c3.arc(n.x,n.y,4,0,Math.PI*2);c3.fillStyle=n.c;c3.fill();c3.fillStyle=n.c;c3.font='bold 10px monospace';c3.textAlign='center';c3.fillText(n.l,n.x,n.y-10);});
+  }
+  drawTaint();
+})();
+</script>
+
+<!-- ==================== SLIDE s3: PARTIAL ORDERS ==================== -->
+<div class="slide" id="s3">
+  <h2>Partial Orders</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">A <strong>partial order</strong> is a relation ≤ on a set that satisfies three properties. Click each property to see it visualized.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS3" width="420" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div id="s3Props" style="display:flex;flex-direction:column;gap:0.6rem;">
+        <div id="s3P1" onclick="s3Show(0)" style="background:#1e293b;border-radius:10px;padding:0.8rem;cursor:pointer;border:2px solid #334155;transition:all 0.2s;">
+          <div style="font-weight:600;color:#38bdf8;font-size:0.9rem;">1. Reflexive</div>
+          <div style="font-size:0.8rem;color:#94a3b8;margin-top:0.3rem;">∀ a: a ≤ a</div>
+          <div id="s3E1" style="display:none;margin-top:0.4rem;font-size:0.78rem;color:#cbd5e1;">Every element is related to itself. On the diagram: every node has an implicit self-loop.</div>
+        </div>
+        <div id="s3P2" onclick="s3Show(1)" style="background:#1e293b;border-radius:10px;padding:0.8rem;cursor:pointer;border:2px solid #334155;transition:all 0.2s;">
+          <div style="font-weight:600;color:#a78bfa;font-size:0.9rem;">2. Antisymmetric</div>
+          <div style="font-size:0.8rem;color:#94a3b8;margin-top:0.3rem;">a ≤ b ∧ b ≤ a → a = b</div>
+          <div id="s3E2" style="display:none;margin-top:0.4rem;font-size:0.78rem;color:#cbd5e1;">If a ≤ b and b ≤ a, then a and b must be the same element. No "cycles" between distinct elements.</div>
+        </div>
+        <div id="s3P3" onclick="s3Show(2)" style="background:#1e293b;border-radius:10px;padding:0.8rem;cursor:pointer;border:2px solid #334155;transition:all 0.2s;">
+          <div style="font-weight:600;color:#f472b6;font-size:0.9rem;">3. Transitive</div>
+          <div style="font-size:0.8rem;color:#94a3b8;margin-top:0.3rem;">a ≤ b ∧ b ≤ c → a ≤ c</div>
+          <div id="s3E3" style="display:none;margin-top:0.4rem;font-size:0.78rem;color:#cbd5e1;">If a ≤ b and b ≤ c, then a ≤ c. Chains propagate upward. This is why Hasse diagrams only show <em>direct</em> edges.</div>
+        </div>
+      </div>
+
+      <div class="warning" style="margin-top:0.8rem;">
+        <strong>"Partial"</strong> means not every pair is comparable. In the subset lattice, {a} and {b} are <em>incomparable</em> — neither {a} ⊆ {b} nor {b} ⊆ {a}. This is unlike ≤ on integers, which is a <em>total</em> order.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS3');
+  const ctx=canvas.getContext('2d');
+  // Powerset of {a,b,c}
+  const nodes=[
+    {x:210,y:30,l:'{a,b,c}',c:'#f472b6'},
+    {x:80,y:110,l:'{a,b}',c:'#818cf8'},{x:210,y:110,l:'{a,c}',c:'#818cf8'},{x:340,y:110,l:'{b,c}',c:'#818cf8'},
+    {x:80,y:200,l:'{a}',c:'#38bdf8'},{x:210,y:200,l:'{b}',c:'#38bdf8'},{x:340,y:200,l:'{c}',c:'#38bdf8'},
+    {x:210,y:280,l:'∅',c:'#64748b'}
+  ];
+  const edges=[[7,4],[7,5],[7,6],[4,1],[4,2],[5,1],[5,3],[6,2],[6,3],[1,0],[2,0],[3,0]];
+  let highlight=-1;
+
+  function draw(){
+    ctx.clearRect(0,0,420,320);
+    // Edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+
+    // Highlight based on property
+    if(highlight===0){
+      // Reflexive: highlight self-loops on all nodes
+      nodes.forEach(n=>{
+        ctx.beginPath();ctx.arc(n.x,n.y,28,0,Math.PI*2);
+        ctx.strokeStyle='#38bdf844';ctx.lineWidth=3;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
+      });
+    } else if(highlight===1){
+      // Antisymmetric: highlight two incomparable elements
+      [4,6].forEach(i=>{
+        ctx.beginPath();ctx.arc(nodes[i].x,nodes[i].y,26,0,Math.PI*2);
+        ctx.strokeStyle='#a78bfa88';ctx.lineWidth=3;ctx.stroke();
+      });
+      ctx.fillStyle='#a78bfa';ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText('{a} ⊄ {c} and {c} ⊄ {a}',210,240);
+      ctx.fillText('→ incomparable (OK!)',210,255);
+    } else if(highlight===2){
+      // Transitive: highlight a chain ∅ → {a} → {a,b} → {a,b,c}
+      const chain=[7,4,1,0];
+      for(let i=0;i<chain.length-1;i++){
+        const a=nodes[chain[i]], b=nodes[chain[i+1]];
+        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+        ctx.strokeStyle='#f472b6';ctx.lineWidth=3;ctx.stroke();
+      }
+      chain.forEach(i=>{
+        ctx.beginPath();ctx.arc(nodes[i].x,nodes[i].y,26,0,Math.PI*2);
+        ctx.strokeStyle='#f472b688';ctx.lineWidth=2;ctx.stroke();
+      });
+      ctx.fillStyle='#f472b6';ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText('∅ ⊆ {a} ⊆ {a,b} ⊆ {a,b,c}',210,305);
+    }
+
+    // Nodes
+    nodes.forEach((n)=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,18,0,Math.PI*2);
+      ctx.fillStyle='#1e293b';ctx.fill();
+      ctx.strokeStyle=n.c;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=n.c;ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+  }
+
+  window.s3Show=function(idx){
+    highlight=idx;
+    for(let i=1;i<=3;i++){
+      document.getElementById('s3P'+i).style.borderColor=(i-1===idx)?['#38bdf8','#a78bfa','#f472b6'][idx]:'#334155';
+      document.getElementById('s3E'+i).style.display=(i-1===idx)?'block':'none';
+    }
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s3').classList.contains('active')){highlight=-1;draw();for(let i=1;i<=3;i++){document.getElementById('s3P'+i).style.borderColor='#334155';document.getElementById('s3E'+i).style.display='none';}}});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s4: HASSE DIAGRAMS ==================== -->
+<div class="slide" id="s4">
+  <h2>Hasse Diagrams</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">A <strong>Hasse diagram</strong> draws only the <em>direct covers</em> — no transitive edges, no self-loops. Click a lattice to explore it.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" id="s4Btn0" onclick="s4Switch(0)">Divisors of 12</button>
+        <button class="btn btn-sm btn-secondary" id="s4Btn1" onclick="s4Switch(1)">Powerset {a,b}</button>
+        <button class="btn btn-sm btn-secondary" id="s4Btn2" onclick="s4Switch(2)">Sign Domain</button>
+      </div>
+      <canvas id="cS4" width="420" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;" onclick="s4Click(event)"></canvas>
+    </div>
+    <div>
+      <div id="s4Info" style="background:#1e293b;border-radius:10px;padding:1rem;font-size:0.82rem;color:#cbd5e1;min-height:120px;"></div>
+
+      <div class="code-block" style="margin-top:0.8rem;font-size:0.75rem;">
+        <div class="code-content">
+          <div class="line" style="color:#94a3b8;">(* Hasse diagram rules *)</div>
+          <div class="line">1. Draw nodes for each element</div>
+          <div class="line">2. Draw edge a → b if a ≤ b</div>
+          <div class="line">   and NO c with a ≤ c ≤ b</div>
+          <div class="line">3. Place smaller elements lower</div>
+          <div class="line">4. Omit self-loops (reflexive)</div>
+          <div class="line">5. Omit transitive edges</div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.6rem;">
+        <strong>Key Idea:</strong> A Hasse diagram makes the lattice <em>readable</em>. You can recover all ≤ relationships by following paths upward (transitivity does the rest).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS4');
+  const ctx=canvas.getContext('2d');
+  let currentLattice=0, selectedNode=-1;
+
+  const lattices=[
+    { // Divisors of 12
+      name:'Divisors of 12',
+      order:'Divisibility: a | b',
+      nodes:[
+        {x:210,y:30,l:'12',c:'#f472b6'},
+        {x:110,y:110,l:'4',c:'#a78bfa'},{x:210,y:110,l:'6',c:'#a78bfa'},
+        {x:110,y:200,l:'2',c:'#38bdf8'},{x:310,y:200,l:'3',c:'#38bdf8'},
+        {x:210,y:280,l:'1',c:'#64748b'}
+      ],
+      edges:[[5,3],[5,4],[3,1],[3,2],[4,2],[1,0],[2,0]],
+      info:'<strong>Divisibility lattice</strong><br>Order: a divides b (a | b)<br>Bottom: 1 (divides everything)<br>Top: 12 (divisible by all)<br>Height: 3<br><br>Example: 2 | 4 | 12, so 2 ≤ 4 ≤ 12<br>Note: 4 and 6 are <em>incomparable</em> (4∤6 and 6∤4)'
+    },
+    { // Powerset {a,b}
+      name:'Powerset of {a,b}',
+      order:'Subset inclusion: A ⊆ B',
+      nodes:[
+        {x:210,y:30,l:'{a,b}',c:'#f472b6'},
+        {x:110,y:160,l:'{a}',c:'#38bdf8'},{x:310,y:160,l:'{b}',c:'#38bdf8'},
+        {x:210,y:280,l:'∅',c:'#64748b'}
+      ],
+      edges:[[3,1],[3,2],[1,0],[2,0]],
+      info:'<strong>Powerset lattice</strong><br>Order: subset inclusion (⊆)<br>Bottom: ∅ (empty set)<br>Top: {a,b} (full set)<br>Height: 2<br><br>Join = union: {a} ⊔ {b} = {a,b}<br>Meet = intersection: {a} ⊓ {b} = ∅<br>{a} and {b} are <em>incomparable</em>'
+    },
+    { // Sign domain
+      name:'Sign Domain',
+      order:'Information ordering',
+      nodes:[
+        {x:210,y:30,l:'⊤',c:'#f472b6'},
+        {x:80,y:160,l:'Neg',c:'#ef4444'},{x:210,y:160,l:'Zero',c:'#f59e0b'},{x:340,y:160,l:'Pos',c:'#22c55e'},
+        {x:210,y:280,l:'⊥',c:'#64748b'}
+      ],
+      edges:[[4,1],[4,2],[4,3],[1,0],[2,0],[3,0]],
+      info:'<strong>Sign lattice (flat)</strong><br>Order: information ordering<br>Bottom: ⊥ (no information)<br>Top: ⊤ (contradictory)<br>Height: 2<br><br>Join: Neg ⊔ Pos = ⊤<br>This is a <em>flat</em> lattice — the middle elements are all incomparable to each other.'
+    }
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,420,310);
+    const L=lattices[currentLattice];
+    // Edges
+    L.edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(L.nodes[a].x,L.nodes[a].y);ctx.lineTo(L.nodes[b].x,L.nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // Nodes
+    L.nodes.forEach((n,i)=>{
+      const r=i===selectedNode?24:20;
+      ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);
+      ctx.fillStyle=i===selectedNode?n.c+'44':'#1e293b';ctx.fill();
+      ctx.strokeStyle=i===selectedNode?n.c:'#475569';ctx.lineWidth=i===selectedNode?3:2;ctx.stroke();
+      ctx.fillStyle=i===selectedNode?'#fff':n.c;ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    // Title
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText(L.order,210,305);
+  }
+
+  window.s4Switch=function(idx){
+    currentLattice=idx;selectedNode=-1;
+    ['s4Btn0','s4Btn1','s4Btn2'].forEach((id,i)=>{
+      document.getElementById(id).className='btn btn-sm'+(i===idx?'':' btn-secondary');
+    });
+    document.getElementById('s4Info').innerHTML=lattices[idx].info;
+    draw();
+  };
+
+  window.s4Click=function(e){
+    const rect=canvas.getBoundingClientRect();
+    const sx=420/rect.width;
+    const mx=(e.clientX-rect.left)*sx, my=(e.clientY-rect.top)*sx;
+    const L=lattices[currentLattice];
+    for(let i=0;i<L.nodes.length;i++){
+      const dx=mx-L.nodes[i].x, dy=my-L.nodes[i].y;
+      if(dx*dx+dy*dy<600){
+        selectedNode=i;
+        // Find all elements ≤ this and ≥ this
+        let above=[],below=[];
+        // BFS upward
+        function findAbove(n,visited){
+          L.edges.forEach(([a,b])=>{if(a===n&&!visited.has(b)){visited.add(b);above.push(L.nodes[b].l);findAbove(b,visited);}});
+        }
+        function findBelow(n,visited){
+          L.edges.forEach(([a,b])=>{if(b===n&&!visited.has(a)){visited.add(a);below.push(L.nodes[a].l);findBelow(a,visited);}});
+        }
+        findAbove(i,new Set([i]));findBelow(i,new Set([i]));
+        let info='<strong>Selected: '+L.nodes[i].l+'</strong><br>';
+        info+='<span style="color:#22c55e;">Elements above (≥):</span> '+(above.length?above.join(', '):'none (this is ⊤)')+'<br>';
+        info+='<span style="color:#38bdf8;">Elements below (≤):</span> '+(below.length?below.join(', '):'none (this is ⊥)');
+        document.getElementById('s4Info').innerHTML=info;
+        draw();return;
+      }
+    }
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s4').classList.contains('active')){currentLattice=0;selectedNode=-1;s4Switch(0);}});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  s4Switch(0);
+})();
+</script>
+
+<!-- ==================== SLIDE s5: UPPER & LOWER BOUNDS ==================== -->
+<div class="slide" id="s5">
+  <h2>Upper & Lower Bounds, LUB & GLB</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Select <strong>two elements</strong> on the lattice to see their upper bounds, lower bounds, LUB (join), and GLB (meet).</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS5" width="420" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;" onclick="s5Click(event)"></canvas>
+      <div style="text-align:center;margin-top:0.4rem;font-size:0.78rem;color:#94a3b8;">Click two nodes on the powerset lattice of {a,b,c}</div>
+    </div>
+    <div>
+      <div id="s5Sel" style="background:#1e293b;border-radius:10px;padding:0.6rem;font-size:0.82rem;color:#94a3b8;margin-bottom:0.6rem;">Click two elements to compare them.</div>
+      <div id="s5UB" style="background:#1e293b;border-radius:10px;padding:0.6rem;margin-bottom:0.4rem;font-size:0.82rem;display:none;">
+        <span style="color:#22c55e;font-weight:600;">Upper Bounds:</span> <span id="s5UBList" style="color:#cbd5e1;"></span><br>
+        <span style="color:#22c55e;font-weight:600;">LUB (Join ⊔):</span> <span id="s5LUB" style="color:#fff;font-weight:600;"></span>
+      </div>
+      <div id="s5LB" style="background:#1e293b;border-radius:10px;padding:0.6rem;margin-bottom:0.4rem;font-size:0.82rem;display:none;">
+        <span style="color:#38bdf8;font-weight:600;">Lower Bounds:</span> <span id="s5LBList" style="color:#cbd5e1;"></span><br>
+        <span style="color:#38bdf8;font-weight:600;">GLB (Meet ⊓):</span> <span id="s5GLB" style="color:#fff;font-weight:600;"></span>
+      </div>
+      <div style="margin-top:0.6rem;">
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong>Definitions:</strong><br>
+        <strong>Upper bound</strong> of {a,b}: any u with a ≤ u and b ≤ u<br>
+        <strong>LUB / Join (⊔)</strong>: the <em>least</em> upper bound — smallest u above both<br>
+        <strong>Lower bound</strong> of {a,b}: any l with l ≤ a and l ≤ b<br>
+        <strong>GLB / Meet (⊓)</strong>: the <em>greatest</em> lower bound — largest l below both
+      </div>
+
+      <div class="analogy" style="margin-top:0.6rem;">
+        <strong>Analogy:</strong> Upper bounds are like "common ancestors" in a family tree. The LUB is the <em>most recent</em> common ancestor — the closest one above both.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS5');
+  const ctx=canvas.getContext('2d');
+  // Powerset of {a,b,c}
+  const sets=['∅','{a}','{b}','{c}','{a,b}','{a,c}','{b,c}','{a,b,c}'];
+  const setVals=[[],[0],[1],[2],[0,1],[0,2],[1,2],[0,1,2]]; // internal representation
+  const nodes=[
+    {x:210,y:30,l:sets[7]},{x:80,y:110,l:sets[4]},{x:210,y:110,l:sets[5]},{x:340,y:110,l:sets[6]},
+    {x:80,y:220,l:sets[1]},{x:210,y:220,l:sets[2]},{x:340,y:220,l:sets[3]},{x:210,y:300,l:sets[0]}
+  ];
+  // Map node index to setVals index: node 0→set7, 1→set4, 2→set5, 3→set6, 4→set1, 5→set2, 6→set3, 7→set0
+  const nodeToSet=[7,4,5,6,1,2,3,0];
+  const edges=[[7,4],[7,5],[7,6],[4,1],[4,2],[5,1],[5,3],[6,2],[6,3],[1,0],[2,0],[3,0]];
+
+  let selected=[];
+  let ubNodes=[],lbNodes=[],lubNode=-1,glbNode=-1;
+
+  function isSubset(a,b){ return a.every(x=>b.includes(x)); }
+
+  function compute(){
+    if(selected.length!==2){ubNodes=[];lbNodes=[];lubNode=-1;glbNode=-1;return;}
+    const s1=setVals[nodeToSet[selected[0]]], s2=setVals[nodeToSet[selected[1]]];
+    ubNodes=[]; lbNodes=[];
+    // Find UB: sets that contain both s1 and s2
+    for(let i=0;i<8;i++){
+      const ni=nodes.findIndex((_,j)=>nodeToSet[j]===i);
+      if(isSubset(s1,setVals[i]) && isSubset(s2,setVals[i])) ubNodes.push(ni);
+      if(isSubset(setVals[i],s1) && isSubset(setVals[i],s2)) lbNodes.push(ni);
+    }
+    // LUB = union
+    const union=[...new Set([...s1,...s2])].sort();
+    const lubSetIdx=setVals.findIndex(s=>s.length===union.length&&s.every((v,i)=>v===union[i]));
+    lubNode=nodes.findIndex((_,j)=>nodeToSet[j]===lubSetIdx);
+    // GLB = intersection
+    const inter=s1.filter(x=>s2.includes(x));
+    const glbSetIdx=setVals.findIndex(s=>s.length===inter.length&&s.every((v,i)=>v===inter[i]));
+    glbNode=nodes.findIndex((_,j)=>nodeToSet[j]===glbSetIdx);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,420,340);
+    // Edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#334155';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // UB/LB highlights
+    ubNodes.forEach(i=>{
+      if(i===lubNode) return;
+      ctx.beginPath();ctx.arc(nodes[i].x,nodes[i].y,26,0,Math.PI*2);
+      ctx.strokeStyle='#22c55e44';ctx.lineWidth=3;ctx.stroke();
+    });
+    lbNodes.forEach(i=>{
+      if(i===glbNode) return;
+      ctx.beginPath();ctx.arc(nodes[i].x,nodes[i].y,26,0,Math.PI*2);
+      ctx.strokeStyle='#38bdf844';ctx.lineWidth=3;ctx.stroke();
+    });
+    if(lubNode>=0){
+      ctx.beginPath();ctx.arc(nodes[lubNode].x,nodes[lubNode].y,26,0,Math.PI*2);
+      ctx.fillStyle='#22c55e22';ctx.fill();ctx.strokeStyle='#22c55e';ctx.lineWidth=3;ctx.stroke();
+    }
+    if(glbNode>=0){
+      ctx.beginPath();ctx.arc(nodes[glbNode].x,nodes[glbNode].y,26,0,Math.PI*2);
+      ctx.fillStyle='#38bdf822';ctx.fill();ctx.strokeStyle='#38bdf8';ctx.lineWidth=3;ctx.stroke();
+    }
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const isSel=selected.includes(i);
+      ctx.beginPath();ctx.arc(n.x,n.y,18,0,Math.PI*2);
+      ctx.fillStyle=isSel?'#f59e0b33':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isSel?'#f59e0b':'#475569';ctx.lineWidth=isSel?3:2;ctx.stroke();
+      ctx.fillStyle=isSel?'#f59e0b':'#cbd5e1';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+  }
+
+  window.s5Click=function(e){
+    const rect=canvas.getBoundingClientRect();
+    const sx=420/rect.width;
+    const mx=(e.clientX-rect.left)*sx, my=(e.clientY-rect.top)*sx;
+    for(let i=0;i<nodes.length;i++){
+      const dx=mx-nodes[i].x,dy=my-nodes[i].y;
+      if(dx*dx+dy*dy<500){
+        if(selected.includes(i)){selected=selected.filter(x=>x!==i);}
+        else if(selected.length<2){selected.push(i);}
+        else{selected=[i];}
+        compute();
+        draw();
+        // Update info
+        if(selected.length===2){
+          document.getElementById('s5Sel').innerHTML='Selected: <strong style="color:#f59e0b;">'+nodes[selected[0]].l+'</strong> and <strong style="color:#f59e0b;">'+nodes[selected[1]].l+'</strong>';
+          document.getElementById('s5UB').style.display='block';
+          document.getElementById('s5LB').style.display='block';
+          document.getElementById('s5UBList').textContent=ubNodes.map(i=>nodes[i].l).join(', ');
+          document.getElementById('s5LUB').textContent=lubNode>=0?nodes[lubNode].l:'—';
+          document.getElementById('s5LBList').textContent=lbNodes.map(i=>nodes[i].l).join(', ');
+          document.getElementById('s5GLB').textContent=glbNode>=0?nodes[glbNode].l:'—';
+        } else {
+          document.getElementById('s5Sel').innerHTML='Selected: <strong style="color:#f59e0b;">'+nodes[selected[0]].l+'</strong> — click one more';
+          document.getElementById('s5UB').style.display='none';
+          document.getElementById('s5LB').style.display='none';
+        }
+        return;
+      }
+    }
+  };
+
+  window.s5Reset=function(){
+    selected=[];ubNodes=[];lbNodes=[];lubNode=-1;glbNode=-1;
+    document.getElementById('s5Sel').innerHTML='Click two elements to compare them.';
+    document.getElementById('s5UB').style.display='none';
+    document.getElementById('s5LB').style.display='none';
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s5').classList.contains('active'))s5Reset();});
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s6: JOIN AND MEET ==================== -->
+<div class="slide" id="s6">
+  <h2>Join (⊔) and Meet (⊓)</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The two core operations of a lattice. <strong>Join</strong> combines information (going up), <strong>Meet</strong> finds common information (going down).</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS6" width="420" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;align-items:center;flex-wrap:wrap;">
+        <span style="color:#94a3b8;font-size:0.78rem;">Element A:</span>
+        <select id="s6A" onchange="s6Compute()" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.78rem;">
+          <option value="4">{a}</option><option value="5">{b}</option><option value="6">{c}</option>
+          <option value="1">{a,b}</option><option value="2">{a,c}</option><option value="3">{b,c}</option>
+        </select>
+        <span style="color:#94a3b8;font-size:0.78rem;">Element B:</span>
+        <select id="s6B" onchange="s6Compute()" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.78rem;">
+          <option value="5">{b}</option><option value="4">{a}</option><option value="6">{c}</option>
+          <option value="1">{a,b}</option><option value="2">{a,c}</option><option value="3">{b,c}</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <div id="s6Result" style="background:#1e293b;border-radius:10px;padding:1rem;font-size:0.85rem;color:#cbd5e1;"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.8rem;">
+        <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:0.6rem;">
+          <div style="font-weight:600;color:#22c55e;font-size:0.85rem;">Join ⊔ (LUB)</div>
+          <ul style="font-size:0.75rem;color:#94a3b8;margin-top:0.3rem;padding-left:1rem;">
+            <li>Least upper bound</li>
+            <li>Sets: A ∪ B</li>
+            <li>Merges information</li>
+            <li>Used at CFG merge points</li>
+          </ul>
+        </div>
+        <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);border-radius:10px;padding:0.6rem;">
+          <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Meet ⊓ (GLB)</div>
+          <ul style="font-size:0.75rem;color:#94a3b8;margin-top:0.3rem;padding-left:1rem;">
+            <li>Greatest lower bound</li>
+            <li>Sets: A ∩ B</li>
+            <li>Finds common info</li>
+            <li>Used in must-analyses</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warning" style="margin-top:0.6rem;">
+        <strong>PA Connection:</strong> At a CFG merge point (two branches converge), we <code>join</code> the analysis states. For <em>may</em> analysis (reaching defs): join = union. For <em>must</em> analysis (available exprs): join = intersection.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS6');
+  const ctx=canvas.getContext('2d');
+  // Powerset {a,b,c}
+  const sets=[[],[0],[1],[2],[0,1],[0,2],[1,2],[0,1,2]];
+  const labels=['∅','{a}','{b}','{c}','{a,b}','{a,c}','{b,c}','{a,b,c}'];
+  const nodePos=[
+    {x:210,y:30},{x:80,y:110},{x:210,y:110},{x:340,y:110},
+    {x:80,y:200},{x:210,y:200},{x:340,y:200},{x:210,y:280}
+  ];
+  // nodeIdx→setIdx: 0→7,1→4,2→5,3→6,4→1,5→2,6→3,7→0
+  const n2s=[7,4,5,6,1,2,3,0];
+  const s2n=[7,4,5,6,1,2,3,0]; // setIdx→nodeIdx
+  const edges=[[7,4],[7,5],[7,6],[4,1],[4,2],[5,1],[5,3],[6,2],[6,3],[1,0],[2,0],[3,0]];
+
+  let selA=4,selB=5,joinNode=-1,meetNode=-1;
+
+  function computeJoinMeet(){
+    const sA=sets[n2s[selA]], sB=sets[n2s[selB]];
+    const union=[...new Set([...sA,...sB])].sort((a,b)=>a-b);
+    const inter=sA.filter(x=>sB.includes(x));
+    const joinSetIdx=sets.findIndex(s=>s.length===union.length&&s.every((v,i)=>v===union[i]));
+    const meetSetIdx=sets.findIndex(s=>s.length===inter.length&&s.every((v,i)=>v===inter[i]));
+    joinNode=s2n[joinSetIdx];
+    meetNode=s2n[meetSetIdx];
+
+    document.getElementById('s6Result').innerHTML=
+      '<strong style="color:#f59e0b;">'+labels[n2s[selA]]+'</strong> and <strong style="color:#f59e0b;">'+labels[n2s[selB]]+'</strong><br><br>'+
+      '<span style="color:#22c55e;font-weight:600;">Join ⊔ = '+labels[joinSetIdx]+'</span> (union: go up to LUB)<br>'+
+      '<span style="color:#38bdf8;font-weight:600;">Meet ⊓ = '+labels[meetSetIdx]+'</span> (intersection: go down to GLB)';
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,420,300);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodePos[a].x,nodePos[a].y);ctx.lineTo(nodePos[b].x,nodePos[b].y);
+      ctx.strokeStyle='#334155';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // Highlight join/meet
+    if(joinNode>=0){
+      ctx.beginPath();ctx.arc(nodePos[joinNode].x,nodePos[joinNode].y,26,0,Math.PI*2);
+      ctx.fillStyle='#22c55e22';ctx.fill();ctx.strokeStyle='#22c55e';ctx.lineWidth=3;ctx.stroke();
+    }
+    if(meetNode>=0){
+      ctx.beginPath();ctx.arc(nodePos[meetNode].x,nodePos[meetNode].y,26,0,Math.PI*2);
+      ctx.fillStyle='#38bdf822';ctx.fill();ctx.strokeStyle='#38bdf8';ctx.lineWidth=3;ctx.stroke();
+    }
+    nodePos.forEach((n,i)=>{
+      const isSel=(i===selA||i===selB);
+      ctx.beginPath();ctx.arc(n.x,n.y,18,0,Math.PI*2);
+      ctx.fillStyle=isSel?'#f59e0b33':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isSel?'#f59e0b':'#475569';ctx.lineWidth=isSel?3:2;ctx.stroke();
+      ctx.fillStyle=isSel?'#f59e0b':'#cbd5e1';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[n2s[i]],n.x,n.y);
+    });
+  }
+
+  window.s6Compute=function(){
+    selA=parseInt(document.getElementById('s6A').value);
+    selB=parseInt(document.getElementById('s6B').value);
+    computeJoinMeet();draw();
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s6').classList.contains('active'))s6Compute();});
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  s6Compute();
+})();
+</script>
+
+<!-- ==================== SLIDE s7: TYPES OF LATTICES ==================== -->
+<div class="slide" id="s7">
+  <h2>Types of Lattices</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Not all ordered structures are created equal. Click each type to see what makes it special — and which ones PA needs.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS7" width="420" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <div id="s7T0" onclick="s7Show(0)" style="background:#1e293b;border-radius:8px;padding:0.6rem;cursor:pointer;border:2px solid #334155;">
+          <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Join-Semilattice</div>
+          <div style="font-size:0.75rem;color:#94a3b8;">Has ⊔ (join) for every pair, but not necessarily ⊓ (meet)</div>
+        </div>
+        <div id="s7T1" onclick="s7Show(1)" style="background:#1e293b;border-radius:8px;padding:0.6rem;cursor:pointer;border:2px solid #334155;">
+          <div style="font-weight:600;color:#a78bfa;font-size:0.85rem;">Complete Lattice</div>
+          <div style="font-size:0.75rem;color:#94a3b8;">Has ⊔ and ⊓ for <em>every subset</em>, plus ⊥ and ⊤</div>
+        </div>
+        <div id="s7T2" onclick="s7Show(2)" style="background:#1e293b;border-radius:8px;padding:0.6rem;cursor:pointer;border:2px solid #334155;">
+          <div style="font-weight:600;color:#22c55e;font-size:0.85rem;">Flat Lattice</div>
+          <div style="font-size:0.75rem;color:#94a3b8;">⊥ → incomparable middle → ⊤. Height 2. Sign & taint domains.</div>
+        </div>
+        <div id="s7T3" onclick="s7Show(3)" style="background:#1e293b;border-radius:8px;padding:0.6rem;cursor:pointer;border:2px solid #334155;">
+          <div style="font-weight:600;color:#f59e0b;font-size:0.85rem;">Total Order (Chain)</div>
+          <div style="font-size:0.75rem;color:#94a3b8;">Every pair is comparable: a ≤ b or b ≤ a. Not common in PA.</div>
+        </div>
+      </div>
+      <div id="s7Detail" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;margin-top:0.6rem;font-size:0.8rem;color:#cbd5e1;min-height:60px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS7');
+  const ctx=canvas.getContext('2d');
+  let current=0;
+
+  const types=[
+    { // Join-semilattice (V shape, no bottom meet)
+      nodes:[{x:210,y:30,l:'⊤',c:'#38bdf8'},{x:110,y:130,l:'a',c:'#38bdf8'},{x:310,y:130,l:'b',c:'#38bdf8'},{x:110,y:230,l:'c',c:'#38bdf8'},{x:310,y:230,l:'d',c:'#38bdf8'}],
+      edges:[[3,1],[4,2],[1,0],[2,0]],
+      detail:'<strong>Join-Semilattice:</strong> Every pair has a least upper bound (join ⊔). Used when we only need to merge at CFG merge points. Example: c ⊔ d = ⊤ (via a and b). <br><span style="color:#f59e0b;">Note:</span> c and d have NO greatest lower bound here — this is NOT a complete lattice.'
+    },
+    { // Complete lattice (diamond + extra)
+      nodes:[{x:210,y:30,l:'⊤',c:'#a78bfa'},{x:80,y:110,l:'a',c:'#a78bfa'},{x:210,y:110,l:'b',c:'#a78bfa'},{x:340,y:110,l:'c',c:'#a78bfa'},{x:130,y:200,l:'d',c:'#a78bfa'},{x:290,y:200,l:'e',c:'#a78bfa'},{x:210,y:280,l:'⊥',c:'#a78bfa'}],
+      edges:[[6,4],[6,5],[4,1],[4,2],[5,2],[5,3],[1,0],[2,0],[3,0]],
+      detail:'<strong>Complete Lattice:</strong> Every subset has both a join and a meet. Has a unique ⊥ (bottom) and ⊤ (top). <span style="color:#22c55e;font-weight:600;">This is what PA requires</span> — Knaster-Tarski guarantees fixed points exist on complete lattices.'
+    },
+    { // Flat lattice
+      nodes:[{x:210,y:30,l:'⊤',c:'#22c55e'},{x:70,y:160,l:'Neg',c:'#ef4444'},{x:150,y:160,l:'Zero',c:'#f59e0b'},{x:240,y:160,l:'Pos',c:'#22c55e'},{x:340,y:160,l:'?',c:'#64748b'},{x:210,y:280,l:'⊥',c:'#64748b'}],
+      edges:[[5,1],[5,2],[5,3],[5,4],[1,0],[2,0],[3,0],[4,0]],
+      detail:'<strong>Flat Lattice:</strong> All middle elements are incomparable. Height = 2. Any join of two different middle elements goes straight to ⊤. <br><span style="color:#22c55e;">Used in:</span> Sign domain (M4), taint domain (M5), constant propagation. Simple but effective — guaranteed fast convergence.'
+    },
+    { // Total order (chain)
+      nodes:[{x:210,y:30,l:'4',c:'#f59e0b'},{x:210,y:110,l:'3',c:'#f59e0b'},{x:210,y:190,l:'2',c:'#f59e0b'},{x:210,y:270,l:'1',c:'#f59e0b'}],
+      edges:[[3,2],[2,1],[1,0]],
+      detail:'<strong>Total Order (Chain):</strong> Every pair is comparable — no incomparable elements. Like integers with ≤. <br><span style="color:#f59e0b;">In PA:</span> Chains appear <em>inside</em> lattices (ascending chains during iteration), but analysis domains are usually NOT total orders — they have incomparable elements (that\'s the "partial" in partial order).'
+    }
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,420,320);
+    const t=types[current];
+    t.edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(t.nodes[a].x,t.nodes[a].y);ctx.lineTo(t.nodes[b].x,t.nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    });
+    t.nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=n.c+'33';ctx.fill();ctx.strokeStyle=n.c;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+  }
+
+  window.s7Show=function(idx){
+    current=idx;
+    for(let i=0;i<4;i++){
+      document.getElementById('s7T'+i).style.borderColor=i===idx?types[i].nodes[0].c:'#334155';
+    }
+    document.getElementById('s7Detail').innerHTML=types[idx].detail;
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s7').classList.contains('active'))s7Show(0);});
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  s7Show(0);
+})();
+</script>
+
+<!-- ==================== SLIDE s8: BUILDING LATTICES FOR PA ==================== -->
+<div class="slide" id="s8">
+  <h2>Building Lattices for PA</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Every analysis domain implements the same <strong>LATTICE interface</strong>. Click each implementation to see its Hasse diagram and code.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" id="s8Btn0" onclick="s8Switch(0)">Powerset</button>
+        <button class="btn btn-sm btn-secondary" id="s8Btn1" onclick="s8Switch(1)">Sign</button>
+        <button class="btn btn-sm btn-secondary" id="s8Btn2" onclick="s8Switch(2)">Flat Constant</button>
+      </div>
+      <canvas id="cS8" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.72rem;margin-bottom:0.6rem;">
+        <div class="code-content">
+          <div class="line" style="color:#94a3b8;">(* Module type every domain must implement *)</div>
+          <div class="line" id="s8L0">module type LATTICE = sig</div>
+          <div class="line" id="s8L1">  type t</div>
+          <div class="line" id="s8L2">  val bottom : t</div>
+          <div class="line" id="s8L3">  val top    : t</div>
+          <div class="line" id="s8L4">  val join   : t -> t -> t  (* ⊔ *)</div>
+          <div class="line" id="s8L5">  val meet   : t -> t -> t  (* ⊓ *)</div>
+          <div class="line" id="s8L6">  val leq    : t -> t -> bool</div>
+          <div class="line" id="s8L7">end</div>
+        </div>
+      </div>
+
+      <div id="s8Impl" style="background:#1e293b;border-radius:10px;padding:0.8rem;font-size:0.78rem;color:#cbd5e1;"></div>
+    </div>
+  </div>
+
+  <div class="key-idea" style="margin-top:0.6rem;">
+    <strong>Key Idea:</strong> The LATTICE interface is the contract. Every analysis domain — from simple signs to complex intervals — must provide these 6 operations. This uniformity is what makes the dataflow framework work: the framework doesn't care <em>which</em> lattice, only that it <em>is</em> a lattice.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS8');
+  const ctx=canvas.getContext('2d');
+  let current=0;
+
+  const impls=[
+    { // Powerset
+      nodes:[{x:210,y:25,l:'{d1,d2}',c:'#38bdf8'},{x:100,y:125,l:'{d1}',c:'#818cf8'},{x:320,y:125,l:'{d2}',c:'#818cf8'},{x:210,y:230,l:'∅',c:'#64748b'}],
+      edges:[[3,1],[3,2],[1,0],[2,0]],
+      text:'<strong style="color:#38bdf8;">Powerset Lattice</strong><br>type t = DefSet.t<br>bottom = ∅ (no definitions reach)<br>top = all definitions<br>join = union (may analysis)<br>meet = intersection (must analysis)<br>leq = subset inclusion (⊆)<br><br><em>Height = |defs|. Used in reaching definitions, live variables.</em>'
+    },
+    { // Sign
+      nodes:[{x:210,y:25,l:'⊤',c:'#f472b6'},{x:70,y:130,l:'Neg',c:'#ef4444'},{x:210,y:130,l:'Zero',c:'#f59e0b'},{x:350,y:130,l:'Pos',c:'#22c55e'},{x:210,y:230,l:'⊥',c:'#64748b'}],
+      edges:[[4,1],[4,2],[4,3],[1,0],[2,0],[3,0]],
+      text:'<strong style="color:#22c55e;">Sign Lattice (Flat)</strong><br>type t = Bot | Neg | Zero | Pos | Top<br>bottom = Bot<br>top = Top<br>join: same→same, diff→Top<br>meet: same→same, diff→Bot<br>leq: Bot ≤ everything, x ≤ Top<br><br><em>Height = 2. Flat structure. Fast convergence.</em>'
+    },
+    { // Flat constant
+      nodes:[{x:210,y:25,l:'⊤',c:'#f472b6'},{x:60,y:130,l:'1',c:'#a78bfa'},{x:140,y:130,l:'2',c:'#a78bfa'},{x:220,y:130,l:'3',c:'#a78bfa'},{x:300,y:130,l:'…',c:'#64748b'},{x:370,y:130,l:'n',c:'#a78bfa'},{x:210,y:230,l:'⊥',c:'#64748b'}],
+      edges:[[6,1],[6,2],[6,3],[6,5],[1,0],[2,0],[3,0],[5,0]],
+      text:'<strong style="color:#a78bfa;">Flat Constant Lattice</strong><br>type t = Bot | Const of int | Top<br>bottom = Bot (uninitialized)<br>top = Top (non-constant)<br>join: same const→same, diff→Top<br>meet: same const→same, diff→Bot<br>leq: Bot ≤ everything, x ≤ Top<br><br><em>Infinite width but height = 2. Used in constant propagation.</em>'
+    }
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,420,260);
+    const impl=impls[current];
+    impl.edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(impl.nodes[a].x,impl.nodes[a].y);ctx.lineTo(impl.nodes[b].x,impl.nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    impl.nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=n.c+'33';ctx.fill();ctx.strokeStyle=n.c;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+  }
+
+  window.s8Switch=function(idx){
+    current=idx;
+    ['s8Btn0','s8Btn1','s8Btn2'].forEach((id,i)=>{
+      document.getElementById(id).className='btn btn-sm'+(i===idx?'':' btn-secondary');
+    });
+    document.getElementById('s8Impl').innerHTML=impls[idx].text;
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))s8Switch(0);});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  s8Switch(0);
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: CHALLENGE — JOIN & MEET ==================== -->
+<div class="slide" id="sCA">
+  <h2>🎯 Challenge A: Join & Meet</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Use the Hasse diagram to compute join (⊔) and meet (⊓) for each pair.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cSCA" width="360" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="text-align:center;font-size:0.75rem;color:#94a3b8;margin-top:0.3rem;">Powerset of {a, b, c} — subset ordering (⊆)</div>
+    </div>
+    <div>
+      <div style="display:flex;flex-direction:column;gap:0.6rem;">
+        <!-- Q1 -->
+        <div id="sCA-q1" style="background:#1e293b;border-radius:8px;padding:0.6rem;border:2px solid #334155;">
+          <div style="font-size:0.82rem;color:#f59e0b;font-weight:600;margin-bottom:0.3rem;">Q1: {a} ⊔ {b} = ?</div>
+          <select id="sCA-a1" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="">Choose…</option><option value="ab">{a,b}</option><option value="abc">{a,b,c}</option><option value="e">∅</option><option value="a">{a}</option>
+          </select>
+        </div>
+        <!-- Q2 -->
+        <div id="sCA-q2" style="background:#1e293b;border-radius:8px;padding:0.6rem;border:2px solid #334155;">
+          <div style="font-size:0.82rem;color:#f59e0b;font-weight:600;margin-bottom:0.3rem;">Q2: {a,b} ⊓ {a,c} = ?</div>
+          <select id="sCA-a2" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="">Choose…</option><option value="a">{a}</option><option value="e">∅</option><option value="abc">{a,b,c}</option><option value="ac">{a,c}</option>
+          </select>
+        </div>
+        <!-- Q3 -->
+        <div id="sCA-q3" style="background:#1e293b;border-radius:8px;padding:0.6rem;border:2px solid #334155;">
+          <div style="font-size:0.82rem;color:#f59e0b;font-weight:600;margin-bottom:0.3rem;">Q3: {a,c} ⊔ {b,c} = ?</div>
+          <select id="sCA-a3" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="">Choose…</option><option value="c">{c}</option><option value="abc">{a,b,c}</option><option value="bc">{b,c}</option><option value="ac">{a,c}</option>
+          </select>
+        </div>
+        <!-- Q4: the tricky one -->
+        <div id="sCA-q4" style="background:#1e293b;border-radius:8px;padding:0.6rem;border:2px solid #334155;">
+          <div style="font-size:0.82rem;color:#f59e0b;font-weight:600;margin-bottom:0.3rem;">Q4: {b} ⊓ {c} = ?</div>
+          <select id="sCA-a4" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="">Choose…</option><option value="bc">{b,c}</option><option value="b">{b}</option><option value="e">∅</option><option value="c">{c}</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:0.6rem;">
+        <button class="btn btn-sm" onclick="sCACheck()">Check All</button>
+      </div>
+      <div id="sCA-feedback" style="margin-top:0.5rem;font-size:0.8rem;color:#94a3b8;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  // Draw the powerset lattice
+  const canvas=document.getElementById('cSCA');
+  const ctx=canvas.getContext('2d');
+  const nodes=[
+    {x:180,y:25,l:'{a,b,c}',c:'#f472b6'},
+    {x:70,y:100,l:'{a,b}',c:'#818cf8'},{x:180,y:100,l:'{a,c}',c:'#818cf8'},{x:290,y:100,l:'{b,c}',c:'#818cf8'},
+    {x:70,y:190,l:'{a}',c:'#38bdf8'},{x:180,y:190,l:'{b}',c:'#38bdf8'},{x:290,y:190,l:'{c}',c:'#38bdf8'},
+    {x:180,y:270,l:'∅',c:'#64748b'}
+  ];
+  const edges=[[7,4],[7,5],[7,6],[4,1],[4,2],[5,1],[5,3],[6,2],[6,3],[1,0],[2,0],[3,0]];
+  function draw(){
+    ctx.clearRect(0,0,360,300);
+    edges.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();});
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,18,0,Math.PI*2);ctx.fillStyle='#1e293b';ctx.fill();ctx.strokeStyle=n.c;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=n.c;ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.l,n.x,n.y);
+    });
+  }
+
+  const answers=['ab','a','abc','e'];
+  const explains=[
+    '{a} ⊔ {b} = {a} ∪ {b} = {a,b} — the least set containing both',
+    '{a,b} ⊓ {a,c} = {a,b} ∩ {a,c} = {a} — their common elements',
+    '{a,c} ⊔ {b,c} = {a,c} ∪ {b,c} = {a,b,c} — must go all the way to top!',
+    '{b} ⊓ {c} = {b} ∩ {c} = ∅ — they share nothing, so meet is bottom'
+  ];
+
+  window.sCACheck=function(){
+    let score=0;
+    for(let i=1;i<=4;i++){
+      const val=document.getElementById('sCA-a'+i).value;
+      const el=document.getElementById('sCA-q'+i);
+      if(val===answers[i-1]){el.style.borderColor='#22c55e';score++;}
+      else{el.style.borderColor='#ef4444';}
+    }
+    let html='<strong>'+score+'/4</strong> — ';
+    if(score===4) html+='<span style="color:#22c55e;">Perfect! You understand join and meet on powersets.</span>';
+    else{html+='Review:<br>';explains.forEach((e,i)=>{html+='<span style="color:#f59e0b;">• '+e+'</span><br>';});}
+    document.getElementById('sCA-feedback').innerHTML=html;
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('sCA').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('sCA'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s9: MONOTONE FUNCTIONS ==================== -->
+<div class="slide" id="s9">
+  <h2>Monotone Functions</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">A function f is <strong>monotone</strong> if: x ≤ y implies f(x) ≤ f(y). Order in → order out. This is the key property that makes analysis converge.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS9" width="420" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
+        <button class="btn btn-sm" id="s9Btn0" onclick="s9Switch(0)">Monotone ✓</button>
+        <button class="btn btn-sm btn-secondary" id="s9Btn1" onclick="s9Switch(1)">NOT Monotone ✗</button>
+      </div>
+    </div>
+    <div>
+      <div id="s9Explain" style="background:#1e293b;border-radius:10px;padding:1rem;font-size:0.82rem;color:#cbd5e1;min-height:100px;"></div>
+
+      <div class="code-block" style="font-size:0.72rem;margin-top:0.8rem;">
+        <div class="code-content">
+          <div class="line" style="color:#94a3b8;">(* Monotonicity check *)</div>
+          <div class="line">let is_monotone f lattice =</div>
+          <div class="line">  for_all_pairs lattice (fun x y -></div>
+          <div class="line">    if leq x y then</div>
+          <div class="line">      leq (f x) (f y)  (* must hold! *)</div>
+          <div class="line">    else true)</div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.6rem;">
+        <strong>Why it matters:</strong> Transfer functions in dataflow analysis <em>must</em> be monotone. This guarantees the iterative computation only moves <em>up</em> the lattice — never oscillates — and therefore terminates.
+      </div>
+
+      <div class="warning" style="margin-top:0.4rem;">
+        <strong>Non-monotone = no convergence guarantee.</strong> The iteration could bounce forever between incomparable elements.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS9');
+  const ctx=canvas.getContext('2d');
+  let current=0;
+
+  // 3-element chain: bot < mid < top
+  const lNodes=[{x:80,y:40,l:'⊤'},{x:80,y:155,l:'mid'},{x:80,y:270,l:'⊥'}];
+  const rNodes=[{x:340,y:40,l:'⊤'},{x:340,y:155,l:'mid'},{x:340,y:270,l:'⊥'}];
+  const lEdges=[[2,1],[1,0]];
+
+  const configs=[
+    { // Monotone: ⊥→⊥, mid→mid, ⊤→⊤ (identity)
+      mappings:[[2,2],[1,1],[0,0]],
+      explain:'<strong style="color:#22c55e;">Monotone (identity function)</strong><br><br>f(⊥) = ⊥, f(mid) = mid, f(⊤) = ⊤<br><br>Check: ⊥ ≤ mid → f(⊥) ≤ f(mid)? ⊥ ≤ mid ✓<br>Check: mid ≤ ⊤ → f(mid) ≤ f(⊤)? mid ≤ ⊤ ✓<br>Check: ⊥ ≤ ⊤ → f(⊥) ≤ f(⊤)? ⊥ ≤ ⊤ ✓<br><br>All pairs satisfy the condition. <span style="color:#22c55e;">Order is preserved.</span>'
+    },
+    { // NOT monotone: ⊥→⊤, mid→⊥, ⊤→mid
+      mappings:[[2,0],[1,2],[0,1]],
+      explain:'<strong style="color:#ef4444;">NOT Monotone</strong><br><br>f(⊥) = ⊤, f(mid) = ⊥, f(⊤) = mid<br><br>Check: ⊥ ≤ mid → f(⊥) ≤ f(mid)?<br>⊤ ≤ ⊥? <span style="color:#ef4444;font-weight:600;">NO! ⊤ is NOT ≤ ⊥</span><br><br>Going up in input (⊥→mid) caused going <em>down</em> in output (⊤→⊥). This violates monotonicity. <span style="color:#ef4444;">Iteration would oscillate!</span>'
+    }
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,420,320);
+    const c=configs[current];
+    // Left lattice label
+    ctx.fillStyle='#94a3b8';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText('Input',80,15);ctx.fillText('Output',340,15);
+
+    // Left edges
+    lEdges.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(lNodes[a].x,lNodes[a].y);ctx.lineTo(lNodes[b].x,lNodes[b].y);ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();});
+    // Right edges
+    lEdges.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(rNodes[a].x,rNodes[a].y);ctx.lineTo(rNodes[b].x,rNodes[b].y);ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();});
+
+    // Mapping arrows
+    c.mappings.forEach(([from,to])=>{
+      const fromNode=lNodes[from], toNode=rNodes[to];
+      ctx.beginPath();ctx.moveTo(fromNode.x+25,fromNode.y);ctx.lineTo(toNode.x-25,toNode.y);
+      const isGood=current===0;
+      ctx.strokeStyle=isGood?'#22c55e':'#ef4444';ctx.lineWidth=2;
+      ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+      // Arrowhead
+      const angle=Math.atan2(toNode.y-fromNode.y,toNode.x-25-fromNode.x-25);
+      const ax=toNode.x-25,ay=toNode.y;
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax-10*Math.cos(angle-0.4),ay-10*Math.sin(angle-0.4));ctx.moveTo(ax,ay);ctx.lineTo(ax-10*Math.cos(angle+0.4),ay-10*Math.sin(angle+0.4));
+      ctx.strokeStyle=isGood?'#22c55e':'#ef4444';ctx.lineWidth=2;ctx.stroke();
+    });
+
+    // Nodes
+    const colors=['#f472b6','#a78bfa','#64748b'];
+    [lNodes,rNodes].forEach(ns=>{
+      ns.forEach((n,i)=>{
+        ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+        ctx.fillStyle=colors[i]+'33';ctx.fill();ctx.strokeStyle=colors[i];ctx.lineWidth=2;ctx.stroke();
+        ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(n.l,n.x,n.y);
+      });
+    });
+
+    // f label
+    ctx.fillStyle='#cbd5e1';ctx.font='bold 16px monospace';ctx.textAlign='center';
+    ctx.fillText('f',210,155);
+  }
+
+  window.s9Switch=function(idx){
+    current=idx;
+    ['s9Btn0','s9Btn1'].forEach((id,i)=>{document.getElementById(id).className='btn btn-sm'+(i===idx?'':' btn-secondary');});
+    document.getElementById('s9Explain').innerHTML=configs[idx].explain;
+    draw();
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))s9Switch(0);});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  s9Switch(0);
+})();
+</script>
+
+<!-- ==================== SLIDE s10: WHY MONOTONICITY MATTERS ==================== -->
+<div class="slide" id="s10">
+  <h2>Why Monotonicity Matters</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Compare what happens when we iterate a <strong>monotone</strong> vs <strong>non-monotone</strong> function. Click Auto to see the difference.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <!-- Monotone side -->
+    <div style="border:2px solid #22c55e33;border-radius:12px;padding:0.8rem;">
+      <div style="font-weight:600;color:#22c55e;font-size:0.9rem;margin-bottom:0.4rem;">Monotone: f(x) = x ⊔ {d2}</div>
+      <canvas id="cS10a" width="280" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:8px;"></canvas>
+      <div id="s10aLog" style="background:rgba(0,0,0,0.25);border-radius:6px;padding:0.4rem;font-family:monospace;font-size:0.7rem;color:#94a3b8;margin-top:0.4rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+    <!-- Non-monotone side -->
+    <div style="border:2px solid #ef444433;border-radius:12px;padding:0.8rem;">
+      <div style="font-weight:600;color:#ef4444;font-size:0.9rem;margin-bottom:0.4rem;">Non-monotone: f(x) = if x=∅ then {d1,d2} else ∅</div>
+      <canvas id="cS10b" width="280" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:8px;"></canvas>
+      <div id="s10bLog" style="background:rgba(0,0,0,0.25);border-radius:6px;padding:0.4rem;font-family:monospace;font-size:0.7rem;color:#94a3b8;margin-top:0.4rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:0.5rem;margin-top:0.8rem;justify-content:center;">
+    <button class="btn btn-sm" onclick="s10Step()">Step Both</button>
+    <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+    <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+  </div>
+
+  <div class="key-idea" style="margin-top:0.6rem;">
+    <strong>Monotone:</strong> values only go <em>up</em> (or stay). On a finite lattice, must eventually reach fixed point.<br>
+    <strong>Non-monotone:</strong> values bounce up and down forever — <em>no convergence</em>.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const ca=document.getElementById('cS10a').getContext('2d');
+  const cb=document.getElementById('cS10b').getContext('2d');
+
+  // Lattice: powerset {d1,d2} with 4 elements
+  // 0=∅, 1={d1}, 2={d2}, 3={d1,d2}
+  const labels=['∅','{d1}','{d2}','{d1,d2}'];
+  const posY=[170,100,100,30]; // vertical position by set index
+  const posX=[140,70,210,140];
+
+  let stateA=0, stateB=0, stepCount=0, timer=null;
+
+  function drawLattice(ctx,highlighted,color){
+    ctx.clearRect(0,0,280,200);
+    const edges=[[0,1],[0,2],[1,3],[2,3]];
+    edges.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(posX[a],posY[a]);ctx.lineTo(posX[b],posY[b]);ctx.strokeStyle='#334155';ctx.lineWidth=1.5;ctx.stroke();});
+    [0,1,2,3].forEach(i=>{
+      const isH=i===highlighted;
+      ctx.beginPath();ctx.arc(posX[i],posY[i],isH?22:16,0,Math.PI*2);
+      ctx.fillStyle=isH?color+'44':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isH?color:'#475569';ctx.lineWidth=isH?3:1.5;ctx.stroke();
+      ctx.fillStyle=isH?'#fff':'#94a3b8';ctx.font=(isH?'bold ':'')+' 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(labels[i],posX[i],posY[i]);
+    });
+  }
+
+  function init(){
+    stateA=0;stateB=0;stepCount=0;
+    if(timer){clearInterval(timer);timer=null;}
+    drawLattice(ca,0,'#22c55e');drawLattice(cb,0,'#ef4444');
+    document.getElementById('s10aLog').innerHTML='<div>Start: ∅</div>';
+    document.getElementById('s10bLog').innerHTML='<div>Start: ∅</div>';
+  }
+
+  function fMono(x){
+    // x ⊔ {d2} = union with {d2}
+    const sets=[[],[0],[1],[0,1]];
+    const union=[...new Set([...sets[x],1])].sort();
+    return sets.findIndex(s=>s.length===union.length&&s.every((v,i)=>v===union[i]));
+  }
+
+  function fNonMono(x){
+    return x===0?3:0; // ∅ → {d1,d2}, anything else → ∅
+  }
+
+  window.s10Step=function(){
+    stepCount++;
+    const prevA=stateA,prevB=stateB;
+    stateA=fMono(stateA);
+    stateB=fNonMono(stateB);
+    drawLattice(ca,stateA,'#22c55e');
+    drawLattice(cb,stateB,'#ef4444');
+
+    const logA=document.getElementById('s10aLog');
+    const logB=document.getElementById('s10bLog');
+    if(stateA===prevA){
+      logA.innerHTML+='<div style="color:#22c55e;">Step '+stepCount+': f('+labels[prevA]+') = '+labels[stateA]+' ← FIXED POINT ✓</div>';
+    } else {
+      logA.innerHTML+='<div>Step '+stepCount+': f('+labels[prevA]+') = '+labels[stateA]+' ↑</div>';
+    }
+    logB.innerHTML+='<div style="color:#ef4444;">Step '+stepCount+': f('+labels[prevB]+') = '+labels[stateB]+(stateB<prevB?' ↓ DROPPED!':stateB>prevB?' ↑':' =')+'</div>';
+    logA.scrollTop=logA.scrollHeight;logB.scrollTop=logB.scrollHeight;
+
+    if(stepCount>=8&&timer){clearInterval(timer);timer=null;}
+  };
+
+  window.s10Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{s10Step();if(stepCount>=8){clearInterval(timer);timer=null;}},800);
+  };
+  window.s10Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s11: KNASTER-TARSKI FIXED-POINT THEOREM ==================== -->
+<div class="slide" id="s11">
+  <h2>Knaster-Tarski Fixed-Point Theorem</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The theoretical foundation: <em>every monotone function on a complete lattice has a least fixed point</em>.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS11" width="420" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;font-size:0.82rem;color:#cbd5e1;margin-bottom:0.6rem;">
+        <strong style="color:#a78bfa;">Theorem (Knaster-Tarski):</strong><br>
+        Let (L, ≤) be a complete lattice and f : L → L a monotone function.<br>
+        Then f has a <strong>least fixed point</strong>:<br>
+        <div style="text-align:center;margin:0.5rem 0;font-size:1rem;color:#f59e0b;">lfp(f) = ⊔ { x ∈ L | x ≤ f(x) }</div>
+      </div>
+
+      <div class="code-block" style="font-size:0.72rem;">
+        <div class="code-content">
+          <div class="line" id="s11L0" style="color:#94a3b8;">(* Compute least fixed point *)</div>
+          <div class="line" id="s11L1">let rec lfp f x =</div>
+          <div class="line" id="s11L2">  let x' = f x in</div>
+          <div class="line" id="s11L3">  if leq x' x then x  (* fixed! *)</div>
+          <div class="line" id="s11L4">  else lfp f x'        (* keep going *)</div>
+          <div class="line" id="s11L5"></div>
+          <div class="line" id="s11L6">let result = lfp f bottom</div>
+        </div>
+      </div>
+
+      <div id="s11Status" style="margin-top:0.6rem;font-size:0.82rem;color:#94a3b8;"></div>
+
+      <div class="analogy" style="margin-top:0.5rem;">
+        <strong>Analogy:</strong> Like filling a glass with water — it only goes up, and eventually overflows (reaches a level where adding more doesn't change anything). That stable level is the fixed point.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS11');
+  const ctx=canvas.getContext('2d');
+
+  // 5-element lattice: ⊥, a, b, c, ⊤
+  // ⊥ < a < c < ⊤, ⊥ < b < c < ⊤
+  const nodes=[
+    {x:210,y:30,l:'⊤',c:'#f472b6'},
+    {x:210,y:110,l:'c',c:'#a78bfa'},
+    {x:110,y:190,l:'a',c:'#38bdf8'},
+    {x:310,y:190,l:'b',c:'#38bdf8'},
+    {x:210,y:270,l:'⊥',c:'#64748b'}
+  ];
+  const edges=[[4,2],[4,3],[2,1],[3,1],[1,0]];
+
+  // Monotone function: f(⊥)=a, f(a)=c, f(b)=c, f(c)=c, f(⊤)=⊤
+  // lfp starting from ⊥: ⊥ → a → c → c (fixed point!)
+  const fMap={4:2, 2:1, 3:1, 1:1, 0:0}; // node index mapping
+  const fLabels={'⊥':'a','a':'c','b':'c','c':'c','⊤':'⊤'};
+
+  const iterSteps=[4,2,1,1]; // ⊥ → a → c → c (fixed)
+  let stepIdx=0, timer=null;
+  let trail=[];
+
+  function draw(){
+    ctx.clearRect(0,0,420,310);
+    // Edges
+    edges.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);ctx.strokeStyle='#334155';ctx.lineWidth=1.5;ctx.stroke();});
+
+    // Trail path
+    for(let i=0;i<trail.length-1;i++){
+      const a=nodes[trail[i]],b=nodes[trail[i+1]];
+      ctx.beginPath();ctx.moveTo(a.x+25,a.y);ctx.lineTo(b.x+25,b.y);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=3;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+    }
+
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const isCurrent=i===iterSteps[stepIdx];
+      const isFixed=stepIdx>=2&&i===1; // c is the fixed point
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isCurrent?'#f59e0b33':isFixed?'#22c55e22':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isCurrent?'#f59e0b':isFixed?'#22c55e':n.c;ctx.lineWidth=isCurrent?3:2;ctx.stroke();
+      ctx.fillStyle=isCurrent?'#fff':n.c;ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+
+    // Step counter
+    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='left';
+    ctx.fillText('Iteration: '+stepIdx,15,20);
+  }
+
+  function highlightCode(){
+    for(let i=0;i<=6;i++){const el=document.getElementById('s11L'+i);if(el)el.classList.remove('active');}
+    if(stepIdx===0) document.getElementById('s11L6').classList.add('active');
+    else if(stepIdx<iterSteps.length-1){document.getElementById('s11L2').classList.add('active');document.getElementById('s11L4').classList.add('active');}
+    else{document.getElementById('s11L2').classList.add('active');document.getElementById('s11L3').classList.add('active');}
+  }
+
+  function init(){
+    stepIdx=0;trail=[iterSteps[0]];if(timer){clearInterval(timer);timer=null;}
+    draw();highlightCode();
+    document.getElementById('s11Status').innerHTML='Start at ⊥. Apply f repeatedly until stable.';
+  }
+
+  window.s11Step=function(){
+    if(stepIdx>=iterSteps.length-1)return;
+    stepIdx++;
+    trail.push(iterSteps[stepIdx]);
+    draw();highlightCode();
+    const prev=nodes[iterSteps[stepIdx-1]].l, curr=nodes[iterSteps[stepIdx]].l;
+    if(iterSteps[stepIdx]===iterSteps[stepIdx-1]){
+      document.getElementById('s11Status').innerHTML='<span style="color:#22c55e;font-weight:600;">f('+prev+') = '+curr+' — FIXED POINT FOUND! lfp(f) = c</span>';
+    } else {
+      document.getElementById('s11Status').innerHTML='f('+prev+') = '+curr+' — ascending, keep iterating...';
+    }
+  };
+  window.s11Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=iterSteps.length-1){clearInterval(timer);timer=null;return;}s11Step();},1000);
+  };
+  window.s11Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s12: KLEENE ITERATION ==================== -->
+<div class="slide" id="s12">
+  <h2>Kleene Iteration</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The <strong>practical algorithm</strong> for computing the least fixed point. Start at ⊥, apply f, repeat until nothing changes.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.4rem;">Ascending Chain on the Lattice:</div>
+      <canvas id="cS12" width="420" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
+        <button class="btn btn-sm" onclick="s12Step()">Step</button>
+        <button class="btn btn-sm" onclick="s12Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+      <div id="s12Chain" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;margin-top:0.5rem;text-align:center;"></div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.72rem;">
+        <div class="code-content">
+          <div class="line" id="s12L0" style="color:#94a3b8;">(* Kleene iteration *)</div>
+          <div class="line" id="s12L1">let kleene f =</div>
+          <div class="line" id="s12L2">  let x = ref bottom in</div>
+          <div class="line" id="s12L3">  let changed = ref true in</div>
+          <div class="line" id="s12L4">  while !changed do</div>
+          <div class="line" id="s12L5">    let x' = f !x in</div>
+          <div class="line" id="s12L6">    if leq x' !x then</div>
+          <div class="line" id="s12L7">      changed := false</div>
+          <div class="line" id="s12L8">    else</div>
+          <div class="line" id="s12L9">      x := x'</div>
+          <div class="line" id="s12L10">  done;</div>
+          <div class="line" id="s12L11">  !x</div>
+        </div>
+      </div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.6rem;">
+        <div style="font-weight:600;color:#a78bfa;font-size:0.85rem;margin-bottom:0.4rem;">The Kleene Chain:</div>
+        <div style="font-size:0.82rem;color:#cbd5e1;">
+          ⊥ ≤ f(⊥) ≤ f²(⊥) ≤ f³(⊥) ≤ … ≤ fⁿ(⊥) = fⁿ⁺¹(⊥)
+        </div>
+        <div style="font-size:0.78rem;color:#94a3b8;margin-top:0.3rem;">
+          Each application can only go <em>up</em> (monotonicity).<br>
+          On a finite lattice, this chain is bounded by the lattice height.<br>
+          <strong style="color:#f59e0b;">Max iterations = height(L)</strong>
+        </div>
+      </div>
+
+      <div id="s12Status" style="margin-top:0.5rem;font-size:0.82rem;color:#94a3b8;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS12');
+  const ctx=canvas.getContext('2d');
+
+  // Visualize as a horizontal chain of lattice elements
+  // Powerset {d1,d2,d3}: f adds one element per step
+  // ∅ → {d1} → {d1,d2} → {d1,d2,d3} → {d1,d2,d3} (fixed)
+  const chainLabels=['∅','{d1}','{d1,d2}','{d1,d2,d3}','{d1,d2,d3}'];
+  const chainColors=['#64748b','#38bdf8','#a78bfa','#f472b6','#22c55e'];
+  const chainY=[170,130,80,30,30]; // vertical position (going up = ascending)
+  let stepIdx=0, timer=null;
+
+  function draw(){
+    ctx.clearRect(0,0,420,200);
+    // Grid lines
+    ctx.strokeStyle='#1e293b';ctx.lineWidth=1;
+    for(let y=30;y<=170;y+=35){ctx.beginPath();ctx.moveTo(20,y);ctx.lineTo(400,y);ctx.stroke();}
+
+    // Y-axis label
+    ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='right';
+    ctx.fillText('⊤',18,35);ctx.fillText('⊥',18,175);
+
+    // Chain elements drawn so far
+    for(let i=0;i<=stepIdx&&i<chainLabels.length;i++){
+      const x=60+i*80;
+      // Connect to previous
+      if(i>0){
+        const px=60+(i-1)*80;
+        ctx.beginPath();ctx.moveTo(px,chainY[i-1]);ctx.lineTo(x,chainY[i]);
+        ctx.strokeStyle=chainColors[i];ctx.lineWidth=2;ctx.stroke();
+      }
+      ctx.beginPath();ctx.arc(x,chainY[i],16,0,Math.PI*2);
+      const isCurrent=i===stepIdx;
+      const isFixed=i>=3;
+      ctx.fillStyle=isFixed?'#22c55e33':isCurrent?chainColors[i]+'44':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isFixed?'#22c55e':chainColors[i];ctx.lineWidth=isCurrent?3:2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(chainLabels[i],x,chainY[i]);
+      // Iteration label below
+      ctx.fillStyle='#64748b';ctx.font='9px monospace';
+      ctx.fillText('f'+(i===0?'⁰':i===1?'¹':i===2?'²':i===3?'³':'⁴'),x,190);
+    }
+  }
+
+  function highlightCode(){
+    for(let i=0;i<=11;i++){const el=document.getElementById('s12L'+i);if(el)el.classList.remove('active');}
+    if(stepIdx===0){document.getElementById('s12L2').classList.add('active');}
+    else if(stepIdx<chainLabels.length-1){document.getElementById('s12L5').classList.add('active');document.getElementById('s12L9').classList.add('active');}
+    else{document.getElementById('s12L6').classList.add('active');document.getElementById('s12L7').classList.add('active');}
+  }
+
+  function init(){
+    stepIdx=0;if(timer){clearInterval(timer);timer=null;}
+    draw();highlightCode();
+    document.getElementById('s12Chain').innerHTML='⊥';
+    document.getElementById('s12Status').innerHTML='Start at ⊥ (bottom). Apply f to build the ascending chain.';
+  }
+
+  window.s12Step=function(){
+    if(stepIdx>=chainLabels.length-1)return;
+    stepIdx++;draw();highlightCode();
+    const labels=[];for(let i=0;i<=stepIdx;i++)labels.push(chainLabels[i]);
+    document.getElementById('s12Chain').innerHTML=labels.join(' <span style="color:#f59e0b;">≤</span> ');
+    if(stepIdx>=chainLabels.length-1){
+      document.getElementById('s12Status').innerHTML='<span style="color:#22c55e;font-weight:600;">Fixed point! f('+chainLabels[stepIdx-1]+') = '+chainLabels[stepIdx]+' — no change. Done in '+(stepIdx)+' iterations (height = 3).</span>';
+    } else {
+      document.getElementById('s12Status').innerHTML='f('+chainLabels[stepIdx-1]+') = '+chainLabels[stepIdx]+' — still ascending...';
+    }
+  };
+  window.s12Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=chainLabels.length-1){clearInterval(timer);timer=null;return;}s12Step();},900);
+  };
+  window.s12Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s13: ASCENDING CHAIN CONDITION ==================== -->
+<div class="slide" id="s13">
+  <h2>Ascending Chain Condition (ACC)</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">ACC guarantees termination: <strong>every ascending chain eventually stabilizes</strong>. The lattice <em>height</em> bounds the max iterations.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS13" width="420" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;" onclick="s13Click(event)"></canvas>
+      <div style="text-align:center;margin-top:0.4rem;font-size:0.78rem;color:#94a3b8;">Click a lattice to see its height and ACC status</div>
+    </div>
+    <div>
+      <div id="s13Info" style="background:#1e293b;border-radius:10px;padding:1rem;font-size:0.82rem;color:#cbd5e1;min-height:140px;"></div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.6rem;">
+        <div style="font-weight:600;color:#f59e0b;font-size:0.85rem;margin-bottom:0.4rem;">ACC Definition:</div>
+        <div style="font-size:0.8rem;color:#cbd5e1;">
+          A lattice satisfies ACC if there is <strong>no infinite strictly ascending chain</strong>:<br>
+          <span style="color:#94a3b8;font-family:monospace;">x₀ < x₁ < x₂ < … (must terminate)</span>
+        </div>
+      </div>
+
+      <div class="warning" style="margin-top:0.5rem;">
+        <strong>Interval domain:</strong> [0,1] → [0,2] → [0,3] → … → [0,∞). This chain never terminates! The interval lattice does NOT satisfy ACC — that's why M4 needs <strong>widening</strong>.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS13');
+  const ctx=canvas.getContext('2d');
+
+  const lattices=[
+    {x:30,y:20,w:110,h:120,name:'Powerset\n{d1,d2}',color:'#38bdf8',
+     info:'<strong style="color:#38bdf8;">Powerset of {d1, d2}</strong><br><span style="color:#22c55e;">Height: 2</span><br>ACC: ✅ Yes (finite lattice)<br>Max iterations: 2<br><br>Longest chain: ∅ < {d1} < {d1,d2}<br><em>Always terminates. No widening needed.</em>'},
+    {x:155,y:20,w:110,h:120,name:'Sign\nDomain',color:'#22c55e',
+     info:'<strong style="color:#22c55e;">Sign Domain</strong><br><span style="color:#22c55e;">Height: 2</span><br>ACC: ✅ Yes (finite lattice)<br>Max iterations: 2<br><br>Longest chain: ⊥ < Pos < ⊤<br><em>Flat lattice = very fast convergence.</em>'},
+    {x:280,y:20,w:110,h:120,name:'Flat\nConstant',color:'#a78bfa',
+     info:'<strong style="color:#a78bfa;">Flat Constant Lattice</strong><br><span style="color:#22c55e;">Height: 2</span><br>ACC: ✅ Yes (height is finite)<br>Max iterations: 2<br><br>Longest chain: ⊥ < Const(42) < ⊤<br><em>Infinite width but finite height — ACC holds!</em>'},
+    {x:30,y:170,w:170,h:120,name:'Powerset of\n{d1,...,d100}',color:'#f59e0b',
+     info:'<strong style="color:#f59e0b;">Powerset of 100 definitions</strong><br><span style="color:#f59e0b;">Height: 100</span><br>ACC: ✅ Yes (finite)<br>Max iterations: 100<br><br>Longest chain: ∅ < {d1} < {d1,d2} < … < {d1,…,d100}<br><em>Terminates, but may be slow for large programs. Still no widening.</em>'},
+    {x:220,y:170,w:170,h:120,name:'Interval\nDomain',color:'#ef4444',
+     info:'<strong style="color:#ef4444;">Interval Domain</strong><br><span style="color:#ef4444;">Height: ∞</span><br>ACC: ❌ NO!<br><br>Chain: [0,0] < [0,1] < [0,2] < [0,3] < … (never stops!)<br><br><strong style="color:#f59e0b;">This is why we need WIDENING.</strong><br>Widening forces the chain to jump to a stable point, sacrificing precision for termination.'}
+  ];
+  let selected=-1;
+
+  function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
+
+  function draw(){
+    ctx.clearRect(0,0,420,310);
+    lattices.forEach((l,i)=>{
+      ctx.fillStyle=i===selected?l.color+'33':'#1e293b';
+      ctx.strokeStyle=i===selected?l.color:'#475569';
+      ctx.lineWidth=i===selected?3:1.5;
+      roundRect(ctx,l.x,l.y,l.w,l.h,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle=i===selected?'#fff':'#cbd5e1';
+      ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      const lines=l.name.split('\n');
+      lines.forEach((ln,li)=>{ctx.fillText(ln,l.x+l.w/2,l.y+l.h/2+(li-(lines.length-1)/2)*16);});
+    });
+  }
+
+  window.s13Click=function(e){
+    const rect=canvas.getBoundingClientRect();
+    const sx=420/rect.width;
+    const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sx;
+    for(let i=0;i<lattices.length;i++){
+      const l=lattices[i];
+      if(mx>=l.x&&mx<=l.x+l.w&&my>=l.y&&my<=l.y+l.h){
+        selected=i;draw();
+        document.getElementById('s13Info').innerHTML=l.info;
+        return;
+      }
+    }
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active')){selected=-1;draw();document.getElementById('s13Info').innerHTML='<span style="color:#94a3b8;font-style:italic;">Click a lattice to see its height and ACC status.</span>';}});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  draw();
+  document.getElementById('s13Info').innerHTML='<span style="color:#94a3b8;font-style:italic;">Click a lattice to see its height and ACC status.</span>';
+})();
+</script>
+
+<!-- ==================== SLIDE s14: CONVERGENCE VISUALIZATION ==================== -->
+<div class="slide" id="s14">
+  <h2>Convergence Visualization</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Watch Kleene iteration converge on different lattices. Pick a domain and transfer function, then observe the ascending chain.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" id="s14D0" onclick="s14Switch(0)">Sign Domain</button>
+        <button class="btn btn-sm btn-secondary" id="s14D1" onclick="s14Switch(1)">Powerset {a,b,c}</button>
+        <button class="btn btn-sm btn-secondary" id="s14D2" onclick="s14Switch(2)">Interval (no widen)</button>
+      </div>
+      <canvas id="cS14" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;align-items:center;">
+        <button class="btn btn-sm" onclick="s14Step()">Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+        <span id="s14Counter" style="margin-left:auto;font-family:monospace;font-size:0.78rem;color:#94a3b8;">Iteration: 0</span>
+      </div>
+    </div>
+    <div>
+      <div id="s14Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;color:#94a3b8;max-height:200px;overflow-y:auto;"></div>
+
+      <div id="s14Verdict" style="margin-top:0.6rem;font-size:0.85rem;font-weight:600;text-align:center;"></div>
+
+      <div class="key-idea" style="margin-top:0.6rem;">
+        <strong>Observe:</strong> Sign converges in ≤2 steps (height 2). Powerset converges in ≤3 steps (height 3). Interval <em>never</em> converges without widening — the upper bound keeps growing!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS14');
+  const ctx=canvas.getContext('2d');
+  let current=0, stepIdx=0, timer=null;
+
+  const domains=[
+    { // Sign: ⊥ → Zero → Zero (fixed)
+      name:'Sign Domain',
+      height:2,
+      steps:['⊥','Zero','Zero'],
+      colors:['#64748b','#f59e0b','#22c55e'],
+      yPos:[220,130,130],
+      converges:true,
+      transfer:'f(x) = x ⊔ Zero',
+      maxDisplay:3
+    },
+    { // Powerset {a,b,c}: ∅ → {a} → {a,b} → {a,b,c} → {a,b,c} (fixed)
+      name:'Powerset {a,b,c}',
+      height:3,
+      steps:['∅','{a}','{a,b}','{a,b,c}','{a,b,c}'],
+      colors:['#64748b','#38bdf8','#a78bfa','#f472b6','#22c55e'],
+      yPos:[220,175,120,50,50],
+      converges:true,
+      transfer:'f(x) = x ∪ {next element}',
+      maxDisplay:5
+    },
+    { // Interval: [0,0] → [0,1] → [0,2] → ... (diverges!)
+      name:'Interval (NO widening)',
+      height:Infinity,
+      steps:['[0,0]','[0,1]','[0,2]','[0,3]','[0,4]','[0,5]','[0,6]','[0,7]','[0,…]'],
+      colors:['#64748b','#38bdf8','#a78bfa','#f59e0b','#ef4444','#ef4444','#ef4444','#ef4444','#ef4444'],
+      yPos:[220,195,170,145,120,95,70,45,20],
+      converges:false,
+      transfer:'f([a,b]) = [a, b+1]',
+      maxDisplay:9
+    }
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,420,260);
+    const d=domains[current];
+    // Y-axis
+    ctx.strokeStyle='#1e293b';ctx.lineWidth=1;
+    for(let y=20;y<=220;y+=40){ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(400,y);ctx.stroke();}
+    ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='right';
+    ctx.fillText('⊤',25,25);ctx.fillText('⊥',25,225);
+
+    // Draw chain so far
+    const maxI=Math.min(stepIdx,d.steps.length-1);
+    for(let i=0;i<=maxI;i++){
+      const x=50+i*42;
+      if(i>0){
+        const px=50+(i-1)*42;
+        ctx.beginPath();ctx.moveTo(px,d.yPos[i-1]);ctx.lineTo(x,d.yPos[i]);
+        ctx.strokeStyle=d.colors[i];ctx.lineWidth=2;ctx.stroke();
+      }
+      const isLast=i===maxI;
+      const isFixed=d.converges&&i>=d.steps.length-1;
+      ctx.beginPath();ctx.arc(x,d.yPos[i],isLast?14:10,0,Math.PI*2);
+      ctx.fillStyle=isFixed?'#22c55e44':isLast?d.colors[i]+'44':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isFixed?'#22c55e':d.colors[i];ctx.lineWidth=isLast?3:1.5;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font=(isLast?'bold ':'')+'8px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(d.steps[i],x,d.yPos[i]);
+    }
+
+    // Transfer function label
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText(d.transfer,210,250);
+  }
+
+  function init(){
+    stepIdx=0;if(timer){clearInterval(timer);timer=null;}
+    document.getElementById('s14Log').innerHTML='<div>x₀ = '+domains[current].steps[0]+' (bottom)</div>';
+    document.getElementById('s14Counter').textContent='Iteration: 0';
+    document.getElementById('s14Verdict').innerHTML='';
+    draw();
+  }
+
+  window.s14Switch=function(idx){
+    current=idx;
+    ['s14D0','s14D1','s14D2'].forEach((id,i)=>{document.getElementById(id).className='btn btn-sm'+(i===idx?'':' btn-secondary');});
+    init();
+  };
+
+  window.s14Step=function(){
+    const d=domains[current];
+    if(stepIdx>=d.steps.length-1)return;
+    stepIdx++;
+    draw();
+    document.getElementById('s14Counter').textContent='Iteration: '+stepIdx;
+    const log=document.getElementById('s14Log');
+    const prev=d.steps[stepIdx-1],curr=d.steps[stepIdx];
+    if(d.converges&&stepIdx>=d.steps.length-1){
+      log.innerHTML+='<div style="color:#22c55e;">x₊ = f('+prev+') = '+curr+' = x → <strong>FIXED POINT!</strong></div>';
+      document.getElementById('s14Verdict').innerHTML='<span style="color:#22c55e;">✓ Converged in '+stepIdx+' iterations (height = '+d.height+')</span>';
+    } else if(!d.converges&&stepIdx>=d.steps.length-1){
+      log.innerHTML+='<div style="color:#ef4444;">x₊ = f('+prev+') = '+curr+' → still growing… <strong>DIVERGES!</strong></div>';
+      document.getElementById('s14Verdict').innerHTML='<span style="color:#ef4444;">✗ Does NOT converge — infinite ascending chain. Needs WIDENING!</span>';
+    } else {
+      log.innerHTML+='<div>x'+(stepIdx)+' = f('+prev+') = '+curr+(curr!==prev?' ↑':' =')+' </div>';
+    }
+    log.scrollTop=log.scrollHeight;
+  };
+
+  window.s14Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{const d=domains[current];if(stepIdx>=d.steps.length-1){clearInterval(timer);timer=null;return;}s14Step();},700);
+  };
+  window.s14Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sCB: CHALLENGE — WILL IT CONVERGE? ==================== -->
+<div class="slide" id="sCB">
+  <h2>🎯 Challenge B: Will It Converge?</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">For each scenario, decide: will Kleene iteration find a fixed point?</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <!-- Scenario 1 -->
+    <div id="sCB-q1" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Scenario 1</div>
+      <div style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Lattice: Sign domain (height 2)<br>Transfer function: f(⊥)=Pos, f(Pos)=Pos, f(x)=⊤<br>Monotone? Yes.</div>
+      <select id="sCB-a1" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Will it converge?</option><option value="y">Yes — converges</option><option value="n">No — diverges</option>
+      </select>
+    </div>
+
+    <!-- Scenario 2 -->
+    <div id="sCB-q2" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Scenario 2</div>
+      <div style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Lattice: Interval domain (infinite height)<br>Transfer function: f([a,b]) = [a-1, b+1]<br>Monotone? Yes.</div>
+      <select id="sCB-a2" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Will it converge?</option><option value="y">Yes — converges</option><option value="n">No — diverges</option>
+      </select>
+    </div>
+
+    <!-- Scenario 3 -->
+    <div id="sCB-q3" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Scenario 3</div>
+      <div style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Lattice: Powerset of 50 defs (height 50)<br>Transfer function: gen/kill (monotone)<br>Starting from ∅.</div>
+      <select id="sCB-a3" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Will it converge?</option><option value="y">Yes — converges</option><option value="n">No — diverges</option>
+      </select>
+    </div>
+
+    <!-- Scenario 4 (tricky) -->
+    <div id="sCB-q4" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Scenario 4</div>
+      <div style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Lattice: Taint domain (height 2)<br>Transfer function: f(⊥)=Tainted, f(Tainted)=Untainted<br>Monotone? <strong>Check carefully!</strong></div>
+      <select id="sCB-a4" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Will it converge?</option><option value="y">Yes — converges</option><option value="n">No — diverges</option><option value="nm">Not applicable — f is NOT monotone</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:0.8rem;">
+    <button class="btn btn-sm" onclick="sCBCheck()">Check All</button>
+  </div>
+  <div id="sCB-feedback" style="margin-top:0.6rem;font-size:0.8rem;color:#94a3b8;text-align:center;"></div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers=['y','n','y','nm'];
+  const explains=[
+    '✓ Sign domain has height 2 + monotone f → converges in at most 2 steps. Chain: ⊥ → Pos → Pos (fixed).',
+    '✗ Interval has infinite height. Even though f is monotone, the chain [0,0] < [-1,1] < [-2,2] < … never stops. Needs widening!',
+    '✓ Finite powerset (height 50) + monotone gen/kill → converges in at most 50 iterations. This is standard reaching definitions.',
+    'Trap! f(⊥)=Tainted, f(Tainted)=Untainted. But ⊥ ≤ Tainted, and f(⊥)=Tainted ≤ f(Tainted)=Untainted? Tainted ≤ Untainted is FALSE (incomparable on flat lattice). So f is NOT monotone — Knaster-Tarski doesn\'t apply!'
+  ];
+
+  window.sCBCheck=function(){
+    let score=0;
+    for(let i=1;i<=4;i++){
+      const val=document.getElementById('sCB-a'+i).value;
+      const el=document.getElementById('sCB-q'+i);
+      if(val===answers[i-1]){el.style.borderColor='#22c55e';score++;}
+      else{el.style.borderColor='#ef4444';}
+    }
+    let html='<strong>'+score+'/4</strong> — ';
+    if(score===4) html+='<span style="color:#22c55e;">Excellent! You understand all convergence conditions.</span>';
+    else{html+='Review:<br>';explains.forEach((e,i)=>{html+='<span style="color:#f59e0b;">• '+e+'</span><br>';});}
+    document.getElementById('sCB-feedback').innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s15: GALOIS CONNECTIONS ==================== -->
+<div class="slide" id="s15">
+  <h2>Galois Connections</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The formal bridge between <strong>concrete</strong> (exact) and <strong>abstract</strong> (approximate) lattices. Click elements to see the α/γ mapping.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS15" width="420" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;" onclick="s15Click(event)"></canvas>
+    </div>
+    <div>
+      <div id="s15Info" style="background:#1e293b;border-radius:10px;padding:0.8rem;font-size:0.82rem;color:#cbd5e1;min-height:80px;">
+        <span style="color:#94a3b8;font-style:italic;">Click an element on either lattice to see α and γ.</span>
+      </div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.6rem;">
+        <div style="font-weight:600;color:#a78bfa;font-size:0.85rem;margin-bottom:0.4rem;">Galois Connection (C, α, γ, A):</div>
+        <div style="font-size:0.8rem;color:#cbd5e1;">
+          <strong style="color:#38bdf8;">α : C → A</strong> — abstraction (concrete → abstract)<br>
+          <strong style="color:#22c55e;">γ : A → C</strong> — concretization (abstract → concrete)<br><br>
+          <strong style="color:#f59e0b;">Soundness:</strong> ∀c ∈ C: c ⊆ γ(α(c))<br>
+          <span style="color:#94a3b8;">Abstracting then concretizing may be <em>bigger</em> (over-approximation) but never <em>smaller</em> (no missed values).</span>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.6rem;">
+        <strong>Why it matters:</strong> Galois connections guarantee that if the analysis says "this variable is Pos", then every <em>concrete</em> value that variable can hold is indeed positive. Soundness = no false negatives.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS15');
+  const ctx=canvas.getContext('2d');
+
+  // Concrete: powerset of {-2,-1,0,1,2} (simplified: show some key subsets)
+  // Abstract: Sign lattice
+  const concrete=[
+    {x:70,y:30,l:'ℤ',vals:'all integers'},
+    {x:30,y:100,l:'{-}',vals:'all negatives'},{x:70,y:100,l:'{0}',vals:'just zero'},{x:110,y:100,l:'{+}',vals:'all positives'},
+    {x:70,y:180,l:'∅',vals:'no values'}
+  ];
+  const abstract=[
+    {x:340,y:30,l:'⊤',sign:'any sign'},
+    {x:280,y:100,l:'Neg',sign:'negative'},{x:340,y:100,l:'Zero',sign:'zero'},{x:400,y:100,l:'Pos',sign:'positive'},
+    {x:340,y:180,l:'⊥',sign:'unreachable'}
+  ];
+  const cEdges=[[4,1],[4,2],[4,3],[1,0],[2,0],[3,0]];
+  const aEdges=[[4,1],[4,2],[4,3],[1,0],[2,0],[3,0]];
+
+  // α mapping: concrete index → abstract index
+  const alphaMap={0:0, 1:1, 2:2, 3:3, 4:4};
+  // γ mapping: abstract index → description
+  const gammaMap={
+    0:'γ(⊤) = ℤ (all integers)',
+    1:'γ(Neg) = {…, -3, -2, -1} (all negatives)',
+    2:'γ(Zero) = {0}',
+    3:'γ(Pos) = {1, 2, 3, …} (all positives)',
+    4:'γ(⊥) = ∅ (empty set)'
+  };
+  const alphaDesc={
+    0:'α(ℤ) = ⊤ (contains neg, zero, and pos)',
+    1:'α({negatives}) = Neg',
+    2:'α({0}) = Zero',
+    3:'α({positives}) = Pos',
+    4:'α(∅) = ⊥'
+  };
+
+  let selectedSide=-1, selectedIdx=-1;
+
+  function draw(){
+    ctx.clearRect(0,0,420,310);
+
+    // Labels
+    ctx.fillStyle='#38bdf8';ctx.font='bold 12px monospace';ctx.textAlign='center';
+    ctx.fillText('Concrete (C)',70,18);
+    ctx.fillStyle='#22c55e';ctx.fillText('Abstract (A)',340,18);
+
+    // Concrete edges
+    cEdges.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(concrete[a].x,concrete[a].y);ctx.lineTo(concrete[b].x,concrete[b].y);ctx.strokeStyle='#334155';ctx.lineWidth=1.5;ctx.stroke();});
+    // Abstract edges
+    aEdges.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(abstract[a].x,abstract[a].y);ctx.lineTo(abstract[b].x,abstract[b].y);ctx.strokeStyle='#334155';ctx.lineWidth=1.5;ctx.stroke();});
+
+    // α/γ arrows if selected
+    if(selectedSide===0 && selectedIdx>=0){
+      const ci=selectedIdx, ai=alphaMap[ci];
+      // α arrow: concrete → abstract
+      ctx.beginPath();ctx.moveTo(concrete[ci].x+20,concrete[ci].y);ctx.lineTo(abstract[ai].x-20,abstract[ai].y);
+      ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+      const ax=abstract[ai].x-20,ay=abstract[ai].y;
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax-8,ay-5);ctx.moveTo(ax,ay);ctx.lineTo(ax-8,ay+5);ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#38bdf8';ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText('α',200,concrete[ci].y-8);
+    }
+    if(selectedSide===1 && selectedIdx>=0){
+      const ai=selectedIdx, ci=ai; // direct mapping in this simplified example
+      // γ arrow: abstract → concrete
+      ctx.beginPath();ctx.moveTo(abstract[ai].x-20,abstract[ai].y);ctx.lineTo(concrete[ci].x+20,concrete[ci].y);
+      ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+      const ax=concrete[ci].x+20,ay=concrete[ci].y;
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax+8,ay-5);ctx.moveTo(ax,ay);ctx.lineTo(ax+8,ay+5);ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#22c55e';ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText('γ',200,abstract[ai].y-8);
+    }
+
+    // Concrete nodes
+    concrete.forEach((n,i)=>{
+      const sel=selectedSide===0&&selectedIdx===i;
+      ctx.beginPath();ctx.arc(n.x,n.y,16,0,Math.PI*2);
+      ctx.fillStyle=sel?'#38bdf844':'#1e293b';ctx.fill();
+      ctx.strokeStyle=sel?'#38bdf8':'#475569';ctx.lineWidth=sel?3:1.5;ctx.stroke();
+      ctx.fillStyle=sel?'#fff':'#38bdf8';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    // Abstract nodes
+    abstract.forEach((n,i)=>{
+      const sel=selectedSide===1&&selectedIdx===i;
+      ctx.beginPath();ctx.arc(n.x,n.y,16,0,Math.PI*2);
+      ctx.fillStyle=sel?'#22c55e44':'#1e293b';ctx.fill();
+      ctx.strokeStyle=sel?'#22c55e':'#475569';ctx.lineWidth=sel?3:1.5;ctx.stroke();
+      ctx.fillStyle=sel?'#fff':'#22c55e';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+
+    // Over-approximation box
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText('α abstracts (may lose info)',210,230);
+    ctx.fillText('γ concretizes (recovers meaning)',210,250);
+    ctx.fillStyle='#f59e0b';ctx.fillText('c ⊆ γ(α(c)) — soundness guarantee',210,280);
+  }
+
+  window.s15Click=function(e){
+    const rect=canvas.getBoundingClientRect();
+    const sx=420/rect.width;
+    const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sx;
+    // Check concrete nodes
+    for(let i=0;i<concrete.length;i++){
+      const dx=mx-concrete[i].x,dy=my-concrete[i].y;
+      if(dx*dx+dy*dy<400){
+        selectedSide=0;selectedIdx=i;draw();
+        document.getElementById('s15Info').innerHTML='<span style="color:#38bdf8;font-weight:600;">'+alphaDesc[i]+'</span><br><br>Concrete: <strong>'+concrete[i].l+'</strong> ('+concrete[i].vals+')<br>Abstract: <strong>'+abstract[alphaMap[i]].l+'</strong> ('+abstract[alphaMap[i]].sign+')';
+        return;
+      }
+    }
+    // Check abstract nodes
+    for(let i=0;i<abstract.length;i++){
+      const dx=mx-abstract[i].x,dy=my-abstract[i].y;
+      if(dx*dx+dy*dy<400){
+        selectedSide=1;selectedIdx=i;draw();
+        document.getElementById('s15Info').innerHTML='<span style="color:#22c55e;font-weight:600;">'+gammaMap[i]+'</span><br><br>Abstract: <strong>'+abstract[i].l+'</strong> ('+abstract[i].sign+')<br>Concretizes to the full set of matching concrete values.';
+        return;
+      }
+    }
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active')){selectedSide=-1;selectedIdx=-1;draw();document.getElementById('s15Info').innerHTML='<span style="color:#94a3b8;font-style:italic;">Click an element on either lattice to see α and γ.</span>';}});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s16: WIDENING ==================== -->
+<div class="slide" id="s16">
+  <h2>Widening: When Lattices Are Too Tall</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">For lattices with infinite height (like intervals), Kleene iteration may never terminate. <strong>Widening (∇)</strong> forces convergence by jumping to a stable over-approximation.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+        <button class="btn btn-sm" id="s16Btn0" onclick="s16Toggle(0)">Without Widening</button>
+        <button class="btn btn-sm btn-secondary" id="s16Btn1" onclick="s16Toggle(1)">With Widening</button>
+      </div>
+      <canvas id="cS16" width="420" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
+        <button class="btn btn-sm" onclick="s16Step()">Step</button>
+        <button class="btn btn-sm" onclick="s16Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s16Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;color:#94a3b8;max-height:140px;overflow-y:auto;"></div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.6rem;">
+        <div style="font-weight:600;color:#f59e0b;font-size:0.85rem;margin-bottom:0.4rem;">Widening Operator ∇:</div>
+        <div style="font-size:0.78rem;color:#cbd5e1;">
+          <code style="color:#f472b6;">a ∇ b</code> = if upper bound grew, jump to +∞<br>
+          <span style="color:#94a3b8;">Example: [0,5] ∇ [0,7] = [0, +∞)</span><br><br>
+          <strong>Trade-off:</strong> Less precise, but <em>guaranteed</em> to terminate.
+        </div>
+      </div>
+
+      <div id="s16Verdict" style="margin-top:0.5rem;font-size:0.85rem;font-weight:600;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS16');
+  const ctx=canvas.getContext('2d');
+  let mode=0, stepIdx=0, timer=null;
+
+  // Without widening: [0,0] → [0,1] → [0,2] → [0,3] → [0,4] → [0,5] → ...
+  const noWiden=[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7]];
+  // With widening: [0,0] → [0,1] → [0,+∞) → [0,+∞) (fixed!)
+  const withWiden=[[0,0],[0,1],[0,Infinity],[0,Infinity]];
+
+  function getSteps(){ return mode===0?noWiden:withWiden; }
+
+  function draw(){
+    ctx.clearRect(0,0,420,250);
+    const steps=getSteps();
+    const maxI=Math.min(stepIdx,steps.length-1);
+
+    // Number line
+    const nlY=200, nlLeft=40, nlRight=380;
+    ctx.beginPath();ctx.moveTo(nlLeft,nlY);ctx.lineTo(nlRight,nlY);
+    ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.stroke();
+    // Ticks
+    for(let v=0;v<=8;v++){
+      const x=nlLeft+v*(nlRight-nlLeft)/9;
+      ctx.beginPath();ctx.moveTo(x,nlY-5);ctx.lineTo(x,nlY+5);ctx.strokeStyle='#475569';ctx.lineWidth=1;ctx.stroke();
+      ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='center';
+      ctx.fillText(v,x,nlY+15);
+    }
+    // +∞ marker
+    ctx.fillStyle='#64748b';ctx.font='9px monospace';ctx.textAlign='center';
+    ctx.fillText('+∞',nlRight,nlY+15);
+
+    // Draw intervals (stacked vertically)
+    for(let i=0;i<=maxI;i++){
+      const [lo,hi]=steps[i];
+      const y=170-i*22;
+      const xLo=nlLeft+lo*(nlRight-nlLeft)/9;
+      const xHi=hi===Infinity?nlRight:nlLeft+hi*(nlRight-nlLeft)/9;
+      const isCurrent=i===maxI;
+      const isFixed=mode===1&&i>=2;
+      const color=isFixed?'#22c55e':isCurrent?(mode===0?'#ef4444':'#f59e0b'):'#38bdf8';
+
+      // Interval bar
+      ctx.fillStyle=color+'44';
+      ctx.fillRect(xLo,y-6,xHi-xLo,12);
+      ctx.strokeStyle=color;ctx.lineWidth=isCurrent?2:1;
+      ctx.strokeRect(xLo,y-6,xHi-xLo,12);
+
+      // Label
+      ctx.fillStyle=color;ctx.font=(isCurrent?'bold ':'')+'9px monospace';ctx.textAlign='right';
+      const label='['+lo+','+(hi===Infinity?'+∞)':hi+']');
+      ctx.fillText(label,nlLeft-5,y+3);
+
+      // Widening marker
+      if(mode===1&&i===2){
+        ctx.fillStyle='#f59e0b';ctx.font='bold 10px monospace';ctx.textAlign='left';
+        ctx.fillText('∇ WIDEN!',xHi+5,y+3);
+      }
+    }
+
+    // Title
+    ctx.fillStyle=mode===0?'#ef4444':'#22c55e';ctx.font='bold 12px monospace';ctx.textAlign='center';
+    ctx.fillText(mode===0?'Without Widening — keeps growing…':'With Widening — jumps to +∞, stabilizes!',210,20);
+  }
+
+  function init(){
+    stepIdx=0;if(timer){clearInterval(timer);timer=null;}
+    document.getElementById('s16Log').innerHTML='<div>Start: [0, 0]</div>';
+    document.getElementById('s16Verdict').innerHTML='';
+    draw();
+  }
+
+  window.s16Toggle=function(m){
+    mode=m;
+    ['s16Btn0','s16Btn1'].forEach((id,i)=>{document.getElementById(id).className='btn btn-sm'+(i===m?'':' btn-secondary');});
+    init();
+  };
+
+  window.s16Step=function(){
+    const steps=getSteps();
+    if(stepIdx>=steps.length-1)return;
+    stepIdx++;draw();
+    const [lo,hi]=steps[stepIdx];
+    const prev=steps[stepIdx-1];
+    const log=document.getElementById('s16Log');
+    const hiStr=hi===Infinity?'+∞)':hi+']';
+    const prevHiStr=prev[1]===Infinity?'+∞)':prev[1]+']';
+
+    if(mode===0){
+      log.innerHTML+='<div style="color:#ef4444;">f(['+prev[0]+','+prevHiStr+') = ['+lo+','+hiStr+' ↑ still growing</div>';
+      if(stepIdx>=steps.length-1){
+        document.getElementById('s16Verdict').innerHTML='<span style="color:#ef4444;">✗ Never converges — chain grows forever!</span>';
+      }
+    } else {
+      if(stepIdx===2){
+        log.innerHTML+='<div style="color:#f59e0b;">Upper bound grew: '+prev[1]+' → more. WIDEN! [0, +∞)</div>';
+      } else if(hi===Infinity&&lo===prev[0]){
+        log.innerHTML+='<div style="color:#22c55e;">f([0, +∞)) = [0, +∞) — FIXED POINT ✓</div>';
+        document.getElementById('s16Verdict').innerHTML='<span style="color:#22c55e;">✓ Converged in 3 steps! (over-approximate but sound)</span>';
+      } else {
+        log.innerHTML+='<div>f(['+prev[0]+','+prevHiStr+') = ['+lo+','+hiStr+'</div>';
+      }
+    }
+    log.scrollTop=log.scrollHeight;
+  };
+
+  window.s16Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{const steps=getSteps();if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;}s16Step();},800);
+  };
+  window.s16Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s16').classList.contains('active'))s16Toggle(0);});
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s17: LATTICES ACROSS THE BOOTCAMP ==================== -->
+<div class="slide" id="s17">
+  <h2>Lattices Across the Bootcamp</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Every module uses lattice theory. Click each module to see its lattice and how the concepts connect.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS17" width="420" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;" onclick="s17Click(event)"></canvas>
+    </div>
+    <div id="s17Detail" style="background:#1e293b;border-radius:10px;padding:1rem;font-size:0.82rem;color:#cbd5e1;min-height:280px;">
+      <span style="color:#94a3b8;font-style:italic;">Click a module to see how lattice theory powers it.</span>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS17');
+  const ctx=canvas.getContext('2d');
+
+  const modules=[
+    {x:30,y:30,w:170,h:55,name:'M3: Dataflow',color:'#38bdf8',
+     detail:'<strong style="color:#38bdf8;">M3: Dataflow Analysis</strong><br><br><strong>Lattice:</strong> Powerset of definitions (℘(Defs))<br><strong>Join:</strong> Union (may analysis) or intersection (must)<br><strong>Transfer:</strong> gen/kill functions (monotone)<br><strong>Fixed point:</strong> Kleene iteration on CFG<br><br><strong>Concepts used:</strong> partial order (⊆), join at merge points, ACC guarantees termination (height = |Defs|)'},
+    {x:220,y:30,w:170,h:55,name:'M4: Abstract Interp.',color:'#22c55e',
+     detail:'<strong style="color:#22c55e;">M4: Abstract Interpretation</strong><br><br><strong>Lattices:</strong> Sign, Constant, Interval domains<br><strong>Join:</strong> Domain-specific (sign: diff→⊤, interval: hull)<br><strong>Galois connection:</strong> α/γ between concrete ↔ abstract<br><strong>Widening:</strong> Needed for interval domain (infinite height)<br><br><strong>Concepts used:</strong> complete lattice, monotone transfer functions, Galois connections, ACC vs infinite chains'},
+    {x:30,y:110,w:170,h:55,name:'M5: Security',color:'#ef4444',
+     detail:'<strong style="color:#ef4444;">M5: Security Analysis</strong><br><br><strong>Lattice:</strong> Taint domain (flat: ⊥ < {Untainted, Tainted} < ⊤)<br><strong>Join:</strong> Tainted ⊔ Untainted = ⊤ (over-approximate)<br><strong>Transfer:</strong> Taint propagation rules (monotone)<br><strong>Fixed point:</strong> Same Kleene iteration as M3/M4<br><br><strong>Concepts used:</strong> flat lattice structure, soundness (no missed taint), join at branches'},
+    {x:220,y:110,w:170,h:55,name:'M6: Tools',color:'#f59e0b',
+     detail:'<strong style="color:#f59e0b;">M6: Tools Integration</strong><br><br><strong>Lattice role:</strong> Each analysis pass internally uses a lattice<br><strong>Composition:</strong> Multi-pass = run each lattice-based analysis<br><strong>Findings:</strong> The unified finding type is the "output" of lattice-based analyses<br><br><strong>Concepts used:</strong> analysis pass wraps a lattice-based domain, pipeline composes results from different lattice analyses'},
+    {x:125,y:210,w:170,h:55,name:'This Deck: Theory',color:'#a78bfa',
+     detail:'<strong style="color:#a78bfa;">This Deck: Lattice Theory</strong><br><br>You\'ve now learned the <em>why</em> behind every analysis:<br><br>• <strong>Partial orders</strong> → how analysis values compare<br>• <strong>Join/meet</strong> → how values merge at branches<br>• <strong>Monotonicity</strong> → why iteration always goes up<br>• <strong>Knaster-Tarski</strong> → why fixed points exist<br>• <strong>Kleene iteration</strong> → the algorithm that finds them<br>• <strong>ACC</strong> → why it terminates (or needs widening)<br>• <strong>Galois connections</strong> → why abstraction is sound'}
+  ];
+
+  let selected=-1;
+
+  function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
+
+  function draw(){
+    ctx.clearRect(0,0,420,320);
+
+    // Connecting arrows: theory → all modules
+    modules.slice(0,4).forEach(m=>{
+      ctx.beginPath();ctx.moveTo(modules[4].x+85,modules[4].y);ctx.lineTo(m.x+m.w/2,m.y+m.h);
+      ctx.strokeStyle='#a78bfa33';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
+    });
+
+    // Module boxes
+    modules.forEach((m,i)=>{
+      ctx.fillStyle=i===selected?m.color+'33':'#1e293b';
+      ctx.strokeStyle=i===selected?m.color:'#475569';
+      ctx.lineWidth=i===selected?3:1.5;
+      roundRect(ctx,m.x,m.y,m.w,m.h,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle=i===selected?'#fff':'#cbd5e1';
+      ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(m.name,m.x+m.w/2,m.y+m.h/2);
+    });
+
+    // Bottom label
+    ctx.fillStyle='#64748b';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText('Same math, different domains',210,300);
+  }
+
+  window.s17Click=function(e){
+    const rect=canvas.getBoundingClientRect();
+    const sx=420/rect.width;
+    const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sx;
+    for(let i=0;i<modules.length;i++){
+      const m=modules[i];
+      if(mx>=m.x&&mx<=m.x+m.w&&my>=m.y&&my<=m.y+m.h){
+        selected=i;draw();
+        document.getElementById('s17Detail').innerHTML=m.detail;
+        return;
+      }
+    }
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s17').classList.contains('active')){selected=-1;draw();document.getElementById('s17Detail').innerHTML='<span style="color:#94a3b8;font-style:italic;">Click a module to see how lattice theory powers it.</span>';}});
+  obs.observe(document.getElementById('s17'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s18: KEY TAKEAWAYS ==================== -->
+<div class="slide" id="s18">
+  <h2>Key Takeaways</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div class="key-idea">
+      <strong>1. Lattices = Analysis Values</strong><br>
+      Every analysis operates on a lattice. The lattice elements are the possible "facts" the analysis can know. Partial order captures information ordering.
+    </div>
+    <div class="key-idea">
+      <strong>2. Join = Merging at Branches</strong><br>
+      When two control-flow paths merge, we <code>join</code> their analysis states. May-analysis uses union; must-analysis uses intersection. Both are lattice joins.
+    </div>
+    <div class="key-idea">
+      <strong>3. Monotone + Finite Height = Terminates</strong><br>
+      If transfer functions are monotone and the lattice has finite height (ACC), Kleene iteration is <em>guaranteed</em> to find a fixed point in at most <em>height(L)</em> steps.
+    </div>
+    <div class="key-idea">
+      <strong>4. Galois Connections = Soundness</strong><br>
+      The α/γ pair between concrete and abstract guarantees: if the abstract says "safe", the concrete really <em>is</em> safe. Over-approximation is the price of decidability.
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top:0.8rem;">
+    <strong>The One Exception:</strong> Infinite-height lattices (intervals, polyhedra) need <strong>widening</strong> — an operator that sacrifices precision to force convergence. Without it, your analysis runs forever.
+  </div>
+
+  <div class="analogy" style="margin-top:0.6rem;">
+    <strong>Final Analogy:</strong> A lattice is like a map's zoom levels. At the bottom (⊥), you see nothing. As you zoom out (go up), you see more but with less detail. The top (⊤) shows everything but at the coarsest resolution. Analysis finds the <em>right zoom level</em> — enough detail to answer the question, not so much that it never finishes computing.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE sCC: CHALLENGE — DESIGN A LATTICE ==================== -->
+<div class="slide" id="sCC">
+  <h2>🎯 Challenge C: Design a Lattice</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">For each analysis problem, design the right lattice by choosing elements, bottom, top, and join operation.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <!-- Problem 1: Initialization analysis -->
+    <div id="sCC-q1" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Problem 1: Is a Variable Initialized?</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Track whether a variable has been assigned a value before use. What lattice?</p>
+      <div style="margin-bottom:0.3rem;">
+        <span style="color:#94a3b8;font-size:0.75rem;">Elements:</span>
+        <select id="sCC-e1" style="width:100%;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.75rem;">
+          <option value="">Choose…</option>
+          <option value="a">{⊥, Uninit, Init, ⊤} — flat lattice</option>
+          <option value="b">{⊥, 0, 1, 2, …, ⊤} — counting lattice</option>
+          <option value="c">{⊥, Neg, Zero, Pos, ⊤} — sign lattice</option>
+        </select>
+      </div>
+      <div>
+        <span style="color:#94a3b8;font-size:0.75rem;">Join at merge (if-else branches):</span>
+        <select id="sCC-j1" style="width:100%;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.75rem;">
+          <option value="">Choose…</option>
+          <option value="a">Init ⊔ Uninit = ⊤ (maybe init)</option>
+          <option value="b">Init ⊔ Uninit = Init (optimistic)</option>
+          <option value="c">Init ⊔ Uninit = Uninit (pessimistic)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Problem 2: Parity analysis -->
+    <div id="sCC-q2" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Problem 2: Even or Odd?</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Track whether a variable holds an even or odd integer. What lattice?</p>
+      <div style="margin-bottom:0.3rem;">
+        <span style="color:#94a3b8;font-size:0.75rem;">Elements:</span>
+        <select id="sCC-e2" style="width:100%;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.75rem;">
+          <option value="">Choose…</option>
+          <option value="a">{⊥, Even, Odd, ⊤} — flat lattice</option>
+          <option value="b">{⊥, 0, 1, ⊤} — numeric lattice</option>
+          <option value="c">{Even, Odd} — no top/bottom</option>
+        </select>
+      </div>
+      <div>
+        <span style="color:#94a3b8;font-size:0.75rem;">What does ⊤ mean here?</span>
+        <select id="sCC-t2" style="width:100%;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.75rem;">
+          <option value="">Choose…</option>
+          <option value="a">Could be even or odd (don't know)</option>
+          <option value="b">Both even and odd simultaneously</option>
+          <option value="c">Error state</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Problem 3: Nullness -->
+    <div id="sCC-q3" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Problem 3: Null Pointer Analysis</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Track whether a pointer may be null. What lattice and height?</p>
+      <div style="margin-bottom:0.3rem;">
+        <span style="color:#94a3b8;font-size:0.75rem;">Lattice shape:</span>
+        <select id="sCC-s3" style="width:100%;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.75rem;">
+          <option value="">Choose…</option>
+          <option value="a">Flat: {⊥, Null, NonNull, ⊤}</option>
+          <option value="b">Chain: ⊥ < Null < NonNull < ⊤</option>
+          <option value="c">Powerset of {Null, NonNull}</option>
+        </select>
+      </div>
+      <div>
+        <span style="color:#94a3b8;font-size:0.75rem;">Height:</span>
+        <select id="sCC-h3" style="width:100%;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.75rem;">
+          <option value="">Choose…</option>
+          <option value="a">2 (flat lattice height)</option>
+          <option value="b">3</option>
+          <option value="c">∞ (needs widening)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Problem 4: Range (tricky) -->
+    <div id="sCC-q4" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.85rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">Problem 4: Array Index in Bounds?</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">Track whether array index i is in [0, n). Which domain?</p>
+      <div style="margin-bottom:0.3rem;">
+        <span style="color:#94a3b8;font-size:0.75rem;">Best domain:</span>
+        <select id="sCC-d4" style="width:100%;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.75rem;">
+          <option value="">Choose…</option>
+          <option value="a">Sign domain (just know if ≥0)</option>
+          <option value="b">Interval domain [lo, hi]</option>
+          <option value="c">Flat constant domain</option>
+        </select>
+      </div>
+      <div>
+        <span style="color:#94a3b8;font-size:0.75rem;">Does it need widening?</span>
+        <select id="sCC-w4" style="width:100%;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.75rem;">
+          <option value="">Choose…</option>
+          <option value="y">Yes — infinite height</option>
+          <option value="n">No — finite lattice</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:0.8rem;">
+    <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCC-feedback" style="margin-top:0.5rem;font-size:0.78rem;color:#94a3b8;text-align:center;"></div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const checks=[
+    {fields:['sCC-e1','sCC-j1'],answers:['a','a'],explain:'Flat lattice {⊥, Uninit, Init, ⊤} — at merge, if one branch inits and the other doesn\'t, we must say "maybe" (⊤). Sound over-approximation!'},
+    {fields:['sCC-e2','sCC-t2'],answers:['a','a'],explain:'{⊥, Even, Odd, ⊤} flat lattice. ⊤ means "could be either" — we lost precision, not that it\'s both at once. Same shape as sign domain!'},
+    {fields:['sCC-s3','sCC-h3'],answers:['a','a'],explain:'Flat lattice {⊥, Null, NonNull, ⊤}. Height 2 (flat). Null and NonNull are incomparable — neither implies the other. Powerset would also work (it\'s isomorphic here) but flat is simpler.'},
+    {fields:['sCC-d4','sCC-w4'],answers:['b','y'],explain:'Interval domain [lo, hi] tracks bounds precisely enough to check 0 ≤ i < n. But intervals have infinite height → needs widening. Sign domain would only tell us i ≥ 0, not i < n.'}
+  ];
+
+  window.sCCCheck=function(){
+    let score=0;
+    checks.forEach((c,i)=>{
+      const vals=c.fields.map(f=>document.getElementById(f).value);
+      const correct=vals.every((v,j)=>v===c.answers[j]);
+      document.getElementById('sCC-q'+(i+1)).style.borderColor=correct?'#22c55e':'#ef4444';
+      if(correct) score++;
+    });
+    let html='<strong>'+score+'/4</strong> — ';
+    if(score===4) html+='<span style="color:#22c55e;">Perfect lattice design skills!</span>';
+    else{html+='Review:<br>';checks.forEach((c,i)=>{html+='<span style="color:#f59e0b;">• P'+(i+1)+': '+c.explain+'</span><br>';});}
+    document.getElementById('sCC-feedback').innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: QUIZ — LATTICE PROPERTIES ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz 1: Lattice Properties</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <!-- Q1 -->
+    <div id="sQ1-q1" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Q1: Lattice Height</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">What is the height of the powerset lattice ℘({a,b,c,d})?</p>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;">
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r1" value="a"> 2</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r1" value="b"> 4</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r1" value="c"> 8</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r1" value="d"> 16</label>
+      </div>
+      <div id="sQ1-f1" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div id="sQ1-q2" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Q2: Flat Lattice</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">In a flat lattice with 100 middle elements, what is Neg ⊔ Pos?</p>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;">
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r2" value="a"> ⊥</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r2" value="b"> Neg</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r2" value="c"> ⊤</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r2" value="d"> undefined</label>
+      </div>
+      <div id="sQ1-f2" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div id="sQ1-q3" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Q3: Monotonicity</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.5rem;">f(x) = x ∩ {d1}. Is f monotone on ℘({d1,d2})?</p>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;">
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r3" value="a"> Yes — intersection preserves ⊆</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r3" value="b"> No — intersection shrinks sets</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r3" value="c"> Only if x contains d1</label>
+        <label style="color:#cbd5e1;font-size:0.78rem;"><input type="radio" name="sQ1r3" value="d"> Depends on the lattice</label>
+      </div>
+      <div id="sQ1-f3" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn btn-sm" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-size:0.9rem;font-weight:600;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers={sQ1r1:'b',sQ1r2:'c',sQ1r3:'a'};
+  const feedback=[
+    {correct:'Height of ℘(S) = |S|. For {a,b,c,d}, height = 4. Longest chain: ∅ ⊂ {a} ⊂ {a,b} ⊂ {a,b,c} ⊂ {a,b,c,d}.',wrong:'Height = |S| = 4. The longest ascending chain has 5 elements (length 4).'},
+    {correct:'In a flat lattice, any two different middle elements join to ⊤. Neg and Pos are incomparable, so Neg ⊔ Pos = ⊤.',wrong:'Flat lattice: different middle elements always join to ⊤.'},
+    {correct:'Yes! If A ⊆ B, then A ∩ {d1} ⊆ B ∩ {d1}. Intersection with a constant set preserves subset ordering — it\'s monotone.',wrong:'Intersection with a constant set IS monotone: A ⊆ B implies A ∩ C ⊆ B ∩ C.'}
+  ];
+
+  window.sQ1Check=function(){
+    let score=0;
+    ['sQ1r1','sQ1r2','sQ1r3'].forEach((k,i)=>{
+      const sel=document.querySelector('input[name="'+k+'"]:checked');
+      const fb=document.getElementById('sQ1-f'+(i+1));
+      const card=document.getElementById('sQ1-q'+(i+1));
+      if(!sel){fb.innerHTML='<span style="color:#f59e0b;">Please select an answer</span>';return;}
+      if(sel.value===answers[k]){
+        score++;card.style.borderColor='#22c55e';
+        fb.innerHTML='<span style="color:#22c55e;">✓ '+feedback[i].correct+'</span>';
+      } else {
+        card.style.borderColor='#ef4444';
+        fb.innerHTML='<span style="color:#ef4444;">✗ '+feedback[i].wrong+'</span>';
+      }
+    });
+    document.getElementById('sQ1Score').innerHTML='<span style="color:'+(score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444')+';">'+score+'/3</span>';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: QUIZ — FIXED-POINT TRACE ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz 2: Fixed-Point Trace</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Given the lattice and transfer function, trace Kleene iteration to find the least fixed point.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:1rem;">
+        <div style="font-weight:600;color:#a78bfa;font-size:0.9rem;margin-bottom:0.5rem;">Setup:</div>
+        <div style="font-size:0.82rem;color:#cbd5e1;">
+          <strong>Lattice:</strong> ℘({d1, d2, d3}) — powerset, height 3<br>
+          <strong>Transfer function:</strong> f(x) = x ∪ {d1, d2}<br>
+          <strong>Start:</strong> x₀ = ∅ (bottom)
+        </div>
+      </div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.8rem;">
+        <div style="font-weight:600;color:#f59e0b;font-size:0.85rem;margin-bottom:0.4rem;">Your Trace:</div>
+        <div style="margin-bottom:0.4rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">x₁ = f(∅) = ?</span>
+          <select id="sQ2-x1" style="margin-left:0.3rem;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="">Choose…</option>
+            <option value="a">{d1}</option><option value="b">{d1,d2}</option><option value="c">{d1,d2,d3}</option><option value="d">∅</option>
+          </select>
+        </div>
+        <div style="margin-bottom:0.4rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">x₂ = f(x₁) = ?</span>
+          <select id="sQ2-x2" style="margin-left:0.3rem;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="">Choose…</option>
+            <option value="a">{d1,d2}</option><option value="b">{d1,d2,d3}</option><option value="c">{d2,d3}</option><option value="d">∅</option>
+          </select>
+        </div>
+        <div style="margin-bottom:0.4rem;">
+          <span style="color:#94a3b8;font-size:0.78rem;">Fixed point?</span>
+          <select id="sQ2-fp" style="margin-left:0.3rem;padding:0.25rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+            <option value="">Choose…</option>
+            <option value="a">Yes — x₂ = x₁, so x₁ is the fixed point</option>
+            <option value="b">No — need more iterations</option>
+            <option value="c">Never converges</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="margin-bottom:0.6rem;">
+        <button class="btn btn-sm" onclick="sQ2Check()">Check</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ2Reveal()" style="margin-left:0.5rem;">Show Trace</button>
+      </div>
+      <div id="sQ2-feedback" style="font-size:0.82rem;color:#94a3b8;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  window.sQ2Check=function(){
+    const x1=document.getElementById('sQ2-x1').value;
+    const x2=document.getElementById('sQ2-x2').value;
+    const fp=document.getElementById('sQ2-fp').value;
+    const fb=document.getElementById('sQ2-feedback');
+
+    // f(x) = x ∪ {d1,d2}
+    // x0 = ∅, x1 = ∅ ∪ {d1,d2} = {d1,d2}, x2 = {d1,d2} ∪ {d1,d2} = {d1,d2} = x1 → fixed!
+    let score=0;
+    if(x1==='b') score++;
+    if(x2==='a') score++;
+    if(fp==='a') score++;
+
+    if(score===3){
+      fb.innerHTML='<span style="color:#22c55e;font-weight:600;">✓ Perfect! '+
+        'x₁ = ∅ ∪ {d1,d2} = {d1,d2}. '+
+        'x₂ = {d1,d2} ∪ {d1,d2} = {d1,d2} = x₁. Fixed point found in 1 step!</span>';
+    } else {
+      let hints=[];
+      if(x1!=='b') hints.push('x₁ = f(∅) = ∅ ∪ {d1,d2} = {d1,d2}');
+      if(x2!=='a') hints.push('x₂ = f({d1,d2}) = {d1,d2} ∪ {d1,d2} = {d1,d2} (no change!)');
+      if(fp!=='a') hints.push('x₂ = x₁ = {d1,d2}, so {d1,d2} is the fixed point');
+      fb.innerHTML='<span style="color:#ef4444;">'+score+'/3 correct.</span><br>'+hints.map(h=>'<span style="color:#f59e0b;">• '+h+'</span>').join('<br>');
+    }
+  };
+
+  window.sQ2Reveal=function(){
+    document.getElementById('sQ2-feedback').innerHTML=
+      '<div style="border-left:3px solid #a78bfa;padding-left:0.8rem;">'+
+      '<div style="color:#64748b;">x₀ = ∅ (start at bottom)</div>'+
+      '<div style="color:#38bdf8;">x₁ = f(∅) = ∅ ∪ {d1,d2} = <strong>{d1,d2}</strong></div>'+
+      '<div style="color:#a78bfa;">x₂ = f({d1,d2}) = {d1,d2} ∪ {d1,d2} = <strong>{d1,d2}</strong></div>'+
+      '<div style="color:#22c55e;font-weight:600;">x₂ = x₁ → FIXED POINT: lfp(f) = {d1,d2}</div>'+
+      '<div style="color:#94a3b8;margin-top:0.4rem;">Note: d3 is never in f\'s gen set, so it never enters the fixed point. The chain ∅ ≤ {d1,d2} ≤ {d1,d2} has length 1 (well within height 3).</div>'+
+      '</div>';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: QUIZ — CHOOSE THE RIGHT LATTICE ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz 3: Choose the Right Lattice</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">For each analysis scenario, pick the best lattice domain.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <!-- Scenario 1 -->
+    <div id="sQ3-q1" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">S1: "Which variables are definitely assigned?"</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.4rem;">Need to track a set of variables and know which are definitely assigned on <em>all</em> paths.</p>
+      <select id="sQ3-a1" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Choose…</option>
+        <option value="a">Powerset with join = union (may analysis)</option>
+        <option value="b">Powerset with join = intersection (must analysis)</option>
+        <option value="c">Sign domain</option>
+        <option value="d">Interval domain</option>
+      </select>
+      <div id="sQ3-f1" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Scenario 2 -->
+    <div id="sQ3-q2" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">S2: "Can this value be negative?"</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.4rem;">Quick check: is the value definitely positive, definitely negative, or unknown?</p>
+      <select id="sQ3-a2" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Choose…</option>
+        <option value="a">Powerset domain</option>
+        <option value="b">Sign domain (flat: Neg/Zero/Pos)</option>
+        <option value="c">Interval domain</option>
+        <option value="d">Taint domain</option>
+      </select>
+      <div id="sQ3-f2" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Scenario 3 -->
+    <div id="sQ3-q3" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">S3: "Is array access in bounds?"</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.4rem;">Need to verify 0 ≤ i < n for array arr[i].</p>
+      <select id="sQ3-a3" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Choose…</option>
+        <option value="a">Sign domain (know if ≥ 0 but not upper bound)</option>
+        <option value="b">Taint domain</option>
+        <option value="c">Interval domain (track [lo, hi] range)</option>
+        <option value="d">Flat constant domain</option>
+      </select>
+      <div id="sQ3-f3" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+
+    <!-- Scenario 4 -->
+    <div id="sQ3-q4" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.4rem;">S4: "Can attacker control this SQL query?"</div>
+      <p style="font-size:0.78rem;color:#cbd5e1;margin-bottom:0.4rem;">Track whether data from user input reaches a SQL query.</p>
+      <select id="sQ3-a4" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Choose…</option>
+        <option value="a">Sign domain</option>
+        <option value="b">Interval domain</option>
+        <option value="c">Powerset of definitions</option>
+        <option value="d">Taint domain (flat: Untainted/Tainted)</option>
+      </select>
+      <div id="sQ3-f4" style="margin-top:0.4rem;font-size:0.75rem;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:0.8rem;">
+    <button class="btn btn-sm" onclick="sQ3Check()">Check Answers</button>
+    <span id="sQ3Score" style="margin-left:1rem;font-size:0.9rem;font-weight:600;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers=['b','b','c','d'];
+  const feedback=[
+    {correct:'Powerset with intersection — "definitely assigned" means on ALL paths, which is a must-analysis (meet/intersection at merge).',wrong:'"Definitely assigned on all paths" = must-analysis = powerset with join=intersection.'},
+    {correct:'Sign domain! It\'s designed exactly for this — classify values as Neg/Zero/Pos. Fast (height 2), no widening needed.',wrong:'Sign domain is purpose-built for positive/negative/zero classification.'},
+    {correct:'Interval domain [lo, hi] — you need to know BOTH that i ≥ 0 AND i < n. Sign only gives the sign, not the range.',wrong:'Interval domain tracks [lo, hi] ranges — enough to check 0 ≤ i < n. Needs widening though!'},
+    {correct:'Taint domain — track "is this data attacker-controlled?" Clean/Tainted is exactly the right abstraction for SQL injection.',wrong:'Taint analysis with the taint lattice — tracking whether data is attacker-controlled.'}
+  ];
+
+  window.sQ3Check=function(){
+    let score=0;
+    for(let i=1;i<=4;i++){
+      const val=document.getElementById('sQ3-a'+i).value;
+      const card=document.getElementById('sQ3-q'+i);
+      const fb=document.getElementById('sQ3-f'+i);
+      if(val===answers[i-1]){
+        score++;card.style.borderColor='#22c55e';
+        fb.innerHTML='<span style="color:#22c55e;">✓ '+feedback[i-1].correct+'</span>';
+      } else {
+        card.style.borderColor='#ef4444';
+        fb.innerHTML='<span style="color:#ef4444;">✗ '+feedback[i-1].wrong+'</span>';
+      }
+    }
+    document.getElementById('sQ3Score').innerHTML='<span style="color:'+(score===4?'#22c55e':score>=3?'#f59e0b':'#ef4444')+';">'+score+'/4</span>';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','s13','s14','sCB','s15','s16','s17','s18','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const newIdx = currentIdx + dir;
+  if (newIdx < 0 || newIdx >= slideOrder.length) return;
+  currentIdx = newIdx;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

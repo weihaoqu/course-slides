@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2: Code Representation and ASTs — Enhanced</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.05); z-index: 200; }
+  #progress { height: 100%; width: 0; background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa); transition: width 0.3s ease; }
+
+  .slide {
+    display: none;
+    position: absolute;
+    inset: 0;
+    padding: 44px 56px;
+    background: #0f172a;
+    overflow-y: auto;
+    flex-direction: column;
+  }
+  .slide.active { display: flex; }
+  .slide.fade-in { animation: fadeIn 0.35s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  h1 { font-size: 2.8em; color: #38bdf8; margin-bottom: 8px; font-weight: 700; }
+  h2 { font-size: 1.9em; color: #38bdf8; margin-bottom: 16px; border-bottom: 3px solid #6366f1; padding-bottom: 8px; display: inline-block; }
+  h3 { font-size: 1.25em; color: #a78bfa; margin: 12px 0 6px; }
+  p, li { font-size: 1.1em; line-height: 1.65; margin-bottom: 8px; color: #e2e8f0; }
+  ul, ol { padding-left: 26px; }
+  strong { color: #38bdf8; }
+  em { color: #f59e0b; font-style: normal; font-weight: 600; }
+
+  .btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 10px 22px; font-size: 0.95em; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    font-weight: 600;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(99,102,241,0.4); }
+  .btn-sm { padding: 7px 16px; font-size: 0.85em; border-radius: 6px; }
+  .btn-secondary { background: #334155; }
+  .btn-secondary:hover { background: #475569; box-shadow: none; transform: none; }
+
+  .key-idea {
+    border-left: 4px solid #22c55e; background: rgba(34,197,94,0.08);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 10px 10px 0;
+  }
+  .warning {
+    border-left: 4px solid #ef4444; background: rgba(239,68,68,0.08);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 10px 10px 0;
+  }
+  .analogy {
+    border-left: 4px solid #a78bfa; background: rgba(167,139,250,0.08);
+    padding: 14px 18px; margin: 14px 0; border-radius: 0 10px 10px 0;
+  }
+
+  .code-block {
+    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    padding: 0; margin: 12px 0; overflow: hidden;
+  }
+  .code-header {
+    background: #334155; padding: 6px 14px; font-size: 0.8em; color: #94a3b8;
+    font-family: monospace; border-bottom: 1px solid #475569;
+  }
+  .code-content { padding: 14px 18px; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; }
+  .line { padding: 1px 6px; border-left: 3px solid transparent; transition: all 0.25s; border-radius: 2px; }
+  .line.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; }
+  .line.error { background: rgba(239,68,68,0.12); border-left-color: #ef4444; }
+  .line.success { background: rgba(34,197,94,0.12); border-left-color: #22c55e; }
+
+  .slide-number { height: 0; }
+  canvas { border-radius: 12px; }
+
+  .title-slide {
+    justify-content: center; align-items: center; text-align: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+  }
+  .title-slide h1 { color: #e2e8f0; font-size: 3.2em; border: none; }
+  .title-slide h2 { color: #a78bfa; border: none; font-size: 1.5em; font-weight: 400; }
+
+  .nav {
+    position: fixed; bottom: 20px; right: 24px;
+    display: flex; gap: 8px; z-index: 100;
+  }
+  .nav button {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white; border: none; border-radius: 8px;
+    padding: 10px 20px; font-size: 0.95em; cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    font-weight: 600;
+  }
+  .nav button:hover { transform: translateY(-1px); }
+  .nav button:disabled { opacity: 0.25; cursor: default; transform: none; }
+
+  .counter {
+    position: fixed; bottom: 24px; left: 24px;
+    font-size: 0.85em; color: #64748b; z-index: 100; font-family: monospace;
+  }
+
+  .log-panel {
+    background: rgba(0,0,0,0.25); border-radius: 8px; padding: 10px 12px;
+    font-family: monospace; font-size: 0.78em; max-height: 140px;
+    overflow-y: auto; color: #94a3b8; line-height: 1.6;
+  }
+  .log-panel .highlight { color: #f59e0b; }
+  .log-panel .success { color: #22c55e; }
+  .log-panel .error-text { color: #ef4444; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+<div class="counter" id="counter"></div>
+
+<!-- ==================== s1: TITLE ==================== -->
+<div class="slide title-slide" id="s1">
+  <div style="margin-bottom:12px;">
+    <span style="font-size:3em;">&#127795;</span>
+  </div>
+  <h1>Code Representation and ASTs</h1>
+  <h2>Module 2 &mdash; Program Analysis Bootcamp</h2>
+  <p style="margin-top:28px;font-size:1.1em;color:#94a3b8;">
+    <strong style="color:#cbd5e1;">Instructor:</strong> Weihao &nbsp;|&nbsp;
+    <strong style="color:#cbd5e1;">Office Hours:</strong> By appointment, HH227
+  </p>
+  <p style="margin-top:14px;font-size:0.85em;color:#64748b;">Use arrow keys or buttons to navigate</p>
+</div>
+
+<!-- ==================== s2: LEARNING OBJECTIVES ==================== -->
+<div class="slide" id="s2">
+  <h2>Learning Objectives</h2>
+  <p style="color:#94a3b8;margin-bottom:18px;">By the end of this module, you will be able to:</p>
+  <ul style="margin-bottom:20px;">
+    <li><strong>Analyze</strong> source code and construct AST representations</li>
+    <li><strong>Implement</strong> traversal algorithms (pre-order, post-order, BFS)</li>
+    <li><strong>Create</strong> symbol tables with nested scope resolution</li>
+    <li><strong>Apply</strong> AST transformations (constant folding, renaming, dead code elimination)</li>
+  </ul>
+  <div class="key-idea">
+    <strong>Key Idea:</strong> Every program analysis tool — linters, compilers, security scanners — starts by converting source code into an AST. This module teaches you to build and manipulate that core data structure yourself.
+  </div>
+</div>
+
+<!-- ==================== s3: WHY ASTs + WHAT IS AN AST ==================== -->
+<div class="slide" id="s3">
+  <h2>Why ASTs? From Text to Structure</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Raw source code is flat text. Click <em>Step</em> to see how it becomes a structured tree.</p>
+  <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">source code</div>
+        <div class="code-content" style="font-size:1.1em;text-align:center;padding:20px;">
+          <span id="s3Expr" style="color:#f59e0b;font-size:1.3em;">(2 + 3) * 4</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s3Step()">Step</button>
+        <button class="btn btn-sm" onclick="s3Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+      </div>
+      <div style="margin-top:14px;">
+        <p style="font-size:0.95em;"><strong>Abstract Syntax Tree:</strong></p>
+        <ul style="font-size:0.9em;color:#94a3b8;">
+          <li>Each <strong style="color:#e2e8f0;">node</strong> = a programming construct</li>
+          <li><strong style="color:#e2e8f0;">Edges</strong> = containment/composition</li>
+          <li><strong style="color:#e2e8f0;">Syntactic noise</strong> (parens, semicolons) removed</li>
+          <li><strong style="color:#e2e8f0;">Semantic structure</strong> preserved</li>
+        </ul>
+      </div>
+      <div class="analogy" style="margin-top:10px;font-size:0.88em;">
+        <strong>Analogy:</strong> Source code is like a sentence. The AST is like a sentence diagram — it shows the grammatical structure, not the raw characters.
+      </div>
+    </div>
+    <div>
+      <canvas id="cS3" width="460" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="log-panel" id="s3Log" style="margin-top:8px;min-height:50px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Press Step to build the AST...</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS3');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s3Log');
+
+  // Tree nodes for (2 + 3) * 4
+  const nodes = [
+    { id: '*', x: 230, y: 70, color: '#f59e0b', label: '*' },
+    { id: '+', x: 130, y: 180, color: '#6366f1', label: '+' },
+    { id: '4', x: 330, y: 180, color: '#22c55e', label: '4' },
+    { id: '2', x: 70, y: 290, color: '#22c55e', label: '2' },
+    { id: '3', x: 190, y: 290, color: '#22c55e', label: '3' },
+  ];
+  const edges = [[0,1],[0,2],[1,3],[1,4]];
+
+  const steps = [
+    { show: [], msg: 'Starting with expression: <span class="highlight">(2 + 3) * 4</span>' },
+    { show: [0], msg: 'Root node: <span class="highlight">*</span> (multiply) — the LAST operator evaluated' },
+    { show: [0,1], msg: 'Left child: <span class="highlight">+</span> (add) — evaluated FIRST because of parentheses' },
+    { show: [0,1,3], msg: 'Left operand of +: <span class="success">2</span> (integer literal)' },
+    { show: [0,1,3,4], msg: 'Right operand of +: <span class="success">3</span> (integer literal)' },
+    { show: [0,1,2,3,4], msg: 'Right child of *: <span class="success">4</span> — complete AST! Parentheses are gone but precedence is encoded in the tree shape.' },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, 460, 380);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('ABSTRACT SYNTAX TREE', 16, 12);
+
+    if (stepIdx === 0) {
+      ctx.fillStyle = '#475569'; ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Press Step to build the tree...', 230, 200);
+      return;
+    }
+
+    const visible = steps[stepIdx - 1].show;
+
+    // Draw edges
+    edges.forEach(([pi, ci]) => {
+      if (visible.includes(pi) && visible.includes(ci)) {
+        ctx.beginPath(); ctx.moveTo(nodes[pi].x, nodes[pi].y + 22);
+        ctx.lineTo(nodes[ci].x, nodes[ci].y - 22);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+      }
+    });
+
+    // Draw nodes
+    nodes.forEach((n, i) => {
+      if (!visible.includes(i)) return;
+      const isNew = stepIdx > 1 && !steps[stepIdx - 2].show.includes(i);
+
+      ctx.beginPath(); ctx.arc(n.x, n.y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = n.color; ctx.fill();
+      if (isNew) {
+        ctx.beginPath(); ctx.arc(n.x, n.y, 28, 0, Math.PI * 2);
+        ctx.strokeStyle = n.color; ctx.lineWidth = 2; ctx.globalAlpha = 0.3; ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+
+    // Show what's removed
+    if (stepIdx >= 6) {
+      ctx.fillStyle = '#64748b'; ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('Parentheses ( ) removed — structure encodes precedence', 230, 345);
+    }
+  }
+
+  window.s3Step = function() {
+    if (stepIdx >= steps.length) return;
+    log.innerHTML += `<div class="log-entry">${steps[stepIdx].msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+    draw();
+  };
+  window.s3Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s3Step();
+    }, 1200);
+  };
+  window.s3Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; draw();
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Press Step to build the AST...</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s3').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s3'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s4: AST EXAMPLE + PRECEDENCE ==================== -->
+<div class="slide" id="s4">
+  <h2>Precedence in the Tree</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Toggle between two expressions to see how parentheses and operator precedence change the tree shape.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS4" width="440" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s4Toggle('parens')" id="s4Btn0">(2 + 3) * 4</button>
+        <button class="btn btn-sm btn-secondary" onclick="s4Toggle('noparens')" id="s4Btn1">2 + 3 * 4</button>
+      </div>
+    </div>
+    <div>
+      <div id="s4Info" style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+      </div>
+      <div class="key-idea" style="margin-top:12px;font-size:0.9em;">
+        <strong>Key Insight:</strong> The root operator is evaluated <strong>last</strong>. Higher-precedence operators appear <strong>lower</strong> in the tree. Parentheses override precedence by restructuring the tree.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('s4Info');
+  let mode = 'parens';
+
+  const trees = {
+    parens: {
+      nodes: [
+        { label: '*', x: 220, y: 70, color: '#f59e0b' },
+        { label: '+', x: 120, y: 180, color: '#6366f1' },
+        { label: '4', x: 320, y: 180, color: '#22c55e' },
+        { label: '2', x: 60, y: 280, color: '#22c55e' },
+        { label: '3', x: 180, y: 280, color: '#22c55e' },
+      ],
+      edges: [[0,1],[0,2],[1,3],[1,4]],
+      eval: ['2+3=5', '5*4=20'],
+      result: 20,
+      info: `<h3 style="color:#f59e0b;margin-top:0;">(2 + 3) * 4 = 20</h3>
+        <p style="font-size:0.95em;">Parentheses force <span style="color:#6366f1;">+</span> to evaluate first.</p>
+        <p style="font-size:0.9em;color:#94a3b8;margin-top:8px;"><strong>Tree shape:</strong> <span style="color:#6366f1;">+</span> is BELOW <span style="color:#f59e0b;">*</span>, so it's evaluated first. The root <span style="color:#f59e0b;">*</span> is evaluated last.</p>
+        <p style="font-size:0.9em;color:#94a3b8;margin-top:6px;"><strong>Evaluation order:</strong></p>
+        <ol style="font-size:0.9em;color:#94a3b8;">
+          <li><span style="color:#6366f1;">+</span> : 2 + 3 = 5</li>
+          <li><span style="color:#f59e0b;">*</span> : 5 * 4 = <strong style="color:#22c55e;">20</strong></li>
+        </ol>`
+    },
+    noparens: {
+      nodes: [
+        { label: '+', x: 220, y: 70, color: '#6366f1' },
+        { label: '2', x: 100, y: 180, color: '#22c55e' },
+        { label: '*', x: 320, y: 180, color: '#f59e0b' },
+        { label: '3', x: 260, y: 280, color: '#22c55e' },
+        { label: '4', x: 380, y: 280, color: '#22c55e' },
+      ],
+      edges: [[0,1],[0,2],[2,3],[2,4]],
+      eval: ['3*4=12', '2+12=14'],
+      result: 14,
+      info: `<h3 style="color:#6366f1;margin-top:0;">2 + 3 * 4 = 14</h3>
+        <p style="font-size:0.95em;">No parentheses — <span style="color:#f59e0b;">*</span> has higher precedence, so it goes deeper.</p>
+        <p style="font-size:0.9em;color:#94a3b8;margin-top:8px;"><strong>Tree shape:</strong> <span style="color:#f59e0b;">*</span> is BELOW <span style="color:#6366f1;">+</span>, so <span style="color:#f59e0b;">*</span> evaluates first. The root <span style="color:#6366f1;">+</span> is evaluated last.</p>
+        <p style="font-size:0.9em;color:#94a3b8;margin-top:6px;"><strong>Evaluation order:</strong></p>
+        <ol style="font-size:0.9em;color:#94a3b8;">
+          <li><span style="color:#f59e0b;">*</span> : 3 * 4 = 12</li>
+          <li><span style="color:#6366f1;">+</span> : 2 + 12 = <strong style="color:#22c55e;">14</strong></li>
+        </ol>`
+    }
+  };
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 340);
+    const t = trees[mode];
+
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('AST STRUCTURE', 16, 12);
+    ctx.textAlign = 'right';
+    ctx.fillText('Result: ' + t.result, 424, 12);
+
+    // Edges
+    t.edges.forEach(([pi, ci]) => {
+      ctx.beginPath();
+      ctx.moveTo(t.nodes[pi].x, t.nodes[pi].y + 22);
+      ctx.lineTo(t.nodes[ci].x, t.nodes[ci].y - 22);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+
+    // Nodes
+    t.nodes.forEach(n => {
+      ctx.beginPath(); ctx.arc(n.x, n.y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = n.color; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+
+    // Evaluation arrows
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    t.eval.forEach((e, i) => {
+      ctx.fillText((i + 1) + '. ' + e, 16, 320 + i * 16 - 10);
+    });
+
+    info.innerHTML = t.info;
+  }
+
+  window.s4Toggle = function(m) {
+    mode = m;
+    document.getElementById('s4Btn0').className = m === 'parens' ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+    document.getElementById('s4Btn1').className = m === 'noparens' ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s4').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s4'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s5: AST NODE CATEGORIES ==================== -->
+<div class="slide" id="s5">
+  <h2>AST Node Categories</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Click each category to see its node types and examples.</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS5" width="450" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div id="s5Info">
+      <div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a category</h3>
+        <p style="color:#64748b;">AST nodes fall into three main categories, each serving a different role in the program structure.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('s5Info');
+  let selected = -1;
+
+  const cats = [
+    { label: 'Expressions', x: 150, y: 100, w: 160, h: 50, color: '#6366f1',
+      desc: '<strong>Evaluate to values</strong> — the building blocks of computation.',
+      types: [
+        { name: 'Literals', ex: '42, "hello", true', code: 'IntLit 42 | BoolLit true' },
+        { name: 'Binary Ops', ex: 'a + b, x * y', code: 'BinOp(Add, Var "a", Var "b")' },
+        { name: 'Unary Ops', ex: '-x, !done', code: 'UnaryOp(Neg, Var "x")' },
+        { name: 'Identifiers', ex: 'x, myVar', code: 'Var "x"' },
+        { name: 'Function Calls', ex: 'foo(x, y)', code: 'Call("foo", [Var "x"; Var "y"])' },
+      ]},
+    { label: 'Statements', x: 150, y: 210, w: 160, h: 50, color: '#22c55e',
+      desc: '<strong>Perform actions</strong> — they execute but don\'t produce values directly.',
+      types: [
+        { name: 'Assignment', ex: 'x = 5', code: 'Assign("x", IntLit 5)' },
+        { name: 'If/Else', ex: 'if c then ... else ...', code: 'If(cond, then_body, else_body)' },
+        { name: 'While Loop', ex: 'while c do ...', code: 'While(cond, body)' },
+        { name: 'Return', ex: 'return x', code: 'Return(Some(Var "x"))' },
+        { name: 'Print', ex: 'print(x)', code: 'Print [Var "x"]' },
+      ]},
+    { label: 'Declarations', x: 340, y: 155, w: 160, h: 50, color: '#f59e0b',
+      desc: '<strong>Introduce names</strong> — they bind identifiers to types, values, or code.',
+      types: [
+        { name: 'Variable', ex: 'let x = 5', code: 'VarDecl("x", IntLit 5)' },
+        { name: 'Function', ex: 'let foo () = ...', code: 'FuncDef("foo", params, body)' },
+        { name: 'Type/Class', ex: 'type t = ...', code: 'TypeDecl("t", variants)' },
+      ]},
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 450, 340);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('NODE TAXONOMY', 16, 12);
+
+    // Center: AST Node
+    ctx.beginPath(); ctx.roundRect(55, 30, 100, 36, 8);
+    ctx.fillStyle = '#334155'; ctx.fill();
+    ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('AST Node', 105, 48);
+
+    cats.forEach((c, i) => {
+      const isSel = selected === i;
+      // Edge from AST Node
+      ctx.beginPath();
+      ctx.moveTo(105, 66);
+      ctx.lineTo(c.x, c.y - c.h / 2);
+      ctx.strokeStyle = isSel ? c.color : '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+
+      // Box
+      ctx.beginPath(); ctx.roundRect(c.x - c.w/2, c.y - c.h/2, c.w, c.h, 10);
+      ctx.fillStyle = c.color; ctx.globalAlpha = isSel ? 0.25 : 0.1;
+      ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = c.color; ctx.lineWidth = isSel ? 3 : 1.5; ctx.stroke();
+
+      ctx.fillStyle = isSel ? '#e2e8f0' : c.color;
+      ctx.font = isSel ? 'bold 14px sans-serif' : '13px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(c.label, c.x, c.y);
+
+      // Sub-items (when selected)
+      if (isSel) {
+        c.types.forEach((t, j) => {
+          const sy = c.y + c.h/2 + 20 + j * 22;
+          if (sy > 330) return;
+          ctx.fillStyle = c.color; ctx.font = '10px monospace'; ctx.textAlign = 'left';
+          ctx.fillText('• ' + t.name, c.x - c.w/2 + 10, sy);
+        });
+      }
+    });
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = 450 / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleX;
+
+    selected = -1;
+    cats.forEach((c, i) => {
+      if (mx >= c.x - c.w/2 && mx <= c.x + c.w/2 && my >= c.y - c.h/2 && my <= c.y + c.h/2) selected = i;
+    });
+
+    draw();
+
+    if (selected >= 0) {
+      const c = cats[selected];
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid ${c.color};">
+        <h3 style="color:${c.color};margin-top:0;">${c.label}</h3>
+        <p style="font-size:0.95em;margin-bottom:12px;">${c.desc}</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><th style="background:#334155;color:#e2e8f0;padding:6px 10px;text-align:left;font-size:0.85em;">Type</th><th style="background:#334155;color:#e2e8f0;padding:6px 10px;text-align:left;font-size:0.85em;">Example</th><th style="background:#334155;color:#e2e8f0;padding:6px 10px;text-align:left;font-size:0.85em;">OCaml AST</th></tr>
+          ${c.types.map(t => `<tr><td style="padding:5px 10px;border-bottom:1px solid #334155;font-size:0.82em;color:${c.color};">${t.name}</td><td style="padding:5px 10px;border-bottom:1px solid #334155;font-size:0.82em;color:#94a3b8;font-family:monospace;">${t.ex}</td><td style="padding:5px 10px;border-bottom:1px solid #334155;font-size:0.78em;color:#94a3b8;font-family:monospace;">${t.code}</td></tr>`).join('')}
+        </table>
+      </div>`;
+    } else {
+      info.innerHTML = `<div style="background:#1e293b;border-radius:10px;padding:16px;border:1px solid #334155;">
+        <h3 style="color:#94a3b8;margin-top:0;">Click a category</h3>
+        <p style="color:#64748b;">AST nodes fall into three main categories, each serving a different role.</p></div>`;
+    }
+  });
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s5').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s5'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s6: AST VS PARSE TREE ==================== -->
+<div class="slide" id="s6">
+  <h2>AST vs Parse Tree</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Toggle to see how the same expression looks as a parse tree vs an AST.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <h3 style="font-size:0.95em;color:#ef4444;margin-bottom:6px;">Parse Tree (Concrete Syntax Tree)</h3>
+      <canvas id="cS6a" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <h3 style="font-size:0.95em;color:#22c55e;margin-bottom:6px;">Abstract Syntax Tree</h3>
+      <canvas id="cS6b" width="420" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.88em;">
+      <tr><th style="background:#334155;color:#e2e8f0;padding:6px 12px;text-align:left;">Feature</th><th style="background:#ef4444;color:#fff;padding:6px 12px;">Parse Tree</th><th style="background:#22c55e;color:#fff;padding:6px 12px;">AST</th></tr>
+      <tr><td style="padding:5px 12px;border-bottom:1px solid #334155;">Parentheses</td><td style="padding:5px 12px;border-bottom:1px solid #334155;color:#ef4444;">Included</td><td style="padding:5px 12px;border-bottom:1px solid #334155;color:#22c55e;">Removed</td></tr>
+      <tr><td style="padding:5px 12px;border-bottom:1px solid #334155;">Grammar rules</td><td style="padding:5px 12px;border-bottom:1px solid #334155;color:#ef4444;">All intermediate nodes</td><td style="padding:5px 12px;border-bottom:1px solid #334155;color:#22c55e;">Only semantic nodes</td></tr>
+      <tr><td style="padding:5px 12px;border-bottom:1px solid #334155;">Size</td><td style="padding:5px 12px;border-bottom:1px solid #334155;color:#ef4444;">Larger (11 nodes)</td><td style="padding:5px 12px;border-bottom:1px solid #334155;color:#22c55e;">Compact (5 nodes)</td></tr>
+      <tr><td style="padding:5px 12px;">Used for</td><td style="padding:5px 12px;color:#ef4444;">Parsing stage</td><td style="padding:5px 12px;color:#22c55e;">Analysis & transformation</td></tr>
+    </table>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Parse tree for (2 + 3) * 4
+  const ctxA = document.getElementById('cS6a').getContext('2d');
+  const ctxB = document.getElementById('cS6b').getContext('2d');
+
+  function drawParseTree() {
+    ctxA.clearRect(0, 0, 420, 260);
+    const nodes = [
+      { label: 'Expr', x: 210, y: 30, color: '#64748b' },
+      { label: 'Expr', x: 120, y: 80, color: '#64748b' },
+      { label: '*', x: 210, y: 80, color: '#f59e0b' },
+      { label: 'Term', x: 300, y: 80, color: '#64748b' },
+      { label: '(', x: 50, y: 135, color: '#ef4444' },
+      { label: 'Expr', x: 120, y: 135, color: '#64748b' },
+      { label: ')', x: 190, y: 135, color: '#ef4444' },
+      { label: '4', x: 300, y: 135, color: '#22c55e' },
+      { label: '2', x: 70, y: 200, color: '#22c55e' },
+      { label: '+', x: 120, y: 200, color: '#6366f1' },
+      { label: '3', x: 170, y: 200, color: '#22c55e' },
+    ];
+    const edges = [[0,1],[0,2],[0,3],[1,4],[1,5],[1,6],[3,7],[5,8],[5,9],[5,10]];
+
+    edges.forEach(([p, c]) => {
+      ctxA.beginPath(); ctxA.moveTo(nodes[p].x, nodes[p].y + 12);
+      ctxA.lineTo(nodes[c].x, nodes[c].y - 12);
+      ctxA.strokeStyle = '#334155'; ctxA.lineWidth = 1.2; ctxA.stroke();
+    });
+    nodes.forEach(n => {
+      ctxA.beginPath(); ctxA.arc(n.x, n.y, 14, 0, Math.PI * 2);
+      ctxA.fillStyle = n.color; ctxA.globalAlpha = 0.15; ctxA.fill();
+      ctxA.globalAlpha = 1; ctxA.strokeStyle = n.color; ctxA.lineWidth = 1.5; ctxA.stroke();
+      ctxA.fillStyle = n.color; ctxA.font = 'bold 10px monospace';
+      ctxA.textAlign = 'center'; ctxA.textBaseline = 'middle';
+      ctxA.fillText(n.label, n.x, n.y);
+    });
+    ctxA.fillStyle = '#64748b'; ctxA.font = '10px sans-serif'; ctxA.textAlign = 'center';
+    ctxA.fillText('11 nodes — includes grammar rules, parens', 210, 245);
+  }
+
+  function drawAST() {
+    ctxB.clearRect(0, 0, 420, 260);
+    const nodes = [
+      { label: '*', x: 210, y: 55, color: '#f59e0b' },
+      { label: '+', x: 120, y: 145, color: '#6366f1' },
+      { label: '4', x: 300, y: 145, color: '#22c55e' },
+      { label: '2', x: 70, y: 220, color: '#22c55e' },
+      { label: '3', x: 170, y: 220, color: '#22c55e' },
+    ];
+    const edges = [[0,1],[0,2],[1,3],[1,4]];
+
+    edges.forEach(([p, c]) => {
+      ctxB.beginPath(); ctxB.moveTo(nodes[p].x, nodes[p].y + 18);
+      ctxB.lineTo(nodes[c].x, nodes[c].y - 18);
+      ctxB.strokeStyle = '#475569'; ctxB.lineWidth = 2; ctxB.stroke();
+    });
+    nodes.forEach(n => {
+      ctxB.beginPath(); ctxB.arc(n.x, n.y, 20, 0, Math.PI * 2);
+      ctxB.fillStyle = n.color; ctxB.fill();
+      ctxB.fillStyle = '#fff'; ctxB.font = 'bold 14px monospace';
+      ctxB.textAlign = 'center'; ctxB.textBaseline = 'middle';
+      ctxB.fillText(n.label, n.x, n.y);
+    });
+    ctxB.fillStyle = '#22c55e'; ctxB.font = '10px sans-serif'; ctxB.textAlign = 'center';
+    ctxB.fillText('5 nodes — only semantic structure', 210, 245);
+  }
+
+  function init() { drawParseTree(); drawAST(); }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s6').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s6'), {attributes: true, attributeFilter: ['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s7: BUILDING ASTs IN OCAML ==================== -->
+<div class="slide" id="s7">
+  <h2>Building ASTs in OCaml</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Step through the OCaml type definitions and see how they map to tree nodes.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">ast_types.ml</div>
+        <div class="code-content" id="s7Code">
+          <div class="line" id="s7L0"><span style="color:#94a3b8;">1</span>  <span style="color:#c792ea;">type</span> <span style="color:#ffcb6b;">expr</span> =</div>
+          <div class="line" id="s7L1"><span style="color:#94a3b8;">2</span>    | <span style="color:#82aaff;">IntLit</span> <span style="color:#c792ea;">of</span> int</div>
+          <div class="line" id="s7L2"><span style="color:#94a3b8;">3</span>    | <span style="color:#82aaff;">BoolLit</span> <span style="color:#c792ea;">of</span> bool</div>
+          <div class="line" id="s7L3"><span style="color:#94a3b8;">4</span>    | <span style="color:#82aaff;">Var</span> <span style="color:#c792ea;">of</span> string</div>
+          <div class="line" id="s7L4"><span style="color:#94a3b8;">5</span>    | <span style="color:#82aaff;">BinOp</span> <span style="color:#c792ea;">of</span> op * expr * expr</div>
+          <div class="line" id="s7L5"><span style="color:#94a3b8;">6</span>    | <span style="color:#82aaff;">UnaryOp</span> <span style="color:#c792ea;">of</span> uop * expr</div>
+          <div class="line" id="s7L6"><span style="color:#94a3b8;">7</span>    | <span style="color:#82aaff;">Call</span> <span style="color:#c792ea;">of</span> string * expr list</div>
+          <div class="line" id="s7L7"><span style="color:#94a3b8;">8</span>  </div>
+          <div class="line" id="s7L8"><span style="color:#94a3b8;">9</span>  <span style="color:#c792ea;">type</span> <span style="color:#ffcb6b;">stmt</span> =</div>
+          <div class="line" id="s7L9"><span style="color:#94a3b8;">10</span> | <span style="color:#82aaff;">Assign</span> <span style="color:#c792ea;">of</span> string * expr</div>
+          <div class="line" id="s7L10"><span style="color:#94a3b8;">11</span> | <span style="color:#82aaff;">If</span> <span style="color:#c792ea;">of</span> expr * stmt list * stmt list</div>
+          <div class="line" id="s7L11"><span style="color:#94a3b8;">12</span> | <span style="color:#82aaff;">While</span> <span style="color:#c792ea;">of</span> expr * stmt list</div>
+          <div class="line" id="s7L12"><span style="color:#94a3b8;">13</span> | <span style="color:#82aaff;">Return</span> <span style="color:#c792ea;">of</span> expr option</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s7Step()">Step</button>
+        <button class="btn btn-sm" onclick="s7Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS7" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="log-panel" id="s7Log" style="margin-top:8px;min-height:60px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Step through: if x > 0 then y = x + 1</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS7');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s7Log');
+  const lineIds = ['s7L0','s7L1','s7L2','s7L3','s7L4','s7L5','s7L6','s7L7','s7L8','s7L9','s7L10','s7L11','s7L12'];
+
+  // AST for: if x > 0 then y = x + 1
+  const treeNodes = [
+    { label: 'If', x: 210, y: 40, color: '#f59e0b' },
+    { label: 'BinOp\nGt', x: 100, y: 110, color: '#6366f1' },
+    { label: 'Assign', x: 320, y: 110, color: '#22c55e' },
+    { label: 'Var\n"x"', x: 50, y: 190, color: '#a78bfa' },
+    { label: 'IntLit\n0', x: 150, y: 190, color: '#38bdf8' },
+    { label: '"y"', x: 270, y: 190, color: '#94a3b8' },
+    { label: 'BinOp\nAdd', x: 370, y: 190, color: '#6366f1' },
+    { label: 'Var\n"x"', x: 320, y: 260, color: '#a78bfa' },
+    { label: 'IntLit\n1', x: 400, y: 260, color: '#38bdf8' },
+  ];
+  const treeEdges = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[6,7],[6,8]];
+
+  const steps = [
+    { hl: [10], show: [0], msg: '<span class="highlight">If</span> node — stmt type with condition, then-branch, else-branch' },
+    { hl: [4], show: [0,1], msg: '<span class="highlight">BinOp(Gt, ...)</span> — the condition: x > 0' },
+    { hl: [3], show: [0,1,3], msg: '<span class="highlight">Var "x"</span> — left operand of >' },
+    { hl: [1], show: [0,1,3,4], msg: '<span class="highlight">IntLit 0</span> — right operand of >' },
+    { hl: [9], show: [0,1,2,3,4], msg: '<span class="highlight">Assign("y", ...)</span> — the then-branch' },
+    { hl: [4], show: [0,1,2,3,4,5,6], msg: '<span class="highlight">BinOp(Add, ...)</span> — the value assigned: x + 1' },
+    { hl: [3,1], show: [0,1,2,3,4,5,6,7,8], msg: 'Leaves: <span class="success">Var "x"</span> and <span class="success">IntLit 1</span> — complete AST!' },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function clearHL() { lineIds.forEach(id => document.getElementById(id).classList.remove('active')); }
+
+  function draw() {
+    ctx.clearRect(0, 0, 420, 280);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('AST: if x > 0 then y = x + 1', 12, 8);
+
+    if (stepIdx === 0) {
+      ctx.fillStyle = '#475569'; ctx.font = '13px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Press Step to build...', 210, 140);
+      return;
+    }
+
+    const visible = steps[stepIdx - 1].show;
+
+    treeEdges.forEach(([p, c]) => {
+      if (visible.includes(p) && visible.includes(c)) {
+        ctx.beginPath(); ctx.moveTo(treeNodes[p].x, treeNodes[p].y + 18);
+        ctx.lineTo(treeNodes[c].x, treeNodes[c].y - 18);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+    });
+
+    treeNodes.forEach((n, i) => {
+      if (!visible.includes(i)) return;
+      const isNew = stepIdx > 1 && !steps[stepIdx - 2].show.includes(i);
+      ctx.beginPath(); ctx.roundRect(n.x - 30, n.y - 16, 60, 32, 8);
+      ctx.fillStyle = n.color; ctx.globalAlpha = isNew ? 0.3 : 0.15;
+      ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = n.color; ctx.lineWidth = isNew ? 2.5 : 1.5; ctx.stroke();
+      ctx.fillStyle = n.color; ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const lines = n.label.split('\n');
+      lines.forEach((l, li) => ctx.fillText(l, n.x, n.y + (li - (lines.length-1)/2) * 12));
+    });
+  }
+
+  window.s7Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    clearHL();
+    s.hl.forEach(i => document.getElementById(lineIds[i]).classList.add('active'));
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+    draw();
+  };
+  window.s7Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s7Step();
+    }, 1400);
+  };
+  window.s7Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; clearHL(); draw();
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Step through: if x > 0 then y = x + 1</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s7').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s7'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s8: PRE-ORDER TRAVERSAL ==================== -->
+<div class="slide" id="s8">
+  <h2>Pre-order Traversal (Top-Down)</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;"><strong>Visit node FIRST, then children.</strong> Step through to see the order on <code style="background:#1e293b;padding:2px 6px;border-radius:4px;color:#f59e0b;">(2 + 3) * 4</code>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS8" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s8Step()">Step</button>
+        <button class="btn btn-sm" onclick="s8Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">pre_order.ml</div>
+        <div class="code-content" id="s8Code">
+          <div class="line" id="s8L0"><span style="color:#c792ea;">let rec</span> <span style="color:#82aaff;">pre_order</span> node =</div>
+          <div class="line" id="s8L1">  node.value ::  <span style="color:#546e7a;">(* visit node FIRST *)</span></div>
+          <div class="line" id="s8L2">  List.concat_map pre_order</div>
+          <div class="line" id="s8L3">    node.children  <span style="color:#546e7a;">(* then children *)</span></div>
+        </div>
+      </div>
+      <div id="s8Result" style="background:#1e293b;border-radius:8px;padding:12px 16px;margin-top:10px;font-family:monospace;font-size:0.95em;min-height:36px;border:1px solid #334155;">
+        <span style="color:#64748b;">Visit order: </span><span id="s8Order"></span>
+      </div>
+      <div class="log-panel" id="s8Log" style="margin-top:8px;min-height:60px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Pre-order: visit self, then recurse left, then right...</div>
+      </div>
+      <div class="key-idea" style="margin-top:8px;font-size:0.85em;">
+        <strong>Use case:</strong> Top-down analyses — type checking (check parent type before children), scope entry (enter scope before visiting body).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s8Log');
+  const orderEl = document.getElementById('s8Order');
+  const codeLines = ['s8L0','s8L1','s8L2','s8L3'];
+
+  const nodes = [
+    { label: '*', x: 220, y: 60, color: '#f59e0b' },
+    { label: '+', x: 120, y: 155, color: '#6366f1' },
+    { label: '4', x: 320, y: 155, color: '#22c55e' },
+    { label: '2', x: 60, y: 245, color: '#22c55e' },
+    { label: '3', x: 180, y: 245, color: '#22c55e' },
+  ];
+  const edges = [[0,1],[0,2],[1,3],[1,4]];
+
+  // Pre-order: *, +, 2, 3, 4
+  const steps = [
+    { visit: 0, hl: [1], msg: '<span class="highlight">Visit *</span> (root) — process self first' },
+    { visit: 1, hl: [2,3], msg: 'Recurse left → <span class="highlight">Visit +</span>' },
+    { visit: 3, hl: [2,3], msg: 'Recurse left → <span class="highlight">Visit 2</span> (leaf)' },
+    { visit: 4, hl: [2,3], msg: 'Recurse right → <span class="highlight">Visit 3</span> (leaf)' },
+    { visit: 2, hl: [2,3], msg: 'Back to * → recurse right → <span class="highlight">Visit 4</span> (leaf)' },
+  ];
+
+  let stepIdx = 0, timer = null;
+  let visited = [];
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 300);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('PRE-ORDER TRAVERSAL', 16, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText(stepIdx + '/' + steps.length, 424, 10);
+
+    // Edges
+    edges.forEach(([p, c]) => {
+      const pVis = visited.includes(p), cVis = visited.includes(c);
+      ctx.beginPath(); ctx.moveTo(nodes[p].x, nodes[p].y + 22);
+      ctx.lineTo(nodes[c].x, nodes[c].y - 22);
+      ctx.strokeStyle = (pVis && cVis) ? '#818cf8' : '#334155';
+      ctx.lineWidth = (pVis && cVis) ? 2.5 : 1.5; ctx.stroke();
+    });
+
+    // Nodes
+    nodes.forEach((n, i) => {
+      const isVisited = visited.includes(i);
+      const isCurrent = stepIdx > 0 && steps[stepIdx - 1].visit === i;
+
+      ctx.beginPath(); ctx.arc(n.x, n.y, 24, 0, Math.PI * 2);
+      ctx.fillStyle = isCurrent ? '#f59e0b' : isVisited ? n.color : '#1e293b';
+      ctx.fill();
+      ctx.strokeStyle = isVisited ? n.color : '#475569';
+      ctx.lineWidth = isCurrent ? 3 : 2; ctx.stroke();
+
+      if (isCurrent) {
+        ctx.beginPath(); ctx.arc(n.x, n.y, 30, 0, Math.PI * 2);
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.3; ctx.stroke(); ctx.globalAlpha = 1;
+      }
+
+      ctx.fillStyle = isVisited ? '#fff' : '#64748b';
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+
+      // Visit order number
+      if (isVisited) {
+        const order = visited.indexOf(i) + 1;
+        ctx.beginPath(); ctx.arc(n.x + 20, n.y - 20, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#f59e0b'; ctx.fill();
+        ctx.fillStyle = '#000'; ctx.font = 'bold 10px sans-serif';
+        ctx.fillText(order, n.x + 20, n.y - 20);
+      }
+    });
+  }
+
+  function clearHL() { codeLines.forEach(id => document.getElementById(id).classList.remove('active')); }
+
+  window.s8Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    visited.push(s.visit);
+    clearHL();
+    s.hl.forEach(i => document.getElementById(codeLines[i]).classList.add('active'));
+    orderEl.textContent = visited.map(i => nodes[i].label).join(', ');
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+    draw();
+  };
+  window.s8Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s8Step();
+    }, 1100);
+  };
+  window.s8Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; visited = []; clearHL(); draw();
+    orderEl.textContent = '';
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Pre-order: visit self, then recurse left, then right...</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s8').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s8'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCA: CHALLENGE — PREDICT TRAVERSAL ORDER ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge: Predict the Traversal</h2>
+  <p style="color:#94a3b8;margin-bottom:10px;">Given this AST for <code style="background:#1e293b;padding:2px 6px;border-radius:4px;color:#f59e0b;">x + y * z</code>, type the <strong>pre-order</strong> visit sequence.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cSCA" width="400" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <p style="font-size:0.95em;margin-bottom:10px;"><strong>Pre-order rule:</strong> Visit node, then left child, then right child.</p>
+      <div style="margin-bottom:12px;">
+        <label style="color:#94a3b8;font-size:0.9em;display:block;margin-bottom:4px;">Your answer (comma-separated):</label>
+        <input type="text" id="sCA_input" placeholder="e.g. +, x, *, y, z" style="width:100%;padding:10px 14px;background:#1e293b;border:2px solid #334155;border-radius:8px;color:#e2e8f0;font-family:monospace;font-size:1em;">
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:12px;">
+        <button class="btn btn-sm" onclick="sCACheck()">Check</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCAReset()">Reset</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCAReveal()">Show Answer</button>
+      </div>
+      <div id="sCA_fb" style="display:none;padding:12px;border-radius:8px;font-size:0.95em;"></div>
+      <div id="sCA_explain" style="display:none;" class="key-idea">
+        <strong>Pre-order trace:</strong><br>
+        1. Visit <span style="color:#6366f1;">+</span> (root)<br>
+        2. Go left → Visit <span style="color:#22c55e;">x</span> (leaf)<br>
+        3. Go right → Visit <span style="color:#f59e0b;">*</span><br>
+        4. Go left → Visit <span style="color:#22c55e;">y</span> (leaf)<br>
+        5. Go right → Visit <span style="color:#22c55e;">z</span> (leaf)<br>
+        <strong>Result: +, x, *, y, z</strong>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cSCA');
+  const ctx = canvas.getContext('2d');
+
+  // AST for x + y * z (no parens, * has higher precedence)
+  const nodes = [
+    { label: '+', x: 200, y: 50, color: '#6366f1' },
+    { label: 'x', x: 100, y: 150, color: '#22c55e' },
+    { label: '*', x: 300, y: 150, color: '#f59e0b' },
+    { label: 'y', x: 240, y: 240, color: '#22c55e' },
+    { label: 'z', x: 360, y: 240, color: '#22c55e' },
+  ];
+  const edges = [[0,1],[0,2],[2,3],[2,4]];
+
+  function draw() {
+    ctx.clearRect(0, 0, 400, 280);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('AST: x + y * z', 16, 10);
+
+    edges.forEach(([p, c]) => {
+      ctx.beginPath(); ctx.moveTo(nodes[p].x, nodes[p].y + 20);
+      ctx.lineTo(nodes[c].x, nodes[c].y - 20);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    nodes.forEach(n => {
+      ctx.beginPath(); ctx.arc(n.x, n.y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = n.color; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+  }
+
+  const correct = '+,x,*,y,z';
+  window.sCACheck = function() {
+    const input = document.getElementById('sCA_input').value.replace(/\s+/g, '').toLowerCase();
+    const fb = document.getElementById('sCA_fb');
+    fb.style.display = 'block';
+    if (input === correct) {
+      fb.style.background = 'rgba(34,197,94,0.1)'; fb.style.color = '#22c55e';
+      fb.textContent = '✓ Correct! Pre-order visits the root first, then recurses left, then right.';
+      document.getElementById('sCA_input').style.borderColor = '#22c55e';
+    } else {
+      fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.color = '#ef4444';
+      fb.textContent = '✗ Not quite. Remember: visit NODE first, then LEFT child, then RIGHT child.';
+      document.getElementById('sCA_input').style.borderColor = '#ef4444';
+    }
+  };
+  window.sCAReset = function() {
+    document.getElementById('sCA_input').value = '';
+    document.getElementById('sCA_input').style.borderColor = '#334155';
+    document.getElementById('sCA_fb').style.display = 'none';
+    document.getElementById('sCA_explain').style.display = 'none';
+  };
+  window.sCAReveal = function() {
+    document.getElementById('sCA_explain').style.display = 'block';
+    document.getElementById('sCA_input').value = '+, x, *, y, z';
+    document.getElementById('sCA_input').style.borderColor = '#22c55e';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCA').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('sCA'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s9: POST-ORDER TRAVERSAL ==================== -->
+<div class="slide" id="s9">
+  <h2>Post-order Traversal (Bottom-Up)</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;"><strong>Visit children FIRST, then node.</strong> Step through to see bottom-up evaluation order.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS9" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s9Step()">Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">post_order.ml</div>
+        <div class="code-content" id="s9Code">
+          <div class="line" id="s9L0"><span style="color:#c792ea;">let rec</span> <span style="color:#82aaff;">post_order</span> node =</div>
+          <div class="line" id="s9L1">  List.concat_map post_order</div>
+          <div class="line" id="s9L2">    node.children  <span style="color:#546e7a;">(* children FIRST *)</span></div>
+          <div class="line" id="s9L3">  @ [node.value]   <span style="color:#546e7a;">(* then self *)</span></div>
+        </div>
+      </div>
+      <div id="s9Result" style="background:#1e293b;border-radius:8px;padding:12px 16px;margin-top:10px;font-family:monospace;font-size:0.95em;min-height:36px;border:1px solid #334155;">
+        <span style="color:#64748b;">Visit order: </span><span id="s9Order"></span>
+      </div>
+      <div class="log-panel" id="s9Log" style="margin-top:8px;min-height:60px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Post-order: recurse left, recurse right, then visit self...</div>
+      </div>
+      <div class="key-idea" style="margin-top:8px;font-size:0.85em;">
+        <strong>Use case:</strong> Bottom-up analyses — expression evaluation (compute children before parent), code generation, computing expression types.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s9Log');
+  const orderEl = document.getElementById('s9Order');
+  const codeLines = ['s9L0','s9L1','s9L2','s9L3'];
+
+  const nodes = [
+    { label: '*', x: 220, y: 60, color: '#f59e0b' },
+    { label: '+', x: 120, y: 155, color: '#6366f1' },
+    { label: '4', x: 320, y: 155, color: '#22c55e' },
+    { label: '2', x: 60, y: 245, color: '#22c55e' },
+    { label: '3', x: 180, y: 245, color: '#22c55e' },
+  ];
+  const edges = [[0,1],[0,2],[1,3],[1,4]];
+
+  // Post-order: 2, 3, +, 4, *
+  const steps = [
+    { visit: 3, hl: [1,2], msg: 'Recurse to deepest left → <span class="highlight">Visit 2</span> (leaf, no children)' },
+    { visit: 4, hl: [1,2], msg: 'Recurse right sibling → <span class="highlight">Visit 3</span> (leaf)' },
+    { visit: 1, hl: [3], msg: 'Both children done → <span class="highlight">Visit +</span> (can now compute 2+3=5)' },
+    { visit: 2, hl: [1,2], msg: 'Back to * → recurse right → <span class="highlight">Visit 4</span> (leaf)' },
+    { visit: 0, hl: [3], msg: 'Both children done → <span class="highlight">Visit *</span> (root last! 5*4=20)' },
+  ];
+
+  let stepIdx = 0, timer = null, visited = [];
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 300);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('POST-ORDER TRAVERSAL', 16, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText(stepIdx + '/' + steps.length, 424, 10);
+
+    edges.forEach(([p, c]) => {
+      const pVis = visited.includes(p), cVis = visited.includes(c);
+      ctx.beginPath(); ctx.moveTo(nodes[p].x, nodes[p].y + 22);
+      ctx.lineTo(nodes[c].x, nodes[c].y - 22);
+      ctx.strokeStyle = (pVis && cVis) ? '#818cf8' : '#334155';
+      ctx.lineWidth = (pVis && cVis) ? 2.5 : 1.5; ctx.stroke();
+    });
+
+    nodes.forEach((n, i) => {
+      const isVisited = visited.includes(i);
+      const isCurrent = stepIdx > 0 && steps[stepIdx - 1].visit === i;
+      ctx.beginPath(); ctx.arc(n.x, n.y, 24, 0, Math.PI * 2);
+      ctx.fillStyle = isCurrent ? '#f59e0b' : isVisited ? n.color : '#1e293b';
+      ctx.fill();
+      ctx.strokeStyle = isVisited ? n.color : '#475569';
+      ctx.lineWidth = isCurrent ? 3 : 2; ctx.stroke();
+      if (isCurrent) {
+        ctx.beginPath(); ctx.arc(n.x, n.y, 30, 0, Math.PI * 2);
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.3; ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = isVisited ? '#fff' : '#64748b';
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+      if (isVisited) {
+        const order = visited.indexOf(i) + 1;
+        ctx.beginPath(); ctx.arc(n.x + 20, n.y - 20, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#a78bfa'; ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif';
+        ctx.fillText(order, n.x + 20, n.y - 20);
+      }
+    });
+  }
+
+  function clearHL() { codeLines.forEach(id => document.getElementById(id).classList.remove('active')); }
+
+  window.s9Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    visited.push(s.visit);
+    clearHL();
+    s.hl.forEach(i => document.getElementById(codeLines[i]).classList.add('active'));
+    orderEl.textContent = visited.map(i => nodes[i].label).join(', ');
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++; draw();
+  };
+  window.s9Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s9Step();
+    }, 1100);
+  };
+  window.s9Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; visited = []; clearHL(); draw();
+    orderEl.textContent = '';
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Post-order: recurse left, recurse right, then visit self...</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s9').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s9'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s10: BFS / LEVEL-ORDER TRAVERSAL ==================== -->
+<div class="slide" id="s10">
+  <h2>BFS / Level-order Traversal</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;"><strong>Visit all nodes at depth d before depth d+1.</strong> Watch the queue drive the traversal.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS10" width="440" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s10Queue" style="background:#1e293b;border-radius:8px;padding:12px 16px;margin-bottom:8px;font-family:monospace;font-size:0.9em;border:1px solid #334155;min-height:40px;">
+        <span style="color:#64748b;">Queue: </span><span id="s10QueueContent"></span>
+      </div>
+      <div id="s10Result" style="background:#1e293b;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:0.95em;min-height:36px;border:1px solid #334155;">
+        <span style="color:#64748b;">Visit order: </span><span id="s10Order"></span>
+      </div>
+      <div class="code-block" style="margin-top:10px;">
+        <div class="code-header">bfs.ml</div>
+        <div class="code-content" style="font-size:0.82em;">
+          <div class="line"><span style="color:#c792ea;">let</span> <span style="color:#82aaff;">bfs</span> root =</div>
+          <div class="line">  <span style="color:#c792ea;">let</span> q = Queue.create () <span style="color:#c792ea;">in</span></div>
+          <div class="line">  Queue.push root q;</div>
+          <div class="line">  <span style="color:#c792ea;">while not</span> (Queue.is_empty q) <span style="color:#c792ea;">do</span></div>
+          <div class="line">    <span style="color:#c792ea;">let</span> cur = Queue.pop q <span style="color:#c792ea;">in</span></div>
+          <div class="line">    visit cur;  <span style="color:#546e7a;">(* process *)</span></div>
+          <div class="line">    List.iter (Queue.push q) cur.children</div>
+          <div class="line">  <span style="color:#c792ea;">done</span></div>
+        </div>
+      </div>
+      <div class="key-idea" style="margin-top:8px;font-size:0.85em;">
+        <strong>Use case:</strong> Level-based analysis, finding the shallowest occurrence of a pattern, pretty-printing by depth.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+  const queueEl = document.getElementById('s10QueueContent');
+  const orderEl = document.getElementById('s10Order');
+
+  const nodes = [
+    { label: '*', x: 220, y: 55, color: '#f59e0b', level: 0 },
+    { label: '+', x: 120, y: 145, color: '#6366f1', level: 1 },
+    { label: '4', x: 320, y: 145, color: '#22c55e', level: 1 },
+    { label: '2', x: 60, y: 235, color: '#22c55e', level: 2 },
+    { label: '3', x: 180, y: 235, color: '#22c55e', level: 2 },
+  ];
+  const edges = [[0,1],[0,2],[1,3],[1,4]];
+  const children = {0:[1,2], 1:[3,4], 2:[], 3:[], 4:[]};
+
+  // BFS: *, +, 4, 2, 3
+  const steps = [
+    { action: 'enqueue', node: 0, queue: [0], visited: [], msg: 'Enqueue root *' },
+    { action: 'dequeue', node: 0, queue: [1,2], visited: [0], msg: 'Dequeue * → visit, enqueue children +, 4' },
+    { action: 'dequeue', node: 1, queue: [2,3,4], visited: [0,1], msg: 'Dequeue + → visit, enqueue children 2, 3' },
+    { action: 'dequeue', node: 2, queue: [3,4], visited: [0,1,2], msg: 'Dequeue 4 → visit (leaf, no children)' },
+    { action: 'dequeue', node: 3, queue: [4], visited: [0,1,2,3], msg: 'Dequeue 2 → visit (leaf)' },
+    { action: 'dequeue', node: 4, queue: [], visited: [0,1,2,3,4], msg: 'Dequeue 3 → visit (leaf). Queue empty — done!' },
+  ];
+
+  let stepIdx = 0, timer = null, visited = [], queue = [];
+
+  function draw() {
+    ctx.clearRect(0, 0, 440, 300);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('BFS / LEVEL-ORDER', 16, 10);
+
+    // Level labels
+    ['Level 0', 'Level 1', 'Level 2'].forEach((lbl, i) => {
+      const y = 55 + i * 90;
+      ctx.fillStyle = '#334155'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+      ctx.fillText(lbl, 425, y - 6);
+      ctx.beginPath(); ctx.moveTo(20, y + 20); ctx.lineTo(420, y + 20);
+      ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1; ctx.setLineDash([2,4]); ctx.stroke(); ctx.setLineDash([]);
+    });
+
+    edges.forEach(([p, c]) => {
+      ctx.beginPath(); ctx.moveTo(nodes[p].x, nodes[p].y + 20);
+      ctx.lineTo(nodes[c].x, nodes[c].y - 20);
+      ctx.strokeStyle = (visited.includes(p) && visited.includes(c)) ? '#818cf8' : '#334155';
+      ctx.lineWidth = 2; ctx.stroke();
+    });
+
+    nodes.forEach((n, i) => {
+      const isVisited = visited.includes(i);
+      const inQueue = queue.includes(i);
+      const isCurrent = stepIdx > 0 && steps[stepIdx - 1].node === i && steps[stepIdx - 1].action === 'dequeue';
+
+      ctx.beginPath(); ctx.arc(n.x, n.y, 24, 0, Math.PI * 2);
+      ctx.fillStyle = isCurrent ? '#f59e0b' : isVisited ? n.color : inQueue ? '#334155' : '#1e293b';
+      ctx.fill();
+      ctx.strokeStyle = inQueue ? '#a78bfa' : isVisited ? n.color : '#475569';
+      ctx.lineWidth = isCurrent ? 3 : inQueue ? 2.5 : 2; ctx.stroke();
+
+      if (isCurrent) {
+        ctx.beginPath(); ctx.arc(n.x, n.y, 30, 0, Math.PI * 2);
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.3; ctx.stroke(); ctx.globalAlpha = 1;
+      }
+
+      ctx.fillStyle = (isVisited || inQueue) ? '#fff' : '#64748b';
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+
+      if (isVisited) {
+        const order = visited.indexOf(i) + 1;
+        ctx.beginPath(); ctx.arc(n.x + 20, n.y - 20, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#38bdf8'; ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif';
+        ctx.fillText(order, n.x + 20, n.y - 20);
+      }
+    });
+  }
+
+  window.s10Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    visited = [...s.visited];
+    queue = [...s.queue];
+    queueEl.innerHTML = queue.length > 0
+      ? queue.map(i => `<span style="background:#334155;padding:2px 8px;border-radius:4px;border:1px solid #a78bfa;margin-right:4px;color:#a78bfa;">${nodes[i].label}</span>`).join(' ')
+      : '<span style="color:#64748b;">empty</span>';
+    orderEl.textContent = visited.map(i => nodes[i].label).join(', ');
+    stepIdx++; draw();
+  };
+  window.s10Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s10Step();
+    }, 1100);
+  };
+  window.s10Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; visited = []; queue = []; draw();
+    queueEl.innerHTML = '';
+    orderEl.textContent = '';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s10').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s10'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s11: PATTERN MATCHING + NODE COUNTER ==================== -->
+<div class="slide" id="s11">
+  <h2>Pattern Matching Over ASTs</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">In OCaml, pattern matching replaces the visitor pattern. Step through a node counter.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">node_counter.ml</div>
+        <div class="code-content" id="s11Code">
+          <div class="line" id="s11L0"><span style="color:#c792ea;">let rec</span> <span style="color:#82aaff;">count_expr</span> = <span style="color:#c792ea;">function</span></div>
+          <div class="line" id="s11L1">  | <span style="color:#82aaff;">IntLit</span> _ -> inc <span style="color:#c3e88d;">"IntLit"</span></div>
+          <div class="line" id="s11L2">  | <span style="color:#82aaff;">Var</span> _ -> inc <span style="color:#c3e88d;">"Var"</span></div>
+          <div class="line" id="s11L3">  | <span style="color:#82aaff;">BinOp</span> (_, l, r) -></div>
+          <div class="line" id="s11L4">      inc <span style="color:#c3e88d;">"BinOp"</span>;</div>
+          <div class="line" id="s11L5">      count_expr l; count_expr r</div>
+          <div class="line" id="s11L6">  | _ -> ()</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+      <div class="key-idea" style="margin-top:10px;font-size:0.85em;">
+        <strong>Why pattern matching?</strong> Add new analyses by writing new <code>match</code> functions — no class hierarchy needed. This is OCaml's superpower for program analysis.
+      </div>
+    </div>
+    <div>
+      <canvas id="cS11" width="400" height="200" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="s11Counts" style="background:#1e293b;border-radius:8px;padding:12px 16px;margin-top:10px;font-family:monospace;font-size:0.9em;border:1px solid #334155;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="text-align:center;"><span style="color:#64748b;">BinOp</span><br><span id="s11C_BinOp" style="font-size:1.4em;font-weight:700;color:#6366f1;">0</span></div>
+        <div style="text-align:center;"><span style="color:#64748b;">IntLit</span><br><span id="s11C_IntLit" style="font-size:1.4em;font-weight:700;color:#38bdf8;">0</span></div>
+        <div style="text-align:center;"><span style="color:#64748b;">Var</span><br><span id="s11C_Var" style="font-size:1.4em;font-weight:700;color:#a78bfa;">0</span></div>
+      </div>
+      <div class="log-panel" id="s11Log" style="margin-top:8px;min-height:50px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Counting nodes in: x + (2 * y)</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s11Log');
+  const codeLines = ['s11L0','s11L1','s11L2','s11L3','s11L4','s11L5','s11L6'];
+  const counts = { BinOp: 0, IntLit: 0, Var: 0 };
+
+  // AST for x + (2 * y)
+  const nodes = [
+    { label: '+', x: 200, y: 45, color: '#6366f1', type: 'BinOp' },
+    { label: 'x', x: 100, y: 115, color: '#a78bfa', type: 'Var' },
+    { label: '*', x: 300, y: 115, color: '#6366f1', type: 'BinOp' },
+    { label: '2', x: 240, y: 175, color: '#38bdf8', type: 'IntLit' },
+    { label: 'y', x: 360, y: 175, color: '#a78bfa', type: 'Var' },
+  ];
+  const edges = [[0,1],[0,2],[2,3],[2,4]];
+
+  // Pre-order counting: +, x, *, 2, y
+  const steps = [
+    { node: 0, hl: [3,4], msg: 'Match <span class="highlight">BinOp(+, ...)</span> → inc "BinOp", recurse left & right' },
+    { node: 1, hl: [2], msg: 'Match <span class="highlight">Var "x"</span> → inc "Var"' },
+    { node: 2, hl: [3,4], msg: 'Match <span class="highlight">BinOp(*, ...)</span> → inc "BinOp", recurse left & right' },
+    { node: 3, hl: [1], msg: 'Match <span class="highlight">IntLit 2</span> → inc "IntLit"' },
+    { node: 4, hl: [2], msg: 'Match <span class="highlight">Var "y"</span> → inc "Var". Done!' },
+  ];
+
+  let stepIdx = 0, timer = null, visited = [];
+
+  function draw() {
+    ctx.clearRect(0, 0, 400, 200);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('AST: x + (2 * y)', 12, 6);
+
+    edges.forEach(([p, c]) => {
+      ctx.beginPath(); ctx.moveTo(nodes[p].x, nodes[p].y + 16);
+      ctx.lineTo(nodes[c].x, nodes[c].y - 16);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+    nodes.forEach((n, i) => {
+      const isVisited = visited.includes(i);
+      const isCurrent = stepIdx > 0 && steps[stepIdx - 1].node === i;
+      ctx.beginPath(); ctx.arc(n.x, n.y, 18, 0, Math.PI * 2);
+      ctx.fillStyle = isCurrent ? '#f59e0b' : isVisited ? n.color : '#1e293b';
+      ctx.fill();
+      ctx.strokeStyle = isVisited ? n.color : '#475569'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = (isVisited || isCurrent) ? '#fff' : '#64748b';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+  }
+
+  function clearHL() { codeLines.forEach(id => document.getElementById(id).classList.remove('active')); }
+  function updateCounts() {
+    document.getElementById('s11C_BinOp').textContent = counts.BinOp;
+    document.getElementById('s11C_IntLit').textContent = counts.IntLit;
+    document.getElementById('s11C_Var').textContent = counts.Var;
+  }
+
+  window.s11Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    visited.push(s.node);
+    counts[nodes[s.node].type]++;
+    clearHL();
+    s.hl.forEach(i => document.getElementById(codeLines[i]).classList.add('active'));
+    updateCounts();
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++; draw();
+  };
+  window.s11Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s11Step();
+    }, 1100);
+  };
+  window.s11Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; visited = [];
+    counts.BinOp = 0; counts.IntLit = 0; counts.Var = 0;
+    clearHL(); updateCounts(); draw();
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Counting nodes in: x + (2 * y)</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s11').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s11'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s12: TRAVERSAL STATE MANAGEMENT ==================== -->
+<div class="slide" id="s12">
+  <h2>Traversal State Management</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Complex analyses pass context (like scope) through parameters as they traverse.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">scope_analysis.ml</div>
+        <div class="code-content" id="s12Code">
+          <div class="line" id="s12L0"><span style="color:#c792ea;">let rec</span> <span style="color:#82aaff;">analyze_stmt</span> scope = <span style="color:#c792ea;">function</span></div>
+          <div class="line" id="s12L1">  | Assign (name, expr) -></div>
+          <div class="line" id="s12L2">    <span style="color:#c792ea;">let</span> scope' = define scope name <span style="color:#c792ea;">in</span></div>
+          <div class="line" id="s12L3">    analyze_expr scope' expr</div>
+          <div class="line" id="s12L4">  | If (cond, then_b, else_b) -></div>
+          <div class="line" id="s12L5">    <span style="color:#c792ea;">let</span> inner = enter_scope scope <span style="color:#c792ea;">in</span></div>
+          <div class="line" id="s12L6">    List.iter (analyze_stmt inner) then_b;</div>
+          <div class="line" id="s12L7">    List.iter (analyze_stmt inner) else_b</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s12Step()">Step</button>
+        <button class="btn btn-sm" onclick="s12Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s12Scope" style="background:#1e293b;border-radius:10px;padding:14px 16px;border:1px solid #334155;min-height:100px;">
+        <h3 style="color:#a78bfa;margin:0 0 8px;font-size:0.95em;">Scope Stack</h3>
+        <div id="s12ScopeContent" style="font-family:monospace;font-size:0.85em;color:#94a3b8;">
+          <div style="padding:6px 10px;background:rgba(0,0,0,0.2);border-radius:6px;border-left:3px solid #6366f1;">Global: { }</div>
+        </div>
+      </div>
+      <div class="log-panel" id="s12Log" style="margin-top:10px;min-height:80px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Analyzing: x = 5; if x > 0 then y = x + 1</div>
+      </div>
+      <div class="analogy" style="margin-top:8px;font-size:0.85em;">
+        <strong>Key pattern:</strong> The scope is <em>threaded through</em> as a parameter — never mutated globally. This makes the analysis safe and composable.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const log = document.getElementById('s12Log');
+  const scopeEl = document.getElementById('s12ScopeContent');
+  const codeLines = ['s12L0','s12L1','s12L2','s12L3','s12L4','s12L5','s12L6','s12L7'];
+
+  const steps = [
+    { hl: [1,2], scope: ['Global: { x: int }'], msg: '<span class="highlight">Assign("x", IntLit 5)</span> → define x in scope' },
+    { hl: [3], scope: ['Global: { x: int }'], msg: 'analyze_expr with scope containing x — <span class="success">IntLit 5 is fine</span>' },
+    { hl: [4,5], scope: ['Global: { x: int }', 'If-block: { }'], msg: '<span class="highlight">If(...)</span> → enter_scope creates new inner scope' },
+    { hl: [6], scope: ['Global: { x: int }', 'If-block: { y: int }'], msg: 'In then-branch: <span class="highlight">Assign("y", ...)</span> → define y in inner scope' },
+    { hl: [6], scope: ['Global: { x: int }', 'If-block: { y: int }'], msg: 'analyze_expr: BinOp(Add, Var "x", IntLit 1) — <span class="success">x found in outer scope ✓</span>' },
+    { hl: [0], scope: ['Global: { x: int }'], msg: 'Exit if-block → inner scope popped. <span class="highlight">y is no longer visible!</span>' },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function clearHL() { codeLines.forEach(id => document.getElementById(id).classList.remove('active')); }
+
+  function updateScope(scopes) {
+    scopeEl.innerHTML = scopes.map((s, i) => {
+      const indent = i * 16;
+      const color = i === scopes.length - 1 ? '#6366f1' : '#475569';
+      return `<div style="padding:6px 10px;margin-left:${indent}px;background:rgba(0,0,0,0.2);border-radius:6px;border-left:3px solid ${color};margin-bottom:4px;">${s}</div>`;
+    }).join('');
+  }
+
+  window.s12Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    clearHL();
+    s.hl.forEach(i => document.getElementById(codeLines[i]).classList.add('active'));
+    updateScope(s.scope);
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+  };
+  window.s12Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s12Step();
+    }, 1500);
+  };
+  window.s12Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; clearHL();
+    updateScope(['Global: { }']);
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Analyzing: x = 5; if x > 0 then y = x + 1</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s12').classList.contains('active')) { /* keep state */ }
+  });
+  obs.observe(document.getElementById('s12'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== sCB: CHALLENGE — WHICH TRAVERSAL? ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge: Which Traversal?</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">Match each use case to the best traversal strategy.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div id="sCB_q1" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">1.</strong> Evaluate an arithmetic expression tree — need child values before computing parent.</p>
+      <select id="sCB_a1" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="pre">Pre-order (top-down)</option>
+        <option value="post">Post-order (bottom-up)</option>
+        <option value="bfs">BFS (level-order)</option>
+      </select>
+    </div>
+    <div id="sCB_q2" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">2.</strong> Enter a scope before analyzing the statements inside a function body.</p>
+      <select id="sCB_a2" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="pre">Pre-order (top-down)</option>
+        <option value="post">Post-order (bottom-up)</option>
+        <option value="bfs">BFS (level-order)</option>
+      </select>
+    </div>
+    <div id="sCB_q3" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#f59e0b;">3.</strong> Find the shallowest node matching a pattern (e.g., first <code>return</code> at minimum depth).</p>
+      <select id="sCB_a3" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="pre">Pre-order (top-down)</option>
+        <option value="post">Post-order (bottom-up)</option>
+        <option value="bfs">BFS (level-order)</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-bottom:12px;">
+    <button class="btn btn-sm" onclick="sCBCheck()">Check All</button>
+    <button class="btn btn-sm btn-secondary" onclick="sCBReset()">Reset</button>
+    <span id="sCBScore" style="margin-left:12px;font-weight:600;font-size:0.95em;align-self:center;"></span>
+  </div>
+  <div id="sCBExplain" style="display:none;" class="key-idea">
+    <strong>Explanations:</strong><br>
+    <strong>1. Post-order</strong> — To compute `2+3`, you need values of 2 and 3 first. Bottom-up evaluation computes children before parents.<br>
+    <strong>2. Pre-order</strong> — You must set up the scope BEFORE visiting the body. Top-down processing handles parent context first.<br>
+    <strong>3. BFS</strong> — Level-order visits all nodes at depth d before d+1, guaranteeing the first match is the shallowest.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCB_a1:'post', sCB_a2:'pre', sCB_a3:'bfs'};
+  window.sCBCheck = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const qDiv = sel.closest('[id^="sCB_q"]');
+      if (sel.value === correct) { qDiv.style.borderColor = '#22c55e'; score++; }
+      else if (sel.value) { qDiv.style.borderColor = '#ef4444'; }
+      else { qDiv.style.borderColor = '#f59e0b'; }
+    });
+    document.getElementById('sCBScore').textContent = score + '/3';
+    document.getElementById('sCBScore').style.color = score === 3 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+    document.getElementById('sCBExplain').style.display = 'block';
+  };
+  window.sCBReset = function() {
+    ['sCB_a1','sCB_a2','sCB_a3'].forEach(id => document.getElementById(id).value = '');
+    ['sCB_q1','sCB_q2','sCB_q3'].forEach(id => document.getElementById(id).style.borderColor = '#334155');
+    document.getElementById('sCBScore').textContent = '';
+    document.getElementById('sCBExplain').style.display = 'none';
+  };
+})();
+</script>
+
+<!-- ==================== s13: SYMBOL TABLES + SCOPE CHAINS ==================== -->
+<div class="slide" id="s13">
+  <h2>Symbol Tables &amp; Scope Chains</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Step through nested scopes. Watch the scope chain grow and shrink as we enter/exit blocks.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">scoping.ml</div>
+        <div class="code-content" id="s13Code">
+          <div class="line" id="s13L0"><span style="color:#c792ea;">let</span> x = <span style="color:#f78c6c;">10</span>            <span style="color:#546e7a;">(* global *)</span></div>
+          <div class="line" id="s13L1"><span style="color:#c792ea;">let</span> <span style="color:#82aaff;">foo</span> () =</div>
+          <div class="line" id="s13L2">  <span style="color:#c792ea;">let</span> y = <span style="color:#f78c6c;">20</span> <span style="color:#c792ea;">in</span>        <span style="color:#546e7a;">(* foo scope *)</span></div>
+          <div class="line" id="s13L3">  <span style="color:#c792ea;">let</span> <span style="color:#82aaff;">bar</span> () =</div>
+          <div class="line" id="s13L4">    <span style="color:#c792ea;">let</span> z = <span style="color:#f78c6c;">30</span> <span style="color:#c792ea;">in</span>      <span style="color:#546e7a;">(* bar scope *)</span></div>
+          <div class="line" id="s13L5">    x + y + z           <span style="color:#546e7a;">(* lookup! *)</span></div>
+          <div class="line" id="s13L6">  <span style="color:#c792ea;">in</span> bar ()</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s13Step()">Step</button>
+        <button class="btn btn-sm" onclick="s13Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS13" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="log-panel" id="s13Log" style="margin-top:8px;min-height:60px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Building scope chain...</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS13');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s13Log');
+  const codeLines = ['s13L0','s13L1','s13L2','s13L3','s13L4','s13L5','s13L6'];
+
+  const steps = [
+    { hl: [0], scopes: [{name:'Global', vars:['x: 10'], color:'#6366f1'}],
+      msg: '<span class="highlight">let x = 10</span> → define x in Global scope', lookups: [] },
+    { hl: [1,2], scopes: [{name:'Global', vars:['x: 10', 'foo: fn'], color:'#6366f1'}, {name:'foo', vars:['y: 20'], color:'#22c55e'}],
+      msg: 'Enter foo() → new scope. <span class="highlight">let y = 20</span>', lookups: [] },
+    { hl: [3,4], scopes: [{name:'Global', vars:['x: 10', 'foo: fn'], color:'#6366f1'}, {name:'foo', vars:['y: 20'], color:'#22c55e'}, {name:'bar', vars:['z: 30'], color:'#f59e0b'}],
+      msg: 'Enter bar() → new inner scope. <span class="highlight">let z = 30</span>', lookups: [] },
+    { hl: [5], scopes: [{name:'Global', vars:['x: 10', 'foo: fn'], color:'#6366f1'}, {name:'foo', vars:['y: 20'], color:'#22c55e'}, {name:'bar', vars:['z: 30'], color:'#f59e0b'}],
+      msg: 'Lookup <span class="highlight">x</span>: not in bar → not in foo → <span class="success">found in Global!</span>',
+      lookups: ['x→Global'] },
+    { hl: [5], scopes: [{name:'Global', vars:['x: 10', 'foo: fn'], color:'#6366f1'}, {name:'foo', vars:['y: 20'], color:'#22c55e'}, {name:'bar', vars:['z: 30'], color:'#f59e0b'}],
+      msg: 'Lookup <span class="highlight">y</span>: not in bar → <span class="success">found in foo!</span>',
+      lookups: ['x→Global', 'y→foo'] },
+    { hl: [5], scopes: [{name:'Global', vars:['x: 10', 'foo: fn'], color:'#6366f1'}, {name:'foo', vars:['y: 20'], color:'#22c55e'}, {name:'bar', vars:['z: 30'], color:'#f59e0b'}],
+      msg: 'Lookup <span class="highlight">z</span>: <span class="success">found in bar!</span> Result: 10+20+30=60',
+      lookups: ['x→Global', 'y→foo', 'z→bar'] },
+    { hl: [6], scopes: [{name:'Global', vars:['x: 10', 'foo: fn'], color:'#6366f1'}],
+      msg: 'Exit bar, exit foo → scopes popped. <span class="highlight">y and z no longer visible.</span>', lookups: [] },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function clearHL() { codeLines.forEach(id => document.getElementById(id).classList.remove('active')); }
+
+  function draw() {
+    ctx.clearRect(0, 0, 420, 280);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('SCOPE CHAIN', 16, 10);
+
+    if (stepIdx === 0) {
+      ctx.fillStyle = '#475569'; ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Press Step...', 210, 140);
+      return;
+    }
+
+    const step = steps[stepIdx - 1];
+    const scopes = step.scopes;
+
+    // Draw scope boxes stacked vertically
+    scopes.forEach((s, i) => {
+      const x = 30 + i * 20;
+      const y = 30 + i * 70;
+      const w = 380 - i * 40;
+      const h = 55;
+
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, 8);
+      ctx.fillStyle = s.color; ctx.globalAlpha = 0.08; ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.fillStyle = s.color; ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(s.name, x + 10, y + 8);
+
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '11px monospace';
+      ctx.fillText('{ ' + s.vars.join(', ') + ' }', x + 10, y + 28);
+
+      // Arrow up to parent
+      if (i > 0) {
+        const arrX = x + w - 20;
+        ctx.beginPath();
+        ctx.moveTo(arrX, y); ctx.lineTo(arrX, y - 15);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(arrX - 4, y - 10); ctx.lineTo(arrX, y - 15); ctx.lineTo(arrX + 4, y - 10);
+        ctx.strokeStyle = '#475569'; ctx.stroke();
+      }
+    });
+
+    // Draw lookup arrows if any
+    if (step.lookups.length > 0) {
+      const ly = 250;
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('Lookups: ' + step.lookups.join('  |  '), 30, ly);
+    }
+  }
+
+  window.s13Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    clearHL();
+    s.hl.forEach(i => document.getElementById(codeLines[i]).classList.add('active'));
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++; draw();
+  };
+  window.s13Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s13Step();
+    }, 1500);
+  };
+  window.s13Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; clearHL(); draw();
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Building scope chain...</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s13').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s13'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s14: SHADOWING & SCOPE RESOLUTION ==================== -->
+<div class="slide" id="s14">
+  <h2>Shadowing &amp; Scope Resolution</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">When an inner scope declares a name that exists in an outer scope, the inner one <em>shadows</em> the outer.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">shadowing.ml</div>
+        <div class="code-content" id="s14Code">
+          <div class="line" id="s14L0"><span style="color:#c792ea;">let</span> x = <span style="color:#f78c6c;">10</span>              <span style="color:#546e7a;">(* global *)</span></div>
+          <div class="line" id="s14L1"><span style="color:#c792ea;">let</span> <span style="color:#82aaff;">foo</span> () =</div>
+          <div class="line" id="s14L2">  <span style="color:#c792ea;">let</span> x = <span style="color:#f78c6c;">20</span> <span style="color:#c792ea;">in</span>          <span style="color:#546e7a;">(* shadows! *)</span></div>
+          <div class="line" id="s14L3">  print_int x             <span style="color:#546e7a;">(* which x? *)</span></div>
+          <div class="line" id="s14L4"><span style="color:#c792ea;">let</span> () = print_int x     <span style="color:#546e7a;">(* which x? *)</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s14Step()">Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+      <div class="warning" style="margin-top:10px;font-size:0.85em;">
+        <strong>Common confusion:</strong> Shadowing does NOT modify the outer variable. It creates a <em>new</em> binding that hides the old one within the inner scope.
+      </div>
+    </div>
+    <div>
+      <canvas id="cS14" width="420" height="240" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="log-panel" id="s14Log" style="margin-top:8px;min-height:70px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Tracing variable resolution...</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS14');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s14Log');
+  const codeLines = ['s14L0','s14L1','s14L2','s14L3','s14L4'];
+
+  const steps = [
+    { hl: [0], msg: '<span class="highlight">let x = 10</span> → Global scope: x = 10',
+      global: {x:10}, foo: null, lookup: null },
+    { hl: [1,2], msg: 'Enter foo() → <span class="highlight">let x = 20</span> → foo scope: x = 20 <span class="error-text">(shadows global x!)</span>',
+      global: {x:10}, foo: {x:20}, lookup: null },
+    { hl: [3], msg: 'print_int x → lookup x: found in <span class="success">foo scope → 20</span>',
+      global: {x:10}, foo: {x:20}, lookup: {name:'x', found:'foo', value:20} },
+    { hl: [4], msg: 'Exit foo. print_int x → lookup x: found in <span class="success">Global scope → 10</span>',
+      global: {x:10}, foo: null, lookup: {name:'x', found:'Global', value:10} },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function clearHL() { codeLines.forEach(id => document.getElementById(id).classList.remove('active','success')); }
+
+  function draw() {
+    ctx.clearRect(0, 0, 420, 240);
+    if (stepIdx === 0) {
+      ctx.fillStyle = '#475569'; ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Press Step...', 210, 120);
+      return;
+    }
+    const s = steps[stepIdx - 1];
+
+    // Draw Global scope
+    ctx.beginPath(); ctx.roundRect(20, 20, 380, 60, 8);
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.fill();
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#6366f1'; ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('Global Scope', 30, 28);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = '13px monospace';
+    ctx.fillText('x = ' + s.global.x, 30, 50);
+
+    if (s.lookup && s.lookup.found === 'Global') {
+      ctx.beginPath(); ctx.arc(75, 56, 14, 0, Math.PI*2);
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    // Draw foo scope if active
+    if (s.foo) {
+      ctx.beginPath(); ctx.roundRect(50, 100, 320, 60, 8);
+      ctx.fillStyle = 'rgba(34,197,94,0.08)'; ctx.fill();
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('foo Scope', 60, 108);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '13px monospace';
+      ctx.fillText('x = ' + s.foo.x, 60, 130);
+
+      // Shadow indicator
+      ctx.fillStyle = '#ef4444'; ctx.font = '10px sans-serif';
+      ctx.fillText('(shadows global x)', 120, 130);
+
+      if (s.lookup && s.lookup.found === 'foo') {
+        ctx.beginPath(); ctx.arc(105, 136, 14, 0, Math.PI*2);
+        ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.stroke();
+      }
+
+      // Arrow showing parent chain
+      ctx.beginPath(); ctx.moveTo(350, 100); ctx.lineTo(350, 80);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(346, 85); ctx.lineTo(350, 80); ctx.lineTo(354, 85);
+      ctx.strokeStyle = '#475569'; ctx.stroke();
+      ctx.fillStyle = '#64748b'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('parent', 350, 88);
+    }
+
+    // Output
+    if (s.lookup) {
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Output: ' + s.lookup.value, 210, 210);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif';
+      ctx.fillText('(resolved in ' + s.lookup.found + ' scope)', 210, 228);
+    }
+  }
+
+  window.s14Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    clearHL();
+    s.hl.forEach(i => document.getElementById(codeLines[i]).classList.add('active'));
+    log.innerHTML += `<div class="log-entry">${s.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++; draw();
+  };
+  window.s14Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s14Step();
+    }, 1500);
+  };
+  window.s14Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; clearHL(); draw();
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Tracing variable resolution...</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s14').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s14'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s15: CONSTANT FOLDING ==================== -->
+<div class="slide" id="s15">
+  <h2>AST Transformation: Constant Folding</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Replace constant sub-expressions with their computed values. Watch the tree shrink.</p>
+  <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cS15" width="460" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="s15Step()">Step</button>
+        <button class="btn btn-sm" onclick="s15Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block" style="margin-top:0;">
+        <div class="code-header">constant_fold.ml</div>
+        <div class="code-content" id="s15Code">
+          <div class="line" id="s15L0"><span style="color:#c792ea;">let rec</span> <span style="color:#82aaff;">fold</span> = <span style="color:#c792ea;">function</span></div>
+          <div class="line" id="s15L1">  | BinOp(op, l, r) -></div>
+          <div class="line" id="s15L2">    <span style="color:#c792ea;">match</span> fold l, fold r <span style="color:#c792ea;">with</span></div>
+          <div class="line" id="s15L3">    | IntLit a, IntLit b -></div>
+          <div class="line" id="s15L4">        IntLit (eval op a b)</div>
+          <div class="line" id="s15L5">    | l', r' -> BinOp(op, l', r')</div>
+          <div class="line" id="s15L6">  | e -> e  <span style="color:#546e7a;">(* leaves unchanged *)</span></div>
+        </div>
+      </div>
+      <div class="log-panel" id="s15Log" style="margin-top:10px;min-height:80px;">
+        <div class="log-entry" style="color:#64748b;font-style:italic;">Folding: (2 + 3) * 4</div>
+      </div>
+      <div class="key-idea" style="margin-top:8px;font-size:0.85em;">
+        <strong>Why post-order?</strong> Constant folding uses bottom-up traversal — fold children first, then check if the parent can be collapsed. This is why we learned post-order!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s15Log');
+  const codeLines = ['s15L0','s15L1','s15L2','s15L3','s15L4','s15L5','s15L6'];
+
+  const snapshots = [
+    // Step 0: Original tree
+    { nodes: [
+        {label:'*', x:230, y:60, color:'#f59e0b'},
+        {label:'+', x:130, y:160, color:'#6366f1'},
+        {label:'4', x:330, y:160, color:'#22c55e'},
+        {label:'2', x:70, y:255, color:'#22c55e'},
+        {label:'3', x:190, y:255, color:'#22c55e'},
+      ],
+      edges: [[0,1],[0,2],[1,3],[1,4]],
+      hl: [6], msg: 'Original tree: <span class="highlight">(2 + 3) * 4</span>. Start bottom-up folding.' },
+    // Step 1: Highlight 2 and 3
+    { nodes: [
+        {label:'*', x:230, y:60, color:'#f59e0b'},
+        {label:'+', x:130, y:160, color:'#6366f1'},
+        {label:'4', x:330, y:160, color:'#22c55e'},
+        {label:'2', x:70, y:255, color:'#38bdf8', pulse:true},
+        {label:'3', x:190, y:255, color:'#38bdf8', pulse:true},
+      ],
+      edges: [[0,1],[0,2],[1,3],[1,4]],
+      hl: [6], msg: 'Leaves <span class="highlight">2</span> and <span class="highlight">3</span> are already IntLit — unchanged.' },
+    // Step 2: Fold + into 5
+    { nodes: [
+        {label:'*', x:230, y:60, color:'#f59e0b'},
+        {label:'5', x:130, y:160, color:'#22c55e', pulse:true},
+        {label:'4', x:330, y:160, color:'#22c55e'},
+      ],
+      edges: [[0,1],[0,2]],
+      hl: [3,4], msg: '<span class="success">Fold!</span> BinOp(+, IntLit 2, IntLit 3) → <span class="success">IntLit 5</span>. Subtree collapsed!' },
+    // Step 3: Fold * into 20
+    { nodes: [
+        {label:'20', x:230, y:140, color:'#22c55e', pulse:true},
+      ],
+      edges: [],
+      hl: [3,4], msg: '<span class="success">Fold!</span> BinOp(*, IntLit 5, IntLit 4) → <span class="success">IntLit 20</span>. Entire tree collapsed to one node!' },
+  ];
+
+  let stepIdx = 0, timer = null;
+
+  function clearHL() { codeLines.forEach(id => document.getElementById(id).classList.remove('active','success')); }
+
+  function draw() {
+    ctx.clearRect(0, 0, 460, 320);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('CONSTANT FOLDING', 16, 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('Step ' + stepIdx + '/' + (snapshots.length - 1), 444, 10);
+
+    if (stepIdx === 0 && snapshots[0]) {} // draw step 0
+    const snap = snapshots[Math.min(stepIdx, snapshots.length - 1)];
+
+    snap.edges.forEach(([p, c]) => {
+      ctx.beginPath(); ctx.moveTo(snap.nodes[p].x, snap.nodes[p].y + 22);
+      ctx.lineTo(snap.nodes[c].x, snap.nodes[c].y - 22);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+
+    snap.nodes.forEach(n => {
+      ctx.beginPath(); ctx.arc(n.x, n.y, 26, 0, Math.PI * 2);
+      ctx.fillStyle = n.color; ctx.fill();
+      if (n.pulse) {
+        ctx.beginPath(); ctx.arc(n.x, n.y, 32, 0, Math.PI * 2);
+        ctx.strokeStyle = n.color; ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.3; ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+
+    // Show expression at bottom
+    const exprs = ['(2 + 3) * 4', '(2 + 3) * 4', '5 * 4', '20'];
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Expression: ' + exprs[Math.min(stepIdx, exprs.length - 1)], 230, 300);
+  }
+
+  window.s15Step = function() {
+    if (stepIdx >= snapshots.length - 1) return;
+    stepIdx++;
+    const snap = snapshots[stepIdx];
+    clearHL();
+    snap.hl.forEach(i => document.getElementById(codeLines[i]).classList.add('active'));
+    log.innerHTML += `<div class="log-entry">${snap.msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+    draw();
+  };
+  window.s15Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= snapshots.length - 1) { clearInterval(timer); timer = null; return; }
+      s15Step();
+    }, 1500);
+  };
+  window.s15Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0; clearHL(); draw();
+    log.innerHTML = '<div class="log-entry" style="color:#64748b;font-style:italic;">Folding: (2 + 3) * 4</div>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s15').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s15'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s16: RENAMING + DEAD CODE ELIMINATION ==================== -->
+<div class="slide" id="s16">
+  <h2>Renaming &amp; Dead Code Elimination</h2>
+  <p style="color:#94a3b8;margin-bottom:8px;">Two more essential transformations. Toggle to see each in action.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:10px;">
+        <button class="btn btn-sm" onclick="s16Toggle('rename')" id="s16Btn0">Variable Renaming</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Toggle('dce')" id="s16Btn1">Dead Code Elimination</button>
+      </div>
+      <div id="s16Before" class="code-block" style="margin:0;">
+        <div class="code-header" id="s16BeforeHeader">Before</div>
+        <div class="code-content" id="s16BeforeCode"></div>
+      </div>
+    </div>
+    <div>
+      <div id="s16After" class="code-block" style="margin:0;">
+        <div class="code-header" id="s16AfterHeader">After</div>
+        <div class="code-content" id="s16AfterCode"></div>
+      </div>
+      <div id="s16Explain" style="margin-top:12px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const content = {
+    rename: {
+      before: `<div class="line"><span style="color:#546e7a;">(* Rename 'x' → 'count' *)</span></div>
+<div class="line">Assign (<span style="color:#c3e88d;">"x"</span>, IntLit 0)</div>
+<div class="line">Assign (<span style="color:#c3e88d;">"x"</span>,</div>
+<div class="line">  BinOp (Add, Var <span style="color:#c3e88d;">"x"</span>, IntLit 1))</div>
+<div class="line">Print [Var <span style="color:#c3e88d;">"x"</span>]</div>`,
+      after: `<div class="line"><span style="color:#546e7a;">(* All references updated *)</span></div>
+<div class="line success">Assign (<span style="color:#c3e88d;">"count"</span>, IntLit 0)</div>
+<div class="line success">Assign (<span style="color:#c3e88d;">"count"</span>,</div>
+<div class="line success">  BinOp (Add, Var <span style="color:#c3e88d;">"count"</span>, IntLit 1))</div>
+<div class="line success">Print [Var <span style="color:#c3e88d;">"count"</span>]</div>`,
+      explain: `<div class="warning" style="font-size:0.9em;">
+        <strong>Rule:</strong> Must update both declarations AND all references. Must respect scope — only rename within the intended scope, not shadowed names in inner scopes.
+      </div>
+      <div class="key-idea" style="font-size:0.9em;margin-top:8px;">
+        <strong>Implementation:</strong> Traverse the AST, pattern-match on <code>Var name</code> and <code>Assign(name, ...)</code>, replace when <code>name = old_name</code>.
+      </div>`
+    },
+    dce: {
+      before: `<div class="line"><span style="color:#546e7a;">(* Dead code patterns *)</span></div>
+<div class="line">Return (Some (IntLit 42))</div>
+<div class="line error">Print [Var <span style="color:#c3e88d;">"unreachable"</span>]  <span style="color:#ef4444;">← dead!</span></div>
+<div class="line" style="margin-top:8px;">If (BoolLit true,</div>
+<div class="line">  [Assign (<span style="color:#c3e88d;">"x"</span>, IntLit 1)],</div>
+<div class="line error">  [Assign (<span style="color:#c3e88d;">"x"</span>, IntLit 2)])  <span style="color:#ef4444;">← dead!</span></div>`,
+      after: `<div class="line"><span style="color:#546e7a;">(* After elimination *)</span></div>
+<div class="line success">Return (Some (IntLit 42))</div>
+<div class="line"><span style="color:#64748b;text-decoration:line-through;">Print [Var "unreachable"]</span>  <span style="color:#22c55e;">removed</span></div>
+<div class="line" style="margin-top:8px;"><span style="color:#546e7a;">(* Constant condition simplified *)</span></div>
+<div class="line success">Assign (<span style="color:#c3e88d;">"x"</span>, IntLit 1)</div>
+<div class="line"><span style="color:#64748b;text-decoration:line-through;">else branch</span>  <span style="color:#22c55e;">removed</span></div>`,
+      explain: `<div class="warning" style="font-size:0.9em;">
+        <strong>Two patterns detected:</strong><br>
+        1. <strong>After return:</strong> Code after <code>return</code> can never execute — remove it.<br>
+        2. <strong>Constant condition:</strong> <code>if true then A else B</code> → just <code>A</code>. The else branch is dead.
+      </div>
+      <div class="key-idea" style="font-size:0.9em;margin-top:8px;">
+        <strong>Safety:</strong> Only remove code you can <em>prove</em> is dead. Over-aggressive DCE with approximated conditions can break programs.
+      </div>`
+    }
+  };
+
+  window.s16Toggle = function(mode) {
+    document.getElementById('s16Btn0').className = mode === 'rename' ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+    document.getElementById('s16Btn1').className = mode === 'dce' ? 'btn btn-sm' : 'btn btn-sm btn-secondary';
+    const c = content[mode];
+    document.getElementById('s16BeforeHeader').textContent = mode === 'rename' ? 'Before Renaming' : 'Before DCE';
+    document.getElementById('s16AfterHeader').textContent = mode === 'rename' ? 'After Renaming' : 'After DCE';
+    document.getElementById('s16BeforeCode').innerHTML = c.before;
+    document.getElementById('s16AfterCode').innerHTML = c.after;
+    document.getElementById('s16Explain').innerHTML = c.explain;
+  };
+
+  // Initialize
+  s16Toggle('rename');
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s16').classList.contains('active')) { /* keep */ }
+  });
+  obs.observe(document.getElementById('s16'), {attributes: true, attributeFilter: ['class']});
+})();
+</script>
+
+<!-- ==================== sCC: CHALLENGE — APPLY THE TRANSFORM ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge: Apply Constant Folding</h2>
+  <p style="color:#94a3b8;margin-bottom:10px;">Given this AST, apply constant folding and type the final result.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex:1;">
+    <div>
+      <canvas id="cSCC" width="420" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <p style="font-size:0.9em;color:#94a3b8;margin-top:8px;">Expression: <code style="background:#1e293b;padding:2px 6px;border-radius:4px;color:#f59e0b;">(10 - 3) + (2 * 4)</code></p>
+    </div>
+    <div>
+      <p style="font-size:0.95em;margin-bottom:8px;">After folding all constants, what single <code>IntLit</code> value remains?</p>
+      <div style="margin-bottom:12px;">
+        <input type="text" id="sCC_input" placeholder="Type the number..." style="width:100%;padding:10px 14px;background:#1e293b;border:2px solid #334155;border-radius:8px;color:#e2e8f0;font-family:monospace;font-size:1.1em;">
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:12px;">
+        <button class="btn btn-sm" onclick="sCCCheck()">Check</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCCReset()">Reset</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCCReveal()">Show Steps</button>
+      </div>
+      <div id="sCC_fb" style="display:none;padding:12px;border-radius:8px;font-size:0.95em;"></div>
+      <div id="sCC_explain" style="display:none;" class="key-idea">
+        <strong>Step-by-step folding (bottom-up):</strong><br>
+        1. Fold <span style="color:#6366f1;">BinOp(-, IntLit 10, IntLit 3)</span> → <span style="color:#22c55e;">IntLit 7</span><br>
+        2. Fold <span style="color:#6366f1;">BinOp(*, IntLit 2, IntLit 4)</span> → <span style="color:#22c55e;">IntLit 8</span><br>
+        3. Fold <span style="color:#6366f1;">BinOp(+, IntLit 7, IntLit 8)</span> → <span style="color:#22c55e;">IntLit 15</span><br>
+        <strong>Final result: 15</strong>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cSCC');
+  const ctx = canvas.getContext('2d');
+
+  // AST for (10 - 3) + (2 * 4)
+  const nodes = [
+    { label: '+', x: 210, y: 50, color: '#6366f1' },
+    { label: '-', x: 100, y: 140, color: '#f59e0b' },
+    { label: '*', x: 320, y: 140, color: '#f59e0b' },
+    { label: '10', x: 50, y: 235, color: '#22c55e' },
+    { label: '3', x: 150, y: 235, color: '#22c55e' },
+    { label: '2', x: 270, y: 235, color: '#22c55e' },
+    { label: '4', x: 370, y: 235, color: '#22c55e' },
+  ];
+  const edges = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]];
+
+  function draw() {
+    ctx.clearRect(0, 0, 420, 300);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('AST: (10 - 3) + (2 * 4)', 16, 10);
+
+    edges.forEach(([p, c]) => {
+      ctx.beginPath(); ctx.moveTo(nodes[p].x, nodes[p].y + 20);
+      ctx.lineTo(nodes[c].x, nodes[c].y - 20);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    nodes.forEach(n => {
+      ctx.beginPath(); ctx.arc(n.x, n.y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = n.color; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+  }
+
+  window.sCCCheck = function() {
+    const input = document.getElementById('sCC_input').value.trim();
+    const fb = document.getElementById('sCC_fb');
+    fb.style.display = 'block';
+    if (input === '15') {
+      fb.style.background = 'rgba(34,197,94,0.1)'; fb.style.color = '#22c55e';
+      fb.textContent = '✓ Correct! (10-3) + (2*4) = 7 + 8 = 15';
+      document.getElementById('sCC_input').style.borderColor = '#22c55e';
+    } else {
+      fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.color = '#ef4444';
+      fb.textContent = '✗ Not quite. Remember: fold bottom-up. Left: 10-3=7. Right: 2*4=8. Then 7+8=?';
+      document.getElementById('sCC_input').style.borderColor = '#ef4444';
+    }
+  };
+  window.sCCReset = function() {
+    document.getElementById('sCC_input').value = '';
+    document.getElementById('sCC_input').style.borderColor = '#334155';
+    document.getElementById('sCC_fb').style.display = 'none';
+    document.getElementById('sCC_explain').style.display = 'none';
+  };
+  window.sCCReveal = function() {
+    document.getElementById('sCC_explain').style.display = 'block';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCC').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('sCC'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s17: KEY TAKEAWAYS ==================== -->
+<div class="slide" id="s17">
+  <h2>Key Takeaways</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px;">
+    <div class="key-idea">
+      <strong>1. ASTs provide structured representations</strong> of code — converting flat text into a tree that captures the program's logical organization without syntactic noise.
+    </div>
+    <div class="key-idea">
+      <strong>2. Different traversals for different needs:</strong> Pre-order (top-down: scope entry, type checking), Post-order (bottom-up: evaluation, folding), BFS (level-based: shallowest match).
+    </div>
+    <div style="border-left:4px solid #f59e0b;background:rgba(245,158,11,0.08);padding:14px 18px;border-radius:0 10px 10px 0;">
+      <strong style="color:#f59e0b;">3. Symbol tables</strong> track identifiers across nested scopes using scope chains. Lookup walks up the chain. Shadowing creates new bindings without modifying outer scopes.
+    </div>
+    <div class="analogy">
+      <strong>4. AST transformations</strong> enable automated optimization and refactoring: constant folding (simplify expressions), variable renaming (consistent updates), dead code elimination (remove unreachable code).
+    </div>
+    <div style="border-left:4px solid #38bdf8;background:rgba(56,189,248,0.08);padding:14px 18px;border-radius:0 10px 10px 0;">
+      <strong style="color:#38bdf8;">5. OCaml's pattern matching</strong> is the perfect tool for AST manipulation — each analysis is just a new recursive match function. No visitor classes needed.
+    </div>
+    <div class="warning">
+      <strong>6. Transformation safety:</strong> Always preserve semantics. Use immutable updates, respect scope boundaries, and apply transformations in the right order.
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s18: NEXT MODULE PREVIEW ==================== -->
+<div class="slide" id="s18">
+  <h2>Next Module Preview</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:12px;">
+    <div>
+      <h3 style="color:#6366f1;">Module 3: Static Analysis Fundamentals</h3>
+      <ul style="margin-top:10px;">
+        <li><strong>Control Flow Graphs</strong> (CFGs) — how programs branch and loop</li>
+        <li><strong>Dataflow analysis framework</strong> — tracking information through code</li>
+        <li><strong>Reaching definitions</strong> &amp; <strong>live variables</strong></li>
+        <li>Building your first static analyzer</li>
+      </ul>
+      <div style="border-left:4px solid #38bdf8;background:rgba(56,189,248,0.08);padding:14px 18px;margin-top:16px;border-radius:0 10px 10px 0;">
+        <strong style="color:#38bdf8;">Prep:</strong> Review set theory (union, intersection) and basic graph theory. If you know what a directed graph is, you're ready.
+      </div>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:18px;border:1px solid #334155;">
+        <h3 style="color:#a78bfa;margin-top:0;">From ASTs to CFGs</h3>
+        <p style="font-size:0.95em;color:#94a3b8;">Module 2 gave you the tree. Module 3 flattens it into a graph that shows how execution flows through the program.</p>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:14px;margin-top:12px;font-family:monospace;font-size:0.82em;color:#94a3b8;line-height:1.7;">
+<span style="color:#64748b;">AST (tree):</span><br>
+&nbsp;&nbsp;<span style="color:#f59e0b;">If</span><br>
+&nbsp;&nbsp;├── <span style="color:#6366f1;">condition</span><br>
+&nbsp;&nbsp;├── <span style="color:#22c55e;">then-body</span><br>
+&nbsp;&nbsp;└── <span style="color:#ef4444;">else-body</span><br>
+<br>
+<span style="color:#64748b;">CFG (graph):</span><br>
+&nbsp;&nbsp;[<span style="color:#6366f1;">cond</span>] ──T──→ [<span style="color:#22c55e;">then</span>] ──→ [join]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└──F──→ [<span style="color:#ef4444;">else</span>] ──→ [join]
+        </div>
+      </div>
+      <p style="margin-top:14px;color:#94a3b8;font-size:0.9em;">
+        <strong style="color:#e2e8f0;">Office Hours:</strong> By appointment, HH227<br>
+        <strong style="color:#e2e8f0;">Resources:</strong> Course GitHub repository
+      </p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== sQ1: QUIZ — CORE CONCEPTS ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz 1: Core Concepts</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">Select one answer per question, then click <em>Check Answers</em>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div style="background:#1e293b;padding:14px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#6366f1;">Q1.</strong> What does an AST remove compared to a parse tree?</p>
+      <div>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q1a" value="a" style="margin-right:8px;">Semantic structure</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q1a" value="b" style="margin-right:8px;">Syntactic noise (parens, grammar rules)</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q1a" value="c" style="margin-right:8px;">Operator precedence</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q1a" value="d" style="margin-right:8px;">Variable names</label>
+      </div>
+      <div id="sQ1_f1" style="display:none;font-size:0.8em;margin-top:6px;padding:6px 8px;border-radius:6px;"></div>
+    </div>
+    <div style="background:#1e293b;padding:14px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#6366f1;">Q2.</strong> Which traversal evaluates an expression tree correctly?</p>
+      <div>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q2a" value="a" style="margin-right:8px;">Pre-order</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q2a" value="b" style="margin-right:8px;">Post-order</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q2a" value="c" style="margin-right:8px;">BFS</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q2a" value="d" style="margin-right:8px;">Random order</label>
+      </div>
+      <div id="sQ1_f2" style="display:none;font-size:0.8em;margin-top:6px;padding:6px 8px;border-radius:6px;"></div>
+    </div>
+    <div style="background:#1e293b;padding:14px;border-radius:10px;border:1px solid #334155;">
+      <p style="font-size:0.9em;margin-bottom:10px;"><strong style="color:#6366f1;">Q3.</strong> When looking up a variable, the symbol table:</p>
+      <div>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q3a" value="a" style="margin-right:8px;">Checks only the current scope</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q3a" value="b" style="margin-right:8px;">Walks up the scope chain</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q3a" value="c" style="margin-right:8px;">Checks only the global scope</label>
+        <label style="display:block;padding:6px 10px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:0.85em;border:1px solid #334155;">
+          <input type="radio" name="q3a" value="d" style="margin-right:8px;">Walks down into child scopes</label>
+      </div>
+      <div id="sQ1_f3" style="display:none;font-size:0.8em;margin-top:6px;padding:6px 8px;border-radius:6px;"></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <button class="btn btn-sm" onclick="sQ1Check()">Check Answers</button>
+    <button class="btn btn-sm btn-secondary" onclick="sQ1Reset()">Reset</button>
+    <span id="sQ1Score" style="margin-left:12px;font-weight:700;font-size:1.1em;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {q1a:'b', q2a:'b', q3a:'b'};
+  const explanations = {
+    q1a: 'ASTs remove syntactic noise — parentheses, semicolons, intermediate grammar rules — while preserving semantic structure.',
+    q2a: 'Post-order (bottom-up) computes children before parents, so operand values are ready when the operator node is visited.',
+    q3a: 'Lookup starts at the innermost scope and walks UP the chain until the name is found (or reports undefined).'
+  };
+  window.sQ1Check = function() {
+    let score = 0;
+    ['q1a','q2a','q3a'].forEach((name, n) => {
+      const sel = document.querySelector(`input[name="${name}"]:checked`);
+      const fb = document.getElementById(`sQ1_f${n+1}`);
+      fb.style.display = 'block';
+      if (!sel) { fb.textContent = 'No answer.'; fb.style.background = 'rgba(245,158,11,0.1)'; fb.style.color = '#f59e0b'; return; }
+      if (sel.value === answers[name]) {
+        score++; fb.textContent = '✓ ' + explanations[name];
+        fb.style.background = 'rgba(34,197,94,0.1)'; fb.style.color = '#22c55e';
+      } else {
+        fb.textContent = '✗ ' + explanations[name];
+        fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.color = '#ef4444';
+      }
+    });
+    const el = document.getElementById('sQ1Score');
+    el.textContent = score + '/3';
+    el.style.color = score === 3 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+  };
+  window.sQ1Reset = function() {
+    ['q1a','q2a','q3a'].forEach((n, i) => {
+      document.querySelectorAll(`input[name="${n}"]`).forEach(r => r.checked = false);
+      document.getElementById(`sQ1_f${i+1}`).style.display = 'none';
+    });
+    document.getElementById('sQ1Score').textContent = '';
+  };
+})();
+</script>
+
+<!-- ==================== sQ2: QUIZ — BUILD THE AST ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz 2: Build the AST</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">Given source code, select the correct AST representation.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <div class="code-block" style="margin:0;">
+        <div class="code-header">expression</div>
+        <div class="code-content" style="font-size:1.1em;text-align:center;padding:16px;">
+          <span style="color:#f59e0b;">a * (b + 1)</span>
+        </div>
+      </div>
+      <p style="font-size:0.95em;margin-top:12px;"><strong>Which OCaml AST is correct?</strong></p>
+      <div id="sQ2_q1" style="margin-top:8px;">
+        <label style="display:block;padding:10px 14px;margin:6px 0;border-radius:8px;cursor:pointer;font-size:0.88em;border:2px solid #334155;font-family:monospace;background:#1e293b;transition:border-color 0.2s;" id="sQ2_opt1">
+          <input type="radio" name="q2b" value="a" style="margin-right:10px;">BinOp(Mul, Var "a", BinOp(Add, Var "b", IntLit 1))</label>
+        <label style="display:block;padding:10px 14px;margin:6px 0;border-radius:8px;cursor:pointer;font-size:0.88em;border:2px solid #334155;font-family:monospace;background:#1e293b;transition:border-color 0.2s;" id="sQ2_opt2">
+          <input type="radio" name="q2b" value="b" style="margin-right:10px;">BinOp(Add, BinOp(Mul, Var "a", Var "b"), IntLit 1)</label>
+        <label style="display:block;padding:10px 14px;margin:6px 0;border-radius:8px;cursor:pointer;font-size:0.88em;border:2px solid #334155;font-family:monospace;background:#1e293b;transition:border-color 0.2s;" id="sQ2_opt3">
+          <input type="radio" name="q2b" value="c" style="margin-right:10px;">BinOp(Mul, BinOp(Add, Var "b", IntLit 1), Var "a")</label>
+      </div>
+    </div>
+    <div>
+      <canvas id="cSQ2" width="380" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:10px;">
+        <button class="btn btn-sm" onclick="sQ2Check()">Check</button>
+        <button class="btn btn-sm btn-secondary" onclick="sQ2Reset()">Reset</button>
+      </div>
+      <div id="sQ2_fb" style="display:none;margin-top:8px;padding:12px;border-radius:8px;font-size:0.9em;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cSQ2');
+  const ctx = canvas.getContext('2d');
+
+  // Correct tree: BinOp(Mul, Var "a", BinOp(Add, Var "b", IntLit 1))
+  const nodes = [
+    { label: '*', x: 190, y: 50, color: '#f59e0b' },
+    { label: 'a', x: 90, y: 140, color: '#a78bfa' },
+    { label: '+', x: 290, y: 140, color: '#6366f1' },
+    { label: 'b', x: 230, y: 225, color: '#a78bfa' },
+    { label: '1', x: 350, y: 225, color: '#22c55e' },
+  ];
+  const edges = [[0,1],[0,2],[2,3],[2,4]];
+
+  function draw() {
+    ctx.clearRect(0, 0, 380, 260);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('CORRECT AST: a * (b + 1)', 12, 8);
+
+    edges.forEach(([p, c]) => {
+      ctx.beginPath(); ctx.moveTo(nodes[p].x, nodes[p].y + 18);
+      ctx.lineTo(nodes[c].x, nodes[c].y - 18);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    nodes.forEach(n => {
+      ctx.beginPath(); ctx.arc(n.x, n.y, 20, 0, Math.PI * 2);
+      ctx.fillStyle = n.color; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+  }
+
+  window.sQ2Check = function() {
+    const sel = document.querySelector('input[name="q2b"]:checked');
+    const fb = document.getElementById('sQ2_fb');
+    fb.style.display = 'block';
+    if (!sel) { fb.textContent = 'Select an answer first.'; fb.style.background = 'rgba(245,158,11,0.1)'; fb.style.color = '#f59e0b'; return; }
+    document.getElementById('sQ2_opt1').style.borderColor = '#334155';
+    document.getElementById('sQ2_opt2').style.borderColor = '#334155';
+    document.getElementById('sQ2_opt3').style.borderColor = '#334155';
+    if (sel.value === 'a') {
+      document.getElementById('sQ2_opt1').style.borderColor = '#22c55e';
+      fb.innerHTML = '✓ <strong>Correct!</strong> Root is *, left child is Var "a", right child is BinOp(+, Var "b", IntLit 1). Parentheses make + deeper in the tree.';
+      fb.style.background = 'rgba(34,197,94,0.1)'; fb.style.color = '#22c55e';
+      draw();
+    } else if (sel.value === 'b') {
+      document.getElementById('sQ2_opt2').style.borderColor = '#ef4444';
+      fb.innerHTML = '✗ This would be <code>(a * b) + 1</code> — no parentheses around b+1.';
+      fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.color = '#ef4444';
+    } else {
+      document.getElementById('sQ2_opt3').style.borderColor = '#ef4444';
+      fb.innerHTML = '✗ Operand order matters! Left child should be Var "a", not the + subtree.';
+      fb.style.background = 'rgba(239,68,68,0.1)'; fb.style.color = '#ef4444';
+    }
+  };
+  window.sQ2Reset = function() {
+    document.querySelectorAll('input[name="q2b"]').forEach(r => r.checked = false);
+    ['sQ2_opt1','sQ2_opt2','sQ2_opt3'].forEach(id => document.getElementById(id).style.borderColor = '#334155');
+    document.getElementById('sQ2_fb').style.display = 'none';
+    ctx.clearRect(0, 0, 380, 260);
+    ctx.fillStyle = '#475569'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Select an answer to see the correct tree', 190, 130);
+  };
+
+  // Start blank
+  ctx.fillStyle = '#475569'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('Select an answer to see the correct tree', 190, 130);
+})();
+</script>
+
+<!-- ==================== sQ3: QUIZ — TRANSFORM REASONING ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz 3: Transformation Reasoning</h2>
+  <p style="color:#94a3b8;margin-bottom:12px;">For each scenario, predict what happens after the transformation.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div id="sQ3_q1" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.88em;margin-bottom:10px;"><strong style="color:#f59e0b;">1.</strong> After constant folding <code style="font-size:0.85em;">BinOp(Add, IntLit 5, BinOp(Mul, IntLit 0, Var "x"))</code>, what's left?</p>
+      <select id="sQ3_a1" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="5x">BinOp(Add, IntLit 5, Var "x")</option>
+        <option value="5">IntLit 5</option>
+        <option value="5+0x">BinOp(Add, IntLit 5, IntLit 0)</option>
+        <option value="unchanged">Unchanged (can't fold)</option>
+      </select>
+    </div>
+    <div id="sQ3_q2" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.88em;margin-bottom:10px;"><strong style="color:#f59e0b;">2.</strong> Renaming <code style="font-size:0.85em;">"x"→"y"</code> in <code style="font-size:0.85em;">[Assign("x", IntLit 1); Print [Var "x"]]</code>. How many nodes change?</p>
+      <select id="sQ3_a2" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="1">1 (just the Assign)</option>
+        <option value="2">2 (Assign + Var reference)</option>
+        <option value="3">3 (Assign + Var + Print)</option>
+        <option value="0">0 (renaming doesn't change nodes)</option>
+      </select>
+    </div>
+    <div id="sQ3_q3" style="background:#1e293b;padding:14px;border-radius:10px;border:2px solid #334155;">
+      <p style="font-size:0.88em;margin-bottom:10px;"><strong style="color:#f59e0b;">3.</strong> Dead code elim on <code style="font-size:0.85em;">[If(BoolLit false, [s1], [s2])]</code>. What remains?</p>
+      <select id="sQ3_a3" style="padding:6px 10px;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.85em;width:100%;">
+        <option value="">— Choose —</option>
+        <option value="s1">Just s1 (then-branch)</option>
+        <option value="s2">Just s2 (else-branch)</option>
+        <option value="both">Both s1 and s2</option>
+        <option value="neither">Empty (remove everything)</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <button class="btn btn-sm" onclick="sQ3Check()">Check Answers</button>
+    <button class="btn btn-sm btn-secondary" onclick="sQ3Reset()">Reset</button>
+    <span id="sQ3Score" style="margin-left:12px;font-weight:700;font-size:1.1em;"></span>
+  </div>
+  <div id="sQ3Explain" style="display:none;margin-top:10px;" class="key-idea">
+    <strong>Explanations:</strong><br>
+    <strong>1. Unchanged</strong> — <code>0 * Var "x"</code> can't fold because <code>Var "x"</code> is not an IntLit. The folder only collapses <code>IntLit op IntLit</code>. A smarter optimizer could recognize <code>0 * anything = 0</code>, but basic constant folding doesn't.<br>
+    <strong>2. Two nodes</strong> — The <code>Assign("x", ...)</code> has the string "x" in it (declaration), and <code>Var "x"</code> has a reference. Both must be renamed to "y".<br>
+    <strong>3. Just s2</strong> — The condition is <code>false</code>, so the then-branch (s1) is dead. Only the else-branch (s2) survives.
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sQ3_a1:'unchanged', sQ3_a2:'2', sQ3_a3:'s2'};
+  window.sQ3Check = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const qDiv = sel.closest('[id^="sQ3_q"]');
+      if (sel.value === correct) { qDiv.style.borderColor = '#22c55e'; score++; }
+      else if (sel.value) { qDiv.style.borderColor = '#ef4444'; }
+      else { qDiv.style.borderColor = '#f59e0b'; }
+    });
+    document.getElementById('sQ3Score').textContent = score + '/3';
+    document.getElementById('sQ3Score').style.color = score === 3 ? '#22c55e' : score >= 2 ? '#f59e0b' : '#ef4444';
+    document.getElementById('sQ3Explain').style.display = 'block';
+  };
+  window.sQ3Reset = function() {
+    ['sQ3_a1','sQ3_a2','sQ3_a3'].forEach(id => document.getElementById(id).value = '');
+    ['sQ3_q1','sQ3_q2','sQ3_q3'].forEach(id => document.getElementById(id).style.borderColor = '#334155');
+    document.getElementById('sQ3Score').textContent = '';
+    document.getElementById('sQ3Explain').style.display = 'none';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','sCB','s13','s14','s15','s16','sCC','s17','s18','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active','fade-in'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+  document.getElementById('counter').textContent = (idx + 1) + ' / ' + slideOrder.length;
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next < 0 || next >= slideOrder.length) return;
+  currentIdx = next;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); navigate(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); navigate(-1); }
+  if (e.key === 'Home') { e.preventDefault(); currentIdx = 0; showSlide(0); }
+  if (e.key === 'End') { e.preventDefault(); currentIdx = slideOrder.length - 1; showSlide(currentIdx); }
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) navigate(dx < 0 ? 1 : -1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

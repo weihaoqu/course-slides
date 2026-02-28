@@ -1,0 +1,2390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worklist Algorithms for Program Analysis</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;height:100vh;}
+  #progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:100;}
+  #progress{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#38bdf8);transition:width 0.3s;}
+  .slide{display:none;padding:2rem 3rem;height:100vh;overflow-y:auto;}
+  .slide.active{display:block;}
+  .slide.fade-in{animation:fadeIn 0.3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  h2{font-size:1.65rem;background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.6rem;}
+  .nav{position:fixed;bottom:1.5rem;right:2rem;display:flex;gap:0.5rem;z-index:50;}
+  .nav button{padding:0.5rem 1.2rem;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;background:#1e293b;color:#94a3b8;transition:all 0.2s;}
+  .nav button:hover:not(:disabled){background:#334155;color:#e2e8f0;}
+  .nav button:disabled{opacity:0.3;cursor:not-allowed;}
+  .btn{padding:0.5rem 1.2rem;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;transition:all 0.2s;}
+  .btn:hover{opacity:0.9;transform:translateY(-1px);}
+  .btn-sm{padding:0.35rem 0.9rem;font-size:0.78rem;}
+  .btn-secondary{background:#334155;color:#cbd5e1;}
+  .btn-secondary:hover{background:#475569;}
+  .key-idea{background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.85rem;color:#cbd5e1;}
+  .warning{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.85rem;color:#cbd5e1;}
+  .analogy{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.85rem;color:#cbd5e1;}
+  .code-block{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:0.8rem;overflow-x:auto;}
+  .code-content{font-family:monospace;font-size:0.82rem;line-height:1.6;}
+  .line{padding:0.1rem 0.5rem;border-left:3px solid transparent;white-space:pre;}
+  .line.active{background:rgba(99,102,241,0.15);border-left-color:#6366f1;}
+  .slide-number{}
+  code{background:rgba(99,102,241,0.15);padding:0.15rem 0.4rem;border-radius:4px;font-family:monospace;font-size:0.85em;color:#f472b6;}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE s1: TITLE ==================== -->
+<div class="slide active" id="s1">
+  <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:85vh;text-align:center;">
+    <div style="font-size:0.85rem;color:#6366f1;text-transform:uppercase;letter-spacing:3px;margin-bottom:1rem;">Fundamentals Deep Dive</div>
+    <h1 style="font-size:2.8rem;background:linear-gradient(135deg,#38bdf8,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1rem;">Worklist Algorithms</h1>
+    <p style="font-size:1.15rem;color:#94a3b8;max-width:600px;">The engine that drives every dataflow analysis to its fixed point</p>
+
+    <div style="display:flex;gap:0.8rem;margin-top:2rem;flex-wrap:wrap;justify-content:center;">
+      <span style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.78rem;color:#38bdf8;">Round-Robin</span>
+      <span style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.78rem;color:#818cf8;">Worklist Queue</span>
+      <span style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.78rem;color:#a78bfa;">Reverse Postorder</span>
+      <span style="background:rgba(244,114,182,0.15);border:1px solid rgba(244,114,182,0.3);padding:0.4rem 0.8rem;border-radius:20px;font-size:0.78rem;color:#f472b6;">Convergence</span>
+    </div>
+
+    <div style="margin-top:2.5rem;">
+      <canvas id="cS1" width="400" height="180" style="background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS1');
+  const ctx=canvas.getContext('2d');
+  const nodes=[{x:60,y:40,l:'B1'},{x:200,y:40,l:'B2'},{x:340,y:40,l:'B3'},{x:60,y:140,l:'B4'},{x:200,y:140,l:'B5'},{x:340,y:140,l:'B6'}];
+  const edges=[[0,1],[1,2],[0,3],[3,4],[4,5],[2,5],[5,1]];
+  let processing=-1, frame=0;
+
+  function draw(){
+    ctx.clearRect(0,0,400,180);
+    // Edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+      // Arrowhead
+      const dx=nodes[b].x-nodes[a].x,dy=nodes[b].y-nodes[a].y;
+      const len=Math.sqrt(dx*dx+dy*dy);
+      const ux=dx/len,uy=dy/len;
+      const ax=nodes[b].x-ux*18,ay=nodes[b].y-uy*18;
+      ctx.beginPath();ctx.moveTo(ax-uy*5-ux*8,ay+ux*5-uy*8);ctx.lineTo(ax,ay);ctx.lineTo(ax+uy*5-ux*8,ay-ux*5-uy*8);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const isProc=i===processing;
+      const pulse=isProc?Math.sin(frame*0.1)*3:0;
+      ctx.beginPath();ctx.arc(n.x,n.y,16+pulse,0,Math.PI*2);
+      ctx.fillStyle=isProc?'#f59e0b33':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isProc?'#f59e0b':'#6366f1';ctx.lineWidth=isProc?3:2;ctx.stroke();
+      ctx.fillStyle=isProc?'#f59e0b':'#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    // Queue visualization at bottom
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText('worklist: processing blocks one at a time...',200,175);
+
+    frame++;
+    if(frame%30===0) processing=(processing+1)%nodes.length;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s2: THE PROBLEM ==================== -->
+<div class="slide" id="s2">
+  <h2>The Problem: Fixed Points on CFGs</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">We need to compute IN/OUT sets for <strong>every block</strong> in a CFG. The challenge: blocks depend on each other, especially in loops.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS2" width="360" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;font-size:0.82rem;color:#cbd5e1;margin-bottom:0.6rem;">
+        <strong style="color:#38bdf8;">The dependency problem:</strong><br><br>
+        • OUT[B2] depends on IN[B2]<br>
+        • IN[B2] = OUT[B1] ⊔ OUT[B4]<br>
+        • OUT[B4] depends on IN[B4]<br>
+        • IN[B4] = OUT[B3]<br>
+        • OUT[B3] depends on IN[B3]<br>
+        • IN[B3] = OUT[B2] ← <strong style="color:#f59e0b;">circular!</strong>
+      </div>
+
+      <div class="analogy" style="margin-top:0.4rem;">
+        <strong>Analogy:</strong> Imagine a spreadsheet where cell A1 references B1, B1 references C1, and C1 references A1. You can't compute any cell in one pass — you need to iterate until all cells stabilize.
+      </div>
+
+      <div class="key-idea" style="margin-top:0.4rem;">
+        <strong>Solution:</strong> Start with ⊥ everywhere, then <em>iteratively</em> recompute until nothing changes. The question is: <strong>in what order</strong> do we process blocks?
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS2');
+  const ctx=canvas.getContext('2d');
+  const nodes=[{x:180,y:35,l:'B1'},{x:80,y:120,l:'B2'},{x:280,y:120,l:'B3'},{x:80,y:220,l:'B4'},{x:280,y:220,l:'B5'}];
+  const edges=[[0,1],[0,2],[1,3],[2,4],[3,1],[4,2]]; // back edges: 3→1, 4→2
+
+  function draw(){
+    ctx.clearRect(0,0,360,300);
+    edges.forEach(([a,b],i)=>{
+      const isBack=(i===4||i===5);
+      ctx.beginPath();
+      if(isBack){
+        // Curved back edge
+        const mx=(nodes[a].x+nodes[b].x)/2+(a===3?-40:40);
+        const my=(nodes[a].y+nodes[b].y)/2;
+        ctx.moveTo(nodes[a].x,nodes[a].y);ctx.quadraticCurveTo(mx,my,nodes[b].x,nodes[b].y);
+      } else {
+        ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      }
+      ctx.strokeStyle=isBack?'#f59e0b':'#475569';ctx.lineWidth=isBack?2:1.5;
+      if(isBack){ctx.setLineDash([6,4]);}
+      ctx.stroke();ctx.setLineDash([]);
+    });
+    // Nodes
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle='#1e293b';ctx.fill();ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    // Labels
+    ctx.fillStyle='#f59e0b';ctx.font='bold 10px monospace';ctx.textAlign='center';
+    ctx.fillText('back edge',25,170);ctx.fillText('back edge',335,170);
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';
+    ctx.fillText('Loops create circular dependencies',180,280);
+  }
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s3: NAIVE ROUND-ROBIN ==================== -->
+<div class="slide" id="s3">
+  <h2>Naive Round-Robin Iteration</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The simplest approach: scan <strong>all blocks</strong> every round. Stop when no OUT set changes. Simple but wasteful.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS3" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
+        <button class="btn btn-sm" onclick="s3Step()">Step</button>
+        <button class="btn btn-sm" onclick="s3Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Reset()">Reset</button>
+        <span id="s3Counter" style="margin-left:auto;font-family:monospace;font-size:0.78rem;color:#94a3b8;">Round: 0 | Processed: 0</span>
+      </div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.7rem;">
+        <div class="code-content">
+          <div class="line" id="s3L0">let round_robin cfg =</div>
+          <div class="line" id="s3L1">  init_all_to_bottom cfg;</div>
+          <div class="line" id="s3L2">  let changed = ref true in</div>
+          <div class="line" id="s3L3">  while !changed do</div>
+          <div class="line" id="s3L4">    changed := false;</div>
+          <div class="line" id="s3L5">    List.iter (fun b -></div>
+          <div class="line" id="s3L6">      let new_in = merge preds(b) in</div>
+          <div class="line" id="s3L7">      let new_out = transfer b new_in in</div>
+          <div class="line" id="s3L8">      if new_out ≠ out[b] then</div>
+          <div class="line" id="s3L9">        changed := true;</div>
+          <div class="line" id="s3L10">      out[b] := new_out</div>
+          <div class="line" id="s3L11">    ) cfg.blocks</div>
+          <div class="line" id="s3L12">  done</div>
+        </div>
+      </div>
+      <div id="s3Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.4rem;font-family:monospace;font-size:0.68rem;color:#94a3b8;margin-top:0.5rem;max-height:90px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top:0.5rem;">
+    <strong>Wasted work:</strong> In each round, we recompute blocks whose inputs <em>didn't change</em>. If only B3's output changed, why reprocess B1 and B2?
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS3');
+  const ctx=canvas.getContext('2d');
+  // Simple CFG: B1→B2→B3→B4, B4→B2 (loop)
+  const blocks=['B1','B2','B3','B4'];
+  const pos=[{x:60,y:60},{x:180,y:60},{x:300,y:60},{x:300,y:200}];
+  const cfgEdges=[[0,1],[1,2],[2,3],[3,1]];
+  // Reaching defs: B1 gen={d1}, B2 gen={d2}, B3 gen={d3}, B4 gen={d4}
+  // Track which defs reach each block's OUT
+  const gens=[[0],[1],[2],[3]]; // gen sets (as bit indices)
+  let outs=[[],[],[],[]]; // current OUT sets
+  let round=0, blockIdx=0, totalProcessed=0, timer=null;
+  let inRound=false, roundChanged=false;
+
+  function drawCFG(){
+    ctx.clearRect(0,0,420,280);
+    // Edges
+    cfgEdges.forEach(([a,b],i)=>{
+      const isBack=i===3;
+      ctx.beginPath();
+      if(isBack){
+        ctx.moveTo(pos[a].x,pos[a].y);ctx.quadraticCurveTo(pos[a].x-60,(pos[a].y+pos[b].y)/2,pos[b].x,pos[b].y);
+      } else {
+        ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);
+      }
+      ctx.strokeStyle=isBack?'#f59e0b':'#475569';ctx.lineWidth=1.5;
+      if(isBack) ctx.setLineDash([5,3]);
+      ctx.stroke();ctx.setLineDash([]);
+    });
+
+    // Nodes
+    blocks.forEach((b,i)=>{
+      const isActive=inRound&&i===blockIdx;
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,22,0,Math.PI*2);
+      ctx.fillStyle=isActive?'#f59e0b33':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isActive?'#f59e0b':'#6366f1';ctx.lineWidth=isActive?3:2;ctx.stroke();
+      ctx.fillStyle=isActive?'#f59e0b':'#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(b,pos[i].x,pos[i].y);
+      // OUT set label
+      const outStr=outs[i].length?'{'+outs[i].map(d=>'d'+(d+1)).join(',')+'}':'∅';
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+      ctx.fillText('OUT='+outStr,pos[i].x,pos[i].y+35);
+    });
+
+    // Round indicator
+    ctx.fillStyle='#38bdf8';ctx.font='bold 12px monospace';ctx.textAlign='left';
+    ctx.fillText('Round '+round,15,25);
+  }
+
+  function highlightCode(line){
+    for(let i=0;i<=12;i++){const el=document.getElementById('s3L'+i);if(el)el.classList.remove('active');}
+    if(line>=0) document.getElementById('s3L'+line).classList.add('active');
+  }
+
+  function init(){
+    outs=[[],[],[],[]];round=0;blockIdx=0;totalProcessed=0;inRound=false;roundChanged=false;
+    if(timer){clearInterval(timer);timer=null;}
+    drawCFG();highlightCode(-1);
+    document.getElementById('s3Counter').textContent='Round: 0 | Processed: 0';
+    document.getElementById('s3Log').innerHTML='';
+  }
+
+  window.s3Step=function(){
+    const log=document.getElementById('s3Log');
+    if(!inRound){
+      // Start new round
+      round++;blockIdx=0;inRound=true;roundChanged=false;
+      highlightCode(3);
+      log.innerHTML+='<div style="color:#38bdf8;">--- Round '+round+' ---</div>';
+      drawCFG();return;
+    }
+    // Process current block
+    const preds={0:[],1:[0,3],2:[1],3:[2]};
+    const predsOuts=preds[blockIdx].map(p=>[...outs[p]]);
+    const merged=[...new Set(predsOuts.flat())];
+    const newOut=[...new Set([...merged,...gens[blockIdx]])].sort();
+    const oldOut=[...outs[blockIdx]].sort();
+    const changed=JSON.stringify(newOut)!==JSON.stringify(oldOut);
+    if(changed){outs[blockIdx]=newOut;roundChanged=true;}
+    totalProcessed++;
+
+    const outStr=newOut.length?'{'+newOut.map(d=>'d'+(d+1)).join(',')+'}':'∅';
+    const wasStr=oldOut.length?'{'+oldOut.map(d=>'d'+(d+1)).join(',')+'}':'∅';
+    log.innerHTML+='<div style="color:'+(changed?'#22c55e':'#64748b')+';">  '+blocks[blockIdx]+': OUT='+outStr+(changed?' (changed from '+wasStr+')':' (unchanged — wasted!)')+'</div>';
+    log.scrollTop=log.scrollHeight;
+
+    highlightCode(changed?9:10);
+    drawCFG();
+    document.getElementById('s3Counter').textContent='Round: '+round+' | Processed: '+totalProcessed;
+
+    blockIdx++;
+    if(blockIdx>=blocks.length){
+      inRound=false;
+      if(!roundChanged){
+        log.innerHTML+='<div style="color:#22c55e;font-weight:bold;">Fixed point! No changes in round '+round+'.</div>';
+        highlightCode(12);
+      }
+    }
+  };
+
+  window.s3Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{
+      if(!inRound&&round>0&&!document.getElementById('s3Log').innerHTML.includes('Fixed point')){s3Step();}
+      s3Step();
+      if(document.getElementById('s3Log').innerHTML.includes('Fixed point')){clearInterval(timer);timer=null;}
+    },500);
+  };
+  window.s3Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s3').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s4: THE WORKLIST IDEA ==================== -->
+<div class="slide" id="s4">
+  <h2>The Worklist Idea</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Instead of scanning all blocks, maintain a <strong>queue of "dirty" blocks</strong> — blocks whose inputs may have changed. Only process what's needed.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS4" width="420" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:0.6rem;">
+          <div style="font-weight:600;color:#ef4444;font-size:0.85rem;">Round-Robin</div>
+          <ul style="font-size:0.75rem;color:#94a3b8;margin-top:0.3rem;padding-left:1rem;">
+            <li>Process ALL blocks every round</li>
+            <li>Many blocks unchanged = wasted</li>
+            <li>O(h × n) per round, n rounds worst</li>
+            <li>Simple to implement</li>
+          </ul>
+        </div>
+        <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:0.6rem;">
+          <div style="font-weight:600;color:#22c55e;font-size:0.85rem;">Worklist</div>
+          <ul style="font-size:0.75rem;color:#94a3b8;margin-top:0.3rem;padding-left:1rem;">
+            <li>Process only "dirty" blocks</li>
+            <li>Skip stable blocks entirely</li>
+            <li>O(h × e) total work</li>
+            <li>Slightly more complex</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="analogy" style="margin-top:0.6rem;">
+        <strong>Analogy:</strong> Round-robin is like a teacher grading ALL exams every day. Worklist is like only re-grading exams that students resubmitted. Same final grades, much less work.
+      </div>
+
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <strong>Core invariant:</strong> A block is on the worklist if and only if at least one of its predecessors' OUT sets has changed since we last processed it. When the worklist is empty, we've reached the fixed point.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS4');
+  const ctx=canvas.getContext('2d');
+  // Show a CFG with a queue below it
+  const nodes=[{x:100,y:50,l:'B1'},{x:250,y:50,l:'B2'},{x:100,y:150,l:'B3'},{x:250,y:150,l:'B4'},{x:175,y:230,l:'B5'}];
+  const edges=[[0,1],[0,2],[1,3],[2,4],[3,4]];
+  const queue=['B3','B4']; // current worklist
+
+  function draw(){
+    ctx.clearRect(0,0,420,320);
+    // Edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+    });
+    // Nodes
+    const dirtySet=new Set(queue);
+    nodes.forEach((n,i)=>{
+      const isDirty=dirtySet.has(n.l);
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=isDirty?'#f59e0b33':'#22c55e22';ctx.fill();
+      ctx.strokeStyle=isDirty?'#f59e0b':'#22c55e';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=isDirty?'#f59e0b':'#22c55e';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+      // Status
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+      ctx.fillText(isDirty?'dirty':'stable',n.x,n.y+30);
+    });
+
+    // Queue visualization
+    ctx.fillStyle='#38bdf8';ctx.font='bold 12px monospace';ctx.textAlign='center';
+    ctx.fillText('Worklist (Queue):',210,280);
+    const queueX=130;
+    queue.forEach((b,i)=>{
+      const x=queueX+i*70;
+      ctx.fillStyle='#f59e0b33';ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(x,290,55,25,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText(b,x+27,306);
+    });
+    if(queue.length===0){
+      ctx.fillStyle='#22c55e';ctx.font='bold 11px monospace';
+      ctx.fillText('EMPTY — fixed point!',210,306);
+    }
+    // Arrow showing "pop from front"
+    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+    ctx.fillText('← pop',queueX-25,306);ctx.fillText('push →',queueX+queue.length*70+10,306);
+  }
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s5: WORKLIST ALGORITHM IN CODE ==================== -->
+<div class="slide" id="s5">
+  <h2>Worklist Algorithm in Code</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Initialize worklist with all blocks. Pop a block, process it, and if its OUT changed, add its <strong>successors</strong> to the worklist.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <div class="code-block" style="font-size:0.72rem;">
+        <div class="code-content">
+          <div class="line" id="s5L0">let worklist_solve cfg =</div>
+          <div class="line" id="s5L1">  init_all_to_bottom cfg;</div>
+          <div class="line" id="s5L2">  let wl = Queue.create () in</div>
+          <div class="line" id="s5L3">  List.iter (Queue.push wl) cfg.blocks;</div>
+          <div class="line" id="s5L4">  while not (Queue.is_empty wl) do</div>
+          <div class="line" id="s5L5">    let b = Queue.pop wl in</div>
+          <div class="line" id="s5L6">    let new_in = merge preds(b) in</div>
+          <div class="line" id="s5L7">    let new_out = transfer b new_in in</div>
+          <div class="line" id="s5L8">    if new_out ≠ out[b] then begin</div>
+          <div class="line" id="s5L9">      out[b] := new_out;</div>
+          <div class="line" id="s5L10">      List.iter (Queue.push wl)</div>
+          <div class="line" id="s5L11">        (succs b)</div>
+          <div class="line" id="s5L12">    end</div>
+          <div class="line" id="s5L13">  done</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;font-size:0.82rem;color:#cbd5e1;">
+        <strong style="color:#a78bfa;">Key differences from round-robin:</strong>
+        <ol style="margin-top:0.4rem;padding-left:1.2rem;font-size:0.78rem;">
+          <li style="margin-bottom:0.3rem;"><strong style="color:#38bdf8;">Line 5:</strong> Pop <em>one</em> block (not iterate all)</li>
+          <li style="margin-bottom:0.3rem;"><strong style="color:#38bdf8;">Line 8:</strong> Only act if OUT actually changed</li>
+          <li style="margin-bottom:0.3rem;"><strong style="color:#38bdf8;">Lines 10-11:</strong> Only add <em>successors</em> (the blocks affected by this change)</li>
+          <li style="margin-bottom:0.3rem;"><strong style="color:#38bdf8;">Line 4:</strong> Empty worklist = fixed point (no more dirty blocks)</li>
+        </ol>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.6rem;">
+        <strong>Why add successors?</strong> If OUT[B] changed, then any block C where B → C has a new input. C needs to be reprocessed. Blocks NOT downstream of B are unaffected — skip them.
+      </div>
+
+      <div class="warning" style="margin-top:0.4rem;">
+        <strong>Duplicate prevention:</strong> Many implementations check if the successor is already on the worklist before adding it. This avoids redundant processing.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE s6: FORWARD VS BACKWARD ==================== -->
+<div class="slide" id="s6">
+  <h2>Forward vs Backward on the Worklist</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The worklist algorithm works for both directions — just swap which neighbors get added when a block changes.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div style="border:2px solid #38bdf833;border-radius:12px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.9rem;margin-bottom:0.5rem;">Forward (Reaching Defs)</div>
+      <canvas id="cS6a" width="280" height="180" style="width:100%;background:rgba(0,0,0,0.15);border-radius:8px;"></canvas>
+      <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.4rem;">
+        • IN[B] = ⊔ { OUT[p] | p ∈ preds(B) }<br>
+        • OUT[B] = transfer(B, IN[B])<br>
+        • If OUT changed → add <strong style="color:#38bdf8;">successors</strong> to WL
+      </div>
+    </div>
+    <div style="border:2px solid #a78bfa33;border-radius:12px;padding:0.8rem;">
+      <div style="font-weight:600;color:#a78bfa;font-size:0.9rem;margin-bottom:0.5rem;">Backward (Live Variables)</div>
+      <canvas id="cS6b" width="280" height="180" style="width:100%;background:rgba(0,0,0,0.15);border-radius:8px;"></canvas>
+      <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.4rem;">
+        • OUT[B] = ⊔ { IN[s] | s ∈ succs(B) }<br>
+        • IN[B] = transfer(B, OUT[B])<br>
+        • If IN changed → add <strong style="color:#a78bfa;">predecessors</strong> to WL
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.8rem;">
+    <div class="code-block" style="font-size:0.68rem;">
+      <div class="code-content">
+        <div class="line" style="color:#38bdf8;">(* Forward: add succs *)</div>
+        <div class="line">if new_out ≠ out[b] then</div>
+        <div class="line">  out[b] := new_out;</div>
+        <div class="line">  succs(b) |> add_to_worklist</div>
+      </div>
+    </div>
+    <div class="code-block" style="font-size:0.68rem;">
+      <div class="code-content">
+        <div class="line" style="color:#a78bfa;">(* Backward: add preds *)</div>
+        <div class="line">if new_in ≠ in_[b] then</div>
+        <div class="line">  in_[b] := new_in;</div>
+        <div class="line">  preds(b) |> add_to_worklist</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  // Forward diagram
+  const c1=document.getElementById('cS6a').getContext('2d');
+  const fNodes=[{x:140,y:30,l:'B1'},{x:70,y:100,l:'B2'},{x:210,y:100,l:'B3'},{x:140,y:160,l:'B4'}];
+  const fEdges=[[0,1],[0,2],[1,3],[2,3]];
+  function drawForward(){
+    c1.clearRect(0,0,280,180);
+    fEdges.forEach(([a,b])=>{c1.beginPath();c1.moveTo(fNodes[a].x,fNodes[a].y);c1.lineTo(fNodes[b].x,fNodes[b].y);c1.strokeStyle='#475569';c1.lineWidth=1.5;c1.stroke();});
+    // Highlight B1 as changed, successors B2 B3 as "add to WL"
+    fNodes.forEach((n,i)=>{
+      c1.beginPath();c1.arc(n.x,n.y,16,0,Math.PI*2);
+      c1.fillStyle=i===0?'#f59e0b33':(i===1||i===2)?'#38bdf833':'#1e293b';c1.fill();
+      c1.strokeStyle=i===0?'#f59e0b':(i===1||i===2)?'#38bdf8':'#6366f1';c1.lineWidth=2;c1.stroke();
+      c1.fillStyle='#e2e8f0';c1.font='bold 10px monospace';c1.textAlign='center';c1.textBaseline='middle';
+      c1.fillText(n.l,n.x,n.y);
+    });
+    c1.fillStyle='#f59e0b';c1.font='9px monospace';c1.textAlign='center';c1.fillText('changed!',fNodes[0].x,fNodes[0].y-22);
+    c1.fillStyle='#38bdf8';c1.fillText('→ WL',fNodes[1].x-25,fNodes[1].y);c1.fillText('→ WL',fNodes[2].x+25,fNodes[2].y);
+  }
+  drawForward();
+
+  // Backward diagram
+  const c2=document.getElementById('cS6b').getContext('2d');
+  function drawBackward(){
+    c2.clearRect(0,0,280,180);
+    fEdges.forEach(([a,b])=>{c2.beginPath();c2.moveTo(fNodes[a].x,fNodes[a].y);c2.lineTo(fNodes[b].x,fNodes[b].y);c2.strokeStyle='#475569';c2.lineWidth=1.5;c2.stroke();});
+    // Highlight B4 as changed, predecessors B2 B3 as "add to WL"
+    fNodes.forEach((n,i)=>{
+      c2.beginPath();c2.arc(n.x,n.y,16,0,Math.PI*2);
+      c2.fillStyle=i===3?'#f59e0b33':(i===1||i===2)?'#a78bfa33':'#1e293b';c2.fill();
+      c2.strokeStyle=i===3?'#f59e0b':(i===1||i===2)?'#a78bfa':'#6366f1';c2.lineWidth=2;c2.stroke();
+      c2.fillStyle='#e2e8f0';c2.font='bold 10px monospace';c2.textAlign='center';c2.textBaseline='middle';
+      c2.fillText(n.l,n.x,n.y);
+    });
+    c2.fillStyle='#f59e0b';c2.font='9px monospace';c2.textAlign='center';c2.fillText('changed!',fNodes[3].x,fNodes[3].y+22);
+    c2.fillStyle='#a78bfa';c2.fillText('→ WL',fNodes[1].x-25,fNodes[1].y);c2.fillText('→ WL',fNodes[2].x+25,fNodes[2].y);
+  }
+  drawBackward();
+})();
+</script>
+
+<!-- ==================== SLIDE s7: WORKED EXAMPLE ==================== -->
+<div class="slide" id="s7">
+  <h2>Worked Example: Reaching Defs Worklist</h2>
+  <p style="color:#94a3b8;margin-bottom:0.6rem;">Watch the worklist algorithm compute reaching definitions. Compare the work done vs round-robin.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:1rem;margin-top:0.3rem;">
+    <div>
+      <canvas id="cS7" width="300" height="220" style="width:100%;background:rgba(0,0,0,0.2);border-radius:10px;"></canvas>
+      <div style="margin-top:0.4rem;">
+        <div style="font-size:0.75rem;font-weight:600;color:#38bdf8;margin-bottom:0.2rem;">Worklist:</div>
+        <div id="s7WL" style="background:rgba(0,0,0,0.25);border-radius:6px;padding:0.3rem 0.5rem;font-family:monospace;font-size:0.72rem;color:#f59e0b;min-height:22px;"></div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.4rem;">
+        <button class="btn btn-sm" onclick="s7Step()">Step</button>
+        <button class="btn btn-sm" onclick="s7Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.75rem;font-weight:600;color:#38bdf8;margin-bottom:0.3rem;">IN / OUT Table:</div>
+      <div id="s7Table" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.4rem;font-family:monospace;font-size:0.68rem;overflow-x:auto;"></div>
+      <div id="s7Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.4rem;font-family:monospace;font-size:0.68rem;color:#94a3b8;margin-top:0.4rem;max-height:80px;overflow-y:auto;"></div>
+      <div id="s7Stats" style="font-size:0.78rem;color:#94a3b8;margin-top:0.4rem;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS7');
+  const ctx=canvas.getContext('2d');
+  // CFG: B1→B2→B3, B3→B2 (loop), B2→B4
+  const blocks=['B1','B2','B3','B4'];
+  const pos=[{x:150,y:30},{x:80,y:110},{x:220,y:110},{x:150,y:195}];
+  const cfgEdges=[[0,1],[1,2],[2,1],[1,3]]; // 2→1 is back edge
+  const succs=[[1],[2,3],[1],[]];
+  const preds=[[],[0,2],[1],[1]];
+  const gens=[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]; // gen as bitmask indices
+  const genSets=[[0],[1],[2],[3]]; // which defs generated
+
+  let outs=[[],[],[],[]];
+  let ins=[[],[],[],[]];
+  let worklist=[];
+  let processing=-1;
+  let steps=0, timer=null;
+
+  function setUnion(a,b){return [...new Set([...a,...b])].sort();}
+  function setEq(a,b){return JSON.stringify([...a].sort())===JSON.stringify([...b].sort());}
+  function defStr(s){return s.length?'{'+s.map(d=>'d'+(d+1)).join(',')+'}':'∅';}
+
+  function drawCFG(){
+    ctx.clearRect(0,0,300,220);
+    cfgEdges.forEach(([a,b],i)=>{
+      const isBack=i===2;
+      ctx.beginPath();
+      if(isBack){ctx.moveTo(pos[a].x,pos[a].y);ctx.quadraticCurveTo(pos[a].x+50,(pos[a].y+pos[b].y)/2-30,pos[b].x,pos[b].y);}
+      else{ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);}
+      ctx.strokeStyle=isBack?'#f59e0b':'#475569';ctx.lineWidth=1.5;
+      if(isBack)ctx.setLineDash([5,3]);ctx.stroke();ctx.setLineDash([]);
+    });
+    const wlSet=new Set(worklist);
+    blocks.forEach((b,i)=>{
+      const isProc=i===processing;
+      const isWL=wlSet.has(i);
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,18,0,Math.PI*2);
+      ctx.fillStyle=isProc?'#f59e0b33':isWL?'#38bdf822':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isProc?'#f59e0b':isWL?'#38bdf8':'#6366f1';ctx.lineWidth=isProc?3:2;ctx.stroke();
+      ctx.fillStyle=isProc?'#f59e0b':'#e2e8f0';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(b,pos[i].x,pos[i].y);
+      // Gen label
+      ctx.fillStyle='#64748b';ctx.font='8px monospace';
+      ctx.fillText('gen={d'+(i+1)+'}',pos[i].x,pos[i].y-25);
+    });
+  }
+
+  function renderTable(){
+    let html='<table style="width:100%;border-collapse:collapse;"><tr style="color:#64748b;border-bottom:1px solid #334155;"><th style="text-align:left;padding:0.2rem;">Block</th><th style="text-align:left;padding:0.2rem;">IN</th><th style="text-align:left;padding:0.2rem;">OUT</th></tr>';
+    blocks.forEach((b,i)=>{
+      const highlight=i===processing;
+      html+='<tr style="border-bottom:1px solid #1e293b;'+(highlight?'background:rgba(245,158,11,0.1);':'')+'"><td style="padding:0.2rem;color:'+(highlight?'#f59e0b':'#cbd5e1')+';">'+b+'</td><td style="padding:0.2rem;color:#94a3b8;">'+defStr(ins[i])+'</td><td style="padding:0.2rem;color:#e2e8f0;">'+defStr(outs[i])+'</td></tr>';
+    });
+    html+='</table>';
+    document.getElementById('s7Table').innerHTML=html;
+  }
+
+  function renderWL(){
+    document.getElementById('s7WL').innerHTML=worklist.length?worklist.map(i=>'<span style="background:#f59e0b22;border:1px solid #f59e0b;border-radius:4px;padding:0.1rem 0.4rem;margin-right:0.3rem;">'+blocks[i]+'</span>').join(''):'<span style="color:#22c55e;">empty — fixed point!</span>';
+  }
+
+  function init(){
+    outs=[[],[],[],[]];ins=[[],[],[],[]];
+    worklist=[0,1,2,3];processing=-1;steps=0;
+    if(timer){clearInterval(timer);timer=null;}
+    drawCFG();renderTable();renderWL();
+    document.getElementById('s7Log').innerHTML='<div>Initialized: all OUT = ∅, worklist = [B1,B2,B3,B4]</div>';
+    document.getElementById('s7Stats').textContent='Steps: 0';
+  }
+
+  window.s7Step=function(){
+    if(worklist.length===0){processing=-1;drawCFG();return;}
+    const b=worklist.shift();
+    processing=b;steps++;
+
+    // Compute IN = union of preds' OUTs
+    const newIn=preds[b].reduce((acc,p)=>setUnion(acc,outs[p]),[]);
+    ins[b]=newIn;
+    // Compute OUT = IN ∪ gen
+    const newOut=setUnion(newIn,genSets[b]);
+    const changed=!setEq(newOut,outs[b]);
+
+    const log=document.getElementById('s7Log');
+    if(changed){
+      const oldOut=[...outs[b]];
+      outs[b]=newOut;
+      // Add successors
+      const added=[];
+      succs[b].forEach(s=>{
+        if(!worklist.includes(s)){worklist.push(s);added.push(blocks[s]);}
+      });
+      log.innerHTML+='<div style="color:#22c55e;">Pop '+blocks[b]+': OUT '+defStr(oldOut)+'→'+defStr(newOut)+' <strong>changed!</strong> Add: '+added.join(',')||'(already on WL)'+'</div>';
+    } else {
+      log.innerHTML+='<div style="color:#64748b;">Pop '+blocks[b]+': OUT='+defStr(outs[b])+' unchanged. No successors added.</div>';
+    }
+    log.scrollTop=log.scrollHeight;
+
+    drawCFG();renderTable();renderWL();
+    document.getElementById('s7Stats').textContent='Steps: '+steps+(worklist.length===0?' — DONE! (round-robin would take ~12 steps)':'');
+  };
+
+  window.s7Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(worklist.length===0){clearInterval(timer);timer=null;processing=-1;drawCFG();return;}s7Step();},700);
+  };
+  window.s7Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s7').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s8: TRACKING CONVERGENCE ==================== -->
+<div class="slide" id="s8">
+  <h2>Tracking Convergence</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">How many blocks does each approach process? The worklist avoids wasted work on stable blocks.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS8" width="420" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:1rem;font-size:0.82rem;color:#cbd5e1;">
+        <strong style="color:#f59e0b;">Comparison on a typical 6-block CFG with 1 loop:</strong><br><br>
+        <table style="width:100%;font-family:monospace;font-size:0.78rem;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #334155;color:#94a3b8;"><th style="text-align:left;padding:0.3rem;">Metric</th><th style="text-align:center;padding:0.3rem;color:#ef4444;">Round-Robin</th><th style="text-align:center;padding:0.3rem;color:#22c55e;">Worklist</th></tr>
+          <tr style="border-bottom:1px solid #1e293b;"><td style="padding:0.3rem;">Blocks processed</td><td style="text-align:center;padding:0.3rem;color:#ef4444;">18</td><td style="text-align:center;padding:0.3rem;color:#22c55e;">8</td></tr>
+          <tr style="border-bottom:1px solid #1e293b;"><td style="padding:0.3rem;">Unchanged (wasted)</td><td style="text-align:center;padding:0.3rem;color:#ef4444;">10</td><td style="text-align:center;padding:0.3rem;color:#22c55e;">0</td></tr>
+          <tr style="border-bottom:1px solid #1e293b;"><td style="padding:0.3rem;">Rounds</td><td style="text-align:center;padding:0.3rem;">3</td><td style="text-align:center;padding:0.3rem;">—</td></tr>
+          <tr><td style="padding:0.3rem;">Wasted work</td><td style="text-align:center;padding:0.3rem;color:#ef4444;">56%</td><td style="text-align:center;padding:0.3rem;color:#22c55e;">0%</td></tr>
+        </table>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.6rem;">
+        <strong>Key Insight:</strong> The worklist processes <em>exactly</em> the blocks that need recomputing — no more, no less. On large CFGs (thousands of blocks), this difference is dramatic.
+      </div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.6rem;margin-top:0.5rem;">
+        <div style="font-size:0.8rem;color:#94a3b8;">
+          <strong style="color:#a78bfa;">Complexity:</strong><br>
+          Round-robin: O(h × n²) worst case<br>
+          Worklist: O(h × |E|) where |E| = edges<br>
+          <span style="color:#64748b;">h = lattice height, n = blocks</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS8');
+  const ctx=canvas.getContext('2d');
+
+  function draw(){
+    ctx.clearRect(0,0,420,300);
+    // Bar chart
+    const bars=[
+      {label:'Round-Robin',val:18,max:18,color:'#ef4444',x:80},
+      {label:'Worklist',val:8,max:18,color:'#22c55e',x:260}
+    ];
+    ctx.fillStyle='#94a3b8';ctx.font='bold 12px monospace';ctx.textAlign='center';
+    ctx.fillText('Blocks Processed',210,25);
+
+    bars.forEach(b=>{
+      const barH=b.val/b.max*180;
+      const y=240-barH;
+      // Bar
+      ctx.fillStyle=b.color+'44';
+      ctx.beginPath();ctx.roundRect(b.x-30,y,60,barH,6);ctx.fill();
+      ctx.strokeStyle=b.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(b.x-30,y,60,barH,6);ctx.stroke();
+      // Value
+      ctx.fillStyle=b.color;ctx.font='bold 18px monospace';ctx.textAlign='center';
+      ctx.fillText(b.val,b.x,y-10);
+      // Label
+      ctx.fillStyle='#94a3b8';ctx.font='10px monospace';
+      ctx.fillText(b.label,b.x,260);
+    });
+
+    // Wasted portion in round-robin
+    const wastedH=10/18*180;
+    ctx.fillStyle='#ef444433';
+    ctx.beginPath();ctx.roundRect(50,240-wastedH,60,wastedH,6);ctx.fill();
+    ctx.fillStyle='#ef4444';ctx.font='9px monospace';ctx.textAlign='center';
+    ctx.fillText('10 wasted',80,240-wastedH/2+3);
+
+    // Savings arrow
+    ctx.beginPath();ctx.moveTo(160,150);ctx.lineTo(200,150);
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(195,145);ctx.lineTo(200,150);ctx.lineTo(195,155);ctx.stroke();
+    ctx.fillStyle='#f59e0b';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText('56% less',180,140);
+    ctx.fillText('work!',180,155);
+  }
+  draw();
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: CHALLENGE — PREDICT THE WORKLIST ==================== -->
+<div class="slide" id="sCA">
+  <h2>🎯 Challenge A: Predict the Worklist</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Given the CFG below, answer each question about what happens during worklist iteration.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cSCA" width="320" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="font-size:0.72rem;color:#94a3b8;margin-top:0.3rem;text-align:center;">Forward analysis. Edges: B1→B2, B1→B3, B2→B4, B3→B4, B4→B2 (back)</div>
+    </div>
+    <div>
+      <div id="sCA-q1" style="background:#1e293b;border-radius:8px;padding:0.6rem;border:2px solid #334155;margin-bottom:0.5rem;">
+        <div style="font-size:0.82rem;color:#f59e0b;font-weight:600;margin-bottom:0.3rem;">Q1: OUT[B1] changes. Which blocks get added to the worklist?</div>
+        <select id="sCA-a1" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Choose…</option>
+          <option value="a">B2, B3 (successors of B1)</option>
+          <option value="b">B2, B3, B4 (all downstream)</option>
+          <option value="c">All blocks</option>
+          <option value="d">Only B2</option>
+        </select>
+      </div>
+      <div id="sCA-q2" style="background:#1e293b;border-radius:8px;padding:0.6rem;border:2px solid #334155;margin-bottom:0.5rem;">
+        <div style="font-size:0.82rem;color:#f59e0b;font-weight:600;margin-bottom:0.3rem;">Q2: OUT[B4] changes. Which blocks get added?</div>
+        <select id="sCA-a2" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Choose…</option>
+          <option value="a">B1 (predecessor)</option>
+          <option value="b">B2 (successor via back edge)</option>
+          <option value="c">B2, B3</option>
+          <option value="d">Nothing (B4 has no successors)</option>
+        </select>
+      </div>
+      <div id="sCA-q3" style="background:#1e293b;border-radius:8px;padding:0.6rem;border:2px solid #334155;margin-bottom:0.5rem;">
+        <div style="font-size:0.82rem;color:#f59e0b;font-weight:600;margin-bottom:0.3rem;">Q3: We process B3 and its OUT does NOT change. What happens?</div>
+        <select id="sCA-a3" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Choose…</option>
+          <option value="a">Add B4 to worklist anyway</option>
+          <option value="b">Nothing — no successors added</option>
+          <option value="c">Remove B3 from the CFG</option>
+          <option value="d">Re-add B3 to the worklist</option>
+        </select>
+      </div>
+      <div style="text-align:center;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="sCACheck()">Check All</button>
+      </div>
+      <div id="sCA-feedback" style="margin-top:0.4rem;font-size:0.78rem;color:#94a3b8;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cSCA');
+  const ctx=canvas.getContext('2d');
+  const nodes=[{x:160,y:30,l:'B1'},{x:80,y:110,l:'B2'},{x:240,y:110,l:'B3'},{x:160,y:200,l:'B4'}];
+  const edges=[[0,1],[0,2],[1,3],[2,3],[3,1]];
+  function draw(){
+    ctx.clearRect(0,0,320,250);
+    edges.forEach(([a,b],i)=>{
+      const isBack=i===4;
+      ctx.beginPath();
+      if(isBack){ctx.moveTo(nodes[a].x,nodes[a].y);ctx.quadraticCurveTo(nodes[a].x-70,(nodes[a].y+nodes[b].y)/2,nodes[b].x,nodes[b].y);}
+      else{ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);}
+      ctx.strokeStyle=isBack?'#f59e0b':'#475569';ctx.lineWidth=1.5;
+      if(isBack)ctx.setLineDash([5,3]);ctx.stroke();ctx.setLineDash([]);
+    });
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);ctx.fillStyle='#1e293b';ctx.fill();
+      ctx.strokeStyle='#6366f1';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    ctx.fillStyle='#f59e0b';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText('back edge',85,165);
+  }
+  draw();
+
+  const answers=['a','b','b'];
+  const explains=[
+    'Forward analysis: add immediate successors only. B1→B2 and B1→B3.',
+    'B4\'s only successor is B2 (via the back edge). Back edges count as regular edges for the worklist!',
+    'If OUT didn\'t change, no successors are affected — skip them. This is the worklist\'s key optimization.'
+  ];
+  window.sCACheck=function(){
+    let score=0;
+    for(let i=1;i<=3;i++){
+      const val=document.getElementById('sCA-a'+i).value;
+      const el=document.getElementById('sCA-q'+i);
+      if(val===answers[i-1]){el.style.borderColor='#22c55e';score++;}
+      else{el.style.borderColor='#ef4444';}
+    }
+    let html='<strong>'+score+'/3</strong> — ';
+    if(score===3) html+='<span style="color:#22c55e;">Perfect! You understand worklist mechanics.</span>';
+    else{html+='Review:<br>';explains.forEach((e,i)=>{html+='<span style="color:#f59e0b;">• Q'+(i+1)+': '+e+'</span><br>';});}
+    document.getElementById('sCA-feedback').innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s9: WORKLIST ORDER MATTERS ==================== -->
+<div class="slide" id="s9">
+  <h2>Worklist Order Matters</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Same algorithm, same result — but different processing orders lead to different <strong>amounts of work</strong>. Compare FIFO vs LIFO.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <div style="border:2px solid #38bdf833;border-radius:12px;padding:0.6rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;margin-bottom:0.3rem;">FIFO (Queue) — process in order added</div>
+      <canvas id="cS9a" width="280" height="160" style="width:100%;background:rgba(0,0,0,0.15);border-radius:8px;"></canvas>
+      <div id="s9aLog" style="background:rgba(0,0,0,0.25);border-radius:6px;padding:0.3rem;font-family:monospace;font-size:0.65rem;color:#94a3b8;margin-top:0.3rem;max-height:60px;overflow-y:auto;"></div>
+      <div id="s9aCount" style="font-size:0.78rem;color:#38bdf8;margin-top:0.2rem;text-align:center;">Steps: 0</div>
+    </div>
+    <div style="border:2px solid #a78bfa33;border-radius:12px;padding:0.6rem;">
+      <div style="font-weight:600;color:#a78bfa;font-size:0.85rem;margin-bottom:0.3rem;">LIFO (Stack) — process most recent first</div>
+      <canvas id="cS9b" width="280" height="160" style="width:100%;background:rgba(0,0,0,0.15);border-radius:8px;"></canvas>
+      <div id="s9bLog" style="background:rgba(0,0,0,0.25);border-radius:6px;padding:0.3rem;font-family:monospace;font-size:0.65rem;color:#94a3b8;margin-top:0.3rem;max-height:60px;overflow-y:auto;"></div>
+      <div id="s9bCount" style="font-size:0.78rem;color:#a78bfa;margin-top:0.2rem;text-align:center;">Steps: 0</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:0.5rem;margin-top:0.6rem;justify-content:center;">
+    <button class="btn btn-sm" onclick="s9Step()">Step Both</button>
+    <button class="btn btn-sm" onclick="s9Auto()">Auto Play</button>
+    <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+  </div>
+
+  <div class="key-idea" style="margin-top:0.5rem;">
+    <strong>Observation:</strong> FIFO tends to process blocks in a breadth-first order — natural for forward analysis. LIFO goes depth-first — can propagate information deeper faster but may revisit blocks. Neither is universally better — the <em>optimal</em> order depends on the CFG shape.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  // CFG: B1→B2→B3→B4, B1→B3 (shortcut), B4→B2 (back edge)
+  const blocks=['B1','B2','B3','B4'];
+  const pos=[{x:50,y:30},{x:140,y:30},{x:140,y:120},{x:230,y:120}];
+  const edges=[[0,1],[1,2],[2,3],[3,1],[0,2]];
+  const succs=[[1,2],[2],[3],[1]];
+  const preds=[[],[0,3],[1,0],[2]];
+  const genSets=[[0],[1],[2],[3]];
+
+  let stateA={outs:[[],[],[],[]],wl:[0,1,2,3],steps:0};
+  let stateB={outs:[[],[],[],[]],wl:[0,1,2,3],steps:0};
+  let timer=null;
+
+  function setUnion(a,b){return [...new Set([...a,...b])].sort();}
+  function setEq(a,b){return JSON.stringify([...a].sort())===JSON.stringify([...b].sort());}
+
+  function drawCFG(cvs,state){
+    const ctx=cvs.getContext('2d');
+    ctx.clearRect(0,0,280,160);
+    edges.forEach(([a,b],i)=>{
+      const isBack=i===3;
+      ctx.beginPath();
+      if(isBack){ctx.moveTo(pos[a].x,pos[a].y);ctx.quadraticCurveTo(pos[a].x+50,pos[a].y+50,pos[b].x,pos[b].y);}
+      else{ctx.moveTo(pos[a].x,pos[a].y);ctx.lineTo(pos[b].x,pos[b].y);}
+      ctx.strokeStyle=isBack?'#f59e0b66':'#33415566';ctx.lineWidth=1;
+      if(isBack)ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
+    });
+    const wlSet=new Set(state.wl);
+    blocks.forEach((b,i)=>{
+      ctx.beginPath();ctx.arc(pos[i].x,pos[i].y,14,0,Math.PI*2);
+      ctx.fillStyle=wlSet.has(i)?'#f59e0b22':'#1e293b';ctx.fill();
+      ctx.strokeStyle=wlSet.has(i)?'#f59e0b':'#6366f1';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#e2e8f0';ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(b,pos[i].x,pos[i].y);
+    });
+  }
+
+  function processBlock(state,useFIFO){
+    if(state.wl.length===0) return false;
+    const b=useFIFO?state.wl.shift():state.wl.pop();
+    state.steps++;
+    const newIn=preds[b].reduce((acc,p)=>setUnion(acc,state.outs[p]),[]);
+    const newOut=setUnion(newIn,genSets[b]);
+    const changed=!setEq(newOut,state.outs[b]);
+    if(changed){
+      state.outs[b]=newOut;
+      succs[b].forEach(s=>{if(!state.wl.includes(s))state.wl.push(s);});
+    }
+    return {block:b,changed};
+  }
+
+  function init(){
+    stateA={outs:[[],[],[],[]],wl:[0,1,2,3],steps:0};
+    stateB={outs:[[],[],[],[]],wl:[0,1,2,3],steps:0};
+    if(timer){clearInterval(timer);timer=null;}
+    drawCFG(document.getElementById('cS9a'),stateA);
+    drawCFG(document.getElementById('cS9b'),stateB);
+    document.getElementById('s9aLog').innerHTML='';
+    document.getElementById('s9bLog').innerHTML='';
+    document.getElementById('s9aCount').textContent='Steps: 0';
+    document.getElementById('s9bCount').textContent='Steps: 0';
+  }
+
+  window.s9Step=function(){
+    const logA=document.getElementById('s9aLog');
+    const logB=document.getElementById('s9bLog');
+    if(stateA.wl.length>0){
+      const r=processBlock(stateA,true);
+      logA.innerHTML+='<div style="color:'+(r.changed?'#22c55e':'#64748b')+';">'+blocks[r.block]+(r.changed?' ✓':' —')+'</div>';
+      logA.scrollTop=logA.scrollHeight;
+      document.getElementById('s9aCount').textContent='Steps: '+stateA.steps+(stateA.wl.length===0?' DONE':'');
+      drawCFG(document.getElementById('cS9a'),stateA);
+    }
+    if(stateB.wl.length>0){
+      const r=processBlock(stateB,false);
+      logB.innerHTML+='<div style="color:'+(r.changed?'#22c55e':'#64748b')+';">'+blocks[r.block]+(r.changed?' ✓':' —')+'</div>';
+      logB.scrollTop=logB.scrollHeight;
+      document.getElementById('s9bCount').textContent='Steps: '+stateB.steps+(stateB.wl.length===0?' DONE':'');
+      drawCFG(document.getElementById('cS9b'),stateB);
+    }
+  };
+  window.s9Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{
+      if(stateA.wl.length===0&&stateB.wl.length===0){clearInterval(timer);timer=null;return;}
+      s9Step();
+    },500);
+  };
+  window.s9Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s10: REVERSE POSTORDER ==================== -->
+<div class="slide" id="s10">
+  <h2>Reverse Postorder (RPO)</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The <strong>optimal</strong> traversal order for forward analysis. RPO visits each node <em>after</em> all its predecessors (except back edges) — process definitions before uses.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS10" width="420" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s10Step()">Step DFS</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s10Info" style="background:#1e293b;border-radius:10px;padding:0.8rem;font-size:0.82rem;color:#cbd5e1;min-height:80px;"></div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.6rem;">
+        <div style="font-weight:600;color:#a78bfa;font-size:0.85rem;margin-bottom:0.4rem;">How to compute RPO:</div>
+        <ol style="font-size:0.78rem;color:#94a3b8;padding-left:1.2rem;">
+          <li>Run DFS from entry node</li>
+          <li>Record post-order: when a node <em>finishes</em> (all children done)</li>
+          <li>Reverse the post-order list</li>
+          <li>Use this order for the worklist</li>
+        </ol>
+      </div>
+
+      <div id="s10Post" style="margin-top:0.5rem;font-family:monospace;font-size:0.78rem;color:#94a3b8;">Post-order: <span id="s10PostList">—</span><br>RPO: <span id="s10RPOList">—</span></div>
+
+      <div class="key-idea" style="margin-top:0.4rem;">
+        <strong>Why RPO?</strong> For acyclic parts of the CFG, RPO processes a block only after all its inputs are computed — <em>one pass suffices</em>. Only loops require re-iteration.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS10');
+  const ctx=canvas.getContext('2d');
+  // CFG: B1→B2→B4, B1→B3→B4, B4→B5, B5→B2 (back edge)
+  const nodes=[{x:210,y:30,l:'B1',c:'#38bdf8'},{x:100,y:120,l:'B2',c:'#6366f1'},{x:320,y:120,l:'B3',c:'#6366f1'},{x:210,y:210,l:'B4',c:'#a78bfa'},{x:210,y:280,l:'B5',c:'#f472b6'}];
+  const edges=[[0,1],[0,2],[1,3],[2,3],[3,4],[4,1]];
+
+  // DFS animation states
+  const dfsSteps=[
+    {msg:'Start DFS at B1',visiting:[0],finished:[],stack:['B1']},
+    {msg:'Visit B1 → go to B2 (left child)',visiting:[0,1],finished:[],stack:['B1','B2']},
+    {msg:'Visit B2 → go to B4',visiting:[0,1,3],finished:[],stack:['B1','B2','B4']},
+    {msg:'Visit B4 → go to B5',visiting:[0,1,3,4],finished:[],stack:['B1','B2','B4','B5']},
+    {msg:'B5 → B2 is a back edge (already visiting). B5 finishes. Post: [B5]',visiting:[0,1,3],finished:[4],stack:['B1','B2','B4'],post:['B5']},
+    {msg:'B4 done (all children visited). Post: [B5, B4]',visiting:[0,1],finished:[4,3],stack:['B1','B2'],post:['B5','B4']},
+    {msg:'B2 done. Post: [B5, B4, B2]',visiting:[0],finished:[4,3,1],stack:['B1'],post:['B5','B4','B2']},
+    {msg:'Back to B1 → go to B3',visiting:[0,2],finished:[4,3,1],stack:['B1','B3'],post:['B5','B4','B2']},
+    {msg:'B3 → B4 already finished. B3 done. Post: [B5,B4,B2,B3]',visiting:[0],finished:[4,3,1,2],stack:['B1'],post:['B5','B4','B2','B3']},
+    {msg:'B1 done. Post: [B5,B4,B2,B3,B1]. RPO = reverse!',visiting:[],finished:[4,3,1,2,0],stack:[],post:['B5','B4','B2','B3','B1']}
+  ];
+  let stepIdx=-1, timer=null;
+
+  function draw(){
+    ctx.clearRect(0,0,420,300);
+    const state=stepIdx>=0?dfsSteps[Math.min(stepIdx,dfsSteps.length-1)]:{visiting:[],finished:[],stack:[]};
+    const visiting=new Set(state.visiting);
+    const finished=new Set(state.finished);
+
+    // Edges
+    edges.forEach(([a,b],i)=>{
+      const isBack=i===5;
+      ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      ctx.strokeStyle=isBack?'#f59e0b':'#475569';ctx.lineWidth=1.5;
+      if(isBack)ctx.setLineDash([5,3]);ctx.stroke();ctx.setLineDash([]);
+    });
+
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const isV=visiting.has(i);
+      const isF=finished.has(i);
+      ctx.beginPath();ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=isF?'#22c55e33':isV?'#f59e0b33':'#1e293b';ctx.fill();
+      ctx.strokeStyle=isF?'#22c55e':isV?'#f59e0b':n.c;ctx.lineWidth=isV?3:2;ctx.stroke();
+      ctx.fillStyle=isF?'#22c55e':isV?'#f59e0b':'#e2e8f0';
+      ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+      // Finish number
+      if(isF){
+        const fIdx=state.finished.indexOf(i);
+        ctx.fillStyle='#22c55e';ctx.font='bold 9px monospace';
+        ctx.fillText('post:'+(fIdx+1),n.x,n.y-28);
+      }
+    });
+  }
+
+  function init(){
+    stepIdx=-1;if(timer){clearInterval(timer);timer=null;}
+    draw();
+    document.getElementById('s10Info').innerHTML='<span style="color:#94a3b8;">Click Step to run DFS and compute post-order numbering.</span>';
+    document.getElementById('s10PostList').textContent='—';
+    document.getElementById('s10RPOList').textContent='—';
+  }
+
+  window.s10Step=function(){
+    if(stepIdx>=dfsSteps.length-1)return;
+    stepIdx++;
+    const s=dfsSteps[stepIdx];
+    draw();
+    document.getElementById('s10Info').innerHTML='<span style="color:#f59e0b;">'+s.msg+'</span><br><span style="color:#94a3b8;font-size:0.78rem;">DFS stack: ['+s.stack.join(', ')+']</span>';
+    if(s.post){
+      document.getElementById('s10PostList').innerHTML=s.post.map(b=>'<span style="color:#22c55e;">'+b+'</span>').join(', ');
+      if(stepIdx===dfsSteps.length-1){
+        const rpo=[...s.post].reverse();
+        document.getElementById('s10RPOList').innerHTML=rpo.map((b,i)=>'<span style="color:#a78bfa;">'+b+'</span><span style="color:#64748b;">('+i+')</span>').join(', ');
+      }
+    }
+  };
+  window.s10Auto=function(){
+    if(timer)return;
+    timer=setInterval(()=>{if(stepIdx>=dfsSteps.length-1){clearInterval(timer);timer=null;return;}s10Step();},1000);
+  };
+  window.s10Reset=function(){init();};
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s11: RPO WORKED EXAMPLE ==================== -->
+<div class="slide" id="s11">
+  <h2>RPO vs FIFO: Same CFG, Less Work</h2>
+  <p style="color:#94a3b8;margin-bottom:0.6rem;">Same reaching defs analysis, same result. RPO needs fewer steps because it processes blocks in dependency order.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.3rem;">
+    <div style="border:2px solid #38bdf833;border-radius:10px;padding:0.5rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.82rem;margin-bottom:0.3rem;">FIFO Order: B1, B2, B3, B4</div>
+      <div id="s11FifoLog" style="background:rgba(0,0,0,0.25);border-radius:6px;padding:0.3rem;font-family:monospace;font-size:0.65rem;color:#94a3b8;max-height:180px;overflow-y:auto;"></div>
+      <div id="s11FifoStats" style="font-size:0.78rem;color:#38bdf8;margin-top:0.3rem;text-align:center;"></div>
+    </div>
+    <div style="border:2px solid #22c55e33;border-radius:10px;padding:0.5rem;">
+      <div style="font-weight:600;color:#22c55e;font-size:0.82rem;margin-bottom:0.3rem;">RPO Order: B1, B3, B2, B4</div>
+      <div id="s11RpoLog" style="background:rgba(0,0,0,0.25);border-radius:6px;padding:0.3rem;font-family:monospace;font-size:0.65rem;color:#94a3b8;max-height:180px;overflow-y:auto;"></div>
+      <div id="s11RpoStats" style="font-size:0.78rem;color:#22c55e;margin-top:0.3rem;text-align:center;"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:0.5rem;margin-top:0.5rem;justify-content:center;">
+    <button class="btn btn-sm" onclick="s11Run()">Run Both to Completion</button>
+    <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+  </div>
+
+  <div class="key-idea" style="margin-top:0.5rem;">
+    <strong>RPO advantage:</strong> On acyclic CFGs, RPO computes the fixed point in <em>one pass</em>. With loops, RPO still minimizes re-processing because definitions reach uses before uses are analyzed.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  // CFG: B1→B2, B1→B3, B3→B4, B2→B4, B4→B2 (back edge)
+  const succs=[[1,2],[3],[3],[1]]; // B4→B2 back edge
+  const preds=[[],[0,3],[0],[1,2]];
+  const genSets=[[0],[1],[2],[3]];
+  const blocks=['B1','B2','B3','B4'];
+
+  function runSim(order,useFIFO){
+    let outs=[[],[],[],[]];
+    let wl=[...order];
+    let steps=0, log=[];
+    function setUnion(a,b){return [...new Set([...a,...b])].sort();}
+    function setEq(a,b){return JSON.stringify([...a].sort())===JSON.stringify([...b].sort());}
+    while(wl.length>0&&steps<30){
+      const b=wl.shift();
+      steps++;
+      const newIn=preds[b].reduce((acc,p)=>setUnion(acc,outs[p]),[]);
+      const newOut=setUnion(newIn,genSets[b]);
+      const changed=!setEq(newOut,outs[b]);
+      const outStr='{'+newOut.map(d=>'d'+(d+1)).join(',')+'}';
+      if(changed){
+        outs[b]=newOut;
+        succs[b].forEach(s=>{if(!wl.includes(s))wl.push(s);});
+        log.push({block:blocks[b],out:outStr,changed:true});
+      } else {
+        log.push({block:blocks[b],out:outStr||'∅',changed:false});
+      }
+    }
+    return {steps,log};
+  }
+
+  function render(log,target,statsTarget,color){
+    const el=document.getElementById(target);
+    el.innerHTML=log.map((e,i)=>'<div style="color:'+(e.changed?'#22c55e':'#64748b')+';">'+(i+1)+'. '+e.block+' → OUT='+e.out+(e.changed?'':' (no change)')+'</div>').join('');
+    document.getElementById(statsTarget).textContent='Total: '+log.length+' steps';
+  }
+
+  window.s11Run=function(){
+    const fifo=runSim([0,1,2,3],true);
+    const rpo=runSim([0,2,1,3],true); // RPO: B1, B3, B2, B4
+    render(fifo.log,'s11FifoLog','s11FifoStats','#38bdf8');
+    render(rpo.log,'s11RpoLog','s11RpoStats','#22c55e');
+  };
+  window.s11Reset=function(){
+    ['s11FifoLog','s11RpoLog'].forEach(id=>{document.getElementById(id).innerHTML='<span style="color:#64748b;">Click "Run Both" to compare.</span>';});
+    ['s11FifoStats','s11RpoStats'].forEach(id=>{document.getElementById(id).textContent='';});
+  };
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s11').classList.contains('active'))s11Reset();});
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  s11Reset();
+})();
+</script>
+
+<!-- ==================== SLIDE s12: CHAOTIC ITERATION ==================== -->
+<div class="slide" id="s12">
+  <h2>Chaotic Iteration</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">The theoretical foundation: <strong>any "fair" ordering converges</strong> to the same fixed point — even random! RPO is just the smartest choice.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS12" width="420" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;justify-content:center;">
+        <button class="btn btn-sm" onclick="s12Run('fifo')">Run FIFO</button>
+        <button class="btn btn-sm" onclick="s12Run('lifo')">Run LIFO</button>
+        <button class="btn btn-sm" onclick="s12Run('rpo')">Run RPO</button>
+        <button class="btn btn-sm" onclick="s12Run('random')">Run Random!</button>
+      </div>
+    </div>
+    <div>
+      <div id="s12Result" style="background:#1e293b;border-radius:10px;padding:0.8rem;font-size:0.82rem;color:#cbd5e1;min-height:120px;"></div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.6rem;">
+        <div style="font-weight:600;color:#a78bfa;font-size:0.85rem;margin-bottom:0.4rem;">Chaotic Iteration Theorem:</div>
+        <div style="font-size:0.78rem;color:#94a3b8;">
+          For monotone transfer functions on a lattice with ACC, <strong>any</strong> iteration strategy that is <em>fair</em> (every block gets processed infinitely often if it stays on the worklist) will converge to the <strong>same</strong> least fixed point.<br><br>
+          <em>Fair = don't starve any block forever.</em>
+        </div>
+      </div>
+
+      <div class="warning" style="margin-top:0.4rem;">
+        <strong>All strategies find the same answer.</strong> The difference is only in how many steps it takes. RPO minimizes steps; random is worst on average.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS12');
+  const ctx=canvas.getContext('2d');
+  const blocks=['B1','B2','B3','B4','B5'];
+  const succs=[[1,2],[3],[3],[4],[1]];
+  const preds=[[],[0,4],[0],[1,2],[3]];
+  const genSets=[[0],[1],[2],[3],[4]];
+
+  function setUnion(a,b){return [...new Set([...a,...b])].sort();}
+  function setEq(a,b){return JSON.stringify([...a].sort())===JSON.stringify([...b].sort());}
+
+  function simulate(strategy){
+    let outs=[[],[],[],[],[]];
+    let order=[0,1,2,3,4];
+    if(strategy==='lifo') order=[4,3,2,1,0];
+    else if(strategy==='rpo') order=[0,2,1,3,4];
+    else if(strategy==='random'){for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}}
+    let wl=[...order];
+    let steps=0;
+    while(wl.length>0&&steps<50){
+      let b;
+      if(strategy==='lifo') b=wl.pop();
+      else if(strategy==='random'){const idx=Math.floor(Math.random()*wl.length);b=wl.splice(idx,1)[0];}
+      else b=wl.shift();
+      steps++;
+      const newIn=preds[b].reduce((acc,p)=>setUnion(acc,outs[p]),[]);
+      const newOut=setUnion(newIn,genSets[b]);
+      if(!setEq(newOut,outs[b])){
+        outs[b]=newOut;
+        succs[b].forEach(s=>{if(!wl.includes(s))wl.push(s);});
+      }
+    }
+    return {steps,outs};
+  }
+
+  function drawBars(results){
+    ctx.clearRect(0,0,420,280);
+    ctx.fillStyle='#94a3b8';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText('Steps to Fixed Point',210,20);
+
+    const maxSteps=Math.max(...results.map(r=>r.steps),1);
+    results.forEach((r,i)=>{
+      const barW=60,gap=20;
+      const x=50+i*(barW+gap);
+      const barH=r.steps/maxSteps*180;
+      const y=240-barH;
+
+      ctx.fillStyle=r.color+'44';
+      ctx.beginPath();ctx.roundRect(x,y,barW,barH,6);ctx.fill();
+      ctx.strokeStyle=r.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(x,y,barW,barH,6);ctx.stroke();
+
+      ctx.fillStyle=r.color;ctx.font='bold 14px monospace';ctx.textAlign='center';
+      ctx.fillText(r.steps,x+barW/2,y-8);
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+      ctx.fillText(r.label,x+barW/2,258);
+    });
+
+    // Same result indicator
+    ctx.fillStyle='#22c55e';ctx.font='bold 10px monospace';ctx.textAlign='center';
+    ctx.fillText('All reach the SAME fixed point ✓',210,278);
+  }
+
+  let results=[
+    {label:'FIFO',steps:0,color:'#38bdf8'},
+    {label:'LIFO',steps:0,color:'#a78bfa'},
+    {label:'RPO',steps:0,color:'#22c55e'},
+    {label:'Random',steps:0,color:'#f59e0b'}
+  ];
+
+  window.s12Run=function(strategy){
+    const idx={fifo:0,lifo:1,rpo:2,random:3}[strategy];
+    const sim=simulate(strategy);
+    results[idx].steps=sim.steps;
+    drawBars(results);
+
+    const outStr=sim.outs.map((o,i)=>blocks[i]+'='+'{'+o.map(d=>'d'+(d+1)).join(',')+'}').join(', ');
+    document.getElementById('s12Result').innerHTML='<strong style="color:'+results[idx].color+';">'+results[idx].label+':</strong> '+sim.steps+' steps<br><span style="font-size:0.75rem;color:#94a3b8;">Final: '+outStr+'</span>';
+  };
+
+  drawBars(results);
+  const obs=new MutationObserver(()=>{if(document.getElementById('s12').classList.contains('active')){results.forEach(r=>r.steps=0);drawBars(results);document.getElementById('s12Result').innerHTML='<span style="color:#94a3b8;">Click each strategy to compare iteration counts.</span>';}});
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE s13: HANDLING LOOPS ==================== -->
+<div class="slide" id="s13">
+  <h2>Handling Loops (Back Edges)</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">Loops cause <strong>back edges</strong> in the CFG. These are the only edges that require re-processing — and where widening connects.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS13" width="420" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;font-size:0.82rem;color:#cbd5e1;margin-bottom:0.6rem;">
+        <strong style="color:#f59e0b;">Back Edge Detection:</strong><br>
+        An edge A → B is a <strong>back edge</strong> if B was visited before A in DFS (B dominates A).<br><br>
+        <strong>Impact on worklist:</strong><br>
+        • Back edges put the loop <em>header</em> back on the worklist<br>
+        • Each loop iteration grows the analysis state<br>
+        • With finite lattice: terminates after ≤ height iterations per loop<br>
+        • With infinite lattice: needs <strong>widening at loop headers</strong>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+        <div class="key-idea" style="margin:0;">
+          <strong>Finite lattice</strong><br>
+          <span style="font-size:0.78rem;">Powerset height = |defs|<br>Loop re-iterates at most |defs| times<br>No widening needed</span>
+        </div>
+        <div class="warning" style="margin:0;">
+          <strong>Infinite lattice</strong><br>
+          <span style="font-size:0.78rem;">Interval height = ∞<br>Loop re-iterates forever<br>Apply widening at header</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS13');
+  const ctx=canvas.getContext('2d');
+  // While loop CFG: Entry→Header→Body→Header (back), Header→Exit
+  const nodes=[
+    {x:210,y:30,l:'Entry',c:'#38bdf8'},
+    {x:210,y:110,l:'Header',c:'#f59e0b'},
+    {x:120,y:200,l:'Body',c:'#a78bfa'},
+    {x:300,y:200,l:'Exit',c:'#22c55e'}
+  ];
+  const edges=[[0,1],[1,2],[2,1],[1,3]]; // 2→1 is back edge
+
+  function draw(){
+    ctx.clearRect(0,0,420,300);
+    // Edges
+    edges.forEach(([a,b],i)=>{
+      const isBack=i===2;
+      ctx.beginPath();
+      if(isBack){
+        ctx.moveTo(nodes[a].x,nodes[a].y);
+        ctx.quadraticCurveTo(nodes[a].x-80,(nodes[a].y+nodes[b].y)/2,nodes[b].x-30,nodes[b].y);
+      } else {
+        ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);
+      }
+      ctx.strokeStyle=isBack?'#f59e0b':'#475569';ctx.lineWidth=isBack?3:2;
+      if(isBack)ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+      // Arrow label
+      if(isBack){
+        ctx.fillStyle='#f59e0b';ctx.font='bold 10px monospace';ctx.textAlign='center';
+        ctx.fillText('BACK EDGE',60,155);
+        ctx.fillText('(re-adds Header',60,168);
+        ctx.fillText('to worklist)',60,181);
+      }
+    });
+    // Nodes
+    nodes.forEach(n=>{
+      ctx.beginPath();ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=n.c+'33';ctx.fill();ctx.strokeStyle=n.c;ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+    });
+    // Annotation: widening point
+    ctx.beginPath();ctx.arc(nodes[1].x+30,nodes[1].y,8,0,Math.PI*2);
+    ctx.fillStyle='#ef4444';ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('∇',nodes[1].x+30,nodes[1].y);
+    ctx.fillStyle='#ef4444';ctx.font='9px monospace';ctx.textAlign='left';
+    ctx.fillText('widen here',nodes[1].x+42,nodes[1].y+3);
+
+    // Process flow annotation
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText('RPO: Entry → Header → Body → Exit',210,270);
+    ctx.fillText('Back edge causes Header to re-enter worklist',210,285);
+  }
+  draw();
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s13').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== SLIDE s14: COMPLEXITY ANALYSIS ==================== -->
+<div class="slide" id="s14">
+  <h2>Complexity Analysis</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">How much work does the worklist algorithm do? It depends on lattice height, CFG edges, and traversal order.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <canvas id="cS14" width="420" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;">
+        <div style="font-weight:600;color:#38bdf8;font-size:0.9rem;margin-bottom:0.5rem;">Complexity Formulas:</div>
+        <table style="width:100%;font-family:monospace;font-size:0.78rem;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #334155;"><td style="padding:0.3rem;color:#ef4444;font-weight:600;">Round-Robin</td><td style="padding:0.3rem;color:#cbd5e1;">O(h × n²)</td></tr>
+          <tr style="border-bottom:1px solid #334155;"><td style="padding:0.3rem;color:#f59e0b;font-weight:600;">Worklist (FIFO)</td><td style="padding:0.3rem;color:#cbd5e1;">O(h × |E|)</td></tr>
+          <tr style="border-bottom:1px solid #334155;"><td style="padding:0.3rem;color:#22c55e;font-weight:600;">Worklist (RPO)</td><td style="padding:0.3rem;color:#cbd5e1;">O(h × |E|) but fewer constant</td></tr>
+        </table>
+        <div style="font-size:0.75rem;color:#64748b;margin-top:0.4rem;">
+          h = lattice height, n = blocks, |E| = edges
+        </div>
+      </div>
+
+      <div style="background:#1e293b;border-radius:10px;padding:0.8rem;margin-top:0.6rem;">
+        <div style="font-weight:600;color:#f59e0b;font-size:0.85rem;margin-bottom:0.3rem;">Interactive Calculator:</div>
+        <div style="display:flex;gap:0.8rem;flex-wrap:wrap;font-size:0.78rem;">
+          <label style="color:#94a3b8;">Blocks (n): <input type="number" id="s14n" value="100" min="1" max="10000" style="width:60px;padding:0.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;" onchange="s14Calc()"></label>
+          <label style="color:#94a3b8;">Edges (|E|): <input type="number" id="s14e" value="150" min="1" max="50000" style="width:60px;padding:0.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;" onchange="s14Calc()"></label>
+          <label style="color:#94a3b8;">Height (h): <input type="number" id="s14h" value="10" min="1" max="1000" style="width:60px;padding:0.2rem;background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;" onchange="s14Calc()"></label>
+        </div>
+        <div id="s14Result" style="margin-top:0.5rem;font-family:monospace;font-size:0.78rem;color:#cbd5e1;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('cS14');
+  const ctx=canvas.getContext('2d');
+
+  function calc(){
+    const n=parseInt(document.getElementById('s14n').value)||100;
+    const e=parseInt(document.getElementById('s14e').value)||150;
+    const h=parseInt(document.getElementById('s14h').value)||10;
+    const rr=h*n*n, wl=h*e;
+    const savings=Math.round((1-wl/rr)*100);
+
+    document.getElementById('s14Result').innerHTML=
+      '<span style="color:#ef4444;">Round-robin: '+rr.toLocaleString()+' ops</span><br>'+
+      '<span style="color:#22c55e;">Worklist: '+wl.toLocaleString()+' ops</span><br>'+
+      '<span style="color:#f59e0b;">Savings: '+(savings>0?savings:0)+'% less work</span>';
+
+    // Draw bar chart
+    ctx.clearRect(0,0,420,300);
+    ctx.fillStyle='#94a3b8';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText('Operations (lower = faster)',210,20);
+
+    const maxOps=Math.max(rr,wl,1);
+    const bars=[
+      {label:'Round-Robin',val:rr,formula:'h×n² = '+h+'×'+n+'²',color:'#ef4444',x:120},
+      {label:'Worklist',val:wl,formula:'h×|E| = '+h+'×'+e,color:'#22c55e',x:300}
+    ];
+    bars.forEach(b=>{
+      const barH=Math.min(b.val/maxOps*200,200);
+      const y=260-barH;
+      ctx.fillStyle=b.color+'44';
+      ctx.beginPath();ctx.roundRect(b.x-40,y,80,barH,8);ctx.fill();
+      ctx.strokeStyle=b.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.roundRect(b.x-40,y,80,barH,8);ctx.stroke();
+      ctx.fillStyle=b.color;ctx.font='bold 12px monospace';ctx.textAlign='center';
+      ctx.fillText(b.val>=1000?(b.val/1000).toFixed(1)+'K':b.val,b.x,y-12);
+      ctx.fillStyle='#94a3b8';ctx.font='9px monospace';
+      ctx.fillText(b.label,b.x,275);ctx.fillText(b.formula,b.x,288);
+    });
+
+    // Savings arrow
+    if(savings>0){
+      ctx.fillStyle='#f59e0b';ctx.font='bold 14px monospace';ctx.textAlign='center';
+      ctx.fillText(savings+'% less!',210,150);
+    }
+  }
+  window.s14Calc=calc;
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s14').classList.contains('active'))calc();});
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  calc();
+})();
+</script>
+
+<!-- ==================== SLIDE sCB: CHALLENGE — WHICH ORDER IS BEST? ==================== -->
+<div class="slide" id="sCB">
+  <h2>🎯 Challenge B: Which Order Is Best?</h2>
+  <p style="color:#94a3b8;margin-bottom:0.8rem;">For each CFG shape, pick the best worklist strategy.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;">
+    <!-- Scenario 1: Linear chain -->
+    <div id="sCB-q1" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.3rem;">CFG 1: Linear Chain</div>
+      <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:0.4rem;">B1 → B2 → B3 → B4 → B5 (no loops)</div>
+      <select id="sCB-a1" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Best strategy?</option>
+        <option value="a">FIFO — processes in order already</option>
+        <option value="b">LIFO — processes backwards</option>
+        <option value="c">RPO — same as FIFO for chains</option>
+        <option value="d">Doesn't matter — all take same steps</option>
+      </select>
+    </div>
+
+    <!-- Scenario 2: Diamond -->
+    <div id="sCB-q2" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.3rem;">CFG 2: Diamond with Back Edge</div>
+      <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:0.4rem;">B1→{B2,B3}→B4→B2 (loop on left branch)</div>
+      <select id="sCB-a2" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Best strategy?</option>
+        <option value="a">FIFO — breadth-first is good here</option>
+        <option value="b">RPO — processes B3 before B2 (reduces re-iteration)</option>
+        <option value="c">LIFO — depth-first reaches the loop faster</option>
+        <option value="d">Random — diamond shape is unpredictable</option>
+      </select>
+    </div>
+
+    <!-- Scenario 3: Nested loops -->
+    <div id="sCB-q3" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.3rem;">CFG 3: Nested Loops</div>
+      <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:0.4rem;">Outer loop (B1→B2→B1) with inner loop (B2→B3→B2)</div>
+      <select id="sCB-a3" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Best strategy?</option>
+        <option value="a">FIFO — avoids getting stuck in inner loop</option>
+        <option value="b">RPO — processes inner loop body before header</option>
+        <option value="c">LIFO — keeps inner loop on top of stack</option>
+        <option value="d">RPO — converges inner loop first, then outer</option>
+      </select>
+    </div>
+
+    <!-- Scenario 4: Backward analysis -->
+    <div id="sCB-q4" style="background:#1e293b;border-radius:10px;padding:0.8rem;border:2px solid #334155;">
+      <div style="font-size:0.82rem;font-weight:600;color:#f59e0b;margin-bottom:0.3rem;">CFG 4: Backward Analysis (Live Variables)</div>
+      <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:0.4rem;">Same CFG, but propagating information backwards</div>
+      <select id="sCB-a4" style="width:100%;padding:0.3rem;background:#0f172a;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Best strategy?</option>
+        <option value="a">RPO — same as forward, it's always best</option>
+        <option value="b">Reverse RPO — process uses before defs</option>
+        <option value="c">Postorder — the reverse of RPO</option>
+        <option value="d">Doesn't matter for backward analyses</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:0.6rem;">
+    <button class="btn btn-sm" onclick="sCBCheck()">Check All</button>
+  </div>
+  <div id="sCB-feedback" style="margin-top:0.4rem;font-size:0.78rem;color:#94a3b8;text-align:center;"></div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers=['c','b','d','c'];
+  const explains=[
+    'For a linear chain, RPO = FIFO = natural order. One pass suffices (no loops). All strategies do the same work.',
+    'RPO processes B3 (no loop) before B2 (loop header). B3\'s info reaches B4 in one shot, reducing how many times B2 is re-processed.',
+    'RPO converges the inner loop first (all inner iterations complete), then propagates to the outer loop. This minimizes total re-processing.',
+    'For backward analysis, the optimal order is postorder (reverse of RPO). Postorder processes successors before predecessors — exactly what backward analysis needs.'
+  ];
+  window.sCBCheck=function(){
+    let score=0;
+    for(let i=1;i<=4;i++){
+      const val=document.getElementById('sCB-a'+i).value;
+      const el=document.getElementById('sCB-q'+i);
+      if(val===answers[i-1]){el.style.borderColor='#22c55e';score++;}
+      else{el.style.borderColor='#ef4444';}
+    }
+    let html='<strong>'+score+'/4</strong> — ';
+    if(score===4) html+='<span style="color:#22c55e;">Perfect! You understand traversal strategies.</span>';
+    else{html+='Review:<br>';explains.forEach((e,i)=>{html+='<span style="color:#f59e0b;">• CFG '+(i+1)+': '+e+'</span><br>';});}
+    document.getElementById('sCB-feedback').innerHTML=html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 15: Backward Worklist — Live Variables ==================== -->
+<div class="slide" id="s15">
+  <h2>Applying Worklist to Live Variables (Backward)</h2>
+  <p>Worklist works for <strong>backward</strong> analyses too — just swap successors ↔ predecessors and IN ↔ OUT.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS15" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s15Step()">Step</button>
+        <button class="btn btn-sm" onclick="s15Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Live Variable Sets</div>
+      <div id="s15Table" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:160px;overflow-y:auto;"></div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.75rem 0 0.5rem;">Worklist Queue</div>
+      <div id="s15Queue" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;"></div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.75rem 0 0.5rem;">Log</div>
+      <div id="s15Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;max-height:100px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:1rem;">
+    <strong>Key difference:</strong> In backward analysis, when a block's OUT changes, we add its <em>predecessors</em> to the worklist (they need to recompute their IN).
+  </div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+  // CFG: B1→B2→B3→B4, B3→B2 (back edge)
+  // B1: x = input  B2: y = x + 1  B3: if y > 10  B4: print(x, y)
+  const blocks = [
+    {id:'B1', x:260, y:40, code:'x = input()', gen:['x'], kill:[]},
+    {id:'B2', x:260, y:130, code:'y = x + 1', gen:['x'], kill:['y']},
+    {id:'B3', x:260, y:220, code:'if y > 10', gen:['y'], kill:[]},
+    {id:'B4', x:260, y:310, code:'print(x,y)', gen:['x','y'], kill:[]}
+  ];
+  const edges = [{from:0,to:1},{from:1,to:2},{from:2,to:3},{from:2,to:1}];
+  const preds = [[],[0,2],[1],[2]];
+  const succs = [[1],[2],[1,3],[]];
+  let liveIn, liveOut, worklist, stepIdx, steps, timer;
+
+  function setsEqual(a,b){ if(a.size!==b.size) return false; for(const v of a) if(!b.has(v)) return false; return true; }
+
+  function buildSteps(){
+    steps = [];
+    liveIn = blocks.map(()=>new Set());
+    liveOut = blocks.map(()=>new Set());
+    let wl = [3,2,1,0]; // start from exit in reverse
+    steps.push({type:'init',wl:[...wl],liveIn:liveIn.map(s=>new Set(s)),liveOut:liveOut.map(s=>new Set(s)),msg:'Initialize: all blocks in worklist (reverse order)'});
+    while(wl.length > 0){
+      const bi = wl.shift();
+      const b = blocks[bi];
+      // OUT[B] = ∪ IN[succ] for backward liveness
+      let newOut = new Set();
+      succs[bi].forEach(s => liveIn[s].forEach(v => newOut.add(v)));
+      let newIn = new Set([...newOut].filter(v => !b.kill.includes(v)));
+      b.gen.forEach(v => newIn.add(v));
+      const changed = !setsEqual(newIn, liveIn[bi]) || !setsEqual(newOut, liveOut[bi]);
+      liveOut[bi] = newOut;
+      const oldIn = new Set(liveIn[bi]);
+      liveIn[bi] = newIn;
+      if(changed){
+        preds[bi].forEach(p => { if(!wl.includes(p)) wl.push(p); });
+      }
+      steps.push({type:'process',block:bi,wl:[...wl],liveIn:liveIn.map(s=>new Set(s)),liveOut:liveOut.map(s=>new Set(s)),changed,msg:`Process ${b.id}: IN=${fmt(newIn)}, OUT=${fmt(newOut)}${changed?' → changed, add preds':' → stable'}`});
+    }
+    steps.push({type:'done',wl:[],liveIn:liveIn.map(s=>new Set(s)),liveOut:liveOut.map(s=>new Set(s)),msg:'Worklist empty — fixed point reached!'});
+  }
+  function fmt(s){ return '{'+[...s].sort().join(',')+'}'; }
+
+  function draw(activeBlock, curLiveIn, curLiveOut){
+    ctx.clearRect(0,0,520,370);
+    // edges
+    edges.forEach(e => {
+      const f=blocks[e.from], t=blocks[e.to];
+      ctx.beginPath();
+      if(e.from===2 && e.to===1){ // back edge curve
+        ctx.moveTo(f.x-50,f.y); ctx.quadraticCurveTo(f.x-120,f.y-45,t.x-50,t.y);
+      } else {
+        ctx.moveTo(f.x,f.y+20); ctx.lineTo(t.x,t.y-20);
+      }
+      ctx.strokeStyle = (e.from===2&&e.to===1)?'#f59e0b':'#475569';
+      ctx.lineWidth = 1.5; ctx.stroke();
+      // arrowhead
+      const ax = (e.from===2&&e.to===1)? t.x-50 : t.x;
+      const ay = t.y-20;
+      ctx.beginPath(); ctx.moveTo(ax-4,ay-6); ctx.lineTo(ax,ay); ctx.lineTo(ax+4,ay-6);
+      ctx.strokeStyle = (e.from===2&&e.to===1)?'#f59e0b':'#475569'; ctx.stroke();
+    });
+    // blocks
+    blocks.forEach((b,i) => {
+      ctx.fillStyle = i===activeBlock?'#f59e0b':curLiveIn&&curLiveIn[i].size>0?'#6366f1':'#334155';
+      ctx.strokeStyle = i===activeBlock?'#f59e0b':'#818cf8';
+      ctx.lineWidth = i===activeBlock?3:1.5;
+      ctx.beginPath(); ctx.roundRect(b.x-55,b.y-18,110,36,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 12px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(b.code, b.x, b.y);
+      // IN/OUT labels
+      if(curLiveIn){
+        ctx.font='10px monospace'; ctx.fillStyle='#22c55e'; ctx.textAlign='right';
+        ctx.fillText('IN:'+fmt(curLiveIn[i]), b.x-60, b.y-6);
+        ctx.fillStyle='#38bdf8'; ctx.textAlign='left';
+        ctx.fillText('OUT:'+fmt(curLiveOut[i]), b.x+60, b.y+6);
+      }
+    });
+    if(activeBlock===2){ ctx.fillStyle='#f59e0b'; ctx.font='9px monospace'; ctx.textAlign='left'; ctx.fillText('← back edge',blocks[2].x-130,blocks[2].y-35); }
+  }
+
+  function renderTable(curLiveIn, curLiveOut){
+    let h='<table style="width:100%;border-collapse:collapse;"><tr><th style="color:#94a3b8;padding:2px 4px;">Block</th><th style="color:#22c55e;padding:2px 4px;">IN</th><th style="color:#38bdf8;padding:2px 4px;">OUT</th></tr>';
+    blocks.forEach((b,i)=>{ h+=`<tr><td style="color:#e2e8f0;padding:2px 4px;">${b.id}</td><td style="color:#22c55e;padding:2px 4px;">${fmt(curLiveIn[i])}</td><td style="color:#38bdf8;padding:2px 4px;">${fmt(curLiveOut[i])}</td></tr>`; });
+    h+='</table>'; document.getElementById('s15Table').innerHTML=h;
+  }
+  function renderQueue(wl){ document.getElementById('s15Queue').innerHTML=wl.length?wl.map(i=>'<span style="background:#6366f1;padding:2px 8px;border-radius:4px;margin:2px;">'+blocks[i].id+'</span>').join(' '):'<span style="color:#22c55e;">Empty — done!</span>'; }
+
+  function init(){
+    buildSteps(); stepIdx=0; timer=null;
+    const s=steps[0];
+    draw(-1, s.liveIn, s.liveOut);
+    renderTable(s.liveIn, s.liveOut);
+    renderQueue(s.wl);
+    document.getElementById('s15Log').innerHTML='<div style="color:#94a3b8;">'+s.msg+'</div>';
+  }
+
+  window.s15Step = function(){
+    if(stepIdx >= steps.length-1) return;
+    stepIdx++;
+    const s=steps[stepIdx];
+    draw(s.block!==undefined?s.block:-1, s.liveIn, s.liveOut);
+    renderTable(s.liveIn, s.liveOut);
+    renderQueue(s.wl);
+    const log=document.getElementById('s15Log');
+    const color = s.type==='done'?'#22c55e':s.changed?'#f59e0b':'#94a3b8';
+    log.innerHTML+=`<div style="color:${color};">${s.msg}</div>`;
+    log.scrollTop=log.scrollHeight;
+  };
+  window.s15Auto = function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=steps.length-1){clearInterval(timer);timer=null;return;} s15Step(); },900);
+  };
+  window.s15Reset = function(){ if(timer){clearInterval(timer);timer=null;} init(); };
+
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s15').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: Real-World Implementations ==================== -->
+<div class="slide" id="s16">
+  <h2>Real-World Worklist Implementations</h2>
+  <p>How production tools implement worklist iteration — click each to explore.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <canvas id="cS16" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    <div>
+      <div id="s16Info" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:1rem;font-size:0.82rem;min-height:280px;">
+        <div style="color:#94a3b8;text-align:center;padding-top:3rem;">Click a tool to see its worklist strategy</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+  const tools = [
+    {name:'Facebook Infer', x:130, y:70, color:'#6366f1',
+     desc:'<strong style="color:#6366f1;">Facebook Infer</strong><br><br><strong>Strategy:</strong> Reverse Postorder with widening<br><br><strong>Key insight:</strong> Uses Compositional Analysis — analyzes each function independently, caching summaries. Worklist operates per-procedure.<br><br><strong>Widening:</strong> Applied at loop heads after a fixed number of iterations (typically 3).<br><br><strong>Language:</strong> Implemented in OCaml — the same language you use in the bootcamp!'},
+    {name:'GCC', x:390, y:70, color:'#22c55e',
+     desc:'<strong style="color:#22c55e;">GCC (GNU Compiler)</strong><br><br><strong>Strategy:</strong> RPO for forward, Postorder for backward<br><br><strong>Key insight:</strong> Maintains separate worklists for forward (RPO) and backward (PO) dataflow passes. Uses bitmap sets for efficiency.<br><br><strong>Widening:</strong> Typically not needed — GCC\'s lattices are finite with small height.<br><br><strong>Fun fact:</strong> GCC runs 20+ dataflow passes per function: reaching defs, live vars, available expressions, constant propagation, etc.'},
+    {name:'LLVM', x:130, y:200, color:'#f59e0b',
+     desc:'<strong style="color:#f59e0b;">LLVM</strong><br><br><strong>Strategy:</strong> RPO with SCC-based iteration<br><br><strong>Key insight:</strong> Identifies Strongly Connected Components (loops) in the CFG and iterates within each SCC until convergence before moving to the next.<br><br><strong>Advantage:</strong> Natural loop nesting is respected — inner loops converge before outer loops are re-evaluated.<br><br><strong>Lattices:</strong> Typically finite (e.g., 3-element: ⊤/constant/⊥ for constant propagation).'},
+    {name:'CodeQL', x:390, y:200, color:'#a78bfa',
+     desc:'<strong style="color:#a78bfa;">CodeQL (GitHub)</strong><br><br><strong>Strategy:</strong> Demand-driven + magic sets optimization<br><br><strong>Key insight:</strong> Unlike traditional worklist, CodeQL uses Datalog evaluation. Queries are compiled to relational algebra, and a semi-naive evaluation strategy acts as the "worklist" — only processing new tuples each round.<br><br><strong>Convergence:</strong> Guaranteed by stratified negation and finite domains.<br><br><strong>Scale:</strong> Analyzes entire codebases (millions of LOC) by leveraging database indexing.'},
+    {name:'Frama-C', x:260, y:310, color:'#f472b6',
+     desc:'<strong style="color:#f472b6;">Frama-C (EVA plugin)</strong><br><br><strong>Strategy:</strong> Hierarchical iteration with widening/narrowing<br><br><strong>Key insight:</strong> Uses a two-phase approach: (1) Ascending iteration with widening to overshoot the fixed point, (2) Descending iteration with narrowing to recover precision.<br><br><strong>Widening points:</strong> Placed at loop headers (like our s13 slide). Configurable widening delay (iterate N times before widening).<br><br><strong>Domain:</strong> Primarily uses interval domain — connects directly to lattice theory!'}
+  ];
+  let selected = -1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    ctx.font='bold 22px monospace'; ctx.fillStyle='#38bdf8'; ctx.textAlign='center';
+    ctx.fillText('Production Tools', 260, 30);
+    tools.forEach((t,i)=>{
+      ctx.beginPath(); ctx.arc(t.x,t.y,32,0,Math.PI*2);
+      ctx.fillStyle = i===selected ? t.color : 'rgba(99,102,241,0.2)';
+      ctx.fill();
+      ctx.strokeStyle = t.color; ctx.lineWidth = i===selected?3:1.5; ctx.stroke();
+      ctx.fillStyle = i===selected?'#fff':'#e2e8f0';
+      ctx.font = 'bold 10px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      // split name
+      const parts = t.name.split(' ');
+      if(parts.length>1){
+        ctx.fillText(parts[0], t.x, t.y-6);
+        ctx.fillText(parts.slice(1).join(' '), t.x, t.y+6);
+      } else {
+        ctx.fillText(t.name, t.x, t.y);
+      }
+    });
+  }
+
+  canvas.addEventListener('click', function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(370/rect.height);
+    tools.forEach((t,i)=>{
+      if(Math.hypot(mx-t.x,my-t.y)<35){
+        selected=i;
+        draw();
+        document.getElementById('s16Info').innerHTML=t.desc;
+      }
+    });
+  });
+
+  function init(){ selected=-1; draw(); document.getElementById('s16Info').innerHTML='<div style="color:#94a3b8;text-align:center;padding-top:3rem;">Click a tool to see its worklist strategy</div>'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s16').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 17: Key Takeaways ==================== -->
+<div class="slide" id="s17">
+  <h2>Key Takeaways</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;">
+    <div class="key-idea">
+      <strong>1. Worklist = Targeted Iteration</strong><br>
+      Instead of blindly re-analyzing every block, only re-analyze blocks whose inputs changed. This transforms O(n) wasted work per round into O(changed) work.
+    </div>
+    <div class="key-idea">
+      <strong>2. Order Matters — A Lot</strong><br>
+      Reverse Postorder processes blocks in dependency order, so information flows "downhill" in one pass. For acyclic CFGs, RPO converges in a <em>single pass</em>.
+    </div>
+    <div class="key-idea">
+      <strong>3. Loops Are the Hard Part</strong><br>
+      Back edges create circular dependencies. Widening at loop headers forces convergence for infinite-height domains. Without it, iteration may never terminate.
+    </div>
+    <div class="key-idea">
+      <strong>4. Same Algorithm, Many Analyses</strong><br>
+      The worklist skeleton is domain-agnostic — plug in any transfer function and lattice. Reaching defs, live vars, taint, intervals — all use the same engine.
+    </div>
+  </div>
+  <div class="analogy" style="margin-top:1.5rem;">
+    <strong>Analogy:</strong> Think of worklist iteration like a <strong>ripple in a pond</strong>. A change at one block creates a "ripple" that propagates to neighbors. RPO ensures ripples flow naturally downstream, and widening prevents infinite rippling in loops.
+  </div>
+</div>
+
+<!-- ==================== SLIDE 18: Connection to the Bootcamp ==================== -->
+<div class="slide" id="s18">
+  <h2>Worklist Algorithms Across the Bootcamp</h2>
+  <p>You'll use worklist iteration throughout the PA Bootcamp. Here's where it appears.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1.5rem;">
+    <div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18det').style.display=this.querySelector('.s18det').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#6366f1;font-size:1rem;">Module 3</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Dataflow Foundations</div>
+      <div class="s18det" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        You implement <strong>round-robin iteration</strong> first — the naive baseline. Then you see why it's wasteful and build the worklist version. Reaching Definitions is the running example.
+      </div>
+    </div>
+    <div style="background:rgba(34,197,94,0.1);border:1px solid #22c55e;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18det').style.display=this.querySelector('.s18det').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#22c55e;font-size:1rem;">Module 4</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Abstract Interpretation</div>
+      <div class="s18det" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        Worklist + <strong>widening</strong> becomes essential. Sign analysis and interval analysis use infinite-height lattices, requiring widening at loop headers to guarantee termination.
+      </div>
+    </div>
+    <div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18det').style.display=this.querySelector('.s18det').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#f59e0b;font-size:1rem;">Module 5</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Security Analysis</div>
+      <div class="s18det" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        Taint analysis uses worklist iteration on a <strong>powerset lattice</strong>. Information flows forward from sources to sinks. The worklist efficiently tracks which blocks have new taint facts.
+      </div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(167,139,250,0.1);border:1px solid #a78bfa;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18det').style.display=this.querySelector('.s18det').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#a78bfa;font-size:1rem;">Module 6</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Tools Integration</div>
+      <div class="s18det" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        Production tools (Infer, CodeQL, GCC) all use optimized worklist variants. Understanding the theory helps you configure and debug real analyzers.
+      </div>
+    </div>
+    <div style="background:rgba(244,114,182,0.1);border:1px solid #f472b6;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18det').style.display=this.querySelector('.s18det').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#f472b6;font-size:1rem;">Labs</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Hands-On Implementation</div>
+      <div class="s18det" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        Lab 2 (reaching defs) and Lab 3 (taint) require you to <strong>implement worklist iteration from scratch</strong> in OCaml. The patterns from this deck map directly to your code.
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1.5rem;padding:1rem;background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15));border-radius:12px;">
+    <span style="font-size:1.3rem;font-weight:700;color:#a78bfa;">Worklist iteration is the engine that powers every analysis you'll build.</span>
+  </div>
+</div>
+
+<!-- ==================== CHALLENGE sCC: Debug the Worklist ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: Debug the Worklist</h2>
+  <p>Each implementation has a bug. Identify what's wrong.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div id="sCCq1" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Bug 1: Never terminates</div>
+      <div class="code-block" style="margin:0.5rem 0;"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">while worklist ≠ ∅:</div>
+<div class="line">  b = worklist.dequeue()</div>
+<div class="line">  new_out = transfer(b, IN[b])</div>
+<div class="line">  if new_out ≠ OUT[b]:</div>
+<div class="line">    OUT[b] = new_out</div>
+<div class="line active">    for s in succs(b): worklist.add(s)</div>
+<div class="line active">    worklist.add(b)  // re-add self</div>
+      </div></div>
+      <select id="sCCa1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select the bug...</option>
+        <option value="a">Transfer function is wrong</option>
+        <option value="b">Should use stack not queue</option>
+        <option value="c">Re-adding self creates infinite loop</option>
+        <option value="d">Missing IN update step</option>
+      </select>
+    </div>
+    <div id="sCCq2" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Bug 2: Misses some facts</div>
+      <div class="code-block" style="margin:0.5rem 0;"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">IN[b] = ∅</div>
+<div class="line active">for p in preds(b):</div>
+<div class="line active">  IN[b] = OUT[p]  // overwrite</div>
+<div class="line">new_out = transfer(b, IN[b])</div>
+      </div></div>
+      <select id="sCCa2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select the bug...</option>
+        <option value="a">Should be succs not preds</option>
+        <option value="b">IN should be union (⊔), not overwrite</option>
+        <option value="c">Missing initialization of OUT</option>
+        <option value="d">Transfer function applied to wrong set</option>
+      </select>
+    </div>
+    <div id="sCCq3" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Bug 3: Wrong answer for loops</div>
+      <div class="code-block" style="margin:0.5rem 0;"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">// Interval analysis, loop header</div>
+<div class="line active">// No widening applied</div>
+<div class="line">IN[b] = ⊔ OUT[p] for p in preds(b)</div>
+<div class="line">OUT[b] = transfer(b, IN[b])</div>
+      </div></div>
+      <select id="sCCa3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select the bug...</option>
+        <option value="a">Should use meet (⊓) not join (⊔)</option>
+        <option value="b">Loop headers need widening for infinite domains</option>
+        <option value="c">Transfer function should be identity at loop headers</option>
+        <option value="d">Need to process loop body first</option>
+      </select>
+    </div>
+    <div id="sCCq4" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Bug 4: Backward analysis wrong</div>
+      <div class="code-block" style="margin:0.5rem 0;"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">// Live variables (backward)</div>
+<div class="line">OUT[b] = ⊔ IN[s] for s in succs(b)</div>
+<div class="line">new_in = transfer(b, OUT[b])</div>
+<div class="line">if new_in ≠ IN[b]:</div>
+<div class="line active">  for s in succs(b): worklist.add(s)</div>
+      </div></div>
+      <select id="sCCa4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select the bug...</option>
+        <option value="a">Should use meet (⊓) not join (⊔) for OUT</option>
+        <option value="b">Transfer applied in wrong direction</option>
+        <option value="c">Should add predecessors, not successors</option>
+        <option value="d">Missing OUT[b] update</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:0.75rem;">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCFeedback" style="display:none;margin-top:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCCa1:'c', sCCa2:'b', sCCa3:'b', sCCa4:'c'};
+  const explanations = {
+    sCCa1:'Re-adding the current block after it changed creates a loop — the block keeps processing itself. Only add <strong>successors</strong>, not self.',
+    sCCa2:'Overwriting IN with each predecessor\'s OUT keeps only the last one. Must use <strong>union (⊔)</strong> to merge all predecessors\' contributions.',
+    sCCa3:'Interval domain has <strong>infinite height</strong> (e.g., [0,1]→[0,2]→[0,3]→...). Without widening at loop headers, the ascending chain never stabilizes.',
+    sCCa4:'In backward analysis, when IN[b] changes, the blocks that need re-analysis are <strong>predecessors</strong> (they compute their OUT from this block\'s IN), not successors.'
+  };
+
+  window.sCCCheck = function(){
+    let score=0;
+    ['sCCq1','sCCq2','sCCq3','sCCq4'].forEach((qid,i)=>{
+      const sel = document.getElementById('sCCa'+(i+1)).value;
+      const correct = sel === Object.values(answers)[i];
+      if(correct) score++;
+      document.getElementById(qid).style.borderColor = sel===''?'#475569':correct?'#22c55e':'#ef4444';
+    });
+    let html = `<div style="font-weight:700;color:${score>=3?'#22c55e':'#f59e0b'};font-size:1rem;margin-bottom:0.5rem;">Score: ${score}/4</div>`;
+    Object.keys(explanations).forEach(k=>{
+      const sel = document.getElementById(k).value;
+      const correct = sel === answers[k];
+      html += `<div style="margin-bottom:0.4rem;color:${correct?'#22c55e':'#ef4444'};">${correct?'✓':'✗'} ${explanations[k]}</div>`;
+    });
+    const fb = document.getElementById('sCCFeedback');
+    fb.innerHTML=html; fb.style.display='block';
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ sQ1: Concept Check ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz 1: Concept Check</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1.5rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.75rem;">Q1: When does a block get added to the worklist?</div>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q1" value="a"> When it's first created
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q1" value="b"> When any predecessor's OUT changes
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q1" value="c"> Every iteration regardless
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q1" value="d"> Only when the lattice height increases
+      </label>
+      <div id="sQ1f1" style="margin-top:0.5rem;font-size:0.78rem;display:none;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.75rem;">Q2: Why is RPO better than FIFO for forward analysis?</div>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q2" value="a"> RPO uses less memory
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q2" value="b"> RPO processes blocks after their predecessors
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q2" value="c"> RPO skips unreachable blocks
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q2" value="d"> RPO avoids back edges entirely
+      </label>
+      <div id="sQ1f2" style="margin-top:0.5rem;font-size:0.78rem;display:none;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.75rem;">Q3: What guarantees convergence for infinite-height lattices?</div>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q3" value="a"> Using RPO ordering
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q3" value="b"> Monotone transfer functions alone
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q3" value="c"> Widening at loop headers
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q3" value="d"> Processing more blocks per iteration
+      </label>
+      <div id="sQ1f3" style="margin-top:0.5rem;font-size:0.78rem;display:none;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1.5rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-weight:700;font-size:1.1rem;"></span>
+  </div>
+</div>
+<script>
+(function(){
+  const answers = {sQ1q1:'b', sQ1q2:'b', sQ1q3:'c'};
+  const feedback = {
+    sQ1q1:{b:'Correct! A block is added when a predecessor\'s OUT changes (forward analysis), meaning its IN needs recomputation.', wrong:'Not quite. A block joins the worklist when its input (predecessor\'s OUT) changes, not on a fixed schedule.'},
+    sQ1q2:{b:'Correct! RPO ensures predecessors are processed first, so information flows "downhill" — fewer re-visits needed.', wrong:'RPO\'s advantage is processing order: blocks come after their predecessors (except back edges), minimizing re-visits.'},
+    sQ1q3:{c:'Correct! Widening "jumps" to a safe overapproximation, forcing the ascending chain to stabilize in finite steps.', wrong:'Monotonicity alone isn\'t enough for infinite lattices. Widening at loop headers forces convergence by overapproximating.'}
+  };
+
+  window.sQ1Check = function(){
+    let score = 0;
+    [1,2,3].forEach(i=>{
+      const sel = document.querySelector(`input[name="sQ1q${i}"]:checked`);
+      const val = sel ? sel.value : '';
+      const correct = val === answers[`sQ1q${i}`];
+      if(correct) score++;
+      const fb = document.getElementById(`sQ1f${i}`);
+      fb.style.display='block';
+      fb.style.color = correct?'#22c55e':'#ef4444';
+      fb.textContent = correct ? feedback[`sQ1q${i}`][val] : feedback[`sQ1q${i}`].wrong;
+    });
+    const sc = document.getElementById('sQ1Score');
+    sc.textContent = `${score}/3`;
+    sc.style.color = score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ sQ2: Trace Exercise ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz 2: Predict the Next 3 Steps</h2>
+  <p>Given this CFG and worklist state, predict what happens next.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cSQ2" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="code-block" style="margin-top:0.75rem;"><div class="code-content" style="font-size:0.72rem;">
+<div class="line">B1: x = 5           gen={d1}  kill={d4}</div>
+<div class="line">B2: y = x + 1       gen={d2}  kill={}</div>
+<div class="line">B3: x = y           gen={d3}  kill={d1,d4}</div>
+<div class="line">B4: z = x           gen={d4}  kill={}</div>
+      </div></div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#f59e0b;margin-bottom:0.5rem;">Current State:</div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;margin-bottom:0.75rem;">
+        Worklist: [B3]<br>
+        OUT[B1]={d1}, OUT[B2]={d1,d2}, OUT[B3]={d2,d3}, OUT[B4]={d2,d3,d4}<br>
+        (Reaching definitions, forward, FIFO)
+      </div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Your Predictions:</div>
+      <div style="font-size:0.82rem;margin-bottom:0.4rem;">
+        <span style="color:#cbd5e1;">Step 1: Process B3 → OUT[B3] becomes </span>
+        <input type="text" id="sQ2a1" placeholder="{...}" style="width:120px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.78rem;">
+      </div>
+      <div style="font-size:0.82rem;margin-bottom:0.4rem;">
+        <span style="color:#cbd5e1;">Which block(s) added to worklist? </span>
+        <input type="text" id="sQ2a2" placeholder="B?" style="width:80px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.78rem;">
+      </div>
+      <div style="font-size:0.82rem;margin-bottom:0.4rem;">
+        <span style="color:#cbd5e1;">Step 2: Process next → changed? </span>
+        <select id="sQ2a3" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+          <option value="">Select...</option>
+          <option value="yes">Yes, changed</option>
+          <option value="no">No, stable</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+        <button class="btn btn-sm" onclick="sQ2Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ2Reveal()">Show Trace</button>
+      </div>
+      <div id="sQ2Feedback" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-size:0.78rem;"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cSQ2');
+  const ctx = canvas.getContext('2d');
+  const blocks = [
+    {id:'B1', x:260, y:50},
+    {id:'B2', x:260, y:130},
+    {id:'B3', x:260, y:210},
+    {id:'B4', x:260, y:290}
+  ];
+  const edges = [{from:0,to:1},{from:1,to:2},{from:2,to:3},{from:2,to:1}];
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    edges.forEach(e=>{
+      const f=blocks[e.from],t=blocks[e.to];
+      ctx.beginPath();
+      if(e.from===2&&e.to===1){
+        ctx.moveTo(f.x+55,f.y); ctx.quadraticCurveTo(f.x+120,f.y-40,t.x+55,t.y);
+        ctx.strokeStyle='#f59e0b';
+      } else {
+        ctx.moveTo(f.x,f.y+20); ctx.lineTo(t.x,t.y-20);
+        ctx.strokeStyle='#475569';
+      }
+      ctx.lineWidth=1.5; ctx.stroke();
+    });
+    blocks.forEach((b,i)=>{
+      ctx.fillStyle = i===2?'#f59e0b':'#334155';
+      ctx.strokeStyle = '#818cf8'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(b.x-40,b.y-18,80,36,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(b.id, b.x, b.y);
+    });
+    ctx.fillStyle='#f59e0b'; ctx.font='11px monospace'; ctx.textAlign='left';
+    ctx.fillText('back edge →', blocks[2].x+60, blocks[2].y-30);
+    // State annotations
+    ctx.font='10px monospace';
+    ctx.fillStyle='#22c55e'; ctx.textAlign='right';
+    ctx.fillText('OUT={d1}', blocks[0].x-45, blocks[0].y);
+    ctx.fillText('OUT={d1,d2}', blocks[1].x-45, blocks[1].y);
+    ctx.fillText('OUT={d2,d3}', blocks[2].x-45, blocks[2].y);
+    ctx.fillText('OUT={d2,d3,d4}', blocks[3].x-45, blocks[3].y);
+    // Worklist indicator
+    ctx.fillStyle='#f59e0b'; ctx.textAlign='center'; ctx.font='bold 12px monospace';
+    ctx.fillText('← processing', blocks[2].x+85, blocks[2].y);
+  }
+
+  window.sQ2Check = function(){
+    const a1 = document.getElementById('sQ2a1').value.replace(/\s/g,'');
+    const a2 = document.getElementById('sQ2a2').value.replace(/\s/g,'').toUpperCase();
+    const a3 = document.getElementById('sQ2a3').value;
+    let html = '';
+    // B3: IN = OUT[B2] = {d1,d2}. gen={d3}, kill={d1,d4}. OUT = (IN - kill) ∪ gen = ({d1,d2}-{d1,d4}) ∪ {d3} = {d2,d3}
+    // OUT[B3] was already {d2,d3} → NO CHANGE! Worklist becomes empty.
+    const out3correct = a1==='{d2,d3}' || a1==='d2,d3' || a1==='{d3,d2}' || a1==='d3,d2';
+    html += `<div style="color:${out3correct?'#22c55e':'#ef4444'};">${out3correct?'✓':'✗'} OUT[B3]: IN[B3]=OUT[B2]={d1,d2}. Transfer: ({d1,d2}−{d1,d4})∪{d3} = <strong>{d2,d3}</strong>. Same as before!</div>`;
+    const noAdd = a2==='' || a2==='NONE' || a2==='∅' || a2==='EMPTY' || a2==='NOTHING';
+    html += `<div style="color:${noAdd?'#22c55e':'#ef4444'};">${noAdd?'✓':'✗'} No blocks added — OUT[B3] didn't change, so no successors are dirtied.</div>`;
+    html += `<div style="color:#94a3b8;">Step 2: Worklist is empty — algorithm terminates! ${a3==='no'?'<span style="color:#22c55e;">✓ Correct intuition</span>':'This is a trick question — there IS no step 2.'}</div>`;
+    const fb = document.getElementById('sQ2Feedback');
+    fb.innerHTML=html; fb.style.display='block';
+  };
+
+  window.sQ2Reveal = function(){
+    const fb = document.getElementById('sQ2Feedback');
+    fb.innerHTML = `
+      <div style="font-weight:600;color:#f59e0b;margin-bottom:0.3rem;">Full Trace:</div>
+      <div style="color:#e2e8f0;">1. Dequeue B3. IN[B3] = OUT[B2] = {d1,d2}</div>
+      <div style="color:#e2e8f0;">2. Transfer: ({d1,d2} − {d1,d4}) ∪ {d3} = {d2,d3}</div>
+      <div style="color:#22c55e;">3. OUT[B3] was {d2,d3} → <strong>unchanged!</strong></div>
+      <div style="color:#22c55e;">4. No successors added. Worklist = ∅. Done!</div>
+      <div style="color:#a78bfa;margin-top:0.4rem;"><strong>Trap:</strong> This is a "no change" step — the worklist drains without any new work. Recognizing when analysis has converged is just as important as tracing changes.</div>
+    `;
+    fb.style.display='block';
+  };
+
+  function init(){ draw(); document.getElementById('sQ2Feedback').style.display='none'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('sQ2').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('sQ2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== QUIZ sQ3: Optimization Decisions ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz 3: Choose the Right Strategy</h2>
+  <p>For each scenario, pick the best worklist optimization. Think about the CFG shape and analysis type.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div id="sQ3q1" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Scenario 1</div>
+      <div style="color:#cbd5e1;font-size:0.82rem;margin:0.4rem 0;">Forward constant propagation on a large function (200 blocks, 5 nested loops). Lattice: flat with ⊤/⊥ + constants.</div>
+      <select id="sQ3a1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select strategy...</option>
+        <option value="a">Round-robin (process all blocks each pass)</option>
+        <option value="b">FIFO worklist</option>
+        <option value="c">RPO worklist</option>
+        <option value="d">RPO worklist + widening at loop headers</option>
+      </select>
+    </div>
+    <div id="sQ3q2" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Scenario 2</div>
+      <div style="color:#cbd5e1;font-size:0.82rem;margin:0.4rem 0;">Backward live variable analysis on straight-line code (no loops, 50 blocks in sequence).</div>
+      <select id="sQ3a2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select strategy...</option>
+        <option value="a">Round-robin (simplest code)</option>
+        <option value="b">Postorder worklist</option>
+        <option value="c">RPO worklist + widening</option>
+        <option value="d">LIFO worklist</option>
+      </select>
+    </div>
+    <div id="sQ3q3" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Scenario 3</div>
+      <div style="color:#cbd5e1;font-size:0.82rem;margin:0.4rem 0;">Interval analysis (domain: [lo, hi]) on a program with a <code>while(true)</code> loop incrementing a counter.</div>
+      <select id="sQ3a3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select strategy...</option>
+        <option value="a">FIFO worklist (simple and correct)</option>
+        <option value="b">RPO worklist (fast convergence)</option>
+        <option value="c">RPO worklist + widening at loop header</option>
+        <option value="d">Round-robin + narrowing</option>
+      </select>
+    </div>
+    <div id="sQ3q4" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Scenario 4</div>
+      <div style="color:#cbd5e1;font-size:0.82rem;margin:0.4rem 0;">Taint analysis on a web app: 1000 functions, interprocedural, powerset lattice over source labels.</div>
+      <select id="sQ3a4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select strategy...</option>
+        <option value="a">RPO worklist (handles scale well)</option>
+        <option value="b">Demand-driven / incremental (only analyze reachable from sources)</option>
+        <option value="c">Round-robin per function</option>
+        <option value="d">LIFO worklist + widening</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ3Check()">Check All</button>
+    <span id="sQ3Score" style="margin-left:1rem;font-weight:700;font-size:1.1rem;"></span>
+  </div>
+  <div id="sQ3Feedback" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-size:0.78rem;"></div>
+</div>
+<script>
+(function(){
+  const answers = {sQ3a1:'c', sQ3a2:'b', sQ3a3:'c', sQ3a4:'b'};
+  const explanations = {
+    sQ3a1:'<strong>RPO worklist</strong> — Flat lattice has height 2 (finite), so widening isn\'t needed. But with 200 blocks and nested loops, RPO\'s dependency-ordered processing massively reduces re-visits compared to FIFO or round-robin.',
+    sQ3a2:'<strong>Postorder worklist</strong> — For backward analysis on straight-line code, postorder processes blocks from exit to entry (natural information flow direction). With no loops, it converges in a single pass!',
+    sQ3a3:'<strong>RPO + widening</strong> — Interval domain has infinite height (counter grows: [0,0]→[0,1]→[0,2]→...). The while(true) loop with increment will never converge without widening. RPO ensures efficient ordering; widening at the loop header forces [0,∞) in finite steps.',
+    sQ3a4:'<strong>Demand-driven</strong> — With 1000 functions, most are irrelevant to taint. Demand-driven analysis starts from known sources and only analyzes reachable code, avoiding the massive cost of whole-program RPO iteration. This is how CodeQL and other production taint analyzers work.'
+  };
+
+  window.sQ3Check = function(){
+    let score = 0;
+    let html = '';
+    [1,2,3,4].forEach(i=>{
+      const sel = document.getElementById('sQ3a'+i).value;
+      const correct = sel === answers['sQ3a'+i];
+      if(correct) score++;
+      document.getElementById('sQ3q'+i).style.borderColor = sel===''?'#475569':correct?'#22c55e':'#ef4444';
+      html += `<div style="color:${correct?'#22c55e':'#ef4444'};margin-bottom:0.4rem;">${correct?'✓':'✗'} Scenario ${i}: ${explanations['sQ3a'+i]}</div>`;
+    });
+    const sc = document.getElementById('sQ3Score');
+    sc.textContent = score+'/4';
+    sc.style.color = score>=3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+    const fb = document.getElementById('sQ3Feedback');
+    fb.innerHTML = `<div style="font-weight:700;margin-bottom:0.5rem;">Score: ${score}/4</div>`+html;
+    fb.style.display='block';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','s13','s14','sCB','s15','s16','s17','s18','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const newIdx = currentIdx + dir;
+  if (newIdx < 0 || newIdx >= slideOrder.length) return;
+  currentIdx = newIdx;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 5: Security Analysis — Enhanced</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    overflow: hidden;
+    height: 100vh;
+  }
+  #progress-bar {
+    position: fixed; top: 0; left: 0; width: 100%; height: 4px;
+    background: rgba(255,255,255,0.05); z-index: 200;
+  }
+  #progress {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #6366f1, #f59e0b);
+    transition: width 0.3s ease;
+  }
+  .slide {
+    display: none; position: fixed; inset: 0;
+    padding: 32px 48px 60px;
+    overflow-y: auto;
+    background: #0f172a;
+  }
+  .slide.active { display: block; }
+  .slide.fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  h1 { font-size: 2.2rem; color: #38bdf8; margin-bottom: 0.5rem; font-weight: 700; }
+  h2 { font-size: 1.55rem; color: #38bdf8; margin-bottom: 0.6rem; font-weight: 700; }
+  h3 { font-size: 1.1rem; color: #a78bfa; margin-bottom: 0.4rem; }
+  p { font-size: 0.95rem; line-height: 1.6; margin-bottom: 0.5rem; }
+  code { font-family: 'SF Mono', 'Fira Code', monospace; background: rgba(99,102,241,0.15); padding: 1px 5px; border-radius: 4px; font-size: 0.88em; color: #f59e0b; }
+
+  .btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 0.5rem 1.2rem; font-size: 0.9rem; cursor: pointer;
+    font-weight: 600; transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.82rem; border-radius: 6px; }
+  .btn-secondary { background: #334155; }
+  .btn-secondary:hover { background: #475569; }
+
+  .key-idea {
+    border-left: 4px solid #22c55e; background: rgba(34,197,94,0.08);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin: 0.6rem 0;
+    font-size: 0.9rem;
+  }
+  .warning {
+    border-left: 4px solid #ef4444; background: rgba(239,68,68,0.08);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin: 0.6rem 0;
+    font-size: 0.9rem;
+  }
+  .analogy {
+    border-left: 4px solid #a78bfa; background: rgba(167,139,250,0.08);
+    padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; margin: 0.6rem 0;
+    font-size: 0.9rem;
+  }
+
+  .code-block {
+    background: rgba(0,0,0,0.3); border: 1px solid #334155;
+    border-radius: 10px; padding: 0.8rem; margin: 0.5rem 0;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem;
+    overflow-x: auto;
+  }
+  .code-content .line {
+    padding: 2px 8px; border-left: 3px solid transparent;
+    white-space: pre; line-height: 1.55; transition: all 0.2s;
+  }
+  .code-content .line.active {
+    background: rgba(99,102,241,0.15); border-left-color: #6366f1;
+  }
+
+  .nav {
+    position: fixed; bottom: 16px; right: 20px;
+    display: flex; gap: 8px; z-index: 200;
+  }
+  .nav button {
+    background: rgba(99,102,241,0.8); color: #fff; border: none;
+    border-radius: 8px; padding: 8px 18px; font-size: 0.9rem;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .nav button:hover { background: #6366f1; }
+  .nav button:disabled { opacity: 0.3; cursor: default; }
+
+  .slide-number { position: absolute; bottom: 12px; left: 20px; color: #475569; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE s1: Title ==================== -->
+<div class="slide" id="s1">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;">
+    <h1 style="font-size:2.8rem;margin-bottom:0.3rem;">Security Analysis</h1>
+    <p style="color:#94a3b8;font-size:1.15rem;margin-bottom:1.5rem;">Module 5 — Program Analysis Bootcamp</p>
+    <p style="color:#cbd5e1;font-size:1rem;margin-bottom:2rem;">From numeric properties to security properties</p>
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+      <div style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#ef4444;font-weight:bold;font-size:0.95rem;">SQL Injection</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">CWE-89</div>
+      </div>
+      <div style="background:rgba(245,158,11,0.15);border:1px solid #f59e0b;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#f59e0b;font-weight:bold;font-size:0.95rem;">XSS</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">CWE-79</div>
+      </div>
+      <div style="background:rgba(99,102,241,0.15);border:1px solid #6366f1;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#818cf8;font-weight:bold;font-size:0.95rem;">Command Injection</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">CWE-78</div>
+      </div>
+      <div style="background:rgba(34,197,94,0.15);border:1px solid #22c55e;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#22c55e;font-weight:bold;font-size:0.95rem;">Path Traversal</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">CWE-22</div>
+      </div>
+      <div style="background:rgba(244,114,182,0.15);border:1px solid #f472b6;border-radius:10px;padding:0.6rem 1.2rem;text-align:center;">
+        <div style="color:#f472b6;font-weight:bold;font-size:0.95rem;">Open Redirect</div>
+        <div style="color:#94a3b8;font-size:0.75rem;">CWE-601</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s2: Objectives + Leap ==================== -->
+<div class="slide" id="s2">
+  <h2>Learning Objectives</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.5rem;">
+    <div>
+      <ol style="font-size:0.88rem;line-height:1.8;padding-left:1.2rem;color:#cbd5e1;">
+        <li>Implement a <strong style="color:#f59e0b;">taint lattice</strong> satisfying <code>ABSTRACT_DOMAIN</code></li>
+        <li>Define <strong style="color:#f59e0b;">security configurations</strong> (sources, sinks, sanitizers)</li>
+        <li>Build <strong style="color:#f59e0b;">forward taint propagation</strong> using abstract transfer functions</li>
+        <li>Track <strong style="color:#f59e0b;">implicit information flows</strong> via program-counter taint</li>
+        <li>Detect <strong style="color:#f59e0b;">OWASP vulnerability patterns</strong> (SQLi, XSS, cmd injection)</li>
+        <li>Evaluate <strong style="color:#f59e0b;">precision and limitations</strong> of taint analysis</li>
+      </ol>
+    </div>
+
+    <div>
+      <div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:10px;padding:1rem;">
+        <h3 style="color:#818cf8;margin-bottom:0.6rem;font-size:1rem;">The Leap from Module 4</h3>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0.5rem;align-items:center;">
+          <div style="background:rgba(0,0,0,0.2);padding:0.6rem;border-radius:8px;">
+            <div style="color:#a78bfa;font-size:0.8rem;font-weight:bold;">M4: What value?</div>
+            <div style="font-size:0.78rem;color:#94a3b8;margin-top:0.3rem;">
+              Sign: {+, −, 0, ⊤, ⊥}<br>
+              Interval: [lo, hi]<br>
+              Detects: div-by-zero
+            </div>
+          </div>
+          <div style="color:#f59e0b;font-size:1.5rem;">→</div>
+          <div style="background:rgba(0,0,0,0.2);padding:0.6rem;border-radius:8px;">
+            <div style="color:#ef4444;font-size:0.8rem;font-weight:bold;">M5: Where from?</div>
+            <div style="font-size:0.78rem;color:#94a3b8;margin-top:0.3rem;">
+              Taint: {Tainted, Untainted, ⊤, ⊥}<br>
+              Tracks: data provenance<br>
+              Detects: injection attacks
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong>Same infrastructure, different question!</strong> The ABSTRACT_DOMAIN signature, MakeEnv functor, eval_expr, and transfer_stmt all carry over unchanged.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s3: SQL Injection Motivator ==================== -->
+<div class="slide" id="s3">
+  <h2>Motivating Example: SQL Injection</h2>
+  <p style="color:#94a3b8;">Type a malicious input and watch the query break.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line" style="color:#94a3b8;">-- Server code:</div>
+          <div class="line">input = get_param("name")  <span style="color:#ef4444;">-- SOURCE</span></div>
+          <div class="line">query = "SELECT * FROM users</div>
+          <div class="line">         WHERE name = '" + input + "'"</div>
+          <div class="line">exec_query(query)          <span style="color:#ef4444;">-- SINK</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <label style="font-size:0.85rem;color:#94a3b8;">Enter user input:</label>
+        <input type="text" id="s3input" value="Alice" style="width:100%;padding:0.5rem 0.8rem;background:#1e293b;border:1px solid #475569;border-radius:8px;color:#e2e8f0;font-family:monospace;font-size:0.9rem;margin-top:0.3rem;"
+          oninput="s3Update()">
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('s3input').value='Alice';s3Update();">Normal</button>
+        <button class="btn btn-sm" style="background:#ef4444;" onclick="document.getElementById('s3input').value=&quot;&#x27; OR 1=1 --&quot;;s3Update();">SQLi Attack</button>
+        <button class="btn btn-sm" style="background:#ef4444;" onclick="document.getElementById('s3input').value=&quot;&#x27;; DROP TABLE users; --&quot;;s3Update();">DROP TABLE</button>
+      </div>
+    </div>
+
+    <div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;">
+        <div style="color:#94a3b8;font-size:0.8rem;margin-bottom:0.3rem;">Generated SQL query:</div>
+        <div id="s3query" style="font-family:monospace;font-size:0.88rem;line-height:1.5;word-break:break-all;"></div>
+      </div>
+
+      <div id="s3verdict" style="border-radius:10px;padding:1rem;margin-top:0.8rem;border:2px solid #475569;min-height:80px;">
+      </div>
+
+      <div class="analogy" style="margin-top:0.8rem;">
+        <strong>Like an unlocked front door:</strong> The application blindly trusts user input and pastes it into a sensitive operation. Taint analysis detects this by tracking where data comes from.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function update(){
+    const input = document.getElementById('s3input').value;
+    const query = `SELECT * FROM users WHERE name = '${input}'`;
+    const qDiv = document.getElementById('s3query');
+
+    // Color the user input portion
+    const before = "SELECT * FROM users WHERE name = '";
+    const after = "'";
+    qDiv.innerHTML = `<span style="color:#94a3b8;">${before}</span><span style="color:#f59e0b;font-weight:bold;">${input.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span><span style="color:#94a3b8;">${after}</span>`;
+
+    const verdict = document.getElementById('s3verdict');
+    const hasSQLi = input.includes("'") || input.includes(";") || input.toLowerCase().includes("or ") || input.includes("--");
+    if(hasSQLi){
+      verdict.style.borderColor = '#ef4444';
+      verdict.innerHTML = `<div style="color:#ef4444;font-weight:bold;font-size:1rem;">VULNERABILITY DETECTED</div>
+        <div style="color:#94a3b8;font-size:0.85rem;margin-top:0.3rem;">The input escapes the string literal and injects SQL commands. Taint analysis: <code>get_param</code> → tainted → flows to <code>exec_query</code> without sanitization.</div>`;
+    } else {
+      verdict.style.borderColor = '#22c55e';
+      verdict.innerHTML = `<div style="color:#22c55e;font-weight:bold;font-size:1rem;">Safe (for this input)</div>
+        <div style="color:#94a3b8;font-size:0.85rem;margin-top:0.3rem;">This particular input doesn't exploit the vulnerability, but taint analysis would still flag it — the data path from source to sink exists regardless of input value.</div>`;
+    }
+  }
+
+  window.s3Update = update;
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s3').classList.contains('active')) update();
+  });
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  update();
+})();
+</script>
+
+<!-- ==================== SLIDE s4: Taint Pipeline ==================== -->
+<div class="slide" id="s4">
+  <h2>Taint Analysis Pipeline</h2>
+  <p style="color:#94a3b8;">Three phases: Source introduces taint, Propagation spreads it, Sink checks for it.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <canvas id="cS4" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+
+      <div style="display:flex;gap:0.5rem;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s4Step()">Step</button>
+        <button class="btn btn-sm" onclick="s4Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+      </div>
+      <div id="s4Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:80px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">Sources, Sinks & Sanitizers</h3>
+      <table style="width:100%;font-size:0.8rem;border-collapse:collapse;">
+        <tr>
+          <td style="padding:0.4rem;border-bottom:1px solid #334155;color:#ef4444;font-weight:bold;">Sources</td>
+          <td style="padding:0.4rem;border-bottom:1px solid #334155;"><code style="font-size:0.78rem;">get_param</code>, <code style="font-size:0.78rem;">read_cookie</code>, <code style="font-size:0.78rem;">read_input</code></td>
+        </tr>
+        <tr>
+          <td style="padding:0.4rem;border-bottom:1px solid #334155;color:#f59e0b;font-weight:bold;">Sinks</td>
+          <td style="padding:0.4rem;border-bottom:1px solid #334155;"><code style="font-size:0.78rem;">exec_query</code>, <code style="font-size:0.78rem;">exec_cmd</code>, <code style="font-size:0.78rem;">send_response</code></td>
+        </tr>
+        <tr>
+          <td style="padding:0.4rem;color:#22c55e;font-weight:bold;">Sanitizers</td>
+          <td style="padding:0.4rem;"><code style="font-size:0.78rem;">escape_sql</code>, <code style="font-size:0.78rem;">html_encode</code>, <code style="font-size:0.78rem;">shell_escape</code></td>
+        </tr>
+      </table>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong>Sources</strong> create taint, <strong>sinks</strong> consume (and check) it, <strong>sanitizers</strong> remove it. If tainted data reaches a sink without sanitization → vulnerability!
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+
+  const steps = [
+    {phase:0, desc:'Source: get_param("name") returns user input → Tainted'},
+    {phase:1, desc:'Propagation: query = "SELECT..." + input → Tainted spreads via concat'},
+    {phase:2, desc:'Propagation: taint flows through any operation touching tainted data'},
+    {phase:3, desc:'Sink check: exec_query(query) — is the argument tainted?'},
+    {phase:4, desc:'VULNERABILITY! Tainted data reached exec_query without sanitization'}
+  ];
+  let stepIdx = 0, timer = null;
+
+  function draw(phase){
+    ctx.clearRect(0,0,520,300);
+
+    // Three boxes
+    const boxes = [
+      {x:40, y:80, w:120, h:130, label:'SOURCE', sub:'get_param()\nread_cookie()\nread_input()', color:'#ef4444'},
+      {x:200, y:80, w:120, h:130, label:'PROPAGATION', sub:'x = source\ny = x + z\nz = f(x)', color:'#f59e0b'},
+      {x:360, y:80, w:120, h:130, label:'SINK', sub:'exec_query(x)\nexec_cmd(z)\nsend_response(y)', color:'#6366f1'}
+    ];
+
+    // Arrows between boxes
+    [{from:0,to:1},{from:1,to:2}].forEach(({from,to})=>{
+      const b1 = boxes[from], b2 = boxes[to];
+      const active = phase >= from+1;
+      ctx.beginPath();
+      ctx.moveTo(b1.x+b1.w, b1.y+b1.h/2);
+      ctx.lineTo(b2.x, b2.y+b2.h/2);
+      ctx.strokeStyle = active ? '#f59e0b' : '#334155';
+      ctx.lineWidth = active ? 3 : 1.5;
+      ctx.stroke();
+      // Arrow head
+      ctx.beginPath();
+      ctx.moveTo(b2.x, b2.y+b2.h/2);
+      ctx.lineTo(b2.x-10, b2.y+b2.h/2-6);
+      ctx.lineTo(b2.x-10, b2.y+b2.h/2+6);
+      ctx.closePath();
+      ctx.fillStyle = active ? '#f59e0b' : '#334155';
+      ctx.fill();
+    });
+
+    // Taint flow animation dots
+    if(phase >= 1 && phase <= 3){
+      const dotPhase = (Date.now() % 1000) / 1000;
+      for(let i = 0; i < (phase >= 2 ? 2 : 1); i++){
+        const b1 = boxes[i], b2 = boxes[i+1];
+        if(phase >= i+1){
+          const t = (dotPhase + i*0.3) % 1;
+          const dx = b2.x - (b1.x+b1.w);
+          const dotX = b1.x+b1.w + dx*t;
+          const dotY = b1.y+b1.h/2;
+          ctx.beginPath(); ctx.arc(dotX, dotY, 5, 0, Math.PI*2);
+          ctx.fillStyle = '#ef4444'; ctx.fill();
+        }
+      }
+    }
+
+    boxes.forEach((b,i) => {
+      const active = phase >= i;
+      ctx.fillStyle = active ? b.color+'22' : 'rgba(30,41,59,0.8)';
+      ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 10); ctx.fill();
+      ctx.strokeStyle = active ? b.color : '#475569';
+      ctx.lineWidth = active ? 2.5 : 1;
+      ctx.stroke();
+
+      ctx.fillStyle = b.color; ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(b.label, b.x+b.w/2, b.y+10);
+
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace';
+      b.sub.split('\n').forEach((line,li) => {
+        ctx.fillText(line, b.x+b.w/2, b.y+35+li*16);
+      });
+    });
+
+    // Status labels below
+    const statusLabels = ['[Tainted]', '[Tainted spreads]', '[Check: tainted arg?]'];
+    boxes.forEach((b,i) => {
+      if(phase >= i){
+        ctx.fillStyle = i===2 && phase>=4 ? '#ef4444' : b.color;
+        ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(i===2 && phase>=4 ? '[VULNERABILITY!]' : statusLabels[i], b.x+b.w/2, b.y+b.h+15);
+      }
+    });
+
+    // Title
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Taint Analysis Pipeline', 260, 25);
+  }
+
+  function init(){
+    stepIdx = 0;
+    document.getElementById('s4Log').innerHTML = '';
+    draw(-1);
+  }
+
+  window.s4Step = function(){
+    if(stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    draw(s.phase);
+    const log = document.getElementById('s4Log');
+    const color = s.phase >= 4 ? '#ef4444' : '#38bdf8';
+    log.innerHTML += `<div style="color:${color};">Step ${stepIdx+1}: ${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+  };
+  window.s4Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s4Step();}, 1200);
+  };
+  window.s4Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} init();
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s4').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s5: Taint Lattice ==================== -->
+<div class="slide" id="s5">
+  <h2>The Taint Lattice</h2>
+  <p style="color:#94a3b8;">A flat 4-element lattice — same shape as Sign domain, different meaning.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <canvas id="cS5" width="520" height="260" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+      <div id="s5detail" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;margin-top:0.5rem;font-size:0.85rem;min-height:60px;">
+        <span style="color:#64748b;">Click a lattice node to learn about it.</span>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">Join Calculator</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+        <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:0.5rem;align-items:center;">
+          <select id="s5a" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="Bot">Bot</option><option value="Untainted">Untainted</option><option value="Tainted" selected>Tainted</option><option value="Top">Top</option>
+          </select>
+          <span style="color:#f59e0b;font-weight:bold;">join</span>
+          <select id="s5b" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="Bot">Bot</option><option value="Untainted" selected>Untainted</option><option value="Tainted">Tainted</option><option value="Top">Top</option>
+          </select>
+          <span style="color:#94a3b8;">=</span>
+          <div id="s5result" style="padding:0.4rem;background:#1e293b;border:1px solid #6366f1;border-radius:6px;color:#f59e0b;font-family:monospace;text-align:center;font-weight:bold;">Top</div>
+        </div>
+        <button class="btn btn-sm" onclick="s5Calc()" style="margin-top:0.5rem;">Compute</button>
+      </div>
+
+      <div style="margin-top:0.8rem;">
+        <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">Full Join Table</h3>
+        <table style="width:100%;font-size:0.78rem;font-family:monospace;border-collapse:collapse;text-align:center;">
+          <tr><td style="padding:4px;border:1px solid #334155;background:#1e293b;color:#94a3b8;">join</td><td style="padding:4px;border:1px solid #334155;color:#64748b;">Bot</td><td style="padding:4px;border:1px solid #334155;color:#22c55e;">Unt</td><td style="padding:4px;border:1px solid #334155;color:#ef4444;">Tai</td><td style="padding:4px;border:1px solid #334155;color:#f59e0b;">Top</td></tr>
+          <tr><td style="padding:4px;border:1px solid #334155;color:#64748b;">Bot</td><td style="padding:4px;border:1px solid #334155;">Bot</td><td style="padding:4px;border:1px solid #334155;">Unt</td><td style="padding:4px;border:1px solid #334155;">Tai</td><td style="padding:4px;border:1px solid #334155;">Top</td></tr>
+          <tr><td style="padding:4px;border:1px solid #334155;color:#22c55e;">Unt</td><td style="padding:4px;border:1px solid #334155;">Unt</td><td style="padding:4px;border:1px solid #334155;">Unt</td><td style="padding:4px;border:1px solid #334155;color:#f59e0b;font-weight:bold;">Top</td><td style="padding:4px;border:1px solid #334155;">Top</td></tr>
+          <tr><td style="padding:4px;border:1px solid #334155;color:#ef4444;">Tai</td><td style="padding:4px;border:1px solid #334155;">Tai</td><td style="padding:4px;border:1px solid #334155;color:#f59e0b;font-weight:bold;">Top</td><td style="padding:4px;border:1px solid #334155;">Tai</td><td style="padding:4px;border:1px solid #334155;">Top</td></tr>
+          <tr><td style="padding:4px;border:1px solid #334155;color:#f59e0b;">Top</td><td style="padding:4px;border:1px solid #334155;">Top</td><td style="padding:4px;border:1px solid #334155;">Top</td><td style="padding:4px;border:1px solid #334155;">Top</td><td style="padding:4px;border:1px solid #334155;">Top</td></tr>
+        </table>
+      </div>
+
+      <div class="warning" style="margin-top:0.6rem;">
+        <strong>Key:</strong> <code>join Tainted Untainted = Top</code> — if data might be either, treat as potentially tainted (conservative/sound).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+
+  const nodes = [
+    {id:'Top', x:260, y:40, color:'#f59e0b', desc:'Unknown — could be tainted or untainted. Conservative: treat as tainted for safety.'},
+    {id:'Tainted', x:140, y:130, color:'#ef4444', desc:'Definitely from an untrusted source (e.g., get_param). Must be sanitized before reaching a sink.'},
+    {id:'Untainted', x:380, y:130, color:'#22c55e', desc:'Definitely clean data — a literal, sanitized value, or known-safe computation.'},
+    {id:'Bot', x:260, y:220, color:'#64748b', desc:'Bottom — unreachable code or uninitialized variable. No information yet.'}
+  ];
+  const edges = [['Bot','Tainted'],['Bot','Untainted'],['Tainted','Top'],['Untainted','Top']];
+  let selected = -1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,260);
+
+    edges.forEach(([from,to])=>{
+      const n1 = nodes.find(n=>n.id===from), n2 = nodes.find(n=>n.id===to);
+      ctx.beginPath(); ctx.moveTo(n1.x, n1.y-16); ctx.lineTo(n2.x, n2.y+16);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+
+    nodes.forEach((n,i)=>{
+      const isSel = i === selected;
+      ctx.beginPath(); ctx.arc(n.x, n.y, isSel?28:24, 0, Math.PI*2);
+      ctx.fillStyle = isSel ? n.color : n.color+'88';
+      ctx.fill();
+      if(isSel){ ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.stroke(); }
+      ctx.fillStyle = '#fff'; ctx.font = `bold ${isSel?12:11}px monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.id, n.x, n.y);
+    });
+
+    // Comparison with sign
+    ctx.fillStyle = '#64748b'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Same shape as Sign domain — flat lattice!', 260, 252);
+  }
+
+  canvas.addEventListener('click',(e)=>{
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX-rect.left)*(520/rect.width);
+    const my = (e.clientY-rect.top)*(260/rect.height);
+    selected = -1;
+    nodes.forEach((n,i)=>{ if(Math.hypot(mx-n.x,my-n.y)<30) selected=i; });
+    draw();
+    const detail = document.getElementById('s5detail');
+    if(selected >= 0){
+      const n = nodes[selected];
+      detail.innerHTML = `<strong style="color:${n.color};">${n.id}:</strong> <span style="color:#cbd5e1;">${n.desc}</span>`;
+    } else {
+      detail.innerHTML = '<span style="color:#64748b;">Click a lattice node to learn about it.</span>';
+    }
+  });
+
+  // Join calculator
+  const joinTable = {
+    'Bot':{'Bot':'Bot','Untainted':'Untainted','Tainted':'Tainted','Top':'Top'},
+    'Untainted':{'Bot':'Untainted','Untainted':'Untainted','Tainted':'Top','Top':'Top'},
+    'Tainted':{'Bot':'Tainted','Untainted':'Top','Tainted':'Tainted','Top':'Top'},
+    'Top':{'Bot':'Top','Untainted':'Top','Tainted':'Top','Top':'Top'}
+  };
+  window.s5Calc = function(){
+    const a = document.getElementById('s5a').value;
+    const b = document.getElementById('s5b').value;
+    const result = joinTable[a][b];
+    const colors = {Bot:'#64748b',Untainted:'#22c55e',Tainted:'#ef4444',Top:'#f59e0b'};
+    const res = document.getElementById('s5result');
+    res.textContent = result;
+    res.style.color = colors[result];
+    res.style.borderColor = colors[result];
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s5').classList.contains('active')){ selected=-1; draw(); }
+  });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s6: Security Configuration ==================== -->
+<div class="slide" id="s6">
+  <h2>Security Configuration</h2>
+  <p style="color:#94a3b8;">Define what's dangerous — sources, sinks, and sanitizers are <em>configurable</em>, not hard-coded.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line" style="color:#6366f1;">type source = {</div>
+          <div class="line">  source_name : string;        <span style="color:#64748b;">(* "get_param" *)</span></div>
+          <div class="line">  source_description : string;</div>
+          <div class="line" style="color:#6366f1;">}</div>
+          <div class="line"></div>
+          <div class="line" style="color:#f59e0b;">type sink = {</div>
+          <div class="line">  sink_name : string;          <span style="color:#64748b;">(* "exec_query" *)</span></div>
+          <div class="line">  sink_param_index : int;      <span style="color:#64748b;">(* which arg to check *)</span></div>
+          <div class="line">  sink_vuln_type : string;     <span style="color:#64748b;">(* "sql-injection" *)</span></div>
+          <div class="line" style="color:#f59e0b;">}</div>
+          <div class="line"></div>
+          <div class="line" style="color:#22c55e;">type sanitizer = {</div>
+          <div class="line">  sanitizer_name : string;     <span style="color:#64748b;">(* "escape_sql" *)</span></div>
+          <div class="line">  sanitizer_cleans : string list;</div>
+          <div class="line" style="color:#22c55e;">}</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">How it works at runtime</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;font-size:0.85rem;">
+        <p>When the analyzer encounters <code>Call(name, args)</code>:</p>
+        <div style="margin-top:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
+            <span style="color:#ef4444;font-weight:bold;width:80px;">Source?</span>
+            <span style="color:#94a3b8;">→ Return <code>Tainted</code></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
+            <span style="color:#22c55e;font-weight:bold;width:80px;">Sanitizer?</span>
+            <span style="color:#94a3b8;">→ Return <code>Untainted</code></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
+            <span style="color:#f59e0b;font-weight:bold;width:80px;">Sink?</span>
+            <span style="color:#94a3b8;">→ Check arg taint → report if tainted</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="color:#64748b;font-weight:bold;width:80px;">Unknown?</span>
+            <span style="color:#94a3b8;">→ Return <code>Top</code> (conservative)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong>No AST changes needed!</strong> The config is matched against <code>Call(name, args)</code> nodes. Same analyzer, different configs → detect different vulnerability classes.
+      </div>
+
+      <div class="analogy" style="margin-top:0.5rem;">
+        <strong>Like a virus scanner's signature database:</strong> The scan engine stays the same — you just update the definitions (config) to detect new threats.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s7: Forward Taint Rules ==================== -->
+<div class="slide" id="s7">
+  <h2>Forward Taint Propagation Rules</h2>
+  <p style="color:#94a3b8;">Click any expression type to see how taint propagates.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div id="s7rules" style="display:flex;flex-direction:column;gap:0.4rem;"></div>
+    </div>
+
+    <div>
+      <div id="s7detail" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;min-height:200px;">
+        <p style="color:#64748b;font-style:italic;">Click a rule on the left to see an example.</p>
+      </div>
+
+      <div class="warning" style="margin-top:0.8rem;">
+        <strong>Key insight:</strong> Taint propagates through binary operations — if <em>either</em> operand is tainted, the result is tainted. <code>"safe" + tainted = tainted</code>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const rules = [
+    {expr:'IntLit n / BoolLit b', taint:'Untainted', why:'Constants are always clean — they don\'t come from user input.', example:'x = 42  →  x: Untainted'},
+    {expr:'Var x', taint:'lookup x env', why:'A variable carries whatever taint was last assigned to it.', example:'// if x was assigned from get_param:\nx  →  Tainted'},
+    {expr:'BinOp(op, e1, e2)', taint:'propagate(eval e1, eval e2)', why:'If either operand is tainted, the result is tainted. "clean" + "dirty" = "dirty".', example:'"SELECT " + input  →  Tainted\n// because input is Tainted'},
+    {expr:'UnaryOp(op, e)', taint:'eval e', why:'Unary operations preserve taint — negating a tainted value is still tainted.', example:'!tainted_bool  →  Tainted'},
+    {expr:'Call(source, _)', taint:'Tainted', why:'Source functions return untrusted user input → always Tainted.', example:'get_param("q")  →  Tainted'},
+    {expr:'Call(sanitizer, _)', taint:'Untainted', why:'Sanitizer functions clean the input → output is Untainted.', example:'escape_sql(input)  →  Untainted'},
+    {expr:'Call(unknown, _)', taint:'Top', why:'Unknown functions could do anything → conservative Top (might be tainted).', example:'mystery_func(x)  →  Top'}
+  ];
+
+  const container = document.getElementById('s7rules');
+  rules.forEach((r,i)=>{
+    const div = document.createElement('div');
+    div.style.cssText = 'background:rgba(0,0,0,0.2);border:1px solid #334155;border-radius:8px;padding:0.5rem 0.8rem;cursor:pointer;transition:all 0.2s;';
+    div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;">
+      <code style="font-size:0.8rem;">${r.expr}</code>
+      <span style="color:${r.taint==='Tainted'?'#ef4444':r.taint==='Untainted'?'#22c55e':r.taint==='Top'?'#f59e0b':'#38bdf8'};font-size:0.8rem;font-family:monospace;font-weight:bold;">→ ${r.taint}</span>
+    </div>`;
+    div.addEventListener('click',()=>{
+      container.querySelectorAll('div').forEach(d=>d.style.borderColor='#334155');
+      div.style.borderColor = '#6366f1';
+      document.getElementById('s7detail').innerHTML = `
+        <div style="font-family:monospace;font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">${r.expr} → ${r.taint}</div>
+        <div style="color:#e2e8f0;font-size:0.88rem;margin-bottom:0.8rem;">${r.why}</div>
+        <div class="code-block" style="margin:0;"><div class="code-content"><div class="line">${r.example.replace(/\n/g,'</div><div class="line">')}</div></div></div>`;
+    });
+    container.appendChild(div);
+  });
+})();
+</script>
+
+<!-- ==================== SLIDE s8: Taint Propagation Step-Through ==================== -->
+<div class="slide" id="s8">
+  <h2>Taint Propagation: Worked Example</h2>
+  <p style="color:#94a3b8;">Watch taint flow through a 6-line program, step by step.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s8code">
+          <div class="line" id="s8L1">input  = get_param("q")       <span style="color:#64748b;">-- source</span></div>
+          <div class="line" id="s8L2">prefix = "SELECT * WHERE "    <span style="color:#64748b;">-- literal</span></div>
+          <div class="line" id="s8L3">query  = prefix + input       <span style="color:#64748b;">-- propagation</span></div>
+          <div class="line" id="s8L4">safe   = escape_sql(input)    <span style="color:#64748b;">-- sanitizer</span></div>
+          <div class="line" id="s8L5">safe_q = prefix + safe        <span style="color:#64748b;">-- clean + clean</span></div>
+          <div class="line" id="s8L6">exec_query(query)             <span style="color:#64748b;">-- SINK CHECK</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s8Step()">Step</button>
+        <button class="btn btn-sm" onclick="s8Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+
+      <div id="s8Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+
+    <div>
+      <canvas id="cS8" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+  const vars = ['input','prefix','query','safe','safe_q'];
+
+  const steps = [
+    {line:1, desc:'get_param("q") is a SOURCE → input: Tainted', env:{input:'Tainted'}},
+    {line:2, desc:'"SELECT..." is a literal → prefix: Untainted', env:{input:'Tainted', prefix:'Untainted'}},
+    {line:3, desc:'prefix + input = propagate(Untainted, Tainted) = Tainted', env:{input:'Tainted', prefix:'Untainted', query:'Tainted'}},
+    {line:4, desc:'escape_sql is a SANITIZER → safe: Untainted', env:{input:'Tainted', prefix:'Untainted', query:'Tainted', safe:'Untainted'}},
+    {line:5, desc:'prefix + safe = propagate(Untainted, Untainted) = Untainted', env:{input:'Tainted', prefix:'Untainted', query:'Tainted', safe:'Untainted', safe_q:'Untainted'}},
+    {line:6, desc:'exec_query(query) — query is Tainted → VULNERABILITY!', env:{input:'Tainted', prefix:'Untainted', query:'Tainted', safe:'Untainted', safe_q:'Untainted'}, alert:true}
+  ];
+  let stepIdx = 0, timer = null;
+
+  function draw(env, highlightVar, alert){
+    ctx.clearRect(0,0,520,370);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Taint Environment', 260, 25);
+
+    const barW = 80, gap = 20, startX = 30, baseY = 280;
+    vars.forEach((v,i)=>{
+      const x = startX + i*(barW+gap);
+      const val = env[v] || 'Bot';
+      const colors = {Tainted:'#ef4444', Untainted:'#22c55e', Top:'#f59e0b', Bot:'#334155'};
+      const heights = {Tainted:180, Untainted:120, Top:200, Bot:40};
+      const h = heights[val] || 40;
+      const col = colors[val] || '#334155';
+
+      ctx.fillStyle = (v === highlightVar) ? col : col+'cc';
+      ctx.fillRect(x, baseY-h, barW, h);
+      if(v === highlightVar){
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.strokeRect(x, baseY-h, barW, h);
+      }
+
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(v, x+barW/2, baseY+16);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 13px monospace';
+      ctx.fillText(val === 'Tainted' ? 'T' : val === 'Untainted' ? 'U' : val === 'Top' ? '?' : '⊥', x+barW/2, baseY-h-10);
+    });
+
+    // Legend
+    ctx.font = '10px monospace'; ctx.textAlign = 'left';
+    [{s:'Tainted (T)',c:'#ef4444'},{s:'Untainted (U)',c:'#22c55e'},{s:'Bot (⊥)',c:'#334155'}].forEach((l,i)=>{
+      ctx.fillStyle = l.c; ctx.fillRect(400, 50+i*18, 12, 12);
+      ctx.fillStyle = '#cbd5e1'; ctx.fillText(l.s, 418, 60+i*18);
+    });
+
+    // Alert
+    if(alert){
+      ctx.fillStyle = 'rgba(239,68,68,0.15)';
+      ctx.fillRect(50, 310, 420, 50);
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+      ctx.strokeRect(50, 310, 420, 50);
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('VULNERABILITY: tainted data at sink!', 260, 340);
+    }
+  }
+
+  function init(){
+    stepIdx = 0;
+    document.querySelectorAll('#s8code .line').forEach(l=>l.classList.remove('active'));
+    document.getElementById('s8Log').innerHTML = '';
+    draw({}, null, false);
+  }
+
+  window.s8Step = function(){
+    if(stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    document.querySelectorAll('#s8code .line').forEach(l=>l.classList.remove('active'));
+    document.getElementById('s8L'+s.line).classList.add('active');
+    const changedVar = s.line <= 5 ? Object.keys(s.env)[Object.keys(s.env).length-1] : null;
+    draw(s.env, changedVar, s.alert);
+    const log = document.getElementById('s8Log');
+    const color = s.alert ? '#ef4444' : '#38bdf8';
+    log.innerHTML += `<div style="color:${color};">Step ${stepIdx+1}: ${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+  };
+  window.s8Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s8Step();}, 1200);
+  };
+  window.s8Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} init();
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s8').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sCA: Challenge — Trace the Taint ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A: Trace the Taint</h2>
+  <p style="color:#94a3b8;">For each line, predict the taint status of the assigned variable.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block" style="margin-bottom:1rem;">
+        <div class="code-content">
+          <div class="line">1: a = get_param("id")</div>
+          <div class="line">2: b = 100</div>
+          <div class="line">3: c = a + b</div>
+          <div class="line">4: d = html_encode(c)</div>
+          <div class="line">5: e = d + a</div>
+          <div class="line">6: send_response(e)</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:0.5rem;align-items:center;" class="sCA-row">
+          <span style="color:#94a3b8;font-family:monospace;font-size:0.85rem;">Line 1: a =</span>
+          <select id="sCAq1" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="Tainted">Tainted</option><option value="Untainted">Untainted</option><option value="Top">Top</option><option value="Bot">Bot</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#94a3b8;font-family:monospace;font-size:0.85rem;">Line 2: b =</span>
+          <select id="sCAq2" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="Tainted">Tainted</option><option value="Untainted">Untainted</option><option value="Top">Top</option><option value="Bot">Bot</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#94a3b8;font-family:monospace;font-size:0.85rem;">Line 3: c =</span>
+          <select id="sCAq3" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="Tainted">Tainted</option><option value="Untainted">Untainted</option><option value="Top">Top</option><option value="Bot">Bot</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#94a3b8;font-family:monospace;font-size:0.85rem;">Line 4: d =</span>
+          <select id="sCAq4" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="Tainted">Tainted</option><option value="Untainted">Untainted</option><option value="Top">Top</option><option value="Bot">Bot</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#94a3b8;font-family:monospace;font-size:0.85rem;">Line 5: e =</span>
+          <select id="sCAq5" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="Tainted">Tainted</option><option value="Untainted">Untainted</option><option value="Top">Top</option><option value="Bot">Bot</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#94a3b8;font-family:monospace;font-size:0.85rem;">Line 6: vuln?</span>
+          <select id="sCAq6" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="yes">Yes — vulnerability!</option><option value="no">No — safe</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-sm" onclick="sCACheck()" style="margin-top:0.8rem;">Check All</button>
+    </div>
+
+    <div>
+      <div id="sCAresults" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:300px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Answer all questions and click "Check All"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'Tainted',q2:'Untainted',q3:'Tainted',q4:'Untainted',q5:'Tainted',q6:'yes'};
+  const explanations = {
+    q1:'get_param is a SOURCE → Tainted',
+    q2:'100 is a literal → Untainted',
+    q3:'a + b = propagate(Tainted, Untainted) = Tainted — taint spreads through operations',
+    q4:'html_encode is a SANITIZER → Untainted (cleans the taint)',
+    q5:'d + a = propagate(Untainted, Tainted) = Tainted — a is still tainted! Sanitizing c doesn\'t clean a',
+    q6:'Yes! send_response(e) where e is Tainted → XSS vulnerability'
+  };
+
+  window.sCACheck = function(){
+    let html = '', score = 0, total = 6;
+    for(let i = 1; i <= 6; i++){
+      const sel = document.getElementById('sCAq'+i).value;
+      const correct = answers['q'+i];
+      const ok = sel === correct;
+      if(ok) score++;
+      const color = sel==='' ? '#64748b' : ok ? '#22c55e' : '#ef4444';
+      document.getElementById('sCAq'+i).style.borderColor = sel===''?'#475569':ok?'#22c55e':'#ef4444';
+      html += `<div style="margin-bottom:0.5rem;padding:0.4rem 0.6rem;border-left:3px solid ${color};padding-left:0.8rem;">
+        <strong style="color:${color};">Line ${i}: ${sel?ok?'✓':'✗':'—'}</strong>
+        ${!ok && sel ? `<span style="color:#94a3b8;"> (you: ${sel}, answer: ${correct})</span>` : ''}
+        <div style="color:#94a3b8;font-size:0.8rem;margin-top:0.2rem;">${explanations['q'+i]}</div>
+      </div>`;
+    }
+    html += `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;color:#e2e8f0;">${score}/${total} correct</div>`;
+    if(score === total) html += '<div style="color:#22c55e;margin-top:0.3rem;">The tricky part: sanitizing c does NOT clean a! Line 5 re-introduces taint via a.</div>';
+    document.getElementById('sCAresults').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s9: Vulnerability Detection at Sinks ==================== -->
+<div class="slide" id="s9">
+  <h2>Vulnerability Detection at Sinks</h2>
+  <p style="color:#94a3b8;">At each <code>Call(name, args)</code> that is a sink — check if the relevant argument is tainted.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line" style="color:#6366f1;">let check_call env config func_name call_name args =</div>
+          <div class="line">  match find_sink config call_name with</div>
+          <div class="line">  | None   -> []   <span style="color:#64748b;">(* not a sink *)</span></div>
+          <div class="line">  | Some sink -></div>
+          <div class="line">    let arg = List.nth args sink.sink_param_index in</div>
+          <div class="line">    let taint = eval_expr env arg in</div>
+          <div class="line" style="color:#f59e0b;">    if is_potentially_tainted taint then</div>
+          <div class="line" style="color:#ef4444;">      [{ vuln_type = sink.sink_vuln_type;</div>
+          <div class="line" style="color:#ef4444;">         location  = func_name;</div>
+          <div class="line" style="color:#ef4444;">         sink_name = call_name; ... }]</div>
+          <div class="line">    else []</div>
+        </div>
+      </div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong><code>is_potentially_tainted</code></strong> returns true for both <code>Tainted</code> and <code>Top</code> — because Top means "might be tainted" and a sound analysis must warn.
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">Interactive Sink Checker</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+        <div style="margin-bottom:0.5rem;">
+          <label style="font-size:0.82rem;color:#94a3b8;">Sink function:</label>
+          <select id="s9sink" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:0.2rem;">
+            <option value="exec_query">exec_query (checks param 0, sql-injection)</option>
+            <option value="send_response">send_response (checks param 0, xss)</option>
+            <option value="exec_cmd">exec_cmd (checks param 0, command-injection)</option>
+          </select>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <label style="font-size:0.82rem;color:#94a3b8;">Argument taint status:</label>
+          <select id="s9taint" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;margin-top:0.2rem;">
+            <option value="Tainted">Tainted</option>
+            <option value="Untainted">Untainted</option>
+            <option value="Top">Top</option>
+            <option value="Bot">Bot</option>
+          </select>
+        </div>
+        <button class="btn btn-sm" onclick="s9Check()">Check</button>
+      </div>
+
+      <div id="s9result" style="border-radius:10px;padding:1rem;margin-top:0.8rem;border:2px solid #475569;min-height:80px;">
+        <span style="color:#64748b;">Select a sink and taint, then click "Check"</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const sinkInfo = {
+    exec_query: {vuln:'sql-injection', param:0},
+    send_response: {vuln:'xss', param:0},
+    exec_cmd: {vuln:'command-injection', param:0}
+  };
+
+  window.s9Check = function(){
+    const sink = document.getElementById('s9sink').value;
+    const taint = document.getElementById('s9taint').value;
+    const info = sinkInfo[sink];
+    const dangerous = taint === 'Tainted' || taint === 'Top';
+    const res = document.getElementById('s9result');
+
+    if(dangerous){
+      res.style.borderColor = '#ef4444';
+      res.innerHTML = `<div style="color:#ef4444;font-weight:bold;font-size:1rem;">VULNERABILITY REPORTED</div>
+        <div style="color:#94a3b8;font-size:0.85rem;margin-top:0.3rem;">
+          <strong>Type:</strong> ${info.vuln}<br>
+          <strong>Sink:</strong> ${sink}(param ${info.param})<br>
+          <strong>Reason:</strong> Argument is <span style="color:${taint==='Tainted'?'#ef4444':'#f59e0b'}">${taint}</span> — ${taint==='Tainted'?'definitely from untrusted source':'might be tainted (conservative)'}
+        </div>`;
+    } else if(taint === 'Bot'){
+      res.style.borderColor = '#64748b';
+      res.innerHTML = `<div style="color:#64748b;font-weight:bold;">UNREACHABLE CODE</div>
+        <div style="color:#94a3b8;font-size:0.85rem;margin-top:0.3rem;">Bot means this code is never reached — no check needed.</div>`;
+    } else {
+      res.style.borderColor = '#22c55e';
+      res.innerHTML = `<div style="color:#22c55e;font-weight:bold;font-size:1rem;">SAFE — No vulnerability</div>
+        <div style="color:#94a3b8;font-size:0.85rem;margin-top:0.3rem;">Argument is Untainted — either a literal, sanitized, or known-clean computation. Safe to pass to ${sink}.</div>`;
+    }
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s10: Sanitizers & Effectiveness ==================== -->
+<div class="slide" id="s10">
+  <h2>Sanitizers & Effectiveness</h2>
+  <p style="color:#94a3b8;">Sanitizers are <strong>vulnerability-type-specific</strong> — the wrong sanitizer doesn't help!</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin-bottom:0.5rem;">Match sanitizer to vulnerability</h3>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#e2e8f0;font-size:0.85rem;"><code style="font-size:0.8rem;">exec_query(input)</code></span>
+          <select id="s10q1" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+            <option value="">Pick sanitizer...</option>
+            <option value="escape_sql">escape_sql</option>
+            <option value="html_encode">html_encode</option>
+            <option value="shell_escape">shell_escape</option>
+            <option value="validate_path">validate_path</option>
+          </select>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#e2e8f0;font-size:0.85rem;"><code style="font-size:0.8rem;">send_response(input)</code></span>
+          <select id="s10q2" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+            <option value="">Pick sanitizer...</option>
+            <option value="escape_sql">escape_sql</option>
+            <option value="html_encode">html_encode</option>
+            <option value="shell_escape">shell_escape</option>
+            <option value="validate_url">validate_url</option>
+          </select>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#e2e8f0;font-size:0.85rem;"><code style="font-size:0.8rem;">exec_cmd(input)</code></span>
+          <select id="s10q3" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+            <option value="">Pick sanitizer...</option>
+            <option value="escape_sql">escape_sql</option>
+            <option value="html_encode">html_encode</option>
+            <option value="shell_escape">shell_escape</option>
+            <option value="validate_path">validate_path</option>
+          </select>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;align-items:center;">
+          <span style="color:#e2e8f0;font-size:0.85rem;"><code style="font-size:0.8rem;">redirect(input)</code></span>
+          <select id="s10q4" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+            <option value="">Pick sanitizer...</option>
+            <option value="escape_sql">escape_sql</option>
+            <option value="html_encode">html_encode</option>
+            <option value="validate_url">validate_url</option>
+            <option value="validate_path">validate_path</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="s10Check()" style="margin-top:0.5rem;">Check All</button>
+    </div>
+
+    <div>
+      <div id="s10results" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:140px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Match each sink to the correct sanitizer, then click "Check All"</p>
+      </div>
+
+      <h3 style="font-size:0.95rem;color:#38bdf8;margin:0.8rem 0 0.5rem;">Effectiveness Matrix</h3>
+      <table style="width:100%;font-size:0.75rem;font-family:monospace;border-collapse:collapse;text-align:center;">
+        <tr>
+          <td style="padding:4px;border:1px solid #334155;background:#1e293b;"></td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">SQLi</td>
+          <td style="padding:4px;border:1px solid #334155;color:#f59e0b;">XSS</td>
+          <td style="padding:4px;border:1px solid #334155;color:#6366f1;">CmdInj</td>
+          <td style="padding:4px;border:1px solid #334155;color:#22c55e;">PathTrv</td>
+          <td style="padding:4px;border:1px solid #334155;color:#f472b6;">Redir</td>
+        </tr>
+        <tr>
+          <td style="padding:4px;border:1px solid #334155;color:#94a3b8;text-align:left;">escape_sql</td>
+          <td style="padding:4px;border:1px solid #334155;color:#22c55e;">✓</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+        </tr>
+        <tr>
+          <td style="padding:4px;border:1px solid #334155;color:#94a3b8;text-align:left;">html_encode</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#22c55e;">✓</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+        </tr>
+        <tr>
+          <td style="padding:4px;border:1px solid #334155;color:#94a3b8;text-align:left;">shell_escape</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#22c55e;">✓</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+        </tr>
+        <tr>
+          <td style="padding:4px;border:1px solid #334155;color:#94a3b8;text-align:left;">validate_path</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#22c55e;">✓</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+        </tr>
+        <tr>
+          <td style="padding:4px;border:1px solid #334155;color:#94a3b8;text-align:left;">validate_url</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#ef4444;">✗</td>
+          <td style="padding:4px;border:1px solid #334155;color:#22c55e;">✓</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'escape_sql',q2:'html_encode',q3:'shell_escape',q4:'validate_url'};
+  const vulns = {q1:'sql-injection',q2:'xss',q3:'command-injection',q4:'open-redirect'};
+
+  window.s10Check = function(){
+    let html = '', score = 0;
+    ['q1','q2','q3','q4'].forEach((q,i)=>{
+      const sel = document.getElementById('s10'+q).value;
+      const correct = answers[q];
+      const ok = sel === correct;
+      if(ok) score++;
+      const color = sel===''?'#64748b':ok?'#22c55e':'#ef4444';
+      document.getElementById('s10'+q).style.borderColor = sel===''?'#475569':ok?'#22c55e':'#ef4444';
+      const sinkNames = ['exec_query','send_response','exec_cmd','redirect'];
+      html += `<div style="margin-bottom:0.4rem;color:${color};font-size:0.85rem;">${ok?'✓':'✗'} ${sinkNames[i]} (${vulns[q]}) → <strong>${ok?correct:sel||'—'}</strong>${!ok&&sel?' (need: '+correct+')':''}</div>`;
+    });
+    html += `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;">${score}/4 correct</div>`;
+    if(score < 4) html += '<div style="color:#f59e0b;font-size:0.82rem;margin-top:0.3rem;">Remember: each sanitizer only cleans its specific vulnerability type!</div>';
+    document.getElementById('s10results').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s11: Explicit vs Implicit Flows ==================== -->
+<div class="slide" id="s11">
+  <h2>Explicit vs Implicit Information Flows</h2>
+  <p style="color:#94a3b8;">Two ways secret data can leak — through <strong>data</strong> or through <strong>control</strong>.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <h3 style="font-size:0.95rem;color:#22c55e;margin-bottom:0.5rem;">Explicit Flow (Data Dependency)</h3>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line">secret = get_param("password") <span style="color:#ef4444;">-- Tainted</span></div>
+          <div class="line">x = secret                      <span style="color:#ef4444;">-- Tainted</span></div>
+          <div class="line">y = x + 1                       <span style="color:#ef4444;">-- Tainted</span></div>
+        </div>
+      </div>
+      <div class="key-idea" style="margin-top:0.5rem;">
+        Taint follows the <strong>data</strong> — wherever the value goes, taint goes. Standard taint propagation catches this.
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#ef4444;margin-bottom:0.5rem;">Implicit Flow (Control Dependency)</h3>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line">secret = get_param("pin")  <span style="color:#ef4444;">-- Tainted</span></div>
+          <div class="line">if secret == 1234:</div>
+          <div class="line">    x = 1                  <span style="color:#f59e0b;">-- reveals secret!</span></div>
+          <div class="line">else:</div>
+          <div class="line">    x = 0                  <span style="color:#f59e0b;">-- reveals secret!</span></div>
+        </div>
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        After this code, <code>x</code> reveals whether <code>secret == 1234</code>. The value of secret <strong>influences</strong> x through the branch, not through assignment. Standard taint propagation <strong>misses</strong> this!
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy" style="margin-top:0.8rem;">
+    <strong>Analogy:</strong> Explicit flow is like passing a note directly. Implicit flow is like signaling yes/no by turning a light on or off — the information travels through the <em>choice</em>, not the data.
+  </div>
+</div>
+
+<!-- ==================== SLIDE s12: PC-Taint for Implicit Flows ==================== -->
+<div class="slide" id="s12">
+  <h2>PC-Taint: Handling Implicit Flows</h2>
+  <p style="color:#94a3b8;">Track whether we're inside a branch controlled by tainted data.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="s12code">
+          <div class="line" id="s12L1">secret = get_param("pin")  <span style="color:#64748b;">-- pc: Unt</span></div>
+          <div class="line" id="s12L2">if secret == 1234:         <span style="color:#64748b;">-- cond: Tai</span></div>
+          <div class="line" id="s12L3">    x = 1                  <span style="color:#64748b;">-- pc: Tai!</span></div>
+          <div class="line" id="s12L4">else:</div>
+          <div class="line" id="s12L5">    x = 0                  <span style="color:#64748b;">-- pc: Tai!</span></div>
+          <div class="line" id="s12L6">y = x                      <span style="color:#64748b;">-- pc: Unt</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.8rem;">
+        <button class="btn btn-sm" onclick="s12Step()">Step</button>
+        <button class="btn btn-sm" onclick="s12Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+
+      <div id="s12Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:90px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;"></div>
+    </div>
+
+    <div>
+      <canvas id="cS12" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+
+  const steps = [
+    {line:1, desc:'get_param → secret: Tainted, pc: Untainted', env:{secret:'Tainted'}, pc:'Untainted', phase:'init'},
+    {line:2, desc:'if(secret==1234): cond is Tainted → new_pc = propagate(Unt, Tai) = Tainted', env:{secret:'Tainted'}, pc:'Tainted', phase:'branch'},
+    {line:3, desc:'x = 1: literal is Untainted, but propagate(Unt, pc=Tai) = Tainted!', env:{secret:'Tainted', x:'Tainted'}, pc:'Tainted', phase:'then'},
+    {line:5, desc:'x = 0: same — propagate(Unt, pc=Tai) = Tainted', env:{secret:'Tainted', x:'Tainted'}, pc:'Tainted', phase:'else'},
+    {line:6, desc:'After merge: pc returns to Untainted. y = x → Tainted (from x)', env:{secret:'Tainted', x:'Tainted', y:'Tainted'}, pc:'Untainted', phase:'after'}
+  ];
+  let stepIdx = 0, timer = null;
+
+  function draw(env, pc, phase){
+    ctx.clearRect(0,0,520,340);
+
+    // PC-taint indicator
+    ctx.fillStyle = pc==='Tainted' ? '#ef444433' : '#22c55e22';
+    ctx.fillRect(0, 0, 520, 30);
+    ctx.fillStyle = pc==='Tainted' ? '#ef4444' : '#22c55e';
+    ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(`pc_taint: ${pc}`, 260, 20);
+
+    // Environment bars
+    const vars = Object.keys(env);
+    const barW = 70, gap = 30, startX = 520/2 - (vars.length*(barW+gap)-gap)/2, baseY = 250;
+    vars.forEach((v,i)=>{
+      const x = startX + i*(barW+gap);
+      const val = env[v];
+      const col = val==='Tainted'?'#ef4444':val==='Untainted'?'#22c55e':'#f59e0b';
+      const h = val==='Tainted'?150:val==='Untainted'?100:60;
+
+      ctx.fillStyle = col+'cc'; ctx.fillRect(x, baseY-h, barW, h);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(v, x+barW/2, baseY+18);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px monospace';
+      ctx.fillText(val==='Tainted'?'T':'U', x+barW/2, baseY-h-10);
+    });
+
+    // Phase indicator
+    if(phase === 'branch' || phase === 'then' || phase === 'else'){
+      ctx.fillStyle = '#ef444422';
+      ctx.fillRect(20, 40, 480, 30);
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+      const msg = phase==='branch'?'Entering tainted branch — pc becomes Tainted':
+                  phase==='then'?'Inside then-branch: all assigns get pc_taint':
+                  'Inside else-branch: all assigns get pc_taint';
+      ctx.fillText(msg, 260, 60);
+    }
+
+    // Comparison boxes at bottom
+    if(phase === 'after'){
+      ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(20, 270, 230, 60, 8); ctx.fill();
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('Without pc_taint:', 135, 288);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace';
+      ctx.fillText('x = 1 → Untainted (WRONG!)', 135, 306);
+      ctx.fillText('Misses the information leak', 135, 320);
+
+      ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(270, 270, 230, 60, 8); ctx.fill();
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('With pc_taint:', 385, 288);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace';
+      ctx.fillText('propagate(Unt, Tai) = Tainted ✓', 385, 306);
+      ctx.fillText('Catches the implicit flow', 385, 320);
+    }
+  }
+
+  function init(){
+    stepIdx = 0;
+    document.querySelectorAll('#s12code .line').forEach(l=>l.classList.remove('active'));
+    document.getElementById('s12Log').innerHTML = '';
+    draw({}, 'Untainted', 'init');
+  }
+
+  window.s12Step = function(){
+    if(stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    document.querySelectorAll('#s12code .line').forEach(l=>l.classList.remove('active'));
+    document.getElementById('s12L'+s.line).classList.add('active');
+    draw(s.env, s.pc, s.phase);
+    const log = document.getElementById('s12Log');
+    log.innerHTML += `<div style="color:#38bdf8;">Step ${stepIdx+1}: ${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+  };
+  window.s12Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s12Step();}, 1500);
+  };
+  window.s12Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} init();
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s12').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE s13: OWASP Vulnerability Gallery ==================== -->
+<div class="slide" id="s13">
+  <h2>OWASP Vulnerability Gallery</h2>
+  <p style="color:#94a3b8;">Click a vulnerability type to see the attack pattern, detection, and fix.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div id="s13cards" style="display:flex;flex-direction:column;gap:0.4rem;"></div>
+    </div>
+    <div>
+      <div id="s13detail" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;min-height:340px;">
+        <p style="color:#64748b;font-style:italic;">Click a vulnerability card on the left.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const vulns = [
+    {name:'SQL Injection', cwe:'CWE-89', color:'#ef4444', severity:'Critical',
+     source:'get_param("search")', sink:'exec_query(query)', sanitizer:'escape_sql',
+     code:'input = get_param("search")\nquery = "SELECT * FROM t WHERE " + input\nexec_query(query)',
+     attack:'input = "\'; DROP TABLE users; --"',
+     fix:'safe = escape_sql(input)\nquery = "SELECT * FROM t WHERE " + safe\nexec_query(query)'},
+    {name:'Cross-Site Scripting (XSS)', cwe:'CWE-79', color:'#f59e0b', severity:'High',
+     source:'get_param("name")', sink:'send_response(html)', sanitizer:'html_encode',
+     code:'input = get_param("name")\nhtml = "<h1>" + input + "</h1>"\nsend_response(html)',
+     attack:'input = "<script>steal(document.cookie)</script>"',
+     fix:'safe = html_encode(input)\nhtml = "<h1>" + safe + "</h1>"\nsend_response(html)'},
+    {name:'Command Injection', cwe:'CWE-78', color:'#6366f1', severity:'Critical',
+     source:'get_param("file")', sink:'exec_cmd(cmd)', sanitizer:'shell_escape',
+     code:'filename = get_param("file")\ncmd = "cat " + filename\nexec_cmd(cmd)',
+     attack:'filename = "; rm -rf /"',
+     fix:'safe = shell_escape(filename)\ncmd = "cat " + safe\nexec_cmd(cmd)'},
+    {name:'Path Traversal', cwe:'CWE-22', color:'#22c55e', severity:'High',
+     source:'get_param("page")', sink:'open_file(path)', sanitizer:'validate_path',
+     code:'path = get_param("page")\nopen_file(path)',
+     attack:'path = "../../etc/passwd"',
+     fix:'safe = validate_path(path)\nopen_file(safe)'},
+    {name:'Open Redirect', cwe:'CWE-601', color:'#f472b6', severity:'Medium',
+     source:'get_param("next")', sink:'redirect(url)', sanitizer:'validate_url',
+     code:'url = get_param("next")\nredirect(url)',
+     attack:'url = "https://evil.com/phishing"',
+     fix:'safe = validate_url(url)\nredirect(safe)'}
+  ];
+
+  const container = document.getElementById('s13cards');
+  vulns.forEach((v,i)=>{
+    const card = document.createElement('div');
+    card.style.cssText = `background:rgba(0,0,0,0.2);border:1px solid #334155;border-radius:8px;padding:0.5rem 0.8rem;cursor:pointer;transition:all 0.2s;display:flex;justify-content:space-between;align-items:center;`;
+    card.innerHTML = `<div>
+      <span style="color:${v.color};font-weight:bold;font-size:0.88rem;">${v.name}</span>
+      <span style="color:#64748b;font-size:0.75rem;margin-left:0.5rem;">${v.cwe}</span>
+    </div>
+    <span style="background:${v.severity==='Critical'?'#ef4444':v.severity==='High'?'#f59e0b':'#6366f1'};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:bold;">${v.severity}</span>`;
+
+    card.addEventListener('click',()=>{
+      container.querySelectorAll('div').forEach(d=>d.style.borderColor='#334155');
+      card.style.borderColor = v.color;
+      document.getElementById('s13detail').innerHTML = `
+        <h3 style="color:${v.color};margin:0 0 0.5rem;">${v.name} <span style="color:#64748b;font-size:0.8rem;">(${v.cwe})</span></h3>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0.3rem 0.8rem;font-size:0.82rem;margin-bottom:0.8rem;">
+          <span style="color:#ef4444;">Source:</span><code style="font-size:0.78rem;">${v.source}</code>
+          <span style="color:#f59e0b;">Sink:</span><code style="font-size:0.78rem;">${v.sink}</code>
+          <span style="color:#22c55e;">Sanitizer:</span><code style="font-size:0.78rem;">${v.sanitizer}</code>
+        </div>
+        <div style="font-size:0.82rem;color:#94a3b8;margin-bottom:0.3rem;">Vulnerable code:</div>
+        <div class="code-block" style="margin:0 0 0.5rem;"><div class="code-content">${v.code.split('\n').map(l=>'<div class="line">'+l+'</div>').join('')}</div></div>
+        <div style="font-size:0.82rem;color:#ef4444;margin-bottom:0.3rem;">Attack payload:</div>
+        <div style="background:rgba(239,68,68,0.1);border:1px solid #ef4444;border-radius:6px;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.8rem;margin-bottom:0.5rem;color:#fca5a5;">${v.attack}</div>
+        <div style="font-size:0.82rem;color:#22c55e;margin-bottom:0.3rem;">Fix:</div>
+        <div class="code-block" style="margin:0;border-color:#22c55e;"><div class="code-content">${v.fix.split('\n').map(l=>'<div class="line">'+l+'</div>').join('')}</div></div>`;
+    });
+    container.appendChild(card);
+  });
+})();
+</script>
+
+<!-- ==================== SLIDE s14: Full Pipeline ==================== -->
+<div class="slide" id="s14">
+  <h2>Putting It All Together</h2>
+  <p style="color:#94a3b8;">The complete security analysis pipeline — from AST to vulnerability report.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <canvas id="cS14" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s14Step()">Step</button>
+        <button class="btn btn-sm" onclick="s14Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s14Reset()">Reset</button>
+      </div>
+    </div>
+
+    <div>
+      <div id="s14Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-family:monospace;font-size:0.8rem;min-height:200px;max-height:280px;overflow-y:auto;color:#94a3b8;"></div>
+
+      <div class="key-idea" style="margin-top:0.8rem;">
+        <strong>Same algorithm as M4!</strong> The analysis pipeline is identical — only the abstract domain changed from numeric (signs/intervals) to security (taint).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS14');
+  const ctx = canvas.getContext('2d');
+
+  const stages = [
+    {id:'parse', x:60, y:50, w:100, h:40, label:'Parse → AST', color:'#94a3b8'},
+    {id:'config', x:260, y:50, w:120, h:40, label:'Security Config', color:'#a78bfa'},
+    {id:'propagate', x:160, y:140, w:200, h:50, label:'Taint Propagation', color:'#f59e0b'},
+    {id:'sink', x:160, y:230, w:200, h:50, label:'Sink Checking', color:'#ef4444'},
+    {id:'report', x:160, y:310, w:200, h:35, label:'Vulnerability Report', color:'#22c55e'}
+  ];
+  const arrows = [[0,2],[1,2],[2,3],[3,4]];
+
+  const steps = [
+    {active:[0], desc:'Step 1: Parse program into AST (existing infrastructure from M1-M2)'},
+    {active:[0,1], desc:'Step 2: Load security config — define sources, sinks, sanitizers'},
+    {active:[2], desc:'Step 3: Forward taint propagation (abstract interpretation with taint domain)'},
+    {active:[3], desc:'Step 4: At each Call node — check if it\'s a sink with tainted args'},
+    {active:[4], desc:'Step 5: Report vulnerabilities with type, location, and severity'}
+  ];
+  let stepIdx = 0, timer = null;
+
+  function draw(activeSet){
+    ctx.clearRect(0,0,520,340);
+    const actSet = new Set(activeSet || []);
+
+    // Arrows
+    arrows.forEach(([from,to])=>{
+      const s1 = stages[from], s2 = stages[to];
+      const x1 = s1.x+s1.w/2, y1 = s1.y+s1.h;
+      const x2 = s2.x+s2.w/2, y2 = s2.y;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+      ctx.strokeStyle = (actSet.has(from)||actSet.has(to))?'#f59e0b':'#334155';
+      ctx.lineWidth = (actSet.has(from)||actSet.has(to))?2:1; ctx.stroke();
+      // Arrowhead
+      const angle = Math.atan2(y2-y1, x2-x1);
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2-Math.cos(angle-0.4)*10, y2-Math.sin(angle-0.4)*10);
+      ctx.lineTo(x2-Math.cos(angle+0.4)*10, y2-Math.sin(angle+0.4)*10);
+      ctx.closePath();
+      ctx.fillStyle = (actSet.has(from)||actSet.has(to))?'#f59e0b':'#334155';
+      ctx.fill();
+    });
+
+    // Stages
+    stages.forEach((s,i)=>{
+      const active = actSet.has(i);
+      ctx.fillStyle = active ? s.color+'33' : 'rgba(30,41,59,0.8)';
+      ctx.beginPath(); ctx.roundRect(s.x, s.y, s.w, s.h, 8); ctx.fill();
+      ctx.strokeStyle = active ? s.color : '#475569';
+      ctx.lineWidth = active ? 2.5 : 1; ctx.stroke();
+
+      ctx.fillStyle = active ? '#fff' : s.color;
+      ctx.font = `bold ${active?12:11}px monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(s.label, s.x+s.w/2, s.y+s.h/2);
+    });
+
+    // Side annotations
+    ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+    ctx.fillText('eval_expr uses config', 380, 155);
+    ctx.fillText('to mark sources/sanitizers', 380, 168);
+    ctx.fillText('check_call at each', 380, 245);
+    ctx.fillText('Call node in AST', 380, 258);
+  }
+
+  function init(){
+    stepIdx = 0;
+    document.getElementById('s14Log').innerHTML = '';
+    draw([]);
+  }
+
+  window.s14Step = function(){
+    if(stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    draw(s.active);
+    const log = document.getElementById('s14Log');
+    log.innerHTML += `<div style="color:#38bdf8;margin-bottom:0.3rem;">${s.desc}</div>`;
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+  };
+  window.s14Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s14Step();}, 1500);
+  };
+  window.s14Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} init();
+  };
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s14').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE sCB: Challenge — Find the Vulnerability ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B: Find the Vulnerability</h2>
+  <p style="color:#94a3b8;">Analyze this code — identify the source, sink, vulnerability type, and fix.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block" style="margin-bottom:1rem;">
+        <div class="code-content">
+          <div class="line">1: user = get_param("username")</div>
+          <div class="line">2: role = "guest"</div>
+          <div class="line">3: greeting = "Hello, " + user</div>
+          <div class="line">4: page = "&lt;div&gt;" + greeting + "&lt;/div&gt;"</div>
+          <div class="line">5: log_msg = "User: " + user</div>
+          <div class="line">6: write_log(log_msg)</div>
+          <div class="line">7: send_response(page)</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;">
+          <label style="font-size:0.82rem;color:#94a3b8;">Source function:</label>
+          <select id="sCBq1" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;margin-top:0.2rem;">
+            <option value="">Select...</option><option value="get_param">get_param</option><option value="write_log">write_log</option><option value="send_response">send_response</option>
+          </select>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;">
+          <label style="font-size:0.82rem;color:#94a3b8;">Dangerous sink (line #):</label>
+          <select id="sCBq2" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;margin-top:0.2rem;">
+            <option value="">Select...</option><option value="6">Line 6: write_log</option><option value="7">Line 7: send_response</option><option value="both">Both lines 6 and 7</option>
+          </select>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;">
+          <label style="font-size:0.82rem;color:#94a3b8;">Vulnerability type:</label>
+          <select id="sCBq3" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;margin-top:0.2rem;">
+            <option value="">Select...</option><option value="sql">SQL Injection</option><option value="xss">XSS</option><option value="cmd">Command Injection</option><option value="path">Path Traversal</option>
+          </select>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;">
+          <label style="font-size:0.82rem;color:#94a3b8;">Correct sanitizer:</label>
+          <select id="sCBq4" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;margin-top:0.2rem;">
+            <option value="">Select...</option><option value="escape_sql">escape_sql</option><option value="html_encode">html_encode</option><option value="shell_escape">shell_escape</option><option value="validate_url">validate_url</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="sCBCheck()" style="margin-top:0.5rem;">Check All</button>
+    </div>
+
+    <div>
+      <div id="sCBresults" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:300px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Identify all four elements and click "Check All"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'get_param',q2:'7',q3:'xss',q4:'html_encode'};
+  const explanations = {
+    q1:'get_param("username") is the source — it returns user-controlled input.',
+    q2:'Line 7: send_response(page) is an XSS sink. write_log is NOT a security sink in our config (it doesn\'t send data to users).',
+    q3:'XSS (Cross-Site Scripting) — user input is embedded in HTML sent to the browser. An attacker can inject <script> tags.',
+    q4:'html_encode sanitizes for XSS by escaping <, >, &, and quotes. escape_sql would not help here.'
+  };
+
+  window.sCBCheck = function(){
+    let html = '', score = 0;
+    const labels = ['Source','Sink','Vuln type','Sanitizer'];
+    ['q1','q2','q3','q4'].forEach((q,i)=>{
+      const sel = document.getElementById('sCB'+q).value;
+      const correct = answers[q];
+      const ok = sel === correct;
+      if(ok) score++;
+      const color = sel===''?'#64748b':ok?'#22c55e':'#ef4444';
+      document.getElementById('sCB'+q).style.borderColor = sel===''?'#475569':ok?'#22c55e':'#ef4444';
+      html += `<div style="margin-bottom:0.6rem;padding:0.5rem;border-left:3px solid ${color};padding-left:0.8rem;">
+        <strong style="color:${color};">${labels[i]}: ${sel?ok?'✓ Correct':'✗ Incorrect':'— Not answered'}</strong>
+        ${!ok&&sel?`<span style="color:#94a3b8;"> (answer: ${correct})</span>`:''}
+        <div style="color:#94a3b8;font-size:0.8rem;margin-top:0.2rem;">${explanations[q]}</div>
+      </div>`;
+    });
+    html += `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;color:#e2e8f0;">${score}/4 correct</div>`;
+    if(score===4) html += `<div style="color:#22c55e;margin-top:0.3rem;font-size:0.82rem;">Taint trace: get_param → user(T) → greeting(T) → page(T) → send_response = XSS!</div>`;
+    document.getElementById('sCBresults').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE s15: Limitations & False Positives ==================== -->
+<div class="slide" id="s15">
+  <h2>Limitations & False Positives</h2>
+  <p style="color:#94a3b8;">Taint analysis is sound (no missed bugs) but can be imprecise (false alarms).</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <h3 style="font-size:0.95rem;color:#ef4444;margin-bottom:0.5rem;">Over-Approximation Sources</h3>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <div style="color:#f59e0b;font-weight:bold;font-size:0.88rem;margin-bottom:0.3rem;">1. Join at merge points</div>
+        <div class="code-block" style="margin:0.3rem 0;">
+          <div class="code-content">
+            <div class="line">if cond:</div>
+            <div class="line">  x = get_param("q")  <span style="color:#ef4444;">-- Tainted</span></div>
+            <div class="line">else:</div>
+            <div class="line">  x = "safe"           <span style="color:#22c55e;">-- Untainted</span></div>
+            <div class="line"><span style="color:#64748b;">-- After merge: join(T, U) = Top</span></div>
+          </div>
+        </div>
+        <div style="color:#94a3b8;font-size:0.82rem;">Even though x might be safe, we treat it as potentially tainted.</div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <div style="color:#f59e0b;font-weight:bold;font-size:0.88rem;margin-bottom:0.3rem;">2. Unknown functions → Top</div>
+        <div style="color:#94a3b8;font-size:0.82rem;">Any function not in our config returns Top. Even perfectly safe helper functions get flagged.</div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;">
+        <div style="color:#f59e0b;font-weight:bold;font-size:0.88rem;margin-bottom:0.3rem;">3. No string content tracking</div>
+        <div style="color:#94a3b8;font-size:0.82rem;">Can't tell that <code>"SELECT " + escape_sql(x)</code> is safe at the string level. Must rely on sanitizer config.</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#a78bfa;margin-bottom:0.5rem;">Other Limitations</h3>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <div style="color:#a78bfa;font-weight:bold;font-size:0.88rem;margin-bottom:0.3rem;">4. No alias analysis</div>
+        <div style="color:#94a3b8;font-size:0.82rem;">If <code>x</code> and <code>y</code> point to the same data, tainting <code>x</code> should taint <code>y</code>. Our analysis treats variables independently.</div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <div style="color:#a78bfa;font-weight:bold;font-size:0.88rem;margin-bottom:0.3rem;">5. Intraprocedural only</div>
+        <div style="color:#94a3b8;font-size:0.82rem;">Our analyzer works within a single function. Real tools like Infer and CodeQL do interprocedural analysis across function boundaries.</div>
+      </div>
+
+      <div class="analogy" style="margin-top:0.8rem;">
+        <strong>The tradeoff:</strong> Like a smoke detector — it catches all fires but also triggers for burnt toast. More false positives is annoying but safe. Missing a real fire is dangerous.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s16: Real-World Tools ==================== -->
+<div class="slide" id="s16">
+  <h2>Real-World Security Analysis Tools</h2>
+  <p style="color:#94a3b8;">Production tools that use taint analysis ideas at scale.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <canvas id="cS16" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+
+    <div>
+      <div id="s16detail" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;min-height:280px;">
+        <p style="color:#64748b;font-style:italic;">Click a tool on the left to learn about it.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+
+  const tools = [
+    {name:'Semgrep', x:130, y:70, color:'#22c55e',
+     approach:'Pattern-based taint tracking',
+     desc:'Lightweight, fast, developer-friendly. Write rules in YAML that look like code patterns. Supports taint mode for source→sink tracking. Used by Dropbox, Slack, and others.',
+     langs:'Python, Java, JS, Go, Ruby, and more',
+     strength:'Easy to write custom rules; fast CI integration'},
+    {name:'CodeQL', x:390, y:70, color:'#38bdf8',
+     approach:'Relational dataflow analysis (database queries)',
+     desc:'GitHub\'s tool. Compiles code into a relational database, then you write SQL-like queries to find vulnerabilities. Very precise — supports interprocedural taint tracking.',
+     langs:'C/C++, Java, Python, JS, C#, Go, Ruby',
+     strength:'Most precise; query language is very expressive'},
+    {name:'FlowDroid', x:130, y:200, color:'#f59e0b',
+     approach:'Context/flow/object-sensitive taint analysis',
+     desc:'Research tool for Android apps. Tracks taint from Android sources (GPS, contacts, camera) to sinks (network, SMS, logs). Found real privacy leaks in thousands of apps.',
+     langs:'Java / Android (Dalvik bytecode)',
+     strength:'Android-specific; handles Activity lifecycles'},
+    {name:'Infer', x:390, y:200, color:'#ef4444',
+     approach:'Abstract interpretation + bi-abduction',
+     desc:'Facebook/Meta\'s tool. Runs on every code diff before review. Originally for memory bugs, now also does taint analysis (Quandary/Pulse). Catches null pointers, leaks, thread-safety, and injection bugs.',
+     langs:'Java, C, C++, Objective-C',
+     strength:'Scales to millions of lines; incremental analysis'}
+  ];
+
+  let selected = -1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('Click a tool to learn more', 260, 25);
+
+    tools.forEach((t,i)=>{
+      const isSel = i === selected;
+      const w = 150, h = 70;
+      ctx.fillStyle = isSel ? t.color+'33' : 'rgba(30,41,59,0.8)';
+      ctx.beginPath(); ctx.roundRect(t.x-w/2, t.y-h/2, w, h, 10); ctx.fill();
+      ctx.strokeStyle = isSel ? t.color : '#475569';
+      ctx.lineWidth = isSel ? 2.5 : 1; ctx.stroke();
+
+      ctx.fillStyle = t.color; ctx.font = 'bold 15px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(t.name, t.x, t.y-10);
+
+      ctx.fillStyle = '#94a3b8'; ctx.font = '9px monospace';
+      ctx.fillText(t.approach.substring(0,25), t.x, t.y+12);
+    });
+
+    // Connection note
+    ctx.fillStyle = '#475569'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('All use taint analysis concepts from this module', 260, 280);
+    ctx.fillText('Same theory, different engineering tradeoffs', 260, 296);
+  }
+
+  canvas.addEventListener('click',(e)=>{
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX-rect.left)*(520/rect.width);
+    const my = (e.clientY-rect.top)*(320/rect.height);
+    selected = -1;
+    tools.forEach((t,i)=>{ if(Math.abs(mx-t.x)<80 && Math.abs(my-t.y)<40) selected=i; });
+    draw();
+    const detail = document.getElementById('s16detail');
+    if(selected >= 0){
+      const t = tools[selected];
+      detail.innerHTML = `<h3 style="color:${t.color};margin:0 0 0.5rem;">${t.name}</h3>
+        <div style="color:#94a3b8;font-size:0.82rem;margin-bottom:0.5rem;"><strong>Approach:</strong> ${t.approach}</div>
+        <div style="color:#e2e8f0;font-size:0.88rem;margin-bottom:0.8rem;">${t.desc}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div style="background:rgba(0,0,0,0.2);padding:0.5rem;border-radius:6px;">
+            <div style="color:#94a3b8;font-size:0.75rem;">Languages</div>
+            <div style="color:#e2e8f0;font-size:0.82rem;">${t.langs}</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);padding:0.5rem;border-radius:6px;">
+            <div style="color:#94a3b8;font-size:0.75rem;">Key Strength</div>
+            <div style="color:${t.color};font-size:0.82rem;">${t.strength}</div>
+          </div>
+        </div>`;
+    } else {
+      detail.innerHTML = '<p style="color:#64748b;font-style:italic;">Click a tool on the left to learn about it.</p>';
+    }
+  });
+
+  const obs = new MutationObserver(()=>{
+    if(document.getElementById('s16').classList.contains('active')){ selected=-1; draw(); }
+  });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== SLIDE s17: Key Takeaways ==================== -->
+<div class="slide" id="s17">
+  <h2>Key Takeaways</h2>
+  <p style="color:#94a3b8;">The essential ideas from Module 5 — Security Analysis.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="key-idea" style="margin-bottom:0.8rem;">
+        <strong>1. Taint analysis reuses M4's framework</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">Same ABSTRACT_DOMAIN, MakeEnv, eval_expr, transfer_stmt. The domain changed from numeric to security — that's it.</span>
+      </div>
+
+      <div class="key-idea" style="margin-bottom:0.8rem;">
+        <strong>2. The taint lattice is flat (4 elements)</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">Bot ⊑ {Tainted, Untainted} ⊑ Top. Same shape as sign domain. Finite, so no widening needed.</span>
+      </div>
+
+      <div class="key-idea" style="margin-bottom:0.8rem;">
+        <strong>3. Three components: Source → Propagation → Sink</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">Sources introduce taint, propagation spreads it through operations, sinks check for it. Sanitizers break the chain.</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="warning" style="margin-bottom:0.8rem;">
+        <strong>4. Sanitizers are type-specific</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">escape_sql fixes SQLi but not XSS. html_encode fixes XSS but not SQLi. Wrong sanitizer = still vulnerable.</span>
+      </div>
+
+      <div class="analogy" style="margin-bottom:0.8rem;">
+        <strong>5. Implicit flows need PC-taint</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">Standard taint misses control-flow leaks. PC-taint tracks when we're inside a tainted branch, tainting all assignments within.</span>
+      </div>
+
+      <div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:10px;padding:1rem;">
+        <strong style="color:#818cf8;">The Module Progression:</strong><br>
+        <span style="color:#94a3b8;font-size:0.88rem;">M3 (framework) + M4 (abstract domains) + M5 (security domain) = a real vulnerability detector. Next: M6 brings it all together with tools and integration.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE s18: What We Learned ==================== -->
+<div class="slide" id="s18">
+  <h2>What We Learned in Module 5</h2>
+  <p style="color:#94a3b8;">A complete summary of security analysis concepts.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:0.8rem;">
+    <div>
+      <h3 style="font-size:0.95rem;color:#6366f1;margin-bottom:0.6rem;">Core Theory</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.7;">
+        <div style="color:#e2e8f0;">✓ Taint lattice (4-element flat)</div>
+        <div style="color:#e2e8f0;">✓ Join/meet/leq operations</div>
+        <div style="color:#e2e8f0;">✓ Sources, sinks, sanitizers</div>
+        <div style="color:#e2e8f0;">✓ Forward taint propagation</div>
+        <div style="color:#e2e8f0;">✓ Transfer functions (same as M4)</div>
+        <div style="color:#e2e8f0;">✓ Explicit vs implicit flows</div>
+        <div style="color:#e2e8f0;">✓ PC-taint for control deps</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#ef4444;margin-bottom:0.6rem;">Vulnerabilities</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.7;">
+        <div style="color:#ef4444;">✓ SQL Injection (CWE-89)</div>
+        <div style="color:#f59e0b;">✓ XSS (CWE-79)</div>
+        <div style="color:#6366f1;">✓ Command Injection (CWE-78)</div>
+        <div style="color:#22c55e;">✓ Path Traversal (CWE-22)</div>
+        <div style="color:#f472b6;">✓ Open Redirect (CWE-601)</div>
+        <div style="color:#94a3b8;">✓ Sanitizer effectiveness matrix</div>
+        <div style="color:#94a3b8;">✓ Vulnerability detection at sinks</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.95rem;color:#22c55e;margin-bottom:0.6rem;">Practical Skills</h3>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.7;">
+        <div style="color:#e2e8f0;">✓ Trace taint through code</div>
+        <div style="color:#e2e8f0;">✓ Identify source→sink paths</div>
+        <div style="color:#e2e8f0;">✓ Match sanitizers to vulns</div>
+        <div style="color:#e2e8f0;">✓ Detect implicit flow leaks</div>
+        <div style="color:#e2e8f0;">✓ Security config design</div>
+        <div style="color:#e2e8f0;">✓ Real tools (Semgrep, CodeQL)</div>
+        <div style="color:#e2e8f0;">✓ Limitations & false positives</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <div style="display:inline-block;background:linear-gradient(135deg,#ef4444,#f59e0b);padding:0.6rem 1.5rem;border-radius:8px;color:#fff;font-weight:bold;font-size:0.95rem;">
+      Taint Analysis = Abstract Interpretation Applied to Security
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE sCC: Challenge — Pick the Right Sanitizer ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: Security Scenario Analysis</h2>
+  <p style="color:#94a3b8;">For each real-world scenario, identify the vulnerability and choose the correct defense.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <p style="font-size:0.88rem;margin:0 0 0.4rem;"><strong>Q1.</strong> A web app takes a search query from the URL and displays it on the results page: <code>"Results for: " + query</code></p>
+        <select id="sCCq1" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+          <option value="">Vulnerability + fix...</option>
+          <option value="xss_html">XSS → html_encode(query)</option>
+          <option value="sql_escape">SQLi → escape_sql(query)</option>
+          <option value="cmd_shell">CmdInj → shell_escape(query)</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <p style="font-size:0.88rem;margin:0 0 0.4rem;"><strong>Q2.</strong> A file download endpoint uses the filename from the request: <code>open_file("/uploads/" + filename)</code></p>
+        <select id="sCCq2" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+          <option value="">Vulnerability + fix...</option>
+          <option value="path_validate">Path Traversal → validate_path(filename)</option>
+          <option value="xss_html">XSS → html_encode(filename)</option>
+          <option value="sql_escape">SQLi → escape_sql(filename)</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <p style="font-size:0.88rem;margin:0 0 0.4rem;"><strong>Q3.</strong> A login page redirects users to a "return URL" after login: <code>redirect(get_param("next"))</code></p>
+        <select id="sCCq3" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+          <option value="">Vulnerability + fix...</option>
+          <option value="redirect_url">Open Redirect → validate_url(next)</option>
+          <option value="xss_html">XSS → html_encode(next)</option>
+          <option value="path_validate">Path Traversal → validate_path(next)</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <p style="font-size:0.88rem;margin:0 0 0.4rem;"><strong>Q4.</strong> An admin panel lets operators run diagnostics: <code>exec_cmd("ping " + host)</code></p>
+        <select id="sCCq4" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+          <option value="">Vulnerability + fix...</option>
+          <option value="cmd_shell">CmdInj → shell_escape(host)</option>
+          <option value="sql_escape">SQLi → escape_sql(host)</option>
+          <option value="xss_html">XSS → html_encode(host)</option>
+        </select>
+      </div>
+
+      <button class="btn btn-sm" onclick="sCCCheck()">Check All</button>
+    </div>
+
+    <div>
+      <div id="sCCresults" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:300px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Answer all scenarios and click "Check All"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'xss_html',q2:'path_validate',q3:'redirect_url',q4:'cmd_shell'};
+  const explanations = {
+    q1:'User input displayed in HTML → XSS. html_encode escapes <, >, & to prevent script injection.',
+    q2:'User-controlled filename with "../" → Path Traversal. validate_path blocks directory traversal sequences.',
+    q3:'User-controlled redirect URL → Open Redirect (phishing). validate_url ensures the URL stays on your domain.',
+    q4:'User input in a shell command → Command Injection. shell_escape prevents ; and other command separators.'
+  };
+
+  window.sCCCheck = function(){
+    let html = '', score = 0;
+    ['q1','q2','q3','q4'].forEach((q,i)=>{
+      const sel = document.getElementById('sCC'+q).value;
+      const correct = answers[q];
+      const ok = sel === correct;
+      if(ok) score++;
+      const color = sel===''?'#64748b':ok?'#22c55e':'#ef4444';
+      document.getElementById('sCC'+q).style.borderColor = sel===''?'#475569':ok?'#22c55e':'#ef4444';
+      html += `<div style="margin-bottom:0.6rem;padding:0.5rem;border-left:3px solid ${color};padding-left:0.8rem;">
+        <strong style="color:${color};">Q${i+1}: ${sel?ok?'✓ Correct':'✗ Incorrect':'— Not answered'}</strong>
+        <div style="color:#94a3b8;font-size:0.82rem;margin-top:0.2rem;">${explanations[q]}</div>
+      </div>`;
+    });
+    html += `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;color:#e2e8f0;">${score}/4 correct</div>`;
+    document.getElementById('sCCresults').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ1: Quiz — Concept Check ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz 1: Concept Check</h2>
+  <p style="color:#94a3b8;">Test your understanding of taint analysis fundamentals.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:0.8rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1box1">
+      <p style="font-size:0.88rem;margin:0 0 0.6rem;"><strong>Q1.</strong> What does <code>join Tainted Untainted</code> equal?</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q1" value="a"> Tainted</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q1" value="b"> Untainted</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q1" value="c"> Top</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q1" value="d"> Bot</label>
+      <div id="sQ1fb1" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1box2">
+      <p style="font-size:0.88rem;margin:0 0 0.6rem;"><strong>Q2.</strong> Why does the taint lattice NOT need widening?</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q2" value="a"> It's too simple</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q2" value="b"> Finite height — no infinite chains</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q2" value="c"> Widening would be unsound</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q2" value="d"> Taint can't increase</label>
+      <div id="sQ1fb2" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1box3">
+      <p style="font-size:0.88rem;margin:0 0 0.6rem;"><strong>Q3.</strong> What does <code>is_potentially_tainted</code> return true for?</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q3" value="a"> Only Tainted</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q3" value="b"> Tainted and Top</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q3" value="c"> Everything except Bot</label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.82rem;cursor:pointer;"><input type="radio" name="sQ1q3" value="d"> Everything</label>
+      <div id="sQ1fb3" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <div id="sQ1score" style="margin-top:0.5rem;font-size:1rem;"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'c',q2:'b',q3:'b'};
+  const feedback = {
+    q1:{correct:'join(Tainted, Untainted) = Top. They\'re incomparable in the flat lattice, so the LUB is Top.',
+        wrong:'In a flat lattice, joining two incomparable elements gives Top. Tainted and Untainted are siblings.'},
+    q2:{correct:'The lattice has height 2 (Bot→{T,U}→Top). Any ascending chain stabilizes in ≤2 steps — no widening needed.',
+        wrong:'Widening is only needed for infinite-height lattices (like intervals [0,∞]). The taint lattice has height 2.'},
+    q3:{correct:'Both Tainted (definitely bad) and Top (might be bad) trigger a warning. Sound analysis must warn on both.',
+        wrong:'is_potentially_tainted returns true for Tainted AND Top. Top means "might be tainted" — a sound analysis must warn.'}
+  };
+
+  window.sQ1Check = function(){
+    let score = 0;
+    [1,2,3].forEach(i=>{
+      const sel = document.querySelector(`input[name="sQ1q${i}"]:checked`);
+      const val = sel ? sel.value : '';
+      const ok = val === answers['q'+i];
+      if(ok) score++;
+      const fb = document.getElementById('sQ1fb'+i);
+      const box = document.getElementById('sQ1box'+i);
+      fb.innerHTML = `<span style="color:${ok?'#22c55e':'#ef4444'};">${ok?'✓':'✗'} ${ok?feedback['q'+i].correct:feedback['q'+i].wrong}</span>`;
+      box.style.borderLeft = `3px solid ${val?ok?'#22c55e':'#ef4444':'#475569'}`;
+    });
+    document.getElementById('sQ1score').innerHTML = `<span style="color:${score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444'};font-weight:bold;">${score}/3 correct</span>`;
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ2: Quiz — Trace Exercise ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz 2: Trace the Taint</h2>
+  <p style="color:#94a3b8;">Trace taint through branching code with implicit flows.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div class="code-block">
+        <div class="code-content" id="sQ2code">
+          <div class="line" id="sQ2L1">token = read_cookie("auth")</div>
+          <div class="line" id="sQ2L2">role  = "guest"</div>
+          <div class="line" id="sQ2L3">if token == "admin_key":</div>
+          <div class="line" id="sQ2L4">    role = "admin"</div>
+          <div class="line" id="sQ2L5">msg = "Welcome, " + role</div>
+          <div class="line" id="sQ2L6">send_response(msg)</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-top:0.8rem;">
+        <p style="font-size:0.85rem;margin:0 0 0.4rem;"><strong>With pc_taint tracking:</strong></p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0.3rem 0.6rem;font-size:0.85rem;">
+          <span style="color:#94a3b8;">role at line 5:</span>
+          <select id="sQ2q1" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="Tainted">Tainted</option><option value="Untainted">Untainted</option><option value="Top">Top</option>
+          </select>
+          <span style="color:#94a3b8;">msg at line 5:</span>
+          <select id="sQ2q2" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="Tainted">Tainted</option><option value="Untainted">Untainted</option><option value="Top">Top</option>
+          </select>
+          <span style="color:#94a3b8;">Vulnerability?</span>
+          <select id="sQ2q3" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+            <option value="">--</option><option value="yes">Yes (XSS)</option><option value="no">No — safe</option>
+          </select>
+        </div>
+        <button class="btn btn-sm" onclick="sQ2Check()" style="margin-top:0.6rem;">Check</button>
+      </div>
+    </div>
+
+    <div>
+      <div id="sQ2result" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:120px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Fill in the answers and click "Check"</p>
+      </div>
+
+      <button class="btn btn-sm" onclick="sQ2Trace()" style="margin-top:0.8rem;">Show Full Trace</button>
+      <div id="sQ2trace" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:160px;overflow-y:auto;margin-top:0.5rem;color:#94a3b8;display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  window.sQ2Check = function(){
+    const q1 = document.getElementById('sQ2q1').value;
+    const q2 = document.getElementById('sQ2q2').value;
+    const q3 = document.getElementById('sQ2q3').value;
+    let html = '', score = 0;
+
+    // role: join(Untainted from "guest", Tainted from pc_taint in branch) = Top
+    const q1ok = q1 === 'Top';
+    if(q1ok) score++;
+    html += `<div style="margin-bottom:0.5rem;color:${q1?q1ok?'#22c55e':'#ef4444':'#64748b'};">${q1ok?'✓':'✗'} role = join("guest"=Untainted, "admin" with pc=Tainted) = <strong>Top</strong></div>`;
+
+    // msg: propagate(Untainted, Top) = Top
+    const q2ok = q2 === 'Top';
+    if(q2ok) score++;
+    html += `<div style="margin-bottom:0.5rem;color:${q2?q2ok?'#22c55e':'#ef4444':'#64748b'};">${q2ok?'✓':'✗'} msg = propagate("Welcome"=Unt, role=Top) = <strong>Top</strong></div>`;
+
+    // vuln: yes
+    const q3ok = q3 === 'yes';
+    if(q3ok) score++;
+    html += `<div style="margin-bottom:0.5rem;color:${q3?q3ok?'#22c55e':'#ef4444':'#64748b'};">${q3ok?'✓':'✗'} send_response(msg) where msg=Top → <strong>Yes, potential XSS</strong></div>`;
+
+    html += `<div style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;">${score}/3 correct</div>`;
+    document.getElementById('sQ2result').innerHTML = html;
+  };
+
+  window.sQ2Trace = function(){
+    const trace = document.getElementById('sQ2trace');
+    trace.style.display = 'block';
+    trace.innerHTML = `
+      <div style="color:#38bdf8;">Line 1: token = read_cookie("auth")</div>
+      <div>  read_cookie is a SOURCE → token: Tainted, pc: Untainted</div>
+      <div style="color:#38bdf8;margin-top:0.3rem;">Line 2: role = "guest"</div>
+      <div>  Literal → role: Untainted</div>
+      <div style="color:#38bdf8;margin-top:0.3rem;">Line 3: if token == "admin_key"</div>
+      <div>  cond_taint = propagate(Tainted, Untainted) = Tainted</div>
+      <div>  new_pc = propagate(Untainted, Tainted) = <span style="color:#ef4444;">Tainted</span></div>
+      <div style="color:#38bdf8;margin-top:0.3rem;">Line 4: role = "admin" (inside tainted branch)</div>
+      <div>  "admin" = Untainted, but propagate(Unt, pc=Tai) = <span style="color:#ef4444;">Tainted</span></div>
+      <div style="color:#38bdf8;margin-top:0.3rem;">After merge (line 2 vs line 4):</div>
+      <div>  role = join(Untainted, Tainted) = <span style="color:#f59e0b;">Top</span></div>
+      <div style="color:#38bdf8;margin-top:0.3rem;">Line 5: msg = "Welcome, " + role</div>
+      <div>  propagate(Untainted, Top) = <span style="color:#f59e0b;">Top</span></div>
+      <div style="color:#ef4444;margin-top:0.3rem;">Line 6: send_response(msg) — msg is Top</div>
+      <div style="color:#ef4444;font-weight:bold;">  ⚠ POTENTIAL XSS: tainted data at send_response sink</div>`;
+
+    let lineIdx = 0;
+    const lines = ['sQ2L1','sQ2L2','sQ2L3','sQ2L4','sQ2L5','sQ2L6'];
+    const t = setInterval(()=>{
+      document.querySelectorAll('#sQ2code .line').forEach(l=>l.classList.remove('active'));
+      if(lineIdx < lines.length){
+        document.getElementById(lines[lineIdx]).classList.add('active');
+        lineIdx++;
+      } else { clearInterval(t); }
+    }, 800);
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE sQ3: Quiz — Vulnerability Scenarios ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz 3: Real-World Vulnerability Analysis</h2>
+  <p style="color:#94a3b8;">For each scenario, identify the full taint path and whether the code is safe.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <p style="font-size:0.85rem;margin:0 0 0.4rem;"><strong>Scenario 1:</strong></p>
+        <div class="code-block" style="margin:0 0 0.4rem;font-size:0.78rem;"><div class="code-content">
+          <div class="line">name = get_param("name")</div>
+          <div class="line">safe = html_encode(name)</div>
+          <div class="line">page = "&lt;h1&gt;" + safe + "&lt;/h1&gt;"</div>
+          <div class="line">send_response(page)</div>
+        </div></div>
+        <select id="sQ3q1" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+          <option value="">Verdict...</option>
+          <option value="safe">Safe — properly sanitized</option>
+          <option value="vuln">Vulnerable — wrong sanitizer</option>
+          <option value="vuln2">Vulnerable — missing sanitizer</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <p style="font-size:0.85rem;margin:0 0 0.4rem;"><strong>Scenario 2:</strong></p>
+        <div class="code-block" style="margin:0 0 0.4rem;font-size:0.78rem;"><div class="code-content">
+          <div class="line">id = get_param("id")</div>
+          <div class="line">safe = html_encode(id)</div>
+          <div class="line">query = "SELECT * WHERE id=" + safe</div>
+          <div class="line">exec_query(query)</div>
+        </div></div>
+        <select id="sQ3q2" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+          <option value="">Verdict...</option>
+          <option value="safe">Safe — properly sanitized</option>
+          <option value="vuln">Vulnerable — wrong sanitizer!</option>
+          <option value="vuln2">Vulnerable — missing sanitizer</option>
+        </select>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:0.8rem;margin-bottom:0.6rem;">
+        <p style="font-size:0.85rem;margin:0 0 0.4rem;"><strong>Scenario 3:</strong></p>
+        <div class="code-block" style="margin:0 0 0.4rem;font-size:0.78rem;"><div class="code-content">
+          <div class="line">data = read_input()</div>
+          <div class="line">result = mystery_func(data)</div>
+          <div class="line">exec_query(result)</div>
+        </div></div>
+        <select id="sQ3q3" style="width:100%;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+          <option value="">Verdict...</option>
+          <option value="safe">Safe — mystery_func cleans it</option>
+          <option value="vuln">Vulnerable — mystery_func returns Top</option>
+          <option value="depends">Depends — need to check mystery_func</option>
+        </select>
+      </div>
+
+      <button class="btn" onclick="sQ3Check()">Check All Answers</button>
+    </div>
+
+    <div>
+      <div id="sQ3results" style="background:rgba(0,0,0,0.25);border-radius:10px;padding:1rem;min-height:300px;font-size:0.85rem;">
+        <p style="color:#64748b;font-style:italic;">Answer all scenarios and click "Check All Answers"</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const answers = {q1:'safe',q2:'vuln',q3:'vuln'};
+  const explanations = {
+    q1:'Safe! html_encode cleans XSS, and send_response is an XSS sink. Correct sanitizer for the correct vulnerability.',
+    q2:'Vulnerable! html_encode cleans XSS but NOT SQL injection. exec_query is a SQL sink — you need escape_sql, not html_encode. This is the "wrong sanitizer" trap!',
+    q3:'Vulnerable! mystery_func is not in our config, so it returns Top. Top at exec_query → potential SQLi. Our analysis is conservative — unknown functions can\'t be trusted.'
+  };
+
+  window.sQ3Check = function(){
+    let html = '', score = 0;
+    ['q1','q2','q3'].forEach((q,i)=>{
+      const sel = document.getElementById('sQ3'+q).value;
+      const correct = answers[q];
+      const ok = sel === correct;
+      if(ok) score++;
+      const color = sel===''?'#64748b':ok?'#22c55e':'#ef4444';
+      document.getElementById('sQ3'+q).style.borderColor = sel===''?'#475569':ok?'#22c55e':'#ef4444';
+      html += `<div style="margin-bottom:0.8rem;padding:0.6rem;border-left:3px solid ${color};padding-left:0.8rem;">
+        <strong style="color:${color};">Scenario ${i+1}: ${sel?ok?'✓ Correct':'✗ Incorrect':'— Not answered'}</strong>
+        <div style="color:#94a3b8;font-size:0.82rem;margin-top:0.3rem;">${explanations[q]}</div>
+      </div>`;
+    });
+    html += `<div style="padding:0.6rem;background:rgba(99,102,241,0.15);border-radius:6px;font-weight:bold;color:#e2e8f0;">${score}/3 correct</div>`;
+    if(score===3) html += '<div style="color:#22c55e;margin-top:0.3rem;font-size:0.82rem;">Scenario 2 is the key insight — wrong sanitizer = still vulnerable!</div>';
+    document.getElementById('sQ3results').innerHTML = html;
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','s13','s14','sCB','s15','s16','s17','s18','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const newIdx = currentIdx + dir;
+  if (newIdx < 0 || newIdx >= slideOrder.length) return;
+  currentIdx = newIdx;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

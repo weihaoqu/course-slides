@@ -1,0 +1,2821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abstract Domains — The Language of Approximation</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;height:100vh;}
+.slide{display:none;padding:2rem 3rem;height:100vh;overflow-y:auto;}
+.slide.active{display:block;}
+.slide.fade-in{animation:fadeIn 0.4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+h1{font-size:2.2rem;color:#38bdf8;margin-bottom:0.5rem;}
+h2{font-size:1.55rem;color:#38bdf8;margin-bottom:0.5rem;}
+p{color:#94a3b8;font-size:0.95rem;line-height:1.5;margin-bottom:0.5rem;}
+.btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:0.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;transition:opacity 0.2s;}
+.btn:hover{opacity:0.85;}
+.btn-sm{padding:0.35rem 0.9rem;font-size:0.8rem;}
+.btn-secondary{background:#334155;color:#cbd5e1;}
+.btn-secondary:hover{background:#475569;}
+.key-idea{background:rgba(34,197,94,0.08);border-left:4px solid #22c55e;border-radius:8px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.88rem;}
+.warning{background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;border-radius:8px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.88rem;}
+.analogy{background:rgba(167,139,250,0.08);border-left:4px solid #a78bfa;border-radius:8px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.88rem;}
+.code-block{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:0.8rem;margin:0.5rem 0;overflow-x:auto;}
+.code-content{font-family:monospace;font-size:0.82rem;line-height:1.6;color:#e2e8f0;}
+.line{padding:0 0.5rem;border-left:3px solid transparent;white-space:pre;}
+.line.active{background:rgba(99,102,241,0.15);border-left-color:#6366f1;}
+.nav{position:fixed;bottom:1.5rem;right:2rem;display:flex;gap:0.75rem;z-index:100;}
+.nav button{background:#1e293b;color:#e2e8f0;border:1px solid #334155;padding:0.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:background 0.2s;}
+.nav button:hover:not(:disabled){background:#334155;}
+.nav button:disabled{opacity:0.3;cursor:not-allowed;}
+#progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:200;}
+#progress{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa);width:0;transition:width 0.4s ease;}
+.slide-number{position:absolute;bottom:1rem;left:2rem;color:#475569;font-size:0.75rem;}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide active" id="s1">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:85vh;text-align:center;">
+    <canvas id="cS1" width="600" height="240" style="width:520px;background:transparent;margin-bottom:1.5rem;"></canvas>
+    <h1 style="font-size:2.6rem;">Abstract Domains</h1>
+    <p style="font-size:1.2rem;color:#a78bfa;margin-top:0.3rem;">The Language of Approximation</p>
+    <p style="font-size:0.95rem;color:#64748b;margin-top:1.5rem;">Fundamentals Deep Dive &bull; PA Bootcamp</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS1');
+  const ctx = canvas.getContext('2d');
+  // 4 mini domain lattices that cycle highlight
+  const domains = [
+    {name:'Sign', x:75, nodes:[{l:'⊤',y:30},{l:'Neg',y:85},{l:'Zero',y:85},{l:'Pos',y:85},{l:'⊥',y:140}],
+     pos:[{x:0,y:30},{x:-40,y:85},{x:0,y:85},{x:40,y:85},{x:0,y:140}], color:'#6366f1'},
+    {name:'Constant', x:225, nodes:[{l:'⊤',y:30},{l:'...−1',y:85},{l:'0',y:85},{l:'1...',y:85},{l:'⊥',y:140}],
+     pos:[{x:0,y:30},{x:-40,y:85},{x:0,y:85},{x:40,y:85},{x:0,y:140}], color:'#22c55e'},
+    {name:'Interval', x:375, nodes:[{l:'[−∞,+∞]',y:20},{l:'[0,10]',y:65},{l:'[−5,5]',y:65},{l:'[3,3]',y:110},{l:'⊥',y:150}],
+     pos:[{x:0,y:20},{x:-35,y:65},{x:35,y:65},{x:0,y:110},{x:0,y:150}], color:'#f59e0b'},
+    {name:'Taint', x:525, nodes:[{l:'⊤',y:30},{l:'Tainted',y:85},{l:'Clean',y:85},{l:'⊥',y:140}],
+     pos:[{x:-30,y:85},{x:0,y:30},{x:30,y:85},{x:0,y:140}], color:'#ef4444'}
+  ];
+  let activeD = 0, frame = 0;
+
+  function draw(){
+    ctx.clearRect(0,0,600,240);
+    domains.forEach((d,di)=>{
+      const isActive = di === activeD;
+      const ox = d.x;
+      // Domain name
+      ctx.font = `bold 11px monospace`;
+      ctx.fillStyle = isActive ? d.color : '#64748b';
+      ctx.textAlign = 'center';
+      ctx.fillText(d.name, ox, 180);
+      // Draw nodes
+      d.pos.forEach((p,ni)=>{
+        const nx = ox + p.x, ny = p.y + 40;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 14, 0, Math.PI*2);
+        const pulse = isActive && ni === (Math.floor(frame/20) % d.nodes.length);
+        ctx.fillStyle = pulse ? d.color : 'rgba(30,41,59,0.8)';
+        ctx.fill();
+        ctx.strokeStyle = isActive ? d.color : '#475569';
+        ctx.lineWidth = pulse ? 2.5 : 1;
+        ctx.stroke();
+        ctx.fillStyle = pulse ? '#fff' : (isActive ? '#e2e8f0' : '#64748b');
+        ctx.font = `${pulse?'bold ':''}9px monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(d.nodes[ni].l, nx, ny);
+      });
+      // edges (simplified: top to middle, middle to bottom)
+      ctx.strokeStyle = isActive ? d.color+'80' : '#33415580';
+      ctx.lineWidth = 1;
+      if(d.nodes.length === 5){
+        // top to 3 middles
+        [1,2,3].forEach(mi=>{
+          ctx.beginPath(); ctx.moveTo(ox+d.pos[0].x,d.pos[0].y+54); ctx.lineTo(ox+d.pos[mi].x,d.pos[mi].y+26); ctx.stroke();
+        });
+        // 3 middles to bottom
+        [1,2,3].forEach(mi=>{
+          ctx.beginPath(); ctx.moveTo(ox+d.pos[mi].x,d.pos[mi].y+54); ctx.lineTo(ox+d.pos[4].x,d.pos[4].y+26); ctx.stroke();
+        });
+      } else {
+        // Taint: 4 nodes
+        [0,2].forEach(mi=>{
+          ctx.beginPath(); ctx.moveTo(ox+d.pos[1].x,d.pos[1].y+54); ctx.lineTo(ox+d.pos[mi].x,d.pos[mi].y+26); ctx.stroke();
+        });
+        [0,2].forEach(mi=>{
+          ctx.beginPath(); ctx.moveTo(ox+d.pos[mi].x,d.pos[mi].y+54); ctx.lineTo(ox+d.pos[3].x,d.pos[3].y+26); ctx.stroke();
+        });
+      }
+    });
+    frame++;
+    if(frame % 60 === 0) activeD = (activeD + 1) % domains.length;
+  }
+
+  let anim;
+  function startAnim(){ anim = setInterval(draw, 50); }
+  function init(){ frame=0; activeD=0; draw(); if(!anim) startAnim(); }
+  const obs = new MutationObserver(()=>{ if(document.getElementById('s1').classList.contains('active')) init(); else { clearInterval(anim); anim=null; } });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: What Is an Abstract Domain? ==================== -->
+<div class="slide" id="s2">
+  <h2>What Is an Abstract Domain?</h2>
+  <p>An abstract domain maps <strong>infinite concrete values</strong> to <strong>finite abstract representations</strong> — trading precision for computability.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Concrete Values</div>
+      <canvas id="cS2" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s2Abstract('sign')">α → Sign</button>
+        <button class="btn btn-sm" onclick="s2Abstract('const')">α → Constant</button>
+        <button class="btn btn-sm" onclick="s2Abstract('interval')">α → Interval</button>
+        <button class="btn btn-sm btn-secondary" onclick="s2Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Abstraction Result</div>
+      <div id="s2Result" style="background:rgba(0,0,0,0.25);border-radius:12px;padding:1.2rem;min-height:200px;font-family:monospace;">
+        <div style="color:#94a3b8;text-align:center;padding-top:3rem;">Click an abstraction function to see the mapping</div>
+      </div>
+      <div class="analogy" style="margin-top:1rem;">
+        <strong>Analogy:</strong> Abstract domains are like <strong>zoom levels on a map</strong>. A street-level view (concrete) shows every house; a city-level view (abstract) shows neighborhoods. You lose detail but gain the ability to reason about the whole city.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS2');
+  const ctx = canvas.getContext('2d');
+  const values = [-3, -1, 0, 2, 5, 7];
+  let mode = null; // null, 'sign', 'const', 'interval'
+
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    // Number line
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(40,160); ctx.lineTo(480,160); ctx.stroke();
+    // Tick marks
+    for(let v=-4;v<=8;v++){
+      const x = 40 + (v+4)*36.67;
+      ctx.beginPath(); ctx.moveTo(x,155); ctx.lineTo(x,165); ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#64748b'; ctx.font='10px monospace'; ctx.textAlign='center';
+      ctx.fillText(v,x,178);
+    }
+    // Concrete value dots
+    values.forEach(v=>{
+      const x = 40 + (v+4)*36.67;
+      ctx.beginPath(); ctx.arc(x,160,8,0,Math.PI*2);
+      let col = '#6366f1';
+      if(mode==='sign') col = v<0?'#ef4444':v===0?'#94a3b8':'#22c55e';
+      ctx.fillStyle=col; ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 10px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(v,x,160);
+    });
+    // Labels
+    ctx.fillStyle='#e2e8f0'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+    ctx.fillText('Concrete set: {'+values.join(', ')+'}', 260, 30);
+
+    if(mode==='sign'){
+      // color regions
+      ctx.fillStyle='rgba(239,68,68,0.1)'; ctx.fillRect(40,100,146,50);
+      ctx.fillStyle='rgba(34,197,94,0.1)'; ctx.fillRect(187+37,100,260,50);
+      ctx.fillStyle='#ef4444'; ctx.font='bold 11px monospace';
+      ctx.fillText('Neg',110,120);
+      ctx.fillStyle='#94a3b8'; ctx.fillText('Zero',187,120);
+      ctx.fillStyle='#22c55e'; ctx.fillText('Pos',370,120);
+      // Arrow to result
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 12px monospace';
+      ctx.fillText('α({-3,-1,0,2,5,7}) = ⊤', 260, 220);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+      ctx.fillText('Mix of Neg, Zero, Pos → must use ⊤', 260, 245);
+    } else if(mode==='const'){
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 12px monospace';
+      ctx.fillText('α({-3,-1,0,2,5,7}) = ⊤', 260, 220);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+      ctx.fillText('Multiple different values → ⊤ (not constant)', 260, 245);
+    } else if(mode==='interval'){
+      // Draw interval bracket
+      const lx = 40+(-3+4)*36.67, rx = 40+(7+4)*36.67;
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(lx,140); ctx.lineTo(rx,140); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(lx,135); ctx.lineTo(lx,145); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rx,135); ctx.lineTo(rx,145); ctx.stroke();
+      ctx.fillStyle='rgba(245,158,11,0.1)'; ctx.fillRect(lx,100,rx-lx,50);
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText('α({-3,-1,0,2,5,7}) = [-3, 7]', 260, 220);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+      ctx.fillText('Includes 1,3,4,6 too! Over-approximation.', 260, 245);
+      // Show extra values as hollow dots
+      [1,3,4,6].forEach(v=>{
+        const x=40+(v+4)*36.67;
+        ctx.beginPath(); ctx.arc(x,160,6,0,Math.PI*2);
+        ctx.strokeStyle='#f59e0b80'; ctx.lineWidth=1.5; ctx.stroke();
+      });
+    }
+  }
+
+  function updateResult(){
+    const el = document.getElementById('s2Result');
+    if(!mode){ el.innerHTML='<div style="color:#94a3b8;text-align:center;padding-top:3rem;">Click an abstraction function to see the mapping</div>'; return; }
+    const info = {
+      sign: {domain:'Sign Domain',result:'⊤ (Top)',lattice:'{⊥, Neg, Zero, Pos, ⊤}',precision:'Low — only knows "could be anything"',reason:'Set contains negative, zero, AND positive values → join of all three = ⊤',color:'#6366f1'},
+      const: {domain:'Constant Propagation',result:'⊤ (Top)',lattice:'{⊥, ..., Const(n), ..., ⊤}',precision:'None — not a single constant',reason:'6 different values → no single constant represents them → ⊤',color:'#22c55e'},
+      interval:{domain:'Interval Domain',result:'[-3, 7]',lattice:'{⊥} ∪ {[lo, hi]}',precision:'Medium — bounds are tight but includes extra values (1,3,4,6)',reason:'Smallest interval containing all values: min=-3, max=7',color:'#f59e0b'}
+    };
+    const i = info[mode];
+    el.innerHTML=`
+      <div style="font-weight:700;color:${i.color};font-size:1.1rem;margin-bottom:0.75rem;">${i.domain}</div>
+      <div style="margin-bottom:0.5rem;"><span style="color:#94a3b8;">Result:</span> <span style="color:#e2e8f0;font-size:1.1rem;font-weight:700;">${i.result}</span></div>
+      <div style="margin-bottom:0.5rem;"><span style="color:#94a3b8;">Lattice:</span> <span style="color:#cbd5e1;">${i.lattice}</span></div>
+      <div style="margin-bottom:0.5rem;"><span style="color:#94a3b8;">Precision:</span> <span style="color:#cbd5e1;">${i.precision}</span></div>
+      <div style="margin-top:0.75rem;padding:0.6rem;background:rgba(0,0,0,0.2);border-radius:8px;"><span style="color:#f59e0b;">Why?</span> <span style="color:#cbd5e1;">${i.reason}</span></div>
+    `;
+  }
+
+  window.s2Abstract = function(m){ mode=m; draw(); updateResult(); };
+  window.s2Reset = function(){ mode=null; draw(); updateResult(); };
+
+  function init(){ mode=null; draw(); updateResult(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s2').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: The ABSTRACT_DOMAIN Signature ==================== -->
+<div class="slide" id="s3">
+  <h2>The ABSTRACT_DOMAIN Signature</h2>
+  <p>Every abstract domain in the bootcamp implements this OCaml module type — 7 operations that define the domain's behavior.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s3L1"><span style="color:#c084fc;">module type</span> ABSTRACT_DOMAIN = <span style="color:#c084fc;">sig</span></div>
+<div class="line" id="s3L2">  <span style="color:#c084fc;">type</span> t</div>
+<div class="line" id="s3L3">  <span style="color:#c084fc;">val</span> bot   : t</div>
+<div class="line" id="s3L4">  <span style="color:#c084fc;">val</span> top   : t</div>
+<div class="line" id="s3L5">  <span style="color:#c084fc;">val</span> join  : t -> t -> t</div>
+<div class="line" id="s3L6">  <span style="color:#c084fc;">val</span> meet  : t -> t -> t</div>
+<div class="line" id="s3L7">  <span style="color:#c084fc;">val</span> leq   : t -> t -> <span style="color:#22c55e;">bool</span></div>
+<div class="line" id="s3L8">  <span style="color:#c084fc;">val</span> widen : t -> t -> t</div>
+<div class="line" id="s3L9">  <span style="color:#c084fc;">val</span> eval  : <span style="color:#94a3b8;">expr</span> -> <span style="color:#94a3b8;">env</span> -> t</div>
+<div class="line" id="s3L10"><span style="color:#c084fc;">end</span></div>
+      </div></div>
+      <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.5rem;">Click any operation to learn about it →</div>
+    </div>
+    <div id="s3Info" style="background:rgba(0,0,0,0.25);border-radius:12px;padding:1rem;min-height:300px;">
+      <div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click a line in the code to see its explanation</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const explanations = {
+    s3L2: {title:'type t', color:'#6366f1', text:'The abstract value type. Each domain defines its own:<br><br>• Sign: <code>Bot | Neg | Zero | Pos | Top</code><br>• Constant: <code>Bot | Const of int | Top</code><br>• Interval: <code>Bot | Interval of bound * bound</code><br><br>This is the "vocabulary" of the domain — what it can express.'},
+    s3L3: {title:'val bot : t', color:'#94a3b8', text:'The <strong>bottom element</strong> (⊥) — represents "no information" or "unreachable code".<br><br>• <code>bot ⊔ x = x</code> (bot is identity for join)<br>• <code>bot ⊑ x</code> for all x (bot is below everything)<br><br>Used to initialize dataflow facts before analysis begins.'},
+    s3L4: {title:'val top : t', color:'#f59e0b', text:'The <strong>top element</strong> (⊤) — represents "any possible value" (maximum uncertainty).<br><br>• <code>top ⊔ x = top</code> (top absorbs everything)<br>• <code>x ⊑ top</code> for all x (top is above everything)<br><br>When analysis knows nothing, it returns ⊤ — the safest overapproximation.'},
+    s3L5: {title:'val join : t → t → t', color:'#22c55e', text:'The <strong>least upper bound</strong> (⊔) — merges information from two branches.<br><br>• <code>join Pos Neg = Top</code> (could be positive OR negative)<br>• <code>join (Const 3) (Const 3) = Const 3</code> (same value stays)<br>• <code>join (Const 3) (Const 5) = Top</code> (different → collapse)<br><br>Called at CFG merge points (after if/else branches).'},
+    s3L6: {title:'val meet : t → t → t', color:'#38bdf8', text:'The <strong>greatest lower bound</strong> (⊓) — intersection of information.<br><br>• <code>meet Pos Neg = Bot</code> (nothing is both positive and negative)<br>• <code>meet [0,10] [5,20] = [5,10]</code> (overlapping range)<br><br>Used for condition refinement: after <code>if x > 0</code>, meet current state with Pos.'},
+    s3L7: {title:'val leq : t → t → bool', color:'#a78bfa', text:'The <strong>partial order</strong> test — is <code>a</code> less than or equal to <code>b</code>?<br><br>• <code>leq Bot x = true</code> (always)<br>• <code>leq Pos Top = true</code> (Pos ⊑ ⊤)<br>• <code>leq Top Pos = false</code> (⊤ is NOT ⊑ Pos)<br><br>Used to check convergence: if <code>leq new_val old_val</code> then nothing changed.'},
+    s3L8: {title:'val widen : t → t → t', color:'#ef4444', text:'The <strong>widening operator</strong> (∇) — forces convergence for infinite-height lattices.<br><br>• <code>widen [0,5] [0,10] = [0, +∞]</code> (bound grew → jump to ∞)<br>• Sign domain: <code>widen = join</code> (already finite height)<br><br>Applied at loop headers. Guarantees termination by overapproximating ascending chains.'},
+    s3L9: {title:'val eval : expr → env → t', color:'#f472b6', text:'The <strong>abstract evaluator</strong> — evaluates an expression in the abstract domain.<br><br>• <code>eval (Add(x, y)) env</code> looks up abstract values of x,y and computes abstract addition<br>• Must be <strong>sound</strong>: if concrete eval gives value v, abstract eval must include v<br><br>This is the transfer function — the heart of the analysis.'}
+  };
+
+  const lines = ['s3L2','s3L3','s3L4','s3L5','s3L6','s3L7','s3L8','s3L9'];
+  lines.forEach(id=>{
+    document.getElementById(id).style.cursor='pointer';
+    document.getElementById(id).addEventListener('click',()=>{
+      lines.forEach(l=>document.getElementById(l).classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      const info = explanations[id];
+      if(info){
+        document.getElementById('s3Info').innerHTML=`<div style="font-weight:700;color:${info.color};font-size:1.1rem;margin-bottom:0.75rem;">${info.title}</div><div style="color:#cbd5e1;line-height:1.7;font-size:0.88rem;">${info.text}</div>`;
+      }
+    });
+  });
+})();
+</script>
+
+<!-- ==================== SLIDE 4: Sign Domain Deep Dive ==================== -->
+<div class="slide" id="s4">
+  <h2>Sign Domain Deep Dive</h2>
+  <p>The simplest useful domain — tracks whether a value is negative, zero, or positive.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS4" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="margin-top:0.75rem;">
+        <div style="font-weight:600;color:#38bdf8;margin-bottom:0.4rem;">Try it: enter a value</div>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          <input type="number" id="s4input" value="42" style="width:80px;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+          <button class="btn btn-sm" onclick="s4Alpha()">α (Abstract)</button>
+          <span id="s4Result" style="font-family:monospace;color:#f59e0b;font-weight:700;"></span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Lattice Properties</div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.8;">
+        <div><span style="color:#94a3b8;">Elements:</span> <span style="color:#e2e8f0;">{⊥, Neg, Zero, Pos, ⊤}</span></div>
+        <div><span style="color:#94a3b8;">Height:</span> <span style="color:#e2e8f0;">3 (⊥ → element → ⊤)</span></div>
+        <div><span style="color:#94a3b8;">Width:</span> <span style="color:#e2e8f0;">3 (Neg, Zero, Pos)</span></div>
+        <div><span style="color:#94a3b8;">Finite?</span> <span style="color:#22c55e;">Yes — 5 elements</span></div>
+        <div><span style="color:#94a3b8;">Needs widening?</span> <span style="color:#22c55e;">No — join = widen</span></div>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>Key insight:</strong> With only 5 elements, sign analysis is extremely fast but imprecise. It cannot tell the difference between <code>x = 1</code> and <code>x = 1000000</code> — both are just <strong>Pos</strong>.
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        <strong>Precision limit:</strong> <code>x * x</code> is always ≥ 0, but sign analysis computes <code>Pos * Pos = Pos</code>, <code>Neg * Neg = Pos</code>, <code>Pos * Neg = Neg</code> — so <code>⊤ * ⊤ = ⊤</code>. It can't prove non-negativity!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+  let highlighted = null; // null or node index
+
+  const nodes = [
+    {label:'⊤', x:260, y:40, color:'#f59e0b'},
+    {label:'Neg', x:120, y:140, color:'#ef4444'},
+    {label:'Zero', x:260, y:140, color:'#94a3b8'},
+    {label:'Pos', x:400, y:140, color:'#22c55e'},
+    {label:'⊥', x:260, y:240, color:'#475569'}
+  ];
+  const edges = [[0,1],[0,2],[0,3],[1,4],[2,4],[3,4]];
+
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    // Edges
+    edges.forEach(([a,b])=>{
+      ctx.beginPath();
+      ctx.moveTo(nodes[a].x, nodes[a].y+20);
+      ctx.lineTo(nodes[b].x, nodes[b].y-20);
+      ctx.strokeStyle = (highlighted===a||highlighted===b) ? '#f59e0b80' : '#47556980';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 24, 0, Math.PI*2);
+      ctx.fillStyle = i===highlighted ? n.color : 'rgba(30,41,59,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = n.color;
+      ctx.lineWidth = i===highlighted ? 3 : 1.5;
+      ctx.stroke();
+      ctx.fillStyle = i===highlighted ? '#fff' : n.color;
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+    // Concretization sets
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('γ = ℤ', 260, 70);
+    ctx.fillText('γ = {...,−2,−1}', 120, 170);
+    ctx.fillText('γ = {0}', 260, 170);
+    ctx.fillText('γ = {1,2,...}', 400, 170);
+    ctx.fillText('γ = ∅', 260, 270);
+  }
+
+  window.s4Alpha = function(){
+    const v = parseInt(document.getElementById('s4input').value);
+    if(isNaN(v)){ highlighted=0; document.getElementById('s4Result').textContent='= ⊤ (NaN)'; }
+    else if(v < 0){ highlighted=1; document.getElementById('s4Result').textContent='= Neg'; }
+    else if(v === 0){ highlighted=2; document.getElementById('s4Result').textContent='= Zero'; }
+    else { highlighted=3; document.getElementById('s4Result').textContent='= Pos'; }
+    draw();
+  };
+
+  function init(){ highlighted=null; draw(); document.getElementById('s4Result').textContent=''; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s4').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: Sign Domain Transfer Functions ==================== -->
+<div class="slide" id="s5">
+  <h2>Sign Domain — Transfer Functions</h2>
+  <p>How arithmetic works in the sign world. Step through to see each operation.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS5" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s5Step()">Next Operation</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Operation Log</div>
+      <div id="s5Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:200px;overflow-y:auto;"></div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.75rem 0 0.5rem;">Multiplication Table</div>
+      <div style="overflow-x:auto;">
+        <table id="s5Table" style="border-collapse:collapse;font-family:monospace;font-size:0.72rem;width:100%;">
+          <tr><th style="padding:4px 6px;color:#94a3b8;">×</th><th style="padding:4px 6px;color:#ef4444;">Neg</th><th style="padding:4px 6px;color:#94a3b8;">Zero</th><th style="padding:4px 6px;color:#22c55e;">Pos</th><th style="padding:4px 6px;color:#f59e0b;">⊤</th></tr>
+          <tr><td style="padding:4px 6px;color:#ef4444;font-weight:700;">Neg</td><td id="s5c00" style="padding:4px 6px;color:#475569;">?</td><td id="s5c01" style="padding:4px 6px;color:#475569;">?</td><td id="s5c02" style="padding:4px 6px;color:#475569;">?</td><td id="s5c03" style="padding:4px 6px;color:#475569;">?</td></tr>
+          <tr><td style="padding:4px 6px;color:#94a3b8;font-weight:700;">Zero</td><td id="s5c10" style="padding:4px 6px;color:#475569;">?</td><td id="s5c11" style="padding:4px 6px;color:#475569;">?</td><td id="s5c12" style="padding:4px 6px;color:#475569;">?</td><td id="s5c13" style="padding:4px 6px;color:#475569;">?</td></tr>
+          <tr><td style="padding:4px 6px;color:#22c55e;font-weight:700;">Pos</td><td id="s5c20" style="padding:4px 6px;color:#475569;">?</td><td id="s5c21" style="padding:4px 6px;color:#475569;">?</td><td id="s5c22" style="padding:4px 6px;color:#475569;">?</td><td id="s5c23" style="padding:4px 6px;color:#475569;">?</td></tr>
+          <tr><td style="padding:4px 6px;color:#f59e0b;font-weight:700;">⊤</td><td id="s5c30" style="padding:4px 6px;color:#475569;">?</td><td id="s5c31" style="padding:4px 6px;color:#475569;">?</td><td id="s5c32" style="padding:4px 6px;color:#475569;">?</td><td id="s5c33" style="padding:4px 6px;color:#475569;">?</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+  const signs = ['Neg','Zero','Pos','⊤'];
+  const signColors = {'Neg':'#ef4444','Zero':'#94a3b8','Pos':'#22c55e','⊤':'#f59e0b','Bot':'#475569'};
+  // Multiplication results
+  const mulTable = [
+    ['Pos','Zero','Neg','⊤'],   // Neg × ...
+    ['Zero','Zero','Zero','Zero'], // Zero × ...
+    ['Neg','Zero','Pos','⊤'],   // Pos × ...
+    ['⊤','Zero','⊤','⊤']       // ⊤ × ...
+  ];
+  const explanations = [
+    ['neg×neg = pos','neg×0 = 0','neg×pos = neg','neg×? = ?'],
+    ['0×neg = 0','0×0 = 0','0×pos = 0','0×? = 0 (always!)'],
+    ['pos×neg = neg','pos×0 = 0','pos×pos = pos','pos×? = ?'],
+    ['?×neg = ?','?×0 = 0 (special!)','?×pos = ?','?×? = ?']
+  ];
+
+  let stepIdx = 0, timer = null;
+  const totalSteps = 16;
+
+  function draw(row, col, result){
+    ctx.clearRect(0,0,520,340);
+    ctx.font='bold 18px monospace'; ctx.textAlign='center';
+    ctx.fillStyle='#38bdf8';
+    ctx.fillText('Sign Multiplication', 260, 30);
+
+    if(row===undefined){ ctx.fillStyle='#64748b'; ctx.font='14px monospace'; ctx.fillText('Press "Next Operation" to begin',260,170); return; }
+
+    const lx=130, rx=390, my=160;
+    // Left operand
+    ctx.beginPath(); ctx.arc(lx,my,35,0,Math.PI*2);
+    ctx.fillStyle=signColors[signs[row]]; ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 18px monospace'; ctx.textBaseline='middle';
+    ctx.fillText(signs[row],lx,my);
+    // Operator
+    ctx.fillStyle='#e2e8f0'; ctx.fillText('×',260,my);
+    // Right operand
+    ctx.beginPath(); ctx.arc(rx,my,35,0,Math.PI*2);
+    ctx.fillStyle=signColors[signs[col]]; ctx.fill();
+    ctx.fillStyle='#fff'; ctx.fillText(signs[col],rx,my);
+    // Result arrow
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 16px monospace';
+    ctx.fillText('= ' + result, 260, 240);
+    // Explanation
+    ctx.fillStyle='#cbd5e1'; ctx.font='13px monospace';
+    ctx.fillText(explanations[row][col], 260, 280);
+
+    // Color
+    ctx.beginPath(); ctx.arc(260,310,12,0,Math.PI*2);
+    ctx.fillStyle=signColors[result]; ctx.fill();
+  }
+
+  function reveal(idx){
+    const row = Math.floor(idx/4), col = idx%4;
+    const result = mulTable[row][col];
+    const cell = document.getElementById('s5c'+row+col);
+    cell.textContent = result;
+    cell.style.color = signColors[result];
+    cell.style.fontWeight = '700';
+    cell.style.background = 'rgba(99,102,241,0.1)';
+    draw(row, col, result);
+    const log = document.getElementById('s5Log');
+    const special = (result==='Zero' && (row===3||col===3)) ? ' ← anything × Zero = Zero!' : (result==='⊤' ? ' ← precision lost' : '');
+    log.innerHTML += `<div style="color:${signColors[result]};">${signs[row]} × ${signs[col]} = ${result}${special}</div>`;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  window.s5Step = function(){
+    if(stepIdx>=totalSteps) return;
+    reveal(stepIdx);
+    stepIdx++;
+  };
+  window.s5Auto = function(){
+    if(timer) return;
+    timer = setInterval(()=>{ if(stepIdx>=totalSteps){clearInterval(timer);timer=null;return;} s5Step(); },600);
+  };
+  window.s5Reset = function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;
+    for(let r=0;r<4;r++) for(let c=0;c<4;c++){
+      const cell=document.getElementById('s5c'+r+c);
+      cell.textContent='?'; cell.style.color='#475569'; cell.style.fontWeight='normal'; cell.style.background='transparent';
+    }
+    document.getElementById('s5Log').innerHTML='';
+    draw();
+  };
+
+  function init(){ s5Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s5').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: Constant Propagation Domain ==================== -->
+<div class="slide" id="s6">
+  <h2>Constant Propagation Domain</h2>
+  <p>Tracks whether a variable always holds the <strong>same constant value</strong> — if so, the compiler can fold it.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS6" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;align-items:center;">
+        <span style="color:#94a3b8;font-size:0.82rem;">Join two values:</span>
+        <input type="number" id="s6a" value="3" style="width:60px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <span style="color:#f59e0b;font-weight:700;">⊔</span>
+        <input type="number" id="s6b" value="3" style="width:60px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <button class="btn btn-sm" onclick="s6Join()">=</button>
+        <span id="s6Result" style="font-family:monospace;color:#f59e0b;font-weight:700;"></span>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Lattice Properties</div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.8;">
+        <div><span style="color:#94a3b8;">Elements:</span> <span style="color:#e2e8f0;">{⊥} ∪ {Const(n) | n ∈ ℤ} ∪ {⊤}</span></div>
+        <div><span style="color:#94a3b8;">Height:</span> <span style="color:#e2e8f0;">3 (flat lattice)</span></div>
+        <div><span style="color:#94a3b8;">Width:</span> <span style="color:#e2e8f0;">∞ (one element per integer)</span></div>
+        <div><span style="color:#94a3b8;">Finite?</span> <span style="color:#f59e0b;">Infinite elements, but height 3 → ACC holds</span></div>
+        <div><span style="color:#94a3b8;">Needs widening?</span> <span style="color:#22c55e;">No — height 3 means join = widen</span></div>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>Key insight:</strong> Flat lattice = <em>all-or-nothing</em>. Either both branches agree on the exact same constant, or we know nothing (⊤). No middle ground.
+      </div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;margin-top:0.5rem;font-size:0.82rem;">
+        <div style="font-weight:600;color:#22c55e;margin-bottom:0.3rem;">Use Case: Constant Folding</div>
+        <div style="color:#cbd5e1;"><code>x = 3; y = x + 2;</code> → analysis determines y = Const(5) → compiler replaces with <code>y = 5</code></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS6');
+  const ctx = canvas.getContext('2d');
+  let highlightedConsts = [];
+
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    // Top
+    ctx.beginPath(); ctx.arc(260,40,22,0,Math.PI*2);
+    ctx.fillStyle='rgba(30,41,59,0.9)'; ctx.fill();
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('⊤',260,40);
+    // Bottom
+    ctx.beginPath(); ctx.arc(260,250,22,0,Math.PI*2);
+    ctx.fillStyle='rgba(30,41,59,0.9)'; ctx.fill();
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='#475569'; ctx.font='bold 14px monospace';
+    ctx.fillText('⊥',260,250);
+    // Middle row: some constants
+    const consts = [-2,-1,0,1,2,3,5,42];
+    const spacing = 440/(consts.length-1);
+    consts.forEach((c,i)=>{
+      const x = 40 + i*spacing;
+      const isHL = highlightedConsts.includes(c);
+      // Edges to top and bottom
+      ctx.beginPath(); ctx.moveTo(260,62); ctx.lineTo(x,125);
+      ctx.strokeStyle=isHL?'#f59e0b40':'#33415540'; ctx.lineWidth=1; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x,165); ctx.lineTo(260,228);
+      ctx.strokeStyle=isHL?'#f59e0b40':'#33415540'; ctx.stroke();
+      // Node
+      ctx.beginPath(); ctx.arc(x,145,18,0,Math.PI*2);
+      ctx.fillStyle=isHL?'#6366f1':'rgba(30,41,59,0.9)'; ctx.fill();
+      ctx.strokeStyle=isHL?'#f59e0b':'#818cf8'; ctx.lineWidth=isHL?2.5:1; ctx.stroke();
+      ctx.fillStyle=isHL?'#fff':'#e2e8f0'; ctx.font=`${isHL?'bold ':''}12px monospace`;
+      ctx.fillText(c,x,145);
+    });
+    // Dots
+    ctx.fillStyle='#64748b'; ctx.font='14px monospace';
+    ctx.fillText('···',480,145); ctx.fillText('···',15,145);
+    // Labels
+    ctx.fillStyle='#94a3b8'; ctx.font='10px monospace';
+    ctx.fillText('γ(⊤) = ℤ',340,40);
+    ctx.fillText('γ(⊥) = ∅',340,250);
+    ctx.fillText('γ(Const(n)) = {n}',260,195);
+  }
+
+  window.s6Join = function(){
+    const a = parseInt(document.getElementById('s6a').value);
+    const b = parseInt(document.getElementById('s6b').value);
+    if(isNaN(a)||isNaN(b)){ document.getElementById('s6Result').textContent='⊤ (invalid)'; highlightedConsts=[]; draw(); return; }
+    if(a===b){
+      document.getElementById('s6Result').textContent = 'Const('+a+')';
+      document.getElementById('s6Result').style.color='#22c55e';
+      highlightedConsts=[a];
+    } else {
+      document.getElementById('s6Result').textContent = '⊤ (different!)';
+      document.getElementById('s6Result').style.color='#ef4444';
+      highlightedConsts=[a,b];
+    }
+    draw();
+  };
+
+  function init(){ highlightedConsts=[]; draw(); document.getElementById('s6Result').textContent=''; document.getElementById('s6Result').style.color='#f59e0b'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s6').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: Interval Domain — Representing Ranges ==================== -->
+<div class="slide" id="s7">
+  <h2>Interval Domain — Representing Ranges</h2>
+  <p>Tracks a <strong>range [lo, hi]</strong> of possible values — more precise than sign, but infinite height.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS7" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;align-items:center;flex-wrap:wrap;">
+        <span style="color:#94a3b8;font-size:0.8rem;">A:</span>
+        <input type="number" id="s7a1" value="0" style="width:45px;padding:0.3rem;background:#1e293b;border:1px solid #6366f1;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.8rem;">
+        <input type="number" id="s7a2" value="10" style="width:45px;padding:0.3rem;background:#1e293b;border:1px solid #6366f1;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.8rem;">
+        <span style="color:#94a3b8;font-size:0.8rem;">B:</span>
+        <input type="number" id="s7b1" value="5" style="width:45px;padding:0.3rem;background:#1e293b;border:1px solid #22c55e;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.8rem;">
+        <input type="number" id="s7b2" value="20" style="width:45px;padding:0.3rem;background:#1e293b;border:1px solid #22c55e;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;font-size:0.8rem;">
+        <button class="btn btn-sm" onclick="s7Compute()">Compute</button>
+      </div>
+    </div>
+    <div>
+      <div id="s7Results" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-family:monospace;font-size:0.82rem;min-height:160px;">
+        <div style="color:#94a3b8;">Enter intervals and click Compute</div>
+      </div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.75rem 0 0.5rem;">Lattice Properties</div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-size:0.82rem;line-height:1.8;">
+        <div><span style="color:#94a3b8;">Height:</span> <span style="color:#ef4444;">∞ (infinite chains: [0,0]⊑[0,1]⊑[0,2]⊑...)</span></div>
+        <div><span style="color:#94a3b8;">Needs widening?</span> <span style="color:#ef4444;">YES — essential for loops</span></div>
+        <div><span style="color:#94a3b8;">Precision:</span> <span style="color:#22c55e;">High — tracks actual bounds</span></div>
+      </div>
+      <div class="warning" style="margin-top:0.5rem;">
+        <strong>Trade-off:</strong> Intervals are more precise than signs, but the infinite height means we <em>must</em> use widening at loop headers or analysis won't terminate.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS7');
+  const ctx = canvas.getContext('2d');
+
+  function drawNumberLine(vals){
+    ctx.clearRect(0,0,520,320);
+    const allVals = [...vals.a, ...vals.b, ...vals.join, ...vals.meet].filter(v=>isFinite(v));
+    const mn = Math.min(...allVals)-2, mx = Math.max(...allVals)+2;
+    const range = mx-mn || 1;
+    const toX = v => 40 + (v-mn)/range * 440;
+
+    // Number line
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(30,160); ctx.lineTo(490,160); ctx.stroke();
+    // Ticks
+    for(let v=Math.ceil(mn);v<=Math.floor(mx);v++){
+      const x=toX(v);
+      ctx.beginPath(); ctx.moveTo(x,155); ctx.lineTo(x,165); ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#64748b'; ctx.font='9px monospace'; ctx.textAlign='center'; ctx.fillText(v,x,178);
+    }
+
+    // Interval A (blue)
+    if(vals.a.length===2){
+      const x1=toX(vals.a[0]), x2=toX(vals.a[1]);
+      ctx.fillStyle='rgba(99,102,241,0.2)'; ctx.fillRect(x1,90,x2-x1,30);
+      ctx.strokeStyle='#6366f1'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(x1,105); ctx.lineTo(x2,105); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x1,95); ctx.lineTo(x1,115); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x2,95); ctx.lineTo(x2,115); ctx.stroke();
+      ctx.fillStyle='#6366f1'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText('A: ['+vals.a[0]+','+vals.a[1]+']', (x1+x2)/2, 85);
+    }
+    // Interval B (green)
+    if(vals.b.length===2){
+      const x1=toX(vals.b[0]), x2=toX(vals.b[1]);
+      ctx.fillStyle='rgba(34,197,94,0.15)'; ctx.fillRect(x1,125,x2-x1,30);
+      ctx.strokeStyle='#22c55e'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(x1,140); ctx.lineTo(x2,140); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x1,130); ctx.lineTo(x1,150); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x2,130); ctx.lineTo(x2,150); ctx.stroke();
+      ctx.fillStyle='#22c55e'; ctx.font='bold 11px monospace';
+      ctx.fillText('B: ['+vals.b[0]+','+vals.b[1]+']', (x1+x2)/2, 120);
+    }
+    // Join (amber)
+    if(vals.join.length===2){
+      const x1=toX(vals.join[0]), x2=toX(vals.join[1]);
+      ctx.fillStyle='rgba(245,158,11,0.12)'; ctx.fillRect(x1,195,x2-x1,25);
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.moveTo(x1,207); ctx.lineTo(x2,207); ctx.stroke();
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 11px monospace';
+      ctx.fillText('A⊔B: ['+vals.join[0]+','+vals.join[1]+']', (x1+x2)/2, 190);
+    }
+    // Meet (pink)
+    if(vals.meet.length===2){
+      const x1=toX(vals.meet[0]), x2=toX(vals.meet[1]);
+      ctx.fillStyle='rgba(244,114,182,0.12)'; ctx.fillRect(x1,235,x2-x1,25);
+      ctx.strokeStyle='#f472b6'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.moveTo(x1,247); ctx.lineTo(x2,247); ctx.stroke();
+      ctx.fillStyle='#f472b6'; ctx.font='bold 11px monospace';
+      ctx.fillText('A⊓B: ['+vals.meet[0]+','+vals.meet[1]+']', (x1+x2)/2, 230);
+    } else if(vals.meet.length===0 && vals.join.length>0){
+      ctx.fillStyle='#f472b6'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText('A⊓B = ⊥ (no overlap)', 260, 247);
+    }
+  }
+
+  window.s7Compute = function(){
+    const a1=parseInt(document.getElementById('s7a1').value), a2=parseInt(document.getElementById('s7a2').value);
+    const b1=parseInt(document.getElementById('s7b1').value), b2=parseInt(document.getElementById('s7b2').value);
+    if([a1,a2,b1,b2].some(isNaN)) return;
+    const lo1=Math.min(a1,a2), hi1=Math.max(a1,a2);
+    const lo2=Math.min(b1,b2), hi2=Math.max(b1,b2);
+    const joinLo=Math.min(lo1,lo2), joinHi=Math.max(hi1,hi2);
+    const meetLo=Math.max(lo1,lo2), meetHi=Math.min(hi1,hi2);
+    const hasMeet = meetLo<=meetHi;
+
+    drawNumberLine({a:[lo1,hi1], b:[lo2,hi2], join:[joinLo,joinHi], meet:hasMeet?[meetLo,meetHi]:[]});
+
+    let html = `<div style="color:#6366f1;margin-bottom:0.3rem;">A = [${lo1}, ${hi1}]</div>`;
+    html += `<div style="color:#22c55e;margin-bottom:0.3rem;">B = [${lo2}, ${hi2}]</div>`;
+    html += `<div style="color:#f59e0b;margin-bottom:0.3rem;">A ⊔ B = [min(${lo1},${lo2}), max(${hi1},${hi2})] = <strong>[${joinLo}, ${joinHi}]</strong></div>`;
+    if(hasMeet){
+      html += `<div style="color:#f472b6;">A ⊓ B = [max(${lo1},${lo2}), min(${hi1},${hi2})] = <strong>[${meetLo}, ${meetHi}]</strong></div>`;
+    } else {
+      html += `<div style="color:#f472b6;">A ⊓ B = ⊥ (no overlap: max(${lo1},${lo2})=${meetLo} > min(${hi1},${hi2})=${meetHi})</div>`;
+    }
+    html += `<div style="color:#94a3b8;margin-top:0.5rem;font-size:0.78rem;">Join widens the range (overapprox). Meet narrows it (intersection).</div>`;
+    document.getElementById('s7Results').innerHTML = html;
+  };
+
+  function init(){
+    drawNumberLine({a:[0,10],b:[5,20],join:[0,20],meet:[5,10]});
+    document.getElementById('s7Results').innerHTML='<div style="color:#94a3b8;">Enter intervals and click Compute</div>';
+  }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s7').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: Interval Arithmetic ==================== -->
+<div class="slide" id="s8">
+  <h2>Interval Arithmetic</h2>
+  <p>How to add, subtract, multiply, and divide intervals — the transfer functions for the interval domain.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS8" width="520" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s8Step()">Next</button>
+        <button class="btn btn-sm" onclick="s8Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s8Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Rules</div>
+      <div class="code-block"><div class="code-content" style="font-size:0.72rem;">
+<div class="line" id="s8r0">[a,b] + [c,d] = [a+c, b+d]</div>
+<div class="line" id="s8r1">[a,b] − [c,d] = [a−d, b−c]</div>
+<div class="line" id="s8r2">[a,b] × [c,d] = [min(ac,ad,bc,bd),</div>
+<div class="line" id="s8r2b">                 max(ac,ad,bc,bd)]</div>
+<div class="line" id="s8r3">[a,b] ÷ [c,d] = [a,b] × [1/d, 1/c]</div>
+<div class="line" id="s8r4">  <span style="color:#ef4444;">// if 0 ∈ [c,d] → ⊤ (div by zero!)</span></div>
+      </div></div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.75rem 0 0.5rem;">Step Log</div>
+      <div id="s8Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:120px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+
+  const steps = [
+    {op:'+', a:[2,5], b:[1,3], result:[3,8], rule:0, explain:'[2,5]+[1,3] = [2+1, 5+3] = [3,8]'},
+    {op:'−', a:[2,5], b:[1,3], result:[-1,4], rule:1, explain:'[2,5]−[1,3] = [2−3, 5−1] = [−1,4]'},
+    {op:'×', a:[-2,3], b:[1,4], result:[-8,12], rule:2, explain:'[−2,3]×[1,4]: products={−2,−8,3,12} → [−8,12]'},
+    {op:'×', a:[-3,-1], b:[-4,-2], result:[2,12], rule:2, explain:'[−3,−1]×[−4,−2]: products={6,12,2,4} → [2,12]'},
+    {op:'÷', a:[4,10], b:[2,5], result:[0.8,5], rule:3, explain:'[4,10]÷[2,5] = [4,10]×[1/5,1/2] = [0.8,5]'},
+    {op:'÷', a:[1,6], b:[-1,2], result:null, rule:4, explain:'[1,6]÷[−1,2]: 0 ∈ [−1,2] → result = ⊤ (unsafe!)'}
+  ];
+  let stepIdx=0, timer=null;
+
+  function drawIntervals(step){
+    ctx.clearRect(0,0,520,310);
+    if(!step){ ctx.fillStyle='#64748b'; ctx.font='14px monospace'; ctx.textAlign='center'; ctx.fillText('Press Next to begin',260,155); return; }
+    const allVals = [...step.a, ...step.b, ...(step.result||[-5,5])];
+    const mn=Math.min(...allVals)-2, mx=Math.max(...allVals)+2;
+    const range=mx-mn||1;
+    const toX=v=>40+(v-mn)/range*440;
+
+    // Number line
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(30,155); ctx.lineTo(490,155); ctx.stroke();
+    for(let v=Math.ceil(mn);v<=Math.floor(mx);v++){
+      const x=toX(v);
+      ctx.beginPath(); ctx.moveTo(x,150); ctx.lineTo(x,160); ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#64748b'; ctx.font='9px monospace'; ctx.textAlign='center'; ctx.fillText(v,x,173);
+    }
+
+    // A (blue)
+    const ax1=toX(step.a[0]),ax2=toX(step.a[1]);
+    ctx.fillStyle='rgba(99,102,241,0.2)'; ctx.fillRect(ax1,60,ax2-ax1,30);
+    ctx.strokeStyle='#6366f1'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(ax1,75); ctx.lineTo(ax2,75); ctx.stroke();
+    ctx.fillStyle='#6366f1'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+    ctx.fillText('['+step.a[0]+','+step.a[1]+']',(ax1+ax2)/2,52);
+
+    // Op
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 20px monospace';
+    ctx.fillText(step.op, 260, 115);
+
+    // B (green)
+    const bx1=toX(step.b[0]),bx2=toX(step.b[1]);
+    ctx.fillStyle='rgba(34,197,94,0.15)'; ctx.fillRect(bx1,120,bx2-bx1,25);
+    ctx.strokeStyle='#22c55e'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(bx1,132); ctx.lineTo(bx2,132); ctx.stroke();
+    ctx.fillStyle='#22c55e'; ctx.font='bold 12px monospace';
+    ctx.fillText('['+step.b[0]+','+step.b[1]+']',(bx1+bx2)/2,115);
+
+    // Result
+    if(step.result){
+      const rx1=toX(step.result[0]),rx2=toX(step.result[1]);
+      ctx.fillStyle='rgba(245,158,11,0.15)'; ctx.fillRect(rx1,200,rx2-rx1,30);
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(rx1,215); ctx.lineTo(rx2,215); ctx.stroke();
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 13px monospace';
+      ctx.fillText('= ['+step.result[0]+','+step.result[1]+']',(rx1+rx2)/2,195);
+    } else {
+      ctx.fillStyle='#ef4444'; ctx.font='bold 16px monospace'; ctx.textAlign='center';
+      ctx.fillText('= ⊤ (division by zero possible!)', 260, 215);
+    }
+    // Explanation
+    ctx.fillStyle='#cbd5e1'; ctx.font='12px monospace'; ctx.textAlign='center';
+    ctx.fillText(step.explain, 260, 270);
+  }
+
+  window.s8Step = function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    // Highlight rule
+    ['s8r0','s8r1','s8r2','s8r2b','s8r3','s8r4'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    if(s.rule<=1) document.getElementById('s8r'+s.rule).classList.add('active');
+    else if(s.rule===2){ document.getElementById('s8r2').classList.add('active'); document.getElementById('s8r2b').classList.add('active'); }
+    else if(s.rule===3) document.getElementById('s8r3').classList.add('active');
+    else { document.getElementById('s8r3').classList.add('active'); document.getElementById('s8r4').classList.add('active'); }
+
+    drawIntervals(s);
+    const log=document.getElementById('s8Log');
+    const color = s.result?'#f59e0b':'#ef4444';
+    log.innerHTML+=`<div style="color:${color};">${s.explain}</div>`;
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+  window.s8Auto = function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s8Step(); },1200);
+  };
+  window.s8Reset = function(){
+    if(timer){clearInterval(timer);timer=null;}
+    stepIdx=0;
+    ['s8r0','s8r1','s8r2','s8r2b','s8r3','s8r4'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    drawIntervals(null);
+    document.getElementById('s8Log').innerHTML='';
+  };
+
+  function init(){ s8Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s8').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCA: Domain Precision Quiz ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A: Domain Precision Quiz</h2>
+  <p>Given the concrete set <strong>{-4, 0, 3, 7}</strong>, predict the abstraction in each domain.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div id="sCAq1" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#6366f1;font-size:0.9rem;">Sign Domain</div>
+      <div style="color:#94a3b8;font-size:0.82rem;margin:0.4rem 0;">α({-4, 0, 3, 7}) = ?</div>
+      <select id="sCAa1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;">
+        <option value="">Select...</option>
+        <option value="a">Pos</option>
+        <option value="b">Neg</option>
+        <option value="c">⊤</option>
+        <option value="d">Zero</option>
+      </select>
+    </div>
+    <div id="sCAq2" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#22c55e;font-size:0.9rem;">Constant Propagation</div>
+      <div style="color:#94a3b8;font-size:0.82rem;margin:0.4rem 0;">α({-4, 0, 3, 7}) = ?</div>
+      <select id="sCAa2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;">
+        <option value="">Select...</option>
+        <option value="a">Const(-4)</option>
+        <option value="b">Const(0)</option>
+        <option value="c">⊤</option>
+        <option value="d">⊥</option>
+      </select>
+    </div>
+    <div id="sCAq3" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#f59e0b;font-size:0.9rem;">Interval Domain</div>
+      <div style="color:#94a3b8;font-size:0.82rem;margin:0.4rem 0;">α({-4, 0, 3, 7}) = ?</div>
+      <select id="sCAa3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;">
+        <option value="">Select...</option>
+        <option value="a">[0, 7]</option>
+        <option value="b">[-4, 7]</option>
+        <option value="c">[-4, 3]</option>
+        <option value="d">[−∞, +∞]</option>
+      </select>
+    </div>
+    <div id="sCAq4" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#ef4444;font-size:0.9rem;">Trap Question: How many concrete values does [-4, 7] include?</div>
+      <div style="color:#94a3b8;font-size:0.82rem;margin:0.4rem 0;">Values NOT in the original set but inside the interval?</div>
+      <select id="sCAa4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;">
+        <option value="">Select...</option>
+        <option value="a">0 extra values (exact fit)</option>
+        <option value="b">4 extra values</option>
+        <option value="c">8 extra values</option>
+        <option value="d">Infinitely many (includes reals)</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:0.75rem;">
+    <button class="btn" onclick="sCACheck()">Check All</button>
+  </div>
+  <div id="sCAFeedback" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCAa1:'c',sCAa2:'c',sCAa3:'b',sCAa4:'c'};
+  const explanations = {
+    sCAa1:'<strong>⊤ (Top)</strong> — The set contains Neg (-4), Zero (0), and Pos (3,7). Join of all three = ⊤.',
+    sCAa2:'<strong>⊤ (Top)</strong> — Multiple different values (-4≠0≠3≠7). Flat lattice collapses immediately to ⊤.',
+    sCAa3:'<strong>[-4, 7]</strong> — Smallest interval containing all values: min=-4, max=7.',
+    sCAa4:'<strong>8 extra values</strong> — [-4,7] contains integers {-4,-3,-2,-1,0,1,2,3,4,5,6,7} = 12 values. Original set has 4. So 8 extra. This is <em>over-approximation</em> — the price of using intervals!'
+  };
+  window.sCACheck = function(){
+    let score=0;
+    let html='';
+    [1,2,3,4].forEach(i=>{
+      const sel=document.getElementById('sCAa'+i).value;
+      const correct=sel===answers['sCAa'+i];
+      if(correct) score++;
+      document.getElementById('sCAq'+i).style.borderColor=sel===''?'#475569':correct?'#22c55e':'#ef4444';
+      html+=`<div style="color:${correct?'#22c55e':'#ef4444'};margin-bottom:0.4rem;">${correct?'✓':'✗'} ${explanations['sCAa'+i]}</div>`;
+    });
+    const fb=document.getElementById('sCAFeedback');
+    fb.innerHTML=`<div style="font-weight:700;color:${score>=3?'#22c55e':'#f59e0b'};margin-bottom:0.5rem;">Score: ${score}/4</div>`+html;
+    fb.style.display='block';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 9: Parity Domain ==================== -->
+<div class="slide" id="s9">
+  <h2>Parity Domain (Even / Odd)</h2>
+  <p>A simple but useful domain — tracks whether a value is <strong>even</strong> or <strong>odd</strong>. Great for array indexing and alignment checks.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS9" width="520" height="280" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;align-items:center;">
+        <span style="color:#94a3b8;font-size:0.82rem;">Evaluate:</span>
+        <input type="number" id="s9a" value="4" style="width:55px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <select id="s9op" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="+">+</option>
+          <option value="−">−</option>
+          <option value="×">×</option>
+        </select>
+        <input type="number" id="s9b" value="3" style="width:55px;padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;text-align:center;">
+        <button class="btn btn-sm" onclick="s9Eval()">Evaluate</button>
+      </div>
+    </div>
+    <div>
+      <div id="s9Result" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-family:monospace;font-size:0.85rem;min-height:100px;">
+        <div style="color:#94a3b8;">Enter values and click Evaluate</div>
+      </div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.75rem 0 0.4rem;">Parity Arithmetic Rules</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;font-size:0.72rem;font-family:monospace;">
+          <div style="color:#38bdf8;font-weight:700;margin-bottom:0.3rem;">Addition</div>
+          <div style="color:#cbd5e1;">E + E = E</div>
+          <div style="color:#cbd5e1;">E + O = O</div>
+          <div style="color:#cbd5e1;">O + O = E</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;font-size:0.72rem;font-family:monospace;">
+          <div style="color:#38bdf8;font-weight:700;margin-bottom:0.3rem;">Subtraction</div>
+          <div style="color:#cbd5e1;">E − E = E</div>
+          <div style="color:#cbd5e1;">E − O = O</div>
+          <div style="color:#cbd5e1;">O − O = E</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;font-size:0.72rem;font-family:monospace;">
+          <div style="color:#38bdf8;font-weight:700;margin-bottom:0.3rem;">Multiply</div>
+          <div style="color:#cbd5e1;">E × E = E</div>
+          <div style="color:#cbd5e1;">E × O = E</div>
+          <div style="color:#cbd5e1;">O × O = O</div>
+        </div>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>Key insight:</strong> <code>2 * x</code> is <em>always</em> Even regardless of x — parity can prove this but sign domain cannot. Each domain has unique strengths!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  let highlighted = null;
+
+  const nodes = [
+    {label:'⊤', x:260, y:40, color:'#f59e0b'},
+    {label:'Even', x:160, y:140, color:'#6366f1'},
+    {label:'Odd', x:360, y:140, color:'#a78bfa'},
+    {label:'⊥', x:260, y:240, color:'#475569'}
+  ];
+  const edges = [[0,1],[0,2],[1,3],[2,3]];
+
+  function draw(){
+    ctx.clearRect(0,0,520,280);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath(); ctx.moveTo(nodes[a].x,nodes[a].y+22); ctx.lineTo(nodes[b].x,nodes[b].y-22);
+      ctx.strokeStyle=(highlighted===a||highlighted===b)?'#f59e0b60':'#47556960'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    nodes.forEach((n,i)=>{
+      ctx.beginPath(); ctx.arc(n.x,n.y,24,0,Math.PI*2);
+      ctx.fillStyle=i===highlighted?n.color:'rgba(30,41,59,0.9)'; ctx.fill();
+      ctx.strokeStyle=n.color; ctx.lineWidth=i===highlighted?3:1.5; ctx.stroke();
+      ctx.fillStyle=i===highlighted?'#fff':n.color;
+      ctx.font='bold 14px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.label,n.x,n.y);
+    });
+    ctx.font='10px monospace'; ctx.fillStyle='#64748b'; ctx.textAlign='center';
+    ctx.fillText('γ = ℤ',260,20);
+    ctx.fillText('γ = {...,−2,0,2,4,...}',160,175);
+    ctx.fillText('γ = {...,−1,1,3,5,...}',360,175);
+    ctx.fillText('γ = ∅',260,272);
+  }
+
+  function parity(n){ return n%2===0?'Even':'Odd'; }
+  function parityOp(pa,pb,op){
+    if(op==='+'||op==='−') return pa===pb?'Even':'Odd';
+    if(op==='×') return (pa==='Even'||pb==='Even')?'Even':'Odd';
+    return '⊤';
+  }
+
+  window.s9Eval = function(){
+    const a=parseInt(document.getElementById('s9a').value);
+    const b=parseInt(document.getElementById('s9b').value);
+    const op=document.getElementById('s9op').value;
+    if(isNaN(a)||isNaN(b)) return;
+    const pa=parity(a), pb=parity(b);
+    const concrete = op==='+'?a+b:op==='−'?a-b:a*b;
+    const pr=parity(concrete);
+    const absPr=parityOp(pa,pb,op);
+    highlighted = absPr==='Even'?1:absPr==='Odd'?2:0;
+    draw();
+
+    const el=document.getElementById('s9Result');
+    el.innerHTML=`
+      <div style="color:#6366f1;">α(${a}) = <strong>${pa}</strong></div>
+      <div style="color:#a78bfa;">α(${b}) = <strong>${pb}</strong></div>
+      <div style="color:#f59e0b;margin-top:0.3rem;">${pa} ${op} ${pb} = <strong>${absPr}</strong></div>
+      <div style="color:#94a3b8;margin-top:0.3rem;">Concrete: ${a} ${op} ${b} = ${concrete} (${pr})</div>
+      <div style="color:${pr===absPr?'#22c55e':'#ef4444'};margin-top:0.3rem;">${pr===absPr?'✓ Sound — abstract matches concrete':'✓ Sound — abstract (⊤) safely includes concrete ('+pr+')'}</div>
+    `;
+  };
+
+  function init(){ highlighted=null; draw(); document.getElementById('s9Result').innerHTML='<div style="color:#94a3b8;">Enter values and click Evaluate</div>'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s9').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: Taint Domain for Security ==================== -->
+<div class="slide" id="s10">
+  <h2>Taint Domain for Security</h2>
+  <p>Tracks whether data originates from <strong>untrusted sources</strong> — essential for finding injection vulnerabilities.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS10" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Interactive: Taint Propagation</div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-family:monospace;font-size:0.82rem;">
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#94a3b8;">user_input =</span>
+          <select id="s10src" onchange="s10Update()" style="padding:0.2rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:0.8rem;">
+            <option value="tainted">request.get("name")</option>
+            <option value="clean">config.APP_NAME</option>
+          </select>
+          <span id="s10t1" style="margin-left:0.5rem;font-weight:700;"></span>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#94a3b8;">greeting = "Hello " + user_input</span>
+          <span id="s10t2" style="margin-left:0.5rem;font-weight:700;"></span>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#94a3b8;">sanitized =</span>
+          <select id="s10san" onchange="s10Update()" style="padding:0.2rem;background:#1e293b;border:1px solid #475569;border-radius:4px;color:#e2e8f0;font-family:monospace;font-size:0.8rem;">
+            <option value="no">greeting</option>
+            <option value="yes">escape(greeting)</option>
+          </select>
+          <span id="s10t3" style="margin-left:0.5rem;font-weight:700;"></span>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#94a3b8;">html_output(sanitized)</span>
+          <span id="s10t4" style="margin-left:0.5rem;font-weight:700;"></span>
+        </div>
+      </div>
+      <div id="s10Verdict" style="margin-top:0.75rem;padding:0.6rem;border-radius:8px;font-size:0.88rem;font-weight:600;"></div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.75rem 0 0.4rem;">Taint Rules</div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:0.6rem;font-size:0.78rem;color:#cbd5e1;">
+        <div><span style="color:#ef4444;">Tainted</span> + anything = <span style="color:#ef4444;">Tainted</span> (taint spreads)</div>
+        <div><span style="color:#22c55e;">Clean</span> + <span style="color:#22c55e;">Clean</span> = <span style="color:#22c55e;">Clean</span></div>
+        <div>sanitize(<span style="color:#ef4444;">Tainted</span>) = <span style="color:#22c55e;">Clean</span></div>
+        <div>Sink receives <span style="color:#ef4444;">Tainted</span> → <span style="color:#ef4444;font-weight:700;">VULNERABILITY!</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+
+  const nodes = [
+    {label:'⊤', x:260, y:35, color:'#f59e0b'},
+    {label:'Tainted', x:150, y:130, color:'#ef4444'},
+    {label:'Clean', x:370, y:130, color:'#22c55e'},
+    {label:'⊥', x:260, y:225, color:'#475569'}
+  ];
+  const edges = [[0,1],[0,2],[1,3],[2,3]];
+
+  function draw(highlightIdx){
+    ctx.clearRect(0,0,520,300);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath(); ctx.moveTo(nodes[a].x,nodes[a].y+22); ctx.lineTo(nodes[b].x,nodes[b].y-22);
+      ctx.strokeStyle='#47556960'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    nodes.forEach((n,i)=>{
+      ctx.beginPath(); ctx.arc(n.x,n.y,26,0,Math.PI*2);
+      ctx.fillStyle=i===highlightIdx?n.color:'rgba(30,41,59,0.9)'; ctx.fill();
+      ctx.strokeStyle=n.color; ctx.lineWidth=i===highlightIdx?3:1.5; ctx.stroke();
+      ctx.fillStyle=i===highlightIdx?'#fff':n.color;
+      ctx.font='bold 13px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.label,n.x,n.y);
+    });
+    // Security flow arrows
+    ctx.fillStyle='#94a3b8'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText('Source → Propagation → Sink', 260, 270);
+    ctx.fillText('(user input)    (string ops)    (html output)', 260, 286);
+  }
+
+  window.s10Update = function(){
+    const isTainted = document.getElementById('s10src').value === 'tainted';
+    const isSanitized = document.getElementById('s10san').value === 'yes';
+
+    const t1 = isTainted ? 'Tainted' : 'Clean';
+    const t2 = isTainted ? 'Tainted' : 'Clean'; // concat with clean "Hello " propagates taint
+    const t3 = (isTainted && !isSanitized) ? 'Tainted' : 'Clean';
+    const t4 = t3;
+
+    const colors = {Tainted:'#ef4444', Clean:'#22c55e'};
+    document.getElementById('s10t1').textContent = '→ ' + t1;
+    document.getElementById('s10t1').style.color = colors[t1];
+    document.getElementById('s10t2').textContent = '→ ' + t2;
+    document.getElementById('s10t2').style.color = colors[t2];
+    document.getElementById('s10t3').textContent = '→ ' + t3;
+    document.getElementById('s10t3').style.color = colors[t3];
+    document.getElementById('s10t4').textContent = '→ SINK: ' + t4;
+    document.getElementById('s10t4').style.color = colors[t4];
+
+    const highlightIdx = t4==='Tainted' ? 1 : 2;
+    draw(highlightIdx);
+
+    const verdict = document.getElementById('s10Verdict');
+    if(t4==='Tainted'){
+      verdict.style.background='rgba(239,68,68,0.15)';
+      verdict.style.color='#ef4444';
+      verdict.innerHTML='⚠ XSS VULNERABILITY — tainted data reaches html_output sink without sanitization!';
+    } else {
+      verdict.style.background='rgba(34,197,94,0.1)';
+      verdict.style.color='#22c55e';
+      verdict.innerHTML='✓ Safe — ' + (isSanitized ? 'sanitizer cleans the taint before the sink' : 'data was never tainted (clean source)');
+    }
+  };
+
+  function init(){ draw(-1); s10Update(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s10').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: Domain Precision Comparison ==================== -->
+<div class="slide" id="s11">
+  <h2>Domain Precision Comparison</h2>
+  <p>The same program analyzed with three different domains — watch how precision differs.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content" style="font-size:0.78rem;">
+<div class="line" id="s11L1">x = 5;</div>
+<div class="line" id="s11L2">y = x * 2;</div>
+<div class="line" id="s11L3">z = y - 10;</div>
+<div class="line" id="s11L4">w = 100 / z;  <span style="color:#ef4444;">// safe?</span></div>
+      </div></div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <canvas id="cS11" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+
+  // Steps: each step processes one line
+  // State: {sign:{x,y,z,w}, const:{x,y,z,w}, interval:{x,y,z,w}}
+  const steps = [
+    {line:0, sign:{x:'Pos'}, const:{x:'5'}, interval:{x:'[5,5]'}, msg:'x = 5'},
+    {line:1, sign:{x:'Pos',y:'Pos'}, const:{x:'5',y:'10'}, interval:{x:'[5,5]',y:'[10,10]'}, msg:'y = x * 2'},
+    {line:2, sign:{x:'Pos',y:'Pos',z:'⊤'}, const:{x:'5',y:'10',z:'0'}, interval:{x:'[5,5]',y:'[10,10]',z:'[0,0]'}, msg:'z = y - 10'},
+    {line:3, sign:{x:'Pos',y:'Pos',z:'⊤',w:'⊤'}, const:{x:'5',y:'10',z:'0',w:'DivZero!'}, interval:{x:'[5,5]',y:'[10,10]',z:'[0,0]',w:'DivZero!'}, msg:'w = 100 / z'}
+  ];
+
+  let stepIdx=0, timer=null;
+
+  function drawTable(step){
+    ctx.clearRect(0,0,520,320);
+    const vars = ['x','y','z','w'];
+    const domains = [{name:'Sign',color:'#6366f1',key:'sign'},{name:'Constant',color:'#22c55e',key:'const'},{name:'Interval',color:'#f59e0b',key:'interval'}];
+
+    // Header
+    ctx.font='bold 12px monospace'; ctx.textAlign='center';
+    ctx.fillStyle='#94a3b8'; ctx.fillText('Var',50,30);
+    domains.forEach((d,i)=>{ ctx.fillStyle=d.color; ctx.fillText(d.name,170+i*140,30); });
+
+    // Rows
+    vars.forEach((v,vi)=>{
+      const y = 60 + vi*65;
+      ctx.fillStyle = vi===step.line?'rgba(99,102,241,0.1)':'transparent';
+      ctx.fillRect(10,y-15,500,50);
+
+      ctx.font='bold 14px monospace'; ctx.textAlign='center';
+      ctx.fillStyle='#e2e8f0'; ctx.fillText(v,50,y+10);
+
+      domains.forEach((d,di)=>{
+        const val = step[d.key][v] || '—';
+        const isDanger = val==='DivZero!';
+        const isTop = val==='⊤';
+        ctx.fillStyle = isDanger?'#ef4444':isTop?'#f59e0b':d.color;
+        ctx.font = isDanger?'bold 12px monospace':'13px monospace';
+        ctx.fillText(val, 170+di*140, y+10);
+      });
+    });
+
+    // Verdicts at bottom
+    const y = 310;
+    ctx.font='bold 11px monospace'; ctx.textAlign='center';
+    if(step.line===3){
+      ctx.fillStyle='#f59e0b'; ctx.fillText('Sign: z=⊤, can\'t detect div-by-zero',170,y);
+      ctx.fillStyle='#ef4444'; ctx.fillText('Constant: z=0 → CAUGHT!',310,y-15);
+      ctx.fillStyle='#ef4444'; ctx.fillText('Interval: z=[0,0] → CAUGHT!',310,y+5);
+    }
+  }
+
+  window.s11Step = function(){
+    if(stepIdx>=steps.length) return;
+    ['s11L1','s11L2','s11L3','s11L4'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    document.getElementById('s11L'+(steps[stepIdx].line+1)).classList.add('active');
+    drawTable(steps[stepIdx]);
+    stepIdx++;
+  };
+  window.s11Auto = function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s11Step(); },1200);
+  };
+  window.s11Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} stepIdx=0;
+    ['s11L1','s11L2','s11L3','s11L4'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    ctx.clearRect(0,0,520,320);
+    ctx.fillStyle='#64748b'; ctx.font='14px monospace'; ctx.textAlign='center'; ctx.fillText('Press Step to begin',260,160);
+  };
+
+  function init(){ s11Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s11').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 12: Reduced Product — Combining Domains ==================== -->
+<div class="slide" id="s12">
+  <h2>Reduced Product — Combining Domains</h2>
+  <p>Run <strong>two domains simultaneously</strong> and let them share information. The combination catches things neither alone can.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS12" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s12Toggle('sign')">Sign Only</button>
+        <button class="btn btn-sm" onclick="s12Toggle('parity')">Parity Only</button>
+        <button class="btn btn-sm" onclick="s12Toggle('product')">Sign × Parity</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s12Info" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:1rem;font-size:0.85rem;min-height:200px;">
+        <div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click a domain view to see what it tells us about <code>x</code> after <code>x = 2*y + 1</code> where <code>y ∈ Pos</code></div>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>Reduced product</strong> = run both domains and use a <em>reduction operator</em> to tighten each domain using the other's information. This is strictly more precise than either alone.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+  let mode = null;
+
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    ctx.font='bold 14px monospace'; ctx.textAlign='center';
+
+    if(!mode){
+      ctx.fillStyle='#64748b'; ctx.fillText('Click a domain view below',260,160);
+      return;
+    }
+
+    // Number line
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(40,200); ctx.lineTo(480,200); ctx.stroke();
+    for(let v=-2;v<=10;v++){
+      const x=40+(v+2)*36.67;
+      ctx.beginPath(); ctx.moveTo(x,195); ctx.lineTo(x,205); ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#64748b'; ctx.font='9px monospace'; ctx.textAlign='center'; ctx.fillText(v,x,218);
+    }
+
+    ctx.font='bold 13px monospace'; ctx.textAlign='center';
+
+    if(mode==='sign'){
+      // Sign: Pos → {1,2,3,4,5,...}
+      ctx.fillStyle='#6366f1'; ctx.fillText('Sign analysis: x = 2*y + 1, y ∈ Pos',260,30);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+      ctx.fillText('2*Pos + Pos = Pos → x ∈ Pos',260,55);
+      ctx.fillText('Knows: x > 0. That\'s it.',260,75);
+      // Highlight all positive
+      for(let v=1;v<=10;v++){
+        const x=40+(v+2)*36.67;
+        ctx.beginPath(); ctx.arc(x,200,6,0,Math.PI*2);
+        ctx.fillStyle='rgba(99,102,241,0.6)'; ctx.fill();
+      }
+      ctx.fillStyle='#6366f1'; ctx.font='bold 11px monospace';
+      ctx.fillText('γ(Pos) = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...}',260,250);
+    } else if(mode==='parity'){
+      ctx.fillStyle='#a78bfa'; ctx.fillText('Parity analysis: x = 2*y + 1, y ∈ any',260,30);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+      ctx.fillText('2*any = Even, Even + 1 = Odd → x ∈ Odd',260,55);
+      ctx.fillText('Knows: x is odd. Could be negative!',260,75);
+      for(let v=-1;v<=9;v+=2){
+        const x=40+(v+2)*36.67;
+        ctx.beginPath(); ctx.arc(x,200,6,0,Math.PI*2);
+        ctx.fillStyle='rgba(167,139,250,0.6)'; ctx.fill();
+      }
+      ctx.fillStyle='#a78bfa'; ctx.font='bold 11px monospace';
+      ctx.fillText('γ(Odd) = {..., −3, −1, 1, 3, 5, 7, 9, ...}',260,250);
+    } else {
+      ctx.fillStyle='#f59e0b'; ctx.fillText('Sign × Parity: x = 2*y + 1, y ∈ Pos',260,30);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+      ctx.fillText('Sign says Pos, Parity says Odd → (Pos, Odd)',260,55);
+      ctx.fillText('Combined: x ∈ {positive odd numbers} = {1,3,5,7,...}',260,75);
+      for(let v=1;v<=9;v+=2){
+        const x=40+(v+2)*36.67;
+        ctx.beginPath(); ctx.arc(x,200,8,0,Math.PI*2);
+        ctx.fillStyle='rgba(245,158,11,0.7)'; ctx.fill();
+        ctx.fillStyle='#fff'; ctx.font='bold 8px monospace'; ctx.textBaseline='middle';
+        ctx.fillText(v,x,200);
+      }
+      ctx.fillStyle='#f59e0b'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+      ctx.fillText('γ(Pos ∩ Odd) = {1, 3, 5, 7, 9, ...}',260,250);
+      ctx.fillStyle='#22c55e'; ctx.font='bold 12px monospace';
+      ctx.fillText('Much tighter than either alone!',260,280);
+    }
+  }
+
+  const infoTexts = {
+    sign:'<div style="color:#6366f1;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">Sign Domain Alone</div><div style="color:#cbd5e1;line-height:1.6;">Given <code>y ∈ Pos</code>:<br>• <code>2 * y</code> → Pos × Pos = <strong>Pos</strong><br>• <code>2*y + 1</code> → Pos + Pos = <strong>Pos</strong><br><br>Result: x ∈ Pos = {1, 2, 3, 4, 5, ...}<br><br><span style="color:#f59e0b;">Missing info:</span> Sign can\'t see that x must be odd. It includes all even numbers too.</div>',
+    parity:'<div style="color:#a78bfa;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">Parity Domain Alone</div><div style="color:#cbd5e1;line-height:1.6;">Given <code>y ∈ ⊤</code> (parity doesn\'t know sign):<br>• <code>2 * y</code> → Even × ⊤ = <strong>Even</strong><br>• <code>2*y + 1</code> → Even + Odd = <strong>Odd</strong><br><br>Result: x ∈ Odd = {..., -3, -1, 1, 3, 5, ...}<br><br><span style="color:#f59e0b;">Missing info:</span> Parity can\'t see that x must be positive. It includes negative odds too.</div>',
+    product:'<div style="color:#f59e0b;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">Sign × Parity (Reduced Product)</div><div style="color:#cbd5e1;line-height:1.6;">Run <strong>both domains simultaneously</strong>:<br>• Sign: x ∈ Pos<br>• Parity: x ∈ Odd<br>• <strong>Reduction:</strong> γ(Pos) ∩ γ(Odd) = {positive odds}<br><br>Result: x ∈ (Pos, Odd) = {1, 3, 5, 7, ...}<br><br><span style="color:#22c55e;">Power of combination:</span> Sign eliminates negative odds, parity eliminates even positives. Together they\'re strictly more precise!</div>'
+  };
+
+  window.s12Toggle = function(m){
+    mode=m; draw();
+    document.getElementById('s12Info').innerHTML=infoTexts[m];
+  };
+  window.s12Reset = function(){ mode=null; draw(); document.getElementById('s12Info').innerHTML='<div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click a domain view to see what it tells us</div>'; };
+
+  function init(){ mode=null; draw(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s12').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: Widening & Narrowing ==================== -->
+<div class="slide" id="s13">
+  <h2>Widening &amp; Narrowing</h2>
+  <p>Widening forces convergence by <em>overshooting</em>. Narrowing recovers precision by <em>tightening back</em>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS13" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s13Step()">Step</button>
+        <button class="btn btn-sm" onclick="s13Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+        <button class="btn btn-sm" onclick="s13Toggle()" id="s13ToggleBtn" style="background:#334155;">Show Without Widening</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">
+        Program: <code style="color:#e2e8f0;">x = 0; while(*) x = x + 1;</code>
+      </div>
+      <div id="s13Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.75rem;max-height:180px;overflow-y:auto;"></div>
+      <div class="warning" style="margin-top:0.75rem;">
+        <strong>Without widening:</strong> [0,0] → [0,1] → [0,2] → ... → never terminates!
+      </div>
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <strong>Two phases:</strong><br>
+        1. <span style="color:#ef4444;">Ascending + widening</span>: overshoot to [0, +∞]<br>
+        2. <span style="color:#22c55e;">Descending + narrowing</span>: tighten back toward true range
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS13');
+  const ctx = canvas.getContext('2d');
+
+  // With widening: [0,0] → widen([0,0],[0,1]) = [0,+∞] → stable (2 steps)
+  // Then narrowing: [0,+∞] → narrow([0,+∞],[0,1]) = [0,1]... but we don't know true bound
+  // Without widening: [0,0] → [0,1] → [0,2] → [0,3] → ... forever
+  const stepsWiden = [
+    {lo:0,hi:0,phase:'asc',msg:'Init: x ∈ [0,0]',iter:0},
+    {lo:0,hi:1,phase:'asc',msg:'Iter 1: join([0,0],[0,1]) = [0,1]',iter:1},
+    {lo:0,hi:'∞',phase:'widen',msg:'Widen! Upper bound grew → [0, +∞]',iter:2},
+    {lo:0,hi:'∞',phase:'stable',msg:'Stable — [0,+∞] is a fixed point',iter:3},
+    {lo:0,hi:'∞',phase:'narrow-start',msg:'Now narrowing: can we tighten [0,+∞]?',iter:4},
+    {lo:0,hi:100,phase:'narrow',msg:'Narrow: if loop runs ≤100 times → [0,100]',iter:5},
+    {lo:0,hi:100,phase:'done',msg:'Done! Recovered precision: [0,100]',iter:6}
+  ];
+
+  const stepsNoWiden = [];
+  for(let i=0;i<=15;i++){
+    stepsNoWiden.push({lo:0,hi:i,phase:'asc',msg:`Iter ${i}: x ∈ [0,${i}]`,iter:i});
+  }
+  stepsNoWiden.push({lo:0,hi:'...∞',phase:'diverge',msg:'Never terminates! [0,0]→[0,1]→[0,2]→...',iter:16});
+
+  let useWiden=true, stepIdx=0, timer=null;
+
+  function getSteps(){ return useWiden ? stepsWiden : stepsNoWiden; }
+
+  function drawNumberLine(step){
+    ctx.clearRect(0,0,520,320);
+    const title = useWiden ? 'With Widening + Narrowing' : 'Without Widening (Danger!)';
+    ctx.font='bold 14px monospace'; ctx.textAlign='center';
+    ctx.fillStyle=useWiden?'#22c55e':'#ef4444';
+    ctx.fillText(title,260,25);
+
+    // Number line
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(40,160); ctx.lineTo(480,160); ctx.stroke();
+
+    const maxVal = 20;
+    for(let v=0;v<=maxVal;v++){
+      const x=40+v*22;
+      ctx.beginPath(); ctx.moveTo(x,155); ctx.lineTo(x,165); ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.stroke();
+      if(v%5===0){ ctx.fillStyle='#64748b'; ctx.font='9px monospace'; ctx.textAlign='center'; ctx.fillText(v,x,178); }
+    }
+    // +∞ marker
+    ctx.fillStyle='#64748b'; ctx.font='9px monospace'; ctx.textAlign='center';
+    ctx.fillText('+∞',490,178);
+
+    // Draw interval
+    const lo=step.lo, hi=step.hi;
+    const loX=40+lo*22;
+    let hiX;
+    if(hi==='∞'||hi==='...∞') hiX=490;
+    else hiX=Math.min(40+hi*22, 480);
+
+    const phaseColor = {
+      'asc':'#6366f1','widen':'#ef4444','stable':'#f59e0b',
+      'narrow-start':'#a78bfa','narrow':'#22c55e','done':'#22c55e','diverge':'#ef4444'
+    };
+    const color = phaseColor[step.phase]||'#6366f1';
+
+    ctx.fillStyle=color+'30'; ctx.fillRect(loX,120,hiX-loX,30);
+    ctx.strokeStyle=color; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(loX,135); ctx.lineTo(hiX,135); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(loX,125); ctx.lineTo(loX,145); ctx.stroke();
+    if(hi!=='∞'&&hi!=='...∞'){ ctx.beginPath(); ctx.moveTo(hiX,125); ctx.lineTo(hiX,145); ctx.stroke(); }
+    else { ctx.fillStyle=color; ctx.font='bold 14px monospace'; ctx.fillText('→∞',hiX-5,115); }
+
+    // Label
+    const label = hi==='∞'?`[${lo}, +∞]`:hi==='...∞'?`[${lo}, ...∞]`:`[${lo}, ${hi}]`;
+    ctx.fillStyle=color; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+    ctx.fillText(label,(loX+hiX)/2,105);
+
+    // Phase indicator
+    ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+    ctx.fillText(step.msg,260,220);
+
+    // Progress bar (iterations)
+    const maxIter = useWiden?6:16;
+    const barW = 400, barH = 12;
+    ctx.fillStyle='#1e293b'; ctx.fillRect(60,260,barW,barH);
+    ctx.fillStyle=color; ctx.fillRect(60,260,barW*(step.iter/maxIter),barH);
+    ctx.fillStyle='#94a3b8'; ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText(`Iteration ${step.iter}`,260,290);
+  }
+
+  window.s13Step = function(){
+    const steps=getSteps();
+    if(stepIdx>=steps.length) return;
+    drawNumberLine(steps[stepIdx]);
+    const log=document.getElementById('s13Log');
+    const s=steps[stepIdx];
+    const color=s.phase==='widen'||s.phase==='diverge'?'#ef4444':s.phase.startsWith('narrow')||s.phase==='done'?'#22c55e':'#f59e0b';
+    log.innerHTML+=`<div style="color:${color};">${s.msg}</div>`;
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+  window.s13Auto = function(){
+    if(timer) return;
+    timer=setInterval(()=>{
+      const steps=getSteps();
+      if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}
+      s13Step();
+    },800);
+  };
+  window.s13Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} stepIdx=0;
+    document.getElementById('s13Log').innerHTML='';
+    ctx.clearRect(0,0,520,320);
+    ctx.fillStyle='#64748b'; ctx.font='14px monospace'; ctx.textAlign='center';
+    ctx.fillText('Press Step to begin',260,160);
+  };
+  window.s13Toggle = function(){
+    useWiden=!useWiden;
+    document.getElementById('s13ToggleBtn').textContent=useWiden?'Show Without Widening':'Show With Widening';
+    s13Reset();
+  };
+
+  function init(){ useWiden=true; s13Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s13').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 14: Designing a New Domain ==================== -->
+<div class="slide" id="s14">
+  <h2>Designing a New Domain — Step by Step</h2>
+  <p>Follow the 5-step recipe to build a custom abstract domain for any property you want to track.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS14" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#f59e0b;margin-bottom:0.5rem;">Example: Nullness Domain</div>
+      <div style="color:#94a3b8;font-size:0.82rem;margin-bottom:0.5rem;">Goal: track whether a pointer can be null, non-null, or either.</div>
+      <div id="s14Steps" style="font-size:0.82rem;">
+        <div id="s14s1" class="s14step" onclick="s14Show(0)" style="padding:0.5rem;border-left:3px solid #475569;margin-bottom:0.4rem;cursor:pointer;border-radius:0 6px 6px 0;">
+          <span style="color:#38bdf8;font-weight:600;">Step 1:</span> <span style="color:#cbd5e1;">Define the elements</span>
+        </div>
+        <div id="s14s2" class="s14step" onclick="s14Show(1)" style="padding:0.5rem;border-left:3px solid #475569;margin-bottom:0.4rem;cursor:pointer;border-radius:0 6px 6px 0;">
+          <span style="color:#38bdf8;font-weight:600;">Step 2:</span> <span style="color:#cbd5e1;">Define the ordering (⊑)</span>
+        </div>
+        <div id="s14s3" class="s14step" onclick="s14Show(2)" style="padding:0.5rem;border-left:3px solid #475569;margin-bottom:0.4rem;cursor:pointer;border-radius:0 6px 6px 0;">
+          <span style="color:#38bdf8;font-weight:600;">Step 3:</span> <span style="color:#cbd5e1;">Define join and meet</span>
+        </div>
+        <div id="s14s4" class="s14step" onclick="s14Show(3)" style="padding:0.5rem;border-left:3px solid #475569;margin-bottom:0.4rem;cursor:pointer;border-radius:0 6px 6px 0;">
+          <span style="color:#38bdf8;font-weight:600;">Step 4:</span> <span style="color:#cbd5e1;">Define α (abstraction) and γ (concretization)</span>
+        </div>
+        <div id="s14s5" class="s14step" onclick="s14Show(4)" style="padding:0.5rem;border-left:3px solid #475569;margin-bottom:0.4rem;cursor:pointer;border-radius:0 6px 6px 0;">
+          <span style="color:#38bdf8;font-weight:600;">Step 5:</span> <span style="color:#cbd5e1;">Write the transfer functions</span>
+        </div>
+      </div>
+      <div id="s14Detail" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-size:0.8rem;margin-top:0.5rem;min-height:60px;">
+        <div style="color:#94a3b8;">Click a step to see the details for the Nullness domain</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS14');
+  const ctx = canvas.getContext('2d');
+
+  const nodes = [
+    {label:'MaybeNull', x:260, y:50, color:'#f59e0b'},
+    {label:'Null', x:140, y:160, color:'#ef4444'},
+    {label:'NonNull', x:380, y:160, color:'#22c55e'},
+    {label:'⊥', x:260, y:270, color:'#475569'}
+  ];
+  const edges = [[0,1],[0,2],[1,3],[2,3]];
+  let activeStep = -1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    ctx.font='bold 14px monospace'; ctx.textAlign='center';
+    ctx.fillStyle='#38bdf8'; ctx.fillText('Nullness Domain Lattice',260,25);
+
+    edges.forEach(([a,b])=>{
+      ctx.beginPath(); ctx.moveTo(nodes[a].x,nodes[a].y+24); ctx.lineTo(nodes[b].x,nodes[b].y-24);
+      ctx.strokeStyle='#47556980'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    nodes.forEach((n,i)=>{
+      const active = (activeStep===0)||
+        (activeStep===1 && (i===0||i===3))||
+        (activeStep===2 && i<=2)||
+        (activeStep===3)||
+        (activeStep===4);
+      ctx.beginPath(); ctx.arc(n.x,n.y,28,0,Math.PI*2);
+      ctx.fillStyle=active?n.color+'30':'rgba(30,41,59,0.9)'; ctx.fill();
+      ctx.strokeStyle=n.color; ctx.lineWidth=active?3:1.5; ctx.stroke();
+      ctx.fillStyle=active?'#fff':n.color;
+      ctx.font='bold 12px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.label,n.x,n.y);
+    });
+
+    // Step-specific annotations
+    if(activeStep===1){
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(140,185); ctx.lineTo(260,55); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(380,185); ctx.lineTo(260,55); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(260,245); ctx.lineTo(140,185); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(260,245); ctx.lineTo(380,185); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#f59e0b'; ctx.font='10px monospace'; ctx.textAlign='center';
+      ctx.fillText('⊥ ⊑ Null ⊑ MaybeNull',200,220);
+      ctx.fillText('⊥ ⊑ NonNull ⊑ MaybeNull',340,220);
+    }
+    if(activeStep===4){
+      ctx.fillStyle='#cbd5e1'; ctx.font='11px monospace'; ctx.textAlign='left';
+      ctx.fillText('p = malloc() → NonNull',40,310);
+      ctx.fillText('p = NULL → Null',300,310);
+      ctx.fillText('if(p != NULL) → NonNull in true branch',40,330);
+    }
+  }
+
+  const details = [
+    '<div style="color:#6366f1;font-weight:700;">Step 1: Elements</div><div style="color:#cbd5e1;margin-top:0.3rem;"><code>type t = Bot | Null | NonNull | MaybeNull</code><br><br>4 elements: ⊥ (unreachable), Null (definitely null), NonNull (definitely non-null), MaybeNull (⊤, could be either).</div>',
+    '<div style="color:#6366f1;font-weight:700;">Step 2: Ordering</div><div style="color:#cbd5e1;margin-top:0.3rem;">⊥ ⊑ Null ⊑ MaybeNull<br>⊥ ⊑ NonNull ⊑ MaybeNull<br><br>Height = 3. Finite lattice → no widening needed! Same diamond shape as sign domain.</div>',
+    '<div style="color:#6366f1;font-weight:700;">Step 3: Join & Meet</div><div style="color:#cbd5e1;margin-top:0.3rem;"><code>join Null NonNull = MaybeNull</code> (could be either)<br><code>join Null Null = Null</code><br><code>meet Null NonNull = Bot</code> (impossible)<br><code>meet MaybeNull Null = Null</code></div>',
+    '<div style="color:#6366f1;font-weight:700;">Step 4: α and γ</div><div style="color:#cbd5e1;margin-top:0.3rem;"><code>α({null}) = Null</code><br><code>α({0x1234}) = NonNull</code><br><code>α({null, 0x1234}) = MaybeNull</code><br><code>γ(Null) = {null}</code><br><code>γ(NonNull) = all non-null pointers</code><br><code>γ(MaybeNull) = all pointers</code></div>',
+    '<div style="color:#6366f1;font-weight:700;">Step 5: Transfer Functions</div><div style="color:#cbd5e1;margin-top:0.3rem;"><code>p = malloc()</code> → NonNull<br><code>p = NULL</code> → Null<br><code>p = q</code> → copy q\'s nullness<br><code>if (p != NULL)</code> → true branch: NonNull, false branch: Null<br><code>*p</code> when p = Null → <span style="color:#ef4444;">NULL DEREFERENCE BUG!</span></div>'
+  ];
+
+  window.s14Show = function(idx){
+    activeStep=idx;
+    document.querySelectorAll('.s14step').forEach((el,i)=>{
+      el.style.borderLeftColor=i===idx?'#6366f1':'#475569';
+      el.style.background=i===idx?'rgba(99,102,241,0.1)':'transparent';
+    });
+    document.getElementById('s14Detail').innerHTML=details[idx];
+    draw();
+  };
+
+  function init(){
+    activeStep=-1;
+    document.querySelectorAll('.s14step').forEach(el=>{el.style.borderLeftColor='#475569';el.style.background='transparent';});
+    document.getElementById('s14Detail').innerHTML='<div style="color:#94a3b8;">Click a step to see the details</div>';
+    draw();
+  }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s14').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCB: Fix the Domain Bug ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B: Fix the Domain Bug</h2>
+  <p>Each domain implementation has a bug. Identify what's wrong.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div id="sCBq1" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Bug 1: Non-monotone join</div>
+      <div class="code-block" style="margin:0.5rem 0;"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">let join a b = match a, b with</div>
+<div class="line">  | Bot, x | x, Bot -> x</div>
+<div class="line active">  | Pos, Neg -> Zero  (* compromise *)</div>
+<div class="line">  | _ -> Top</div>
+      </div></div>
+      <select id="sCBa1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select the bug...</option>
+        <option value="a">Should return Bot instead of Zero</option>
+        <option value="b">join(Pos,Neg) must be ≥ both → should be Top</option>
+        <option value="c">Zero is correct — it's between Pos and Neg</option>
+        <option value="d">Missing case for Top</option>
+      </select>
+    </div>
+    <div id="sCBq2" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Bug 2: Unsound interval transfer</div>
+      <div class="code-block" style="margin:0.5rem 0;"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">let div [a,b] [c,d] =</div>
+<div class="line active">  [a/d, b/c]  (* just divide bounds *)</div>
+      </div></div>
+      <select id="sCBa2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select the bug...</option>
+        <option value="a">Need to check for division by zero (0 ∈ [c,d])</option>
+        <option value="b">Division is not supported in intervals</option>
+        <option value="c">Bounds are reversed — should be [b/d, a/c]</option>
+        <option value="d">Need to use min/max of all 4 products like multiply</option>
+      </select>
+    </div>
+    <div id="sCBq3" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Bug 3: Wrong widening</div>
+      <div class="code-block" style="margin:0.5rem 0;"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">let widen [a,b] [c,d] =</div>
+<div class="line active">  [min(a,c), max(b,d)]</div>
+      </div></div>
+      <select id="sCBa3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select the bug...</option>
+        <option value="a">This is join, not widen — widen must jump to ∞ when bounds grow</option>
+        <option value="b">Should use max(a,c) not min(a,c)</option>
+        <option value="c">Widening should return Top always</option>
+        <option value="d">This implementation is correct</option>
+      </select>
+    </div>
+    <div id="sCBq4" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Bug 4: Taint domain unsound</div>
+      <div class="code-block" style="margin:0.5rem 0;"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">let eval_binop a b =</div>
+<div class="line">  match a, b with</div>
+<div class="line active">  | Tainted, Clean -> Clean (* sanitized *)</div>
+<div class="line">  | Clean, Tainted -> Tainted</div>
+<div class="line">  | _ -> a</div>
+      </div></div>
+      <select id="sCBa4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select the bug...</option>
+        <option value="a">Operations don't sanitize — Tainted + Clean = Tainted</option>
+        <option value="b">Should return Bot for mixed taint</option>
+        <option value="c">The asymmetry is correct for ordered operations</option>
+        <option value="d">Missing Top case</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:0.75rem;">
+    <button class="btn" onclick="sCBCheck()">Check All</button>
+  </div>
+  <div id="sCBFeedback" style="display:none;margin-top:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.82rem;"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCBa1:'b',sCBa2:'a',sCBa3:'a',sCBa4:'a'};
+  const explanations = {
+    sCBa1:'<strong>join(Pos,Neg) must be ≥ both</strong> — Zero is NOT ≥ Pos and NOT ≥ Neg in the sign lattice. The LUB must be ⊤. This "compromise" violates the lattice axioms and breaks monotonicity.',
+    sCBa2:'<strong>Must check for division by zero!</strong> If 0 ∈ [c,d], division is undefined. The correct implementation returns ⊤ when the divisor interval contains zero. Also needs min/max of all quotients for negative ranges.',
+    sCBa3:'<strong>This is join, not widen!</strong> Widen must "overshoot": if the upper bound grew (d > b), jump to +∞. If the lower bound shrank (c < a), jump to −∞. Without this, the ascending chain may not converge.',
+    sCBa4:'<strong>Tainted + Clean = Tainted, not Clean!</strong> Arithmetic operations propagate taint — mixing tainted data with clean data doesn\'t sanitize it. Only explicit sanitizer functions (like <code>escape()</code>) can remove taint.'
+  };
+  window.sCBCheck = function(){
+    let score=0, html='';
+    [1,2,3,4].forEach(i=>{
+      const sel=document.getElementById('sCBa'+i).value;
+      const correct=sel===answers['sCBa'+i];
+      if(correct) score++;
+      document.getElementById('sCBq'+i).style.borderColor=sel===''?'#475569':correct?'#22c55e':'#ef4444';
+      html+=`<div style="color:${correct?'#22c55e':'#ef4444'};margin-bottom:0.4rem;">${correct?'✓':'✗'} ${explanations['sCBa'+i]}</div>`;
+    });
+    const fb=document.getElementById('sCBFeedback');
+    fb.innerHTML=`<div style="font-weight:700;color:${score>=3?'#22c55e':'#f59e0b'};margin-bottom:0.5rem;">Score: ${score}/4</div>`+html;
+    fb.style.display='block';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 15: Why Relational? ==================== -->
+<div class="slide" id="s15">
+  <h2>Why Relational? The Limits of Per-Variable Domains</h2>
+  <p style="color:#94a3b8;">All domains so far track <em>one variable at a time</em>. What happens when the property you need involves <strong style="color:#ef4444;">two variables</strong>?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block" style="font-size:0.82rem;">
+        <div class="code-content">
+<div class="line">i = 0</div>
+<div class="line">while i < n:</div>
+<div class="line">    a[i] = 0   # safe?</div>
+<div class="line">    i = i + 1</div>
+        </div>
+      </div>
+      <canvas id="cS15" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;margin-top:0.75rem;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s15Show('interval')">Interval View</button>
+        <button class="btn btn-sm" onclick="s15Show('truth')">True Region</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s15Info" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-size:0.82rem;color:#cbd5e1;min-height:120px;">
+        <span style="color:#94a3b8;">We need to prove <code>i < n</code> at line 3 to guarantee no out-of-bounds access. Click a view to see what intervals can (and can't) tell us.</span>
+      </div>
+      <div class="warning" style="margin-top:0.75rem;">
+        <strong>The Problem:</strong> Intervals say i ∈ [0,∞) and n ∈ [0,∞). Both ranges overlap — intervals <em>cannot</em> prove i < n because they track each variable independently. The relationship is invisible.
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>Key Insight:</strong> To prove i < n, we need a domain that tracks <em>relationships between variables</em> — a <strong>relational domain</strong>. That's what octagons and polyhedra do.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+  const ox=60, oy=250, sx=18, sy=-18;
+  function toC(x,y){ return [ox+x*sx, oy+y*sy]; }
+
+  function drawAxes(){
+    ctx.clearRect(0,0,520,300);
+    ctx.strokeStyle='#1e293b'; ctx.lineWidth=0.5;
+    for(let v=0;v<=14;v++){
+      ctx.beginPath(); ctx.moveTo(...toC(v,0)); ctx.lineTo(...toC(v,14)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(...toC(0,v)); ctx.lineTo(...toC(14,v)); ctx.stroke();
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(14,0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(0,14)); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText('i', ox+14*sx, oy+16);
+    ctx.textAlign='right'; ctx.fillText('n', ox-8, oy+14*sy);
+    for(let v=0;v<=12;v+=4){
+      ctx.textAlign='center'; ctx.fillText(v,...toC(v,-0.8));
+      ctx.textAlign='right'; ctx.fillText(v,toC(-0.5,v)[0],toC(0,v)[1]+4);
+    }
+  }
+
+  window.s15Show = function(mode){
+    drawAxes();
+    if(mode==='interval'){
+      // Box [0,12]×[0,12]
+      const [x1,y1]=toC(0,12),[x2,y2]=toC(12,0);
+      ctx.fillStyle='rgba(99,102,241,0.15)';
+      ctx.fillRect(x1,y1,x2-x1,y2-y1);
+      ctx.strokeStyle='#6366f1'; ctx.lineWidth=2;
+      ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+      // Bad point
+      ctx.beginPath(); ctx.arc(...toC(10,3),5,0,Math.PI*2);
+      ctx.fillStyle='#ef4444'; ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 9px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('!',toC(10,3)[0],toC(10,3)[1]);
+      // Label
+      ctx.fillStyle='#6366f1'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText('Interval: i∈[0,∞), n∈[0,∞)',280,20);
+      ctx.fillStyle='#ef4444'; ctx.font='11px monospace';
+      ctx.fillText('i=10, n=3 is "possible" — buffer overflow!',280,38);
+      document.getElementById('s15Info').innerHTML='<div style="color:#6366f1;font-weight:700;margin-bottom:0.5rem;">Interval View</div><div style="color:#cbd5e1;line-height:1.5;">Intervals track: <code>i ∈ [0, ∞)</code> and <code>n ∈ [0, ∞)</code><br><br>The square box includes <strong>every</strong> (i, n) pair — including i=10, n=3 where i > n. Intervals have <span style="color:#ef4444;">no way to express i < n</span> because each variable lives in its own independent range.<br><br>This means intervals <em>cannot verify the array access is safe</em>.</div>';
+    } else {
+      // True region: triangle where i < n
+      ctx.fillStyle='rgba(34,197,94,0.1)';
+      ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(0,12)); ctx.lineTo(...toC(11,12)); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='#22c55e'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(0,12)); ctx.lineTo(...toC(11,12)); ctx.closePath(); ctx.stroke();
+      // Diagonal
+      ctx.setLineDash([4,3]); ctx.strokeStyle='#f59e0b'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(12,12)); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#f59e0b'; ctx.font='10px monospace'; ctx.textAlign='left';
+      ctx.save(); ctx.translate(...toC(7,8)); ctx.rotate(-Math.PI/4); ctx.fillText('i = n',0,0); ctx.restore();
+      ctx.fillStyle='#22c55e'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText('True region: always i < n inside loop',280,20);
+      ctx.fillStyle='#94a3b8'; ctx.font='11px monospace';
+      ctx.fillText('Only points below the diagonal are reachable',280,38);
+      document.getElementById('s15Info').innerHTML='<div style="color:#22c55e;font-weight:700;margin-bottom:0.5rem;">True Region</div><div style="color:#cbd5e1;line-height:1.5;">In reality, <code>i</code> always satisfies <code>i < n</code> inside the loop body (that\'s the loop condition!).<br><br>The true region is the <strong>triangle below the diagonal</strong>. A relational domain can capture this by tracking the constraint <code>i − n ≤ −1</code>.<br><br>This is why we need <strong>octagon</strong> or <strong>polyhedra</strong> domains — they can express relationships between variables.</div>';
+    }
+  };
+
+  window.s15Reset = function(){
+    drawAxes();
+    document.getElementById('s15Info').innerHTML='<span style="color:#94a3b8;">We need to prove <code>i < n</code> at line 3 to guarantee no out-of-bounds access. Click a view to see what intervals can (and can\'t) tell us.</span>';
+  };
+
+  function init(){ drawAxes(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s15').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: The Octagon Domain ==================== -->
+<div class="slide" id="s16">
+  <h2>The Octagon Domain — Tracking ±x ± y ≤ c</h2>
+  <p style="color:#94a3b8;">Octagons track constraints of the form <strong style="color:#f59e0b;">±x ± y ≤ c</strong> for every pair of variables. Step through a loop analysis.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <canvas id="cS16" width="520" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s16Step()">Step</button>
+        <button class="btn btn-sm" onclick="s16Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s16Constraints" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;color:#cbd5e1;min-height:100px;">
+        <div style="color:#94a3b8;">Octagon constraints will appear here...</div>
+      </div>
+      <div id="s16Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.72rem;color:#cbd5e1;margin-top:0.5rem;max-height:90px;overflow-y:auto;"></div>
+      <div class="analogy" style="margin-top:0.5rem;font-size:0.8rem;">
+        <strong>Analogy:</strong> Intervals give each variable its own ruler. Octagons add a <strong>protractor</strong> between every pair — measuring the angle (difference) between them.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+  const ox=60, oy=260, sx=22, sy=-22;
+  function toC(x,y){ return [ox+x*sx, oy+y*sy]; }
+
+  // Program: i=0; n=10; while(i<n) { a[i]=0; i=i+1; }
+  // Octagon tracks: i, n, and i-n
+  const steps = [
+    { msg:'Initial: i=0, n=10', constraints:['i = 0','n = 10','i − n = −10'], region:[[0,10,0,10,0,10]], highlight:'init',
+      shape:[{x:0,y:10}], shapeType:'point' },
+    { msg:'Loop test: i < n? → 0 < 10 ✓ — add constraint i − n ≤ −1', constraints:['i ≥ 0','n = 10','i − n ≤ −1'], highlight:'test',
+      shape:[{x:0,y:10}], shapeType:'point' },
+    { msg:'a[i]=0 — safe! Octagon proves i=0, n=10, so i < n', constraints:['i = 0','n = 10','i − n = −10'], highlight:'body',
+      shape:[{x:0,y:10}], shapeType:'point' },
+    { msg:'i = i + 1 → i becomes 1. Update: i=1, i−n=−9', constraints:['i = 1','n = 10','i − n = −9'], highlight:'incr',
+      shape:[{x:1,y:10}], shapeType:'point' },
+    { msg:'Loop test: i < n? → 1 < 10 ✓. After several iterations...', constraints:['i ∈ [0,9]','n = 10','i − n ≤ −1'], highlight:'test',
+      shape:[{x:0,y:10},{x:9,y:10}], shapeType:'line' },
+    { msg:'Widening at loop header: i ∈ [0,∞), but i−n ≤ −1 is KEPT!', constraints:['i ≥ 0','n = 10','i − n ≤ −1','(so i ≤ 9)'], highlight:'widen',
+      shape:[{x:0,y:10},{x:9,y:10}], shapeType:'line' },
+    { msg:'Fixed point! Octagon proves: i < n always holds at a[i]. Array access is SAFE.', constraints:['i ≥ 0','n = 10','i − n ≤ −1','✓ i < n guaranteed!'], highlight:'done',
+      shape:[{x:0,y:10},{x:9,y:10}], shapeType:'line' }
+  ];
+  let stepIdx=0, timer=null;
+
+  function drawAxes(){
+    ctx.clearRect(0,0,520,310);
+    ctx.strokeStyle='#1e293b'; ctx.lineWidth=0.5;
+    for(let v=0;v<=12;v++){
+      ctx.beginPath(); ctx.moveTo(...toC(v,0)); ctx.lineTo(...toC(v,12)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(...toC(0,v)); ctx.lineTo(...toC(12,v)); ctx.stroke();
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(12,0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(0,12)); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText('i',ox+12*sx,oy+16);
+    ctx.textAlign='right'; ctx.fillText('n',ox-8,oy+12*sy);
+    for(let v=0;v<=10;v+=5){
+      ctx.textAlign='center'; ctx.fillText(v,...toC(v,-0.8));
+      ctx.textAlign='right'; ctx.fillText(v,toC(-0.5,v)[0],toC(0,v)[1]+4);
+    }
+    // Diagonal i=n
+    ctx.setLineDash([4,3]); ctx.strokeStyle='#47556980'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(12,12)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function draw(){
+    drawAxes();
+    const st=steps[stepIdx]||steps[0];
+    // Draw interval box faintly for comparison
+    if(stepIdx>=4){
+      ctx.fillStyle='rgba(99,102,241,0.05)';
+      ctx.fillRect(...toC(0,12),12*sx,-12*sy);
+      ctx.strokeStyle='#6366f140'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.strokeRect(...toC(0,12),12*sx,-12*sy);
+      ctx.setLineDash([]);
+      ctx.fillStyle='#6366f180'; ctx.font='9px monospace'; ctx.textAlign='right';
+      ctx.fillText('interval box',toC(12,12)[0]-4,toC(12,12)[1]+12);
+    }
+    // Octagon region
+    if(stepIdx>=5){
+      // Triangle: i∈[0,9], n=10, i<n
+      ctx.fillStyle='rgba(245,158,11,0.12)';
+      ctx.beginPath(); ctx.moveTo(...toC(0,10)); ctx.lineTo(...toC(9,10)); ctx.lineTo(...toC(0,10)); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(...toC(0,10)); ctx.lineTo(...toC(9,10)); ctx.stroke();
+    }
+    // Current point(s)
+    const clr = st.highlight==='done'?'#22c55e':st.highlight==='widen'?'#a78bfa':'#f59e0b';
+    st.shape.forEach(p=>{
+      ctx.beginPath(); ctx.arc(...toC(p.x,p.y),6,0,Math.PI*2);
+      ctx.fillStyle=clr; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    if(st.shapeType==='line'&&st.shape.length===2){
+      ctx.beginPath(); ctx.moveTo(...toC(st.shape[0].x,st.shape[0].y)); ctx.lineTo(...toC(st.shape[1].x,st.shape[1].y));
+      ctx.strokeStyle=clr; ctx.lineWidth=3; ctx.stroke();
+    }
+    // Title
+    ctx.fillStyle=clr; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+    ctx.fillText(st.msg.substring(0,60),280,18);
+  }
+
+  function updateUI(){
+    const st=steps[stepIdx];
+    draw();
+    document.getElementById('s16Constraints').innerHTML=
+      '<div style="color:#f59e0b;font-weight:700;margin-bottom:0.3rem;">Octagon Constraints:</div>'+
+      st.constraints.map(c=>{
+        const clr=c.includes('✓')?'#22c55e':c.includes('i − n')||c.includes('i < n')?'#f59e0b':'#e2e8f0';
+        return `<div style="color:${clr};">${c}</div>`;
+      }).join('');
+    const log=document.getElementById('s16Log');
+    log.innerHTML+=`<div><span style="color:#38bdf8;">Step ${stepIdx+1}:</span> ${st.msg}</div>`;
+    log.scrollTop=log.scrollHeight;
+  }
+
+  window.s16Step=function(){
+    if(stepIdx>=steps.length) return;
+    updateUI();
+    stepIdx++;
+  };
+  window.s16Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{
+      if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;}
+      s16Step();
+    },1200);
+  };
+  window.s16Reset=function(){
+    if(timer) clearInterval(timer); timer=null;
+    stepIdx=0;
+    document.getElementById('s16Log').innerHTML='';
+    document.getElementById('s16Constraints').innerHTML='<div style="color:#94a3b8;">Octagon constraints will appear here...</div>';
+    drawAxes();
+  };
+
+  function init(){ s16Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s16').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s16'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 17: Polyhedra & The Precision Ladder ==================== -->
+<div class="slide" id="s17">
+  <h2>Polyhedra & The Precision Ladder</h2>
+  <p style="color:#94a3b8;">Polyhedra track <strong style="color:#a78bfa;">arbitrary linear constraints</strong>: a₁x₁ + a₂x₂ + ... + aₙxₙ ≤ c. Toggle to compare all three.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:0.8rem;">
+    <div>
+      <canvas id="cS17" width="520" height="310" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+        <button class="btn btn-sm" onclick="s17View('interval')" style="border:2px solid #6366f1;">Interval</button>
+        <button class="btn btn-sm" onclick="s17View('octagon')" style="border:2px solid #f59e0b;">Octagon</button>
+        <button class="btn btn-sm" onclick="s17View('polyhedra')" style="border:2px solid #a78bfa;">Polyhedra</button>
+        <button class="btn btn-sm" onclick="s17View('all')">All Three</button>
+      </div>
+    </div>
+    <div>
+      <div id="s17Info" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.7rem;font-size:0.82rem;color:#cbd5e1;min-height:100px;">
+        <span style="color:#94a3b8;">Program: <code>y = 2*x + 1</code> where <code>x ∈ [0,5]</code>.<br>True region: line segment from (0,1) to (5,11).<br><br>Click a domain to see how it approximates this.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-top:0.6rem;">
+        <div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:8px;padding:0.5rem;font-size:0.7rem;text-align:center;">
+          <div style="color:#6366f1;font-weight:700;">Intervals</div>
+          <div style="color:#94a3b8;">Per-variable only</div>
+          <div style="color:#cbd5e1;">O(n) space</div>
+          <div style="color:#22c55e;">Fast</div>
+        </div>
+        <div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:8px;padding:0.5rem;font-size:0.7rem;text-align:center;">
+          <div style="color:#f59e0b;font-weight:700;">Octagons</div>
+          <div style="color:#94a3b8;">±x ± y ≤ c</div>
+          <div style="color:#cbd5e1;">O(n²) space</div>
+          <div style="color:#f59e0b;">Medium</div>
+        </div>
+        <div style="background:rgba(167,139,250,0.1);border:1px solid #a78bfa;border-radius:8px;padding:0.5rem;font-size:0.7rem;text-align:center;">
+          <div style="color:#a78bfa;font-weight:700;">Polyhedra</div>
+          <div style="color:#94a3b8;">a₁x+a₂y ≤ c</div>
+          <div style="color:#cbd5e1;">O(2ⁿ) space</div>
+          <div style="color:#ef4444;">Expensive</div>
+        </div>
+      </div>
+      <div class="key-idea" style="margin-top:0.6rem;font-size:0.8rem;">
+        <strong>The Precision Ladder:</strong> Intervals ⊂ Octagons ⊂ Polyhedra. Each step up captures more relationships but costs more. Pick the cheapest that answers your question.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS17');
+  const ctx = canvas.getContext('2d');
+  const ox=60, oy=270, sx=35, sy=-20;
+  function toC(x,y){ return [ox+x*sx, oy+y*sy]; }
+
+  // Program: y = 2*x + 1, x ∈ [0,5]. True: line from (0,1) to (5,11).
+  // Interval: x∈[0,5], y∈[1,11] → box
+  // Octagon: x∈[0,5], y∈[1,11], y-x≤6, x-y≤-1, y+x≤16, -y-x≤-1
+  //   Best octagon: tightest ±x±y≤c. y-x: ranges from 1(at x=0) to 6(at x=5). So y-x≤6, x-y≤-1.
+  //   y+x: ranges from 1(at 0,1) to 16(at 5,11). So y+x≤16, -y-x≤-1.
+  //   This gives an octagonal region tighter than the box.
+  // Polyhedra: y=2x+1 exactly → line segment
+
+  function drawAxes(){
+    ctx.clearRect(0,0,520,310);
+    ctx.strokeStyle='#1e293b'; ctx.lineWidth=0.5;
+    for(let v=0;v<=14;v++){
+      ctx.beginPath(); ctx.moveTo(...toC(v,0)); ctx.lineTo(...toC(v,14)); ctx.stroke();
+    }
+    for(let v=0;v<=14;v++){
+      ctx.beginPath(); ctx.moveTo(...toC(0,v)); ctx.lineTo(...toC(14,v)); ctx.stroke();
+    }
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(14,0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(...toC(0,0)); ctx.lineTo(...toC(0,14)); ctx.stroke();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText('x',ox+14*sx,oy+16);
+    ctx.textAlign='right'; ctx.fillText('y',ox-8,oy+14*sy);
+    for(let v=0;v<=12;v+=2){
+      ctx.textAlign='center'; ctx.fillText(v,...toC(v,-0.6));
+    }
+    for(let v=0;v<=12;v+=2){
+      ctx.textAlign='right'; ctx.fillText(v,toC(-0.3,v)[0],toC(0,v)[1]+4);
+    }
+  }
+
+  function drawInterval(){
+    const [bx,by]=toC(0,11), bw=5*sx, bh=10*sy*-1;
+    ctx.fillStyle='rgba(99,102,241,0.12)';
+    ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeStyle='#6366f1'; ctx.lineWidth=2;
+    ctx.strokeRect(bx,by,bw,bh);
+  }
+
+  function drawOctagon(){
+    // Octagon vertices (intersection of ±x±y constraints with x,y bounds):
+    // The true line goes (0,1)→(5,11). Octagon constraints:
+    // y-x≤6 (tightest at x=5,y=11), x-y≤-1 (tightest at x=0,y=1)
+    // y+x≤16 (at x=5,y=11), -(y+x)≤-1 (at x=0,y=1)
+    // Combined with x∈[0,5], y∈[1,11]:
+    // Vertices: (0,1), (0,6), (5,11), (5,6) → wait, let's compute properly
+    // x=0: y-0≤6→y≤6, 0-y≤-1→y≥1. So y∈[1,6]. Points: (0,1),(0,6)
+    // x=5: y-5≤6→y≤11, 5-y≤-1→y≥6. So y∈[6,11]. Points: (5,6),(5,11)
+    ctx.fillStyle='rgba(245,158,11,0.12)';
+    ctx.beginPath();
+    ctx.moveTo(...toC(0,1)); ctx.lineTo(...toC(0,6)); ctx.lineTo(...toC(5,11)); ctx.lineTo(...toC(5,6)); ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(...toC(0,1)); ctx.lineTo(...toC(0,6)); ctx.lineTo(...toC(5,11)); ctx.lineTo(...toC(5,6)); ctx.closePath();
+    ctx.stroke();
+  }
+
+  function drawPolyhedra(){
+    // Exact line: y=2x+1 from (0,1) to (5,11)
+    ctx.strokeStyle='#a78bfa'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(...toC(0,1)); ctx.lineTo(...toC(5,11)); ctx.stroke();
+    // Endpoints
+    [0,5].forEach((xv,i)=>{
+      const yv=2*xv+1;
+      ctx.beginPath(); ctx.arc(...toC(xv,yv),5,0,Math.PI*2);
+      ctx.fillStyle='#a78bfa'; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+  }
+
+  function drawTruth(){
+    ctx.setLineDash([3,3]); ctx.strokeStyle='#22c55e80'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(...toC(0,1)); ctx.lineTo(...toC(5,11)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  const infoTexts = {
+    interval:'<div style="color:#6366f1;font-weight:700;">Interval</div><div style="color:#cbd5e1;margin-top:0.3rem;">x ∈ [0,5], y ∈ [1,11]<br><br>Includes (0,11) and (5,1) — points where y ≠ 2x+1. The box is the loosest approximation.<br><span style="color:#ef4444;">55 false integer points</span> out of 60 in the box.</div>',
+    octagon:'<div style="color:#f59e0b;font-weight:700;">Octagon</div><div style="color:#cbd5e1;margin-top:0.3rem;">x ∈ [0,5], y ∈ [1,11], y−x ≤ 6, x−y ≤ −1<br><br>The diamond/parallelogram is tighter than the box — it uses 45° constraints to cut corners.<br><span style="color:#f59e0b;">~25 false integer points</span> — better, but still not exact. Cannot express y = <strong>2</strong>x + 1 (coefficient ≠ ±1).</div>',
+    polyhedra:'<div style="color:#a78bfa;font-weight:700;">Polyhedra</div><div style="color:#cbd5e1;margin-top:0.3rem;">y = 2x + 1, x ∈ [0,5]<br><br>Can express <em>any</em> linear constraint: y ≤ 2x+1 AND y ≥ 2x+1. Captures the exact line segment.<br><span style="color:#22c55e;">0 false points</span> — perfect precision. But cost is O(2ⁿ) for n variables.<br><br><span style="color:#94a3b8;">Used by: Apron library, PPL (Parma Polyhedra Library)</span></div>',
+    all:'<div style="color:#38bdf8;font-weight:700;">All Three Overlaid</div><div style="color:#cbd5e1;margin-top:0.3rem;"><span style="color:#6366f1;">■</span> Interval: entire box (loosest)<br><span style="color:#f59e0b;">■</span> Octagon: parallelogram (tighter)<br><span style="color:#a78bfa;">■</span> Polyhedra: exact line (tightest)<br><br>Each step up the ladder eliminates more false positives — at the cost of more computation.<br><br><strong>Rule:</strong> Use the cheapest domain that answers your question. Don\'t pay for polyhedra if intervals suffice!</div>'
+  };
+
+  window.s17View=function(mode){
+    drawAxes();
+    if(mode==='interval'||mode==='all') drawInterval();
+    if(mode==='octagon'||mode==='all') drawOctagon();
+    if(mode==='all') drawTruth();
+    if(mode==='polyhedra'||mode==='all') drawPolyhedra();
+    if(mode==='interval') drawTruth();
+    if(mode==='octagon') drawTruth();
+    document.getElementById('s17Info').innerHTML=infoTexts[mode];
+  };
+
+  function init(){ drawAxes(); drawTruth(); document.getElementById('s17Info').innerHTML='<span style="color:#94a3b8;">Program: <code>y = 2*x + 1</code> where <code>x ∈ [0,5]</code>.<br>True region: line segment from (0,1) to (5,11).<br><br>Click a domain to see how it approximates this.</span>'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s17').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s17'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 18: Domain Selection Guide ==================== -->
+<div class="slide" id="s18">
+  <h2>The Domain Selection Guide</h2>
+  <p>Choosing the right domain is a precision/cost trade-off. Follow this decision tree.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS18" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div id="s18Info" style="background:rgba(0,0,0,0.25);border-radius:12px;padding:1rem;font-size:0.85rem;min-height:200px;">
+        <div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click a node in the decision tree to see the recommendation</div>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>Rule of thumb:</strong> Start with the simplest domain that could answer your question. Only add complexity if you need more precision.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS18');
+  const ctx = canvas.getContext('2d');
+
+  const nodes = [
+    {id:0, label:'What property?', x:260, y:30, w:130, color:'#38bdf8', type:'q'},
+    {id:1, label:'Exact value?', x:100, y:100, w:100, color:'#22c55e', type:'q'},
+    {id:2, label:'Value range?', x:260, y:100, w:100, color:'#f59e0b', type:'q'},
+    {id:3, label:'Data origin?', x:420, y:100, w:100, color:'#ef4444', type:'q'},
+    {id:4, label:'Constant\nPropagation', x:50, y:190, w:90, color:'#22c55e', type:'a'},
+    {id:5, label:'Sign\nDomain', x:150, y:190, w:80, color:'#6366f1', type:'a'},
+    {id:6, label:'Has loops?', x:260, y:190, w:90, color:'#f59e0b', type:'q'},
+    {id:7, label:'Taint\nDomain', x:420, y:190, w:80, color:'#ef4444', type:'a'},
+    {id:8, label:'Interval\n(no widen)', x:200, y:280, w:90, color:'#a78bfa', type:'a'},
+    {id:9, label:'Interval\n+ Widening', x:320, y:280, w:90, color:'#f472b6', type:'a'},
+    {id:10, label:'Need\nrelations?', x:440, y:280, w:90, color:'#38bdf8', type:'q'},
+    {id:11, label:'Octagon', x:400, y:355, w:70, color:'#f59e0b', type:'a'},
+    {id:12, label:'Polyhedra', x:490, y:355, w:75, color:'#a78bfa', type:'a'}
+  ];
+  const edges = [[0,1],[0,2],[0,3],[1,4],[1,5],[2,6],[3,7],[6,8],[6,9],[2,10],[10,11],[10,12]];
+  const edgeLabels = ['value','range','security','yes','rough','','','no loops','loops','relational','yes','complex'];
+
+  let selected = -1;
+
+  const infos = {
+    0:'<div style="color:#38bdf8;font-weight:700;">Start: What property do you need?</div><div style="color:#cbd5e1;margin-top:0.5rem;">Ask yourself: what <em>question</em> should the analysis answer?<br><br>• "Is this variable always 5?" → exact value<br>• "Can this index go out of bounds?" → value range<br>• "Can user input reach this SQL query?" → data origin</div>',
+    1:'<div style="color:#22c55e;font-weight:700;">Do you need exact values?</div><div style="color:#cbd5e1;margin-top:0.5rem;">If yes → <strong>Constant Propagation</strong> (flat lattice, height 3).<br>If just positive/negative/zero → <strong>Sign Domain</strong> (5 elements).<br><br>Both are finite, fast, and need no widening.</div>',
+    2:'<div style="color:#f59e0b;font-weight:700;">Do you need value ranges?</div><div style="color:#cbd5e1;margin-top:0.5rem;">Interval domain tracks [lo, hi] bounds. But check:<br>• No loops? → plain interval join suffices<br>• Has loops? → MUST add widening<br>• Need x ≤ y? → need relational domain (octagon/polyhedra)</div>',
+    3:'<div style="color:#ef4444;font-weight:700;">Tracking data origin?</div><div style="color:#cbd5e1;margin-top:0.5rem;">Taint analysis: 4-element flat lattice {⊥, Tainted, Clean, ⊤}.<br><br>For multi-source tracking, use <strong>powerset of labels</strong>: {user_input, cookie, env_var, ...}. Still finite height.</div>',
+    4:'<div style="color:#22c55e;font-weight:700;">Constant Propagation</div><div style="color:#cbd5e1;margin-top:0.5rem;">Best for: compiler optimizations (constant folding), dead code elimination.<br><br>Flat lattice — any two different constants → ⊤. Very fast but all-or-nothing precision.</div>',
+    5:'<div style="color:#6366f1;font-weight:700;">Sign Domain</div><div style="color:#cbd5e1;margin-top:0.5rem;">Best for: quick safety checks (division by zero, array index positivity).<br><br>5 elements, height 3. Very cheap but can\'t prove x*x ≥ 0.</div>',
+    6:'<div style="color:#f59e0b;font-weight:700;">Does the program have loops?</div><div style="color:#cbd5e1;margin-top:0.5rem;">Loops create ascending chains in interval domain:<br>[0,0] → [0,1] → [0,2] → ...<br><br>Without loops: plain interval works. With loops: <strong>must</strong> add widening.</div>',
+    7:'<div style="color:#ef4444;font-weight:700;">Taint Domain</div><div style="color:#cbd5e1;margin-top:0.5rem;">Best for: security (SQL injection, XSS, command injection).<br><br>Propagates taint from sources to sinks. Sanitizers clear taint. Used by CodeQL, Semgrep, Infer.</div>',
+    8:'<div style="color:#a78bfa;font-weight:700;">Interval (No Widening)</div><div style="color:#cbd5e1;margin-top:0.5rem;">For loop-free code: interval analysis converges naturally since each variable\'s bounds are set once and only joined at merge points.<br><br>Useful for straight-line initialization code analysis.</div>',
+    9:'<div style="color:#f472b6;font-weight:700;">Interval + Widening</div><div style="color:#cbd5e1;margin-top:0.5rem;">The standard choice for numeric programs with loops.<br><br>Widening at loop headers: if bound grows, jump to ∞. Optionally follow with narrowing to recover precision.</div>',
+    10:'<div style="color:#38bdf8;font-weight:700;">Need variable relationships?</div><div style="color:#cbd5e1;margin-top:0.5rem;">If you need to prove <code>i < array.length</code> or <code>x ≤ y</code>, single-variable domains can\'t help. Choose:<br>• Octagon: ±x ± y ≤ c (quadratic cost)<br>• Polyhedra: arbitrary linear (exponential cost)</div>',
+    11:'<div style="color:#f59e0b;font-weight:700;">Octagon Domain</div><div style="color:#cbd5e1;margin-top:0.5rem;">Tracks constraints: ±x ± y ≤ c. O(n²) per variable pair.<br><br>Used by Astrée (verified A380 flight code). Good for array bounds: <code>i - len ≤ -1</code> means <code>i < len</code>.</div>',
+    12:'<div style="color:#a78bfa;font-weight:700;">Polyhedra Domain</div><div style="color:#cbd5e1;margin-top:0.5rem;">Most precise non-relational: arbitrary linear constraints.<br><br>Exponential cost. Only practical for ≤ 10-20 variables. Used in research and specialized tools like Apron library.</div>'
+  };
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    // Edges
+    edges.forEach(([a,b],i)=>{
+      const na=nodes[a], nb=nodes[b];
+      ctx.beginPath(); ctx.moveTo(na.x,na.y+18); ctx.lineTo(nb.x,nb.y-14);
+      ctx.strokeStyle=(selected===a||selected===b)?'#f59e0b':'#47556980';
+      ctx.lineWidth=1.5; ctx.stroke();
+      // Label
+      if(edgeLabels[i]){
+        const mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2;
+        ctx.fillStyle='#64748b'; ctx.font='8px monospace'; ctx.textAlign='center';
+        ctx.fillText(edgeLabels[i],mx+10,my-2);
+      }
+    });
+    // Nodes
+    nodes.forEach((n,i)=>{
+      const hw=n.w/2;
+      ctx.beginPath();
+      if(n.type==='q'){
+        // Diamond for questions
+        ctx.moveTo(n.x,n.y-16); ctx.lineTo(n.x+hw,n.y); ctx.lineTo(n.x,n.y+16); ctx.lineTo(n.x-hw,n.y); ctx.closePath();
+      } else {
+        ctx.roundRect(n.x-hw,n.y-14,n.w,28,6);
+      }
+      ctx.fillStyle=i===selected?n.color+'40':'rgba(30,41,59,0.9)';
+      ctx.fill();
+      ctx.strokeStyle=n.color; ctx.lineWidth=i===selected?2.5:1; ctx.stroke();
+      ctx.fillStyle=i===selected?'#fff':n.color;
+      ctx.font=`${i===selected?'bold ':''}9px monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      const lines=n.label.split('\n');
+      lines.forEach((l,li)=>{
+        ctx.fillText(l,n.x,n.y+(li-(lines.length-1)/2)*11);
+      });
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(370/rect.height);
+    nodes.forEach((n,i)=>{
+      if(Math.abs(mx-n.x)<n.w/2+5 && Math.abs(my-n.y)<20){
+        selected=i; draw();
+        document.getElementById('s18Info').innerHTML=infos[i];
+      }
+    });
+  });
+
+  function init(){ selected=-1; draw(); document.getElementById('s18Info').innerHTML='<div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click a node in the decision tree to see the recommendation</div>'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s18').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 19: Key Takeaways ==================== -->
+<div class="slide" id="s19">
+  <h2>Key Takeaways</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;">
+    <div class="key-idea">
+      <strong>1. Approximation Is Inevitable</strong><br>
+      Perfect analysis is undecidable (Rice's theorem). Abstract domains make the <em>controlled compromise</em> — trading precision we don't need for computability we must have.
+    </div>
+    <div class="key-idea">
+      <strong>2. Domain = Precision/Cost Trade-off</strong><br>
+      Sign (5 elements, instant) → Constant (flat, fast) → Interval (infinite height, needs widening) → Octagon (quadratic) → Polyhedra (exponential). Pick the lightest domain that answers your question.
+    </div>
+    <div class="key-idea">
+      <strong>3. Composition Multiplies Power</strong><br>
+      The reduced product of two cheap domains can be more precise than either expensive alternative. Sign × Parity catches things neither alone can. Always consider domain combinations.
+    </div>
+    <div class="key-idea">
+      <strong>4. Soundness Is Non-Negotiable</strong><br>
+      Every domain must <em>over-approximate</em>: if the concrete answer is "yes," the abstract answer must include "yes." False positives are OK; false negatives are bugs in the analyzer.
+    </div>
+  </div>
+  <div class="analogy" style="margin-top:1.5rem;">
+    <strong>Analogy:</strong> Abstract domains are like <strong>measuring instruments</strong>. A ruler (intervals) measures length. A protractor (signs) measures direction. A surveyor's total station (polyhedra) measures both — but costs 100× more. Choose the right tool for the job.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 20: Domains Across the Bootcamp ==================== -->
+<div class="slide" id="s20">
+  <h2>Abstract Domains Across the Bootcamp</h2>
+  <p>Every module uses abstract domains. Here's the map of where each domain appears.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1.5rem;">
+    <div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18d').style.display=this.querySelector('.s18d').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#6366f1;">Module 3</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Dataflow Foundations</div>
+      <div class="s18d" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        <strong>Powerset domain</strong> — sets of definitions, sets of live variables. The simplest abstract domain: ⊔ = ∪, ⊓ = ∩, ⊑ = ⊆. Finite height = |definitions|.
+      </div>
+    </div>
+    <div style="background:rgba(34,197,94,0.1);border:1px solid #22c55e;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18d').style.display=this.querySelector('.s18d').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#22c55e;">Module 4</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Abstract Interpretation</div>
+      <div class="s18d" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        <strong>Sign, Constant, Interval</strong> — the core trio. You implement all three as OCaml modules conforming to ABSTRACT_DOMAIN. Galois connections formalize soundness.
+      </div>
+    </div>
+    <div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18d').style.display=this.querySelector('.s18d').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#f59e0b;">Module 5</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Security Analysis</div>
+      <div class="s18d" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        <strong>Taint domain</strong> — tracks data provenance for security. Flat lattice {⊥, Tainted, Clean, ⊤}. Source/sink/sanitizer model.
+      </div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:rgba(167,139,250,0.1);border:1px solid #a78bfa;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18d').style.display=this.querySelector('.s18d').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#a78bfa;">Module 6</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Tools Integration</div>
+      <div class="s18d" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        Production tools use sophisticated domains: Infer uses <strong>separation logic</strong> (heap shapes), Astrée uses <strong>octagons</strong>, CodeQL uses <strong>Datalog-encoded</strong> domains.
+      </div>
+    </div>
+    <div style="background:rgba(244,114,182,0.1);border:1px solid #f472b6;border-radius:10px;padding:1rem;cursor:pointer;" onclick="this.querySelector('.s18d').style.display=this.querySelector('.s18d').style.display==='none'?'block':'none'">
+      <div style="font-weight:700;color:#f472b6;">Labs 4 & 6</div>
+      <div style="color:#94a3b8;font-size:0.8rem;">Hands-On Implementation</div>
+      <div class="s18d" style="display:none;margin-top:0.5rem;font-size:0.78rem;color:#cbd5e1;">
+        Lab 4 builds a <strong>functor-based analyzer</strong> parameterized by domain. Lab 6 combines <strong>Sign + Taint</strong> in a single tool — your first reduced product!
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1.5rem;padding:1rem;background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15));border-radius:12px;">
+    <span style="font-size:1.2rem;font-weight:700;color:#a78bfa;">The domain is the lens through which your analyzer sees the program.</span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== CHALLENGE sCC: Choose the Right Domain ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: Choose the Right Domain</h2>
+  <p>For each scenario, pick the most appropriate abstract domain. Consider precision needs and cost.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div id="sCCq1" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Scenario 1</div>
+      <div style="color:#cbd5e1;font-size:0.82rem;margin:0.4rem 0;">A compiler wants to replace <code>x * 2</code> with <code>x << 1</code> when it can prove x is always the same constant.</div>
+      <select id="sCCa1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select domain...</option>
+        <option value="a">Sign Domain</option>
+        <option value="b">Constant Propagation</option>
+        <option value="c">Interval Domain</option>
+        <option value="d">Taint Domain</option>
+      </select>
+    </div>
+    <div id="sCCq2" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Scenario 2</div>
+      <div style="color:#cbd5e1;font-size:0.82rem;margin:0.4rem 0;">A security tool must detect if <code>request.params</code> can reach <code>db.query()</code> without passing through <code>sanitize()</code>.</div>
+      <select id="sCCa2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select domain...</option>
+        <option value="a">Interval Domain</option>
+        <option value="b">Sign Domain</option>
+        <option value="c">Constant Propagation</option>
+        <option value="d">Taint Domain</option>
+      </select>
+    </div>
+    <div id="sCCq3" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Scenario 3</div>
+      <div style="color:#cbd5e1;font-size:0.82rem;margin:0.4rem 0;">Prove that array index <code>i</code> is always between 0 and <code>arr.length - 1</code> inside a loop.</div>
+      <select id="sCCa3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select domain...</option>
+        <option value="a">Sign Domain</option>
+        <option value="b">Constant Propagation</option>
+        <option value="c">Interval + Widening</option>
+        <option value="d">Octagon Domain</option>
+      </select>
+    </div>
+    <div id="sCCq4" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Scenario 4 (Trap!)</div>
+      <div style="color:#cbd5e1;font-size:0.82rem;margin:0.4rem 0;">Prove that <code>i < n</code> holds at a specific point, where both <code>i</code> and <code>n</code> are variables modified in a loop.</div>
+      <select id="sCCa4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select domain...</option>
+        <option value="a">Interval + Widening</option>
+        <option value="b">Sign Domain</option>
+        <option value="c">Constant Propagation</option>
+        <option value="d">Octagon Domain (relational needed!)</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:0.75rem;">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCFeedback" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-size:0.78rem;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sCCa1:'b',sCCa2:'d',sCCa3:'c',sCCa4:'d'};
+  const explanations = {
+    sCCa1:'<strong>Constant Propagation</strong> — the compiler needs to know the <em>exact value</em> to do the replacement. Sign only tells you positive/negative; intervals give a range. Only constant propagation tells you "x is always 42."',
+    sCCa2:'<strong>Taint Domain</strong> — this is textbook taint analysis. Track data from source (<code>request.params</code>) through operations to sink (<code>db.query()</code>). Sanitizer (<code>sanitize()</code>) clears taint. No numeric reasoning needed.',
+    sCCa3:'<strong>Interval + Widening</strong> — need to track [0, arr.length-1] range inside a loop. Widening at loop header forces convergence. Intervals are sufficient because the bound is a per-variable range check.',
+    sCCa4:'<strong>Octagon Domain</strong> — this is the trap! Intervals track each variable independently: <code>i ∈ [0,100]</code> and <code>n ∈ [0,100]</code>. But <code>i < n</code> is a <em>relationship between two variables</em>. Octagons can express <code>i - n ≤ -1</code>. Intervals cannot!'
+  };
+  window.sCCCheck = function(){
+    let score=0, html='';
+    [1,2,3,4].forEach(i=>{
+      const sel=document.getElementById('sCCa'+i).value;
+      const correct=sel===answers['sCCa'+i];
+      if(correct) score++;
+      document.getElementById('sCCq'+i).style.borderColor=sel===''?'#475569':correct?'#22c55e':'#ef4444';
+      html+=`<div style="color:${correct?'#22c55e':'#ef4444'};margin-bottom:0.4rem;">${correct?'✓':'✗'} Scenario ${i}: ${explanations['sCCa'+i]}</div>`;
+    });
+    const fb=document.getElementById('sCCFeedback');
+    fb.innerHTML=`<div style="font-weight:700;color:${score>=3?'#22c55e':'#f59e0b'};margin-bottom:0.5rem;">Score: ${score}/4</div>`+html;
+    fb.style.display='block';
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ sQ1: Domain Properties ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz 1: Domain Properties</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1.5rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.75rem;">Q1: What is the height of the constant propagation lattice?</div>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q1" value="a"> 2
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q1" value="b"> 3
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q1" value="c"> ∞ (infinite)
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q1" value="d"> It depends on the program
+      </label>
+      <div id="sQ1f1" style="margin-top:0.5rem;font-size:0.78rem;display:none;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.75rem;">Q2: What is join(Const(3), Const(7)) in the constant domain?</div>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q2" value="a"> Const(5) (average)
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q2" value="b"> Const(7) (max)
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q2" value="c"> ⊤ (Top)
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q2" value="d"> ⊥ (Bot)
+      </label>
+      <div id="sQ1f2" style="margin-top:0.5rem;font-size:0.78rem;display:none;"></div>
+    </div>
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.75rem;">Q3: Which domain MUST use widening?</div>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q3" value="a"> Sign (height 3)
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q3" value="b"> Constant (flat)
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q3" value="c"> Interval (infinite height)
+      </label>
+      <label style="display:block;margin:0.4rem 0;cursor:pointer;color:#cbd5e1;font-size:0.85rem;">
+        <input type="radio" name="sQ1q3" value="d"> Taint (4 elements)
+      </label>
+      <div id="sQ1f3" style="margin-top:0.5rem;font-size:0.78rem;display:none;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1.5rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-weight:700;font-size:1.1rem;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sQ1q1:'b',sQ1q2:'c',sQ1q3:'c'};
+  const feedback = {
+    sQ1q1:{b:'Correct! Flat lattice: ⊥ → Const(n) → ⊤. Three levels = height 3. Despite infinite width (one element per integer), the longest chain is only 3.', wrong:'The constant propagation lattice is flat: ⊥ → Const(n) → ⊤ = height 3. Infinite elements, but finite height!'},
+    sQ1q2:{c:'Correct! Different constants have no upper bound except ⊤. Flat lattice = all-or-nothing. join(Const(3), Const(7)) = ⊤.', wrong:'In a flat lattice, two different constants are incomparable. Their LUB is ⊤. No averaging or max — just collapse.'},
+    sQ1q3:{c:'Correct! Interval has infinite height: [0,0] ⊑ [0,1] ⊑ [0,2] ⊑ ... The chain never terminates without widening. All others are finite height.', wrong:'Widening is needed when the lattice has infinite ascending chains. Only the interval domain has infinite height among these choices.'}
+  };
+  window.sQ1Check = function(){
+    let score=0;
+    [1,2,3].forEach(i=>{
+      const sel=document.querySelector(`input[name="sQ1q${i}"]:checked`);
+      const val=sel?sel.value:'';
+      const correct=val===answers[`sQ1q${i}`];
+      if(correct) score++;
+      const fb=document.getElementById(`sQ1f${i}`);
+      fb.style.display='block';
+      fb.style.color=correct?'#22c55e':'#ef4444';
+      fb.textContent=correct?feedback[`sQ1q${i}`][val]:feedback[`sQ1q${i}`].wrong;
+    });
+    const sc=document.getElementById('sQ1Score');
+    sc.textContent=`${score}/3`;
+    sc.style.color=score===3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ sQ2: Trace Through Domains ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz 2: Trace Through Domains</h2>
+  <p>Given this program, predict the abstract state at each point in the <strong>sign domain</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content" style="font-size:0.82rem;">
+<div class="line">a = -3;</div>
+<div class="line">b = 7;</div>
+<div class="line">c = a + b;</div>
+<div class="line">d = a * a;</div>
+<div class="line">e = c * d;</div>
+      </div></div>
+      <div style="margin-top:1rem;font-size:0.85rem;">
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#cbd5e1;">c = a + b → sign of c?</span>
+          <select id="sQ2a1" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+            <option value="">...</option><option value="Neg">Neg</option><option value="Zero">Zero</option><option value="Pos">Pos</option><option value="Top">⊤</option>
+          </select>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#cbd5e1;">d = a * a → sign of d?</span>
+          <select id="sQ2a2" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+            <option value="">...</option><option value="Neg">Neg</option><option value="Zero">Zero</option><option value="Pos">Pos</option><option value="Top">⊤</option>
+          </select>
+        </div>
+        <div style="margin-bottom:0.5rem;">
+          <span style="color:#cbd5e1;">e = c * d → sign of e?</span>
+          <select id="sQ2a3" style="padding:0.3rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.82rem;">
+            <option value="">...</option><option value="Neg">Neg</option><option value="Zero">Zero</option><option value="Pos">Pos</option><option value="Top">⊤</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="sQ2Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ2Reveal()">Show Trace</button>
+      </div>
+    </div>
+    <div>
+      <div id="sQ2Feedback" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:1rem;font-size:0.85rem;min-height:280px;">
+        <div style="color:#94a3b8;">Answer the questions and click Check, or click Show Trace to see the full walkthrough.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Concrete: a=-3, b=7, c=4, d=9, e=36
+  // Sign: a=Neg, b=Pos, c=Neg+Pos=⊤, d=Neg*Neg=Pos, e=⊤*Pos=⊤
+  window.sQ2Check = function(){
+    const a1=document.getElementById('sQ2a1').value;
+    const a2=document.getElementById('sQ2a2').value;
+    const a3=document.getElementById('sQ2a3').value;
+    let html='';
+    // c: Neg + Pos = ⊤
+    const c1=a1==='Top';
+    html+=`<div style="color:${c1?'#22c55e':'#ef4444'};margin-bottom:0.5rem;">${c1?'✓':'✗'} c = Neg + Pos = <strong>⊤</strong> — sign analysis can't determine the sign of -3+7. Concrete answer is 4 (Pos), but the abstract answer must be ⊤.</div>`;
+    // d: Neg * Neg = Pos
+    const c2=a2==='Pos';
+    html+=`<div style="color:${c2?'#22c55e':'#ef4444'};margin-bottom:0.5rem;">${c2?'✓':'✗'} d = Neg × Neg = <strong>Pos</strong> — negative times negative is always positive. Sign CAN determine this.</div>`;
+    // e: ⊤ * Pos = ⊤
+    const c3=a3==='Top';
+    html+=`<div style="color:${c3?'#22c55e':'#ef4444'};margin-bottom:0.5rem;">${c3?'✓':'✗'} e = ⊤ × Pos = <strong>⊤</strong> — once we have ⊤, it propagates. Concrete answer is 36 (Pos), but sign lost precision at c.</div>`;
+    const score=(c1?1:0)+(c2?1:0)+(c3?1:0);
+    document.getElementById('sQ2Feedback').innerHTML=`<div style="font-weight:700;color:${score===3?'#22c55e':'#f59e0b'};margin-bottom:0.75rem;">Score: ${score}/3</div>`+html;
+  };
+
+  window.sQ2Reveal = function(){
+    document.getElementById('sQ2Feedback').innerHTML=`
+      <div style="font-weight:700;color:#38bdf8;margin-bottom:0.5rem;">Full Sign Domain Trace:</div>
+      <div style="color:#ef4444;margin-bottom:0.3rem;">a = -3 → α(-3) = <strong>Neg</strong></div>
+      <div style="color:#22c55e;margin-bottom:0.3rem;">b = 7 → α(7) = <strong>Pos</strong></div>
+      <div style="color:#f59e0b;margin-bottom:0.3rem;">c = a + b → Neg + Pos = <strong>⊤</strong> (could be negative, zero, or positive)</div>
+      <div style="color:#22c55e;margin-bottom:0.3rem;">d = a * a → Neg × Neg = <strong>Pos</strong> (negative × negative always positive)</div>
+      <div style="color:#f59e0b;margin-bottom:0.3rem;">e = c * d → ⊤ × Pos = <strong>⊤</strong> (⊤ propagates through multiplication)</div>
+      <div style="margin-top:0.75rem;padding:0.6rem;background:rgba(167,139,250,0.1);border-radius:8px;">
+        <div style="color:#a78bfa;font-weight:600;">Precision loss cascade:</div>
+        <div style="color:#cbd5e1;font-size:0.82rem;">Concrete: e = (-3+7) × (-3×-3) = 4 × 9 = 36 (Pos). But sign domain lost precision at c (⊤), and that ⊤ poisoned the rest. This is a fundamental limitation of non-relational domains — they can't "remember" that c came from specific values of a and b.</div>
+      </div>
+    `;
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ sQ3: Design Decisions ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz 3: Domain Design Decisions</h2>
+  <p>For each situation, choose the correct design decision for your abstract domain.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div id="sQ3q1" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q1: You're designing a domain to track if a file handle is open or closed. How many elements?</div>
+      <select id="sQ3a1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select...</option>
+        <option value="a">2 elements: Open, Closed</option>
+        <option value="b">3 elements: Open, Closed, ⊤</option>
+        <option value="c">4 elements: ⊥, Open, Closed, ⊤</option>
+        <option value="d">5 elements: ⊥, Open, Closed, Both, ⊤</option>
+      </select>
+    </div>
+    <div id="sQ3q2" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q2: Your interval analysis widens [0,5] with new value [0,8]. What should widen return?</div>
+      <select id="sQ3a2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select...</option>
+        <option value="a">[0, 8] (just use the new value)</option>
+        <option value="b">[0, +∞] (upper bound grew → jump to infinity)</option>
+        <option value="c">[0, 13] (extrapolate the growth)</option>
+        <option value="d">[−∞, +∞] (go to ⊤)</option>
+      </select>
+    </div>
+    <div id="sQ3q3" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q3: What makes an analysis "sound"?</div>
+      <select id="sQ3a3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select...</option>
+        <option value="a">It never reports false positives</option>
+        <option value="b">It never misses real bugs (over-approximates)</option>
+        <option value="c">It always terminates in polynomial time</option>
+        <option value="d">It gives the same result as concrete execution</option>
+      </select>
+    </div>
+    <div id="sQ3q4" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+      <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q4: When should you initialize dataflow facts to ⊤ vs ⊥?</div>
+      <select id="sQ3a4" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.78rem;">
+        <option value="">Select...</option>
+        <option value="a">Always ⊥ — start with no info and accumulate</option>
+        <option value="b">Always ⊤ — start with maximum uncertainty</option>
+        <option value="c">⊥ for may-analyses (reaching defs), ⊤ for must-analyses (available exprs)</option>
+        <option value="d">It doesn't matter — both converge to the same result</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ3Check()">Check All</button>
+    <span id="sQ3Score" style="margin-left:1rem;font-weight:700;font-size:1.1rem;"></span>
+  </div>
+  <div id="sQ3Feedback" style="display:none;margin-top:0.75rem;background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-size:0.78rem;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sQ3a1:'c',sQ3a2:'b',sQ3a3:'b',sQ3a4:'c'};
+  const explanations = {
+    sQ3a1:'<strong>4 elements: {⊥, Open, Closed, ⊤}</strong> — You need ⊥ (unreachable/uninitialized) and ⊤ (could be either open or closed — happens after an if/else where one branch opens and the other doesn\'t). This forms the standard diamond lattice.',
+    sQ3a2:'<strong>[0, +∞]</strong> — The upper bound grew (5 → 8), so widen jumps it to +∞. The lower bound didn\'t change (still 0), so it stays. This guarantees the ascending chain stabilizes: [0,5] → [0,+∞] → [0,+∞] = fixed point.',
+    sQ3a3:'<strong>Never misses real bugs (over-approximates)</strong> — Soundness means: if a bug exists, the analysis WILL report it (possibly along with false positives). Under-approximation (missing real bugs) makes the analysis <em>unsound</em> and useless for verification.',
+    sQ3a4:'<strong>⊥ for may-analyses, ⊤ for must-analyses</strong> — May-analyses (reaching defs, taint) accumulate facts: start empty (⊥) and join adds info. Must-analyses (available expressions) start with "everything available" (⊤) and meet removes things that aren\'t available on all paths.'
+  };
+  window.sQ3Check = function(){
+    let score=0, html='';
+    [1,2,3,4].forEach(i=>{
+      const sel=document.getElementById('sQ3a'+i).value;
+      const correct=sel===answers['sQ3a'+i];
+      if(correct) score++;
+      document.getElementById('sQ3q'+i).style.borderColor=sel===''?'#475569':correct?'#22c55e':'#ef4444';
+      html+=`<div style="color:${correct?'#22c55e':'#ef4444'};margin-bottom:0.4rem;">${correct?'✓':'✗'} Q${i}: ${explanations['sQ3a'+i]}</div>`;
+    });
+    const sc=document.getElementById('sQ3Score');
+    sc.textContent=score+'/4';
+    sc.style.color=score>=3?'#22c55e':score>=2?'#f59e0b':'#ef4444';
+    const fb=document.getElementById('sQ3Feedback');
+    fb.innerHTML=`<div style="font-weight:700;margin-bottom:0.5rem;">Score: ${score}/4</div>`+html;
+    fb.style.display='block';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','s13','s14','sCB','s15','s16','s17','s18','s19','s20','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const newIdx = currentIdx + dir;
+  if (newIdx < 0 || newIdx >= slideOrder.length) return;
+  currentIdx = newIdx;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

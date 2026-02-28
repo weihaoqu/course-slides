@@ -1,0 +1,3722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 0: OCaml Warm-Up — Enhanced</title>
+<style>
+  :root {
+    --bg: #0f172a; --bg2: #1e293b; --bg3: rgba(0,0,0,0.2); --bg4: rgba(0,0,0,0.25);
+    --fg: #e2e8f0; --fg2: #94a3b8; --fg3: #cbd5e1;
+    --border: #334155; --border2: #475569;
+    --blue: #38bdf8; --indigo: #6366f1; --indigo2: #818cf8;
+    --purple: #a78bfa; --amber: #f59e0b; --green: #22c55e;
+    --red: #ef4444; --pink: #f472b6; --teal: #2dd4bf;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); overflow: hidden; height: 100vh; }
+  .slide { display: none; position: absolute; inset: 0; padding: 44px 56px; overflow-y: auto; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide.fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  h2 { font-size: 1.9em; color: var(--blue); margin-bottom: 14px; font-weight: 700; }
+  h3 { font-size: 1.15em; color: var(--purple); margin: 10px 0 6px; font-weight: 600; }
+  p, li { font-size: 1.05em; line-height: 1.65; color: var(--fg3); margin-bottom: 6px; }
+  ul, ol { padding-left: 24px; }
+  strong { color: var(--fg); }
+  em { color: var(--amber); font-style: normal; font-weight: 600; }
+
+  .code-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin: 10px 0; overflow-x: auto; }
+  .code-content { font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.6; color: var(--fg3); white-space: pre; }
+  .line { display: block; padding: 1px 6px; border-left: 3px solid transparent; border-radius: 2px; transition: all 0.2s; }
+  .line.active { background: rgba(99,102,241,0.15); border-left-color: var(--indigo); color: var(--fg); }
+
+  table { border-collapse: collapse; margin: 10px 0; font-size: 0.95em; }
+  th, td { border: 1px solid var(--border); padding: 7px 12px; text-align: left; }
+  th { background: var(--indigo); color: white; font-weight: 600; }
+  tr:nth-child(even) { background: rgba(99,102,241,0.06); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 8px; flex: 1; }
+  .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 8px; }
+
+  .key-idea { border-left: 4px solid var(--green); background: rgba(34,197,94,0.08); padding: 10px 14px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+  .warning { border-left: 4px solid var(--red); background: rgba(239,68,68,0.08); padding: 10px 14px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+  .analogy { border-left: 4px solid var(--purple); background: rgba(167,139,250,0.08); padding: 10px 14px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+  .info { border-left: 4px solid var(--blue); background: rgba(56,189,248,0.08); padding: 10px 14px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+
+  .btn { display: inline-block; padding: 8px 18px; background: linear-gradient(135deg, var(--indigo), #8b5cf6); color: white; border: none; border-radius: 8px; font-size: 0.9em; font-weight: 600; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+  .btn:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
+  .btn-sm { padding: 5px 14px; font-size: 0.82em; }
+  .btn-secondary { background: var(--border); }
+  .btn-secondary:hover { background: var(--border2); box-shadow: none; }
+
+  .log-panel { background: var(--bg4); border-radius: 8px; padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.78em; max-height: 140px; overflow-y: auto; color: var(--fg2); line-height: 1.6; }
+  canvas { border-radius: 12px; }
+
+  .title-slide { justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 50%, #1e293b 100%); }
+  .title-slide h1 { font-size: 3.2em; color: var(--blue); margin-bottom: 8px; background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .title-slide h2 { font-size: 1.5em; color: var(--fg2); font-weight: 400; }
+
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 10px; }
+  .tab { padding: 6px 16px; background: var(--border); color: var(--fg2); border: none; border-radius: 6px 6px 0 0; font-size: 0.85em; cursor: pointer; font-weight: 500; }
+  .tab.active { background: var(--indigo); color: white; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  #progress-bar { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: var(--bg2); z-index: 200; }
+  #progress { height: 100%; background: linear-gradient(90deg, var(--indigo), var(--purple)); transition: width 0.3s ease; width: 0; }
+  .nav { position: fixed; bottom: 20px; right: 24px; display: flex; gap: 8px; z-index: 100; }
+  .nav button { background: var(--indigo); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-size: 0.95em; cursor: pointer; transition: all 0.2s; font-weight: 600; }
+  .nav button:hover { background: var(--purple); }
+  .nav button:disabled { opacity: 0.25; cursor: default; }
+  .slide-number { position: absolute; bottom: 16px; left: 24px; font-size: 0.8em; color: var(--fg2); }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== s1: Title ==================== -->
+<div class="slide title-slide" id="s1">
+  <h1>OCaml Warm-Up</h1>
+  <h2>Module 0 &mdash; Program Analysis Bootcamp</h2>
+  <p style="font-size:1.15em; margin-top:20px; color:var(--fg2);">Getting ready for program analysis with OCaml</p>
+  <p style="font-size:0.95em; margin-top:32px; color:var(--border2);">5 exercises &bull; ~2 hours &bull; No tests &mdash; guided tutorials</p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s2: Learning Objectives ==================== -->
+<div class="slide" id="s2">
+  <h2>Learning Objectives</h2>
+  <p>By the end of this module, you will be able to:</p>
+  <ol style="margin-top:8px;">
+    <li><strong>Write OCaml functions</strong> using let bindings, type annotations, pattern matching, and recursion</li>
+    <li><strong>Define and manipulate algebraic data types</strong> (ADTs) representing expression trees</li>
+    <li><strong>Use collection types</strong> &mdash; <code style="color:var(--amber)">List.map</code>/<code style="color:var(--amber)">fold</code>, <code style="color:var(--amber)">StringMap</code>, <code style="color:var(--amber)">StringSet</code>, and <code style="color:var(--amber)">ref</code></li>
+    <li><strong>Build modules satisfying a signature</strong> and use functors to parameterize code</li>
+    <li><strong>Read and extend</strong> <code style="color:var(--amber)">ocamllex</code>/<code style="color:var(--amber)">Menhir</code> grammar rules for a simple parser</li>
+  </ol>
+  <div class="info" style="margin-top:16px;">
+    <strong>Why these five?</strong> Each exercise directly foreshadows a concept you'll use in Modules 2-6: AST types, dataflow sets, abstract domains, and parser grammars.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s3: Why OCaml? ==================== -->
+<div class="slide" id="s3">
+  <h2>Why OCaml for Program Analysis?</h2>
+  <div class="cols">
+    <div>
+      <h3>Pattern Matching</h3>
+      <p>Match on AST node types directly. The compiler warns you if you forget a case.</p>
+      <h3>Algebraic Data Types</h3>
+      <p>ASTs, lattice values, and analysis results are all naturally expressed as ADTs.</p>
+      <h3>Type Safety</h3>
+      <p>Strong static types catch bugs at compile time &mdash; no null pointer surprises.</p>
+    </div>
+    <div>
+      <h3>Immutability by Default</h3>
+      <p>Functional style means fewer side effects, easier reasoning about program state.</p>
+      <h3>Module System</h3>
+      <p>Signatures + functors let you write generic analyses parameterized by abstract domains.</p>
+      <h3>Tooling</h3>
+      <p><code style="color:var(--amber)">ocamllex</code> and <code style="color:var(--amber)">Menhir</code> provide industrial-strength lexer/parser generators.</p>
+    </div>
+  </div>
+  <div class="analogy" style="margin-top:8px;">
+    <strong>Industry note:</strong> Facebook's Infer, Jane Street's trading systems, and the Coq proof assistant are all built in OCaml.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s4: OCaml Basics (merge bindings + tuples + records) ==================== -->
+<div class="slide" id="s4">
+  <h2>OCaml Basics</h2>
+  <div class="tab-bar">
+    <button class="tab active" onclick="s4Tab('bindings')">Let Bindings</button>
+    <button class="tab" onclick="s4Tab('tuples')">Tuples</button>
+    <button class="tab" onclick="s4Tab('records')">Records</button>
+  </div>
+  <div class="cols" style="flex:1;">
+    <div>
+      <div class="tab-content active" id="s4-bindings">
+        <h3>Top-level bindings</h3>
+        <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* Immutable binding *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> x = 42</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Function with type annotations *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> square (n : int) : int = n * n</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Multiple arguments *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> add (a : int) (b : int) : int = a + b</span></div></div>
+        <h3>Local bindings with <code style="color:var(--amber)">let...in</code></h3>
+        <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">let</span> hypotenuse a b =</span>
+<span class="line">  <span style="color:var(--blue)">let</span> a2 = a *. a <span style="color:var(--blue)">in</span></span>
+<span class="line">  <span style="color:var(--blue)">let</span> b2 = b *. b <span style="color:var(--blue)">in</span></span>
+<span class="line">  Float.sqrt (a2 +. b2)</span></div></div>
+      </div>
+      <div class="tab-content" id="s4-tuples">
+        <h3>Tuples &mdash; lightweight grouping</h3>
+        <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* A position is (line, column) *)</span></span>
+<span class="line"><span style="color:var(--blue)">type</span> pos = int * int</span>
+<span class="line"><span style="color:var(--blue)">let</span> origin : pos = (1, 1)</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Destructure in function args *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> format_pos ((line, col) : pos) =</span>
+<span class="line">  Printf.sprintf "line %d, col %d" line col</span></div></div>
+        <p>Tuples are <em>positional</em> &mdash; access by pattern matching, not by name.</p>
+      </div>
+      <div class="tab-content" id="s4-records">
+        <h3>Records &mdash; named fields</h3>
+        <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">type</span> assignment = {</span>
+<span class="line">  var_name : string;</span>
+<span class="line">  value    : int;</span>
+<span class="line">  line     : int;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">let</span> a = { var_name = "x"; value = 5; line = 1 }</span>
+<span class="line"><span style="color:var(--blue)">let</span> name = a.var_name</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Functional update — NEW record *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> a' = { a <span style="color:var(--blue)">with</span> value = a.value + 3 }</span></div></div>
+        <p>Records are <em>immutable by default</em>. Use <code style="color:var(--amber)">{ r with field = v }</code> to "update".</p>
+      </div>
+    </div>
+    <div>
+      <h3>If / then / else (expression, not statement)</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">let</span> abs x =</span>
+<span class="line">  <span style="color:var(--blue)">if</span> x >= 0 <span style="color:var(--blue)">then</span> x <span style="color:var(--blue)">else</span> -x</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Returns a value — no "return" keyword *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> classify n =</span>
+<span class="line">  <span style="color:var(--blue)">if</span> n > 0 <span style="color:var(--blue)">then</span> "positive"</span>
+<span class="line">  <span style="color:var(--blue)">else if</span> n &lt; 0 <span style="color:var(--blue)">then</span> "negative"</span>
+<span class="line">  <span style="color:var(--blue)">else</span> "zero"</span></div></div>
+      <div class="key-idea">
+        <strong>Key idea:</strong> Everything in OCaml is an <em>expression</em> that produces a value. There are no statements.
+      </div>
+      <div class="info" style="margin-top:8px;">
+        <strong>Exercise 1</strong> builds on these: <code style="color:var(--amber)">square</code>, <code style="color:var(--amber)">is_empty</code>, <code style="color:var(--amber)">greet</code>, <code style="color:var(--amber)">is_digit</code>, <code style="color:var(--amber)">classify_char</code>.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s4Tab = function(name) {
+    document.querySelectorAll('#s4 .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#s4 .tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('s4-' + name).classList.add('active');
+    event.target.classList.add('active');
+  };
+})();
+</script>
+
+<!-- ==================== s5: Printf & Formatting ==================== -->
+<div class="slide" id="s5">
+  <h2>Printf and String Formatting</h2>
+  <div class="cols">
+    <div>
+      <h3>String concatenation</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">let</span> greeting = "Hello, " ^ "world!"</span>
+<span class="line"><span style="color:var(--blue)">let</span> msg = "x = " ^ string_of_int 42</span></div></div>
+      <h3>Printf &mdash; type-safe formatted output</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* Print to stdout *)</span></span>
+<span class="line">Printf.printf "name = %s, age = %d\n" "Alice" 30</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Format to a string *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> s = Printf.sprintf "[%s: %s]" "keyword" "if"</span></div></div>
+      <h3>Common format specifiers</h3>
+      <table>
+        <tr><th>Spec</th><th>Type</th><th>Example</th></tr>
+        <tr><td><code>%d</code></td><td>int</td><td><code>42</code></td></tr>
+        <tr><td><code>%s</code></td><td>string</td><td><code>"hello"</code></td></tr>
+        <tr><td><code>%f</code></td><td>float</td><td><code>3.14</code></td></tr>
+        <tr><td><code>%b</code></td><td>bool</td><td><code>true</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Type safety in action</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* Compile error! OCaml checks format types *)</span></span>
+<span class="line">Printf.printf "%d" "not an int"</span>
+<span class="line"><span style="color:var(--red)">(* Error: This expression has type string</span></span>
+<span class="line"><span style="color:var(--red)">   but ... expected int *)</span></span></div></div>
+      <div class="key-idea">
+        <strong>Contrast with C:</strong> OCaml's <code style="color:var(--amber)">Printf</code> is checked at compile time. No <code style="color:var(--amber)">%s</code>-on-an-int crashes.
+      </div>
+      <div class="analogy" style="margin-top:12px;">
+        <strong>Why this matters:</strong> You'll use <code style="color:var(--amber)">Printf.sprintf</code> extensively for formatting analysis results &mdash; error messages, lattice value displays, and debug output.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s6: What is an AST? (merge 7+8, interactive) ==================== -->
+<div class="slide" id="s6">
+  <h2>What is an AST?</h2>
+  <p>An <strong>Abstract Syntax Tree</strong> is a tree representation of source code &mdash; the data structure <em>every</em> program analysis tool operates on.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <h3>Source code is just text</h3>
+      <div class="code-block"><div class="code-content"><span class="line">x = 3 + y * 2</span></div></div>
+      <p>To a computer, this is just characters. You can't easily answer:</p>
+      <ul>
+        <li>Which variables are used?</li>
+        <li>What operations are performed?</li>
+        <li>Is <code style="color:var(--amber)">y * 2</code> computed before adding 3?</li>
+      </ul>
+      <div class="key-idea" style="margin-top:10px;">
+        <strong>Key idea:</strong> Program analysis = tree traversal. Walk the AST, collect info at each node, propagate results.
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s6Step()">Step</button>
+        <button class="btn btn-sm" onclick="s6Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s6Reset()">Reset</button>
+      </div>
+      <div class="log-panel" id="s6Log" style="margin-top:8px;min-height:60px;">Click Step to build the AST from source code...</div>
+    </div>
+    <div>
+      <h3>The AST captures <em>structure</em></h3>
+      <canvas id="cS6" width="480" height="380" style="width:100%;background:var(--bg3);"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS6');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s6Log');
+
+  // Tree nodes: label, x, y, parent index (-1 for root), children indices
+  const nodes = [
+    { label: 'Assign', x: 240, y: 40, color: '#6366f1' },
+    { label: '"x"', x: 120, y: 120, color: '#22c55e' },
+    { label: 'BinOp(+)', x: 340, y: 120, color: '#6366f1' },
+    { label: 'Num 3', x: 240, y: 210, color: '#f59e0b' },
+    { label: 'BinOp(*)', x: 420, y: 210, color: '#6366f1' },
+    { label: 'Var "y"', x: 350, y: 300, color: '#22c55e' },
+    { label: 'Num 2', x: 450, y: 300, color: '#f59e0b' },
+  ];
+  const edges = [[0,1],[0,2],[2,3],[2,4],[4,5],[4,6]];
+
+  const steps = [
+    { show: [], msg: 'Source: x = 3 + y * 2', highlight: 'x = 3 + y * 2' },
+    { show: [0], msg: 'Assignment → Assign node (root)' },
+    { show: [0,1], msg: 'Left side: variable "x" → leaf node' },
+    { show: [0,1,2], msg: 'Right side: 3 + (y*2) → BinOp(+)' },
+    { show: [0,1,2,3], msg: 'Left of +: literal 3 → Num 3' },
+    { show: [0,1,2,3,4], msg: 'Right of +: y*2 → BinOp(*)' },
+    { show: [0,1,2,3,4,5], msg: 'Left of *: variable y → Var "y"' },
+    { show: [0,1,2,3,4,5,6], msg: 'Right of *: literal 2 → Num 2. Tree complete!' },
+  ];
+
+  let stepIdx = 0;
+  let timer = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 380);
+    const visible = stepIdx < steps.length ? steps[stepIdx].show : steps[steps.length-1].show;
+    // Draw edges
+    edges.forEach(([from, to]) => {
+      if (visible.includes(from) && visible.includes(to)) {
+        ctx.beginPath();
+        ctx.moveTo(nodes[from].x, nodes[from].y + 18);
+        ctx.lineTo(nodes[to].x, nodes[to].y - 18);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    });
+    // Draw nodes
+    visible.forEach(i => {
+      const n = nodes[i];
+      const isNew = visible.indexOf(i) === visible.length - 1;
+      ctx.beginPath();
+      const w = ctx.measureText(n.label).width;
+      const boxW = Math.max(w + 24, 60);
+      const boxH = 32;
+      const rx = 8;
+      const x = n.x - boxW/2, y = n.y - boxH/2;
+      ctx.roundRect(x, y, boxW, boxH, rx);
+      ctx.fillStyle = isNew && stepIdx > 0 ? n.color : n.color;
+      ctx.globalAlpha = isNew && stepIdx > 0 ? 1 : 0.85;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      if (isNew && stepIdx > 0) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+    // Source text highlight
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Source: x = 3 + y * 2', 16, 370);
+  }
+
+  function init() {
+    stepIdx = 0;
+    log.textContent = 'Click Step to build the AST from source code...';
+    ctx.font = 'bold 13px monospace'; // set before measuring
+    draw();
+  }
+
+  window.s6Step = function() {
+    if (stepIdx >= steps.length - 1) return;
+    stepIdx++;
+    log.textContent = 'Step ' + stepIdx + ': ' + steps[stepIdx].msg;
+    draw();
+  };
+  window.s6Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length - 1) { clearInterval(timer); timer = null; return; }
+      s6Step();
+    }, 900);
+  };
+  window.s6Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    init();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s6').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s6'), {attributes: true, attributeFilter: ['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s7: Algebraic Data Types (interactive constructor) ==================== -->
+<div class="slide" id="s7">
+  <h2>Algebraic Data Types (ADTs)</h2>
+  <p>ADTs let you define types with <strong>multiple variants</strong>, each carrying different data. They are the backbone of ASTs.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <h3>Defining variants</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* Binary operators *)</span></span>
+<span class="line"><span style="color:var(--blue)">type</span> op = Add | Sub | Mul</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Expression tree — a mini AST *)</span></span>
+<span class="line"><span style="color:var(--blue)">type</span> expr =</span>
+<span class="line">  | Num <span style="color:var(--blue)">of</span> int</span>
+<span class="line">  | Var <span style="color:var(--blue)">of</span> string</span>
+<span class="line">  | BinOp <span style="color:var(--blue)">of</span> op * expr * expr</span></div></div>
+      <p>Each variant is a <em>constructor</em> that tags the data it carries.</p>
+      <h3>Try it: click to build an expression</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+        <button class="btn btn-sm" onclick="s7Add('Num 2')" style="background:var(--amber)">Num 2</button>
+        <button class="btn btn-sm" onclick="s7Add('Num 5')" style="background:var(--amber)">Num 5</button>
+        <button class="btn btn-sm" onclick="s7Add('Var x')" style="background:var(--green)">Var "x"</button>
+        <button class="btn btn-sm" onclick="s7Add('Var y')" style="background:var(--green)">Var "y"</button>
+        <button class="btn btn-sm" onclick="s7Add('Add')">+ Add</button>
+        <button class="btn btn-sm" onclick="s7Add('Mul')">* Mul</button>
+        <button class="btn btn-sm btn-secondary" onclick="s7Reset()">Reset</button>
+      </div>
+      <div class="log-panel" id="s7Log" style="margin-top:8px;min-height:50px;">Click leaf nodes first, then operators to combine them.</div>
+    </div>
+    <div>
+      <canvas id="cS7" width="480" height="360" style="width:100%;background:var(--bg3);"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS7');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s7Log');
+
+  let stack = []; // stack of tree nodes: {label, color, children:[], x, y}
+
+  function layoutTree(node, x, y, spread) {
+    node.x = x; node.y = y;
+    if (node.children.length === 2) {
+      layoutTree(node.children[0], x - spread, y + 70, spread * 0.55);
+      layoutTree(node.children[1], x + spread, y + 70, spread * 0.55);
+    }
+  }
+
+  function drawNode(n) {
+    // Draw edges to children first
+    n.children.forEach(c => {
+      ctx.beginPath();
+      ctx.moveTo(n.x, n.y + 16);
+      ctx.lineTo(c.x, c.y - 16);
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      drawNode(c);
+    });
+    // Node box
+    ctx.font = 'bold 13px monospace';
+    const w = Math.max(ctx.measureText(n.label).width + 20, 54);
+    ctx.beginPath();
+    ctx.roundRect(n.x - w/2, n.y - 16, w, 32, 8);
+    ctx.fillStyle = n.color;
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(n.label, n.x, n.y);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 360);
+    // Draw stack items
+    if (stack.length === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Build an expression tree!', 240, 180);
+      return;
+    }
+    // Layout each tree in the stack side by side
+    const spacing = 480 / (stack.length + 1);
+    stack.forEach((tree, i) => {
+      layoutTree(tree, spacing * (i + 1), 60, Math.min(80, spacing * 0.4));
+      drawNode(tree);
+    });
+  }
+
+  window.s7Add = function(type) {
+    if (type === 'Num 2' || type === 'Num 5') {
+      stack.push({ label: type, color: '#f59e0b', children: [] });
+      log.textContent = 'Added leaf: ' + type + ' (stack: ' + stack.length + ' items)';
+    } else if (type === 'Var x' || type === 'Var y') {
+      const name = type === 'Var x' ? 'Var "x"' : 'Var "y"';
+      stack.push({ label: name, color: '#22c55e', children: [] });
+      log.textContent = 'Added leaf: ' + name + ' (stack: ' + stack.length + ' items)';
+    } else if (type === 'Add' || type === 'Mul') {
+      if (stack.length < 2) {
+        log.textContent = 'Need 2 items on stack to combine! Add more leaves first.';
+        return;
+      }
+      const right = stack.pop();
+      const left = stack.pop();
+      const opLabel = type === 'Add' ? 'BinOp(+)' : 'BinOp(*)';
+      stack.push({ label: opLabel, color: '#6366f1', children: [left, right] });
+      log.textContent = 'Combined with ' + type + ': ' + opLabel + ' (stack: ' + stack.length + ' items)';
+    }
+    draw();
+  };
+
+  window.s7Reset = function() {
+    stack = [];
+    log.textContent = 'Click leaf nodes first, then operators to combine them.';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s7').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s7'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s8: Pattern Matching ==================== -->
+<div class="slide" id="s8">
+  <h2>Pattern Matching</h2>
+  <p><code style="color:var(--amber)">match...with</code> is OCaml's most powerful control structure. It destructures values and the compiler ensures you handle <em>every case</em>.</p>
+  <div class="cols">
+    <div>
+      <h3>Basic matching</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">let</span> string_of_op o =</span>
+<span class="line">  <span style="color:var(--blue)">match</span> o <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Add -> "+"</span>
+<span class="line">  | Sub -> "-"</span>
+<span class="line">  | Mul -> "*"</span></div></div>
+      <h3>Recursive matching on trees</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">let rec</span> string_of_expr e =</span>
+<span class="line">  <span style="color:var(--blue)">match</span> e <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Num n -> string_of_int n</span>
+<span class="line">  | Var x -> x</span>
+<span class="line">  | BinOp (o, l, r) -></span>
+<span class="line">    Printf.sprintf "(%s %s %s)"</span>
+<span class="line">      (string_of_expr l)</span>
+<span class="line">      (string_of_op o)</span>
+<span class="line">      (string_of_expr r)</span></div></div>
+    </div>
+    <div>
+      <h3>Exhaustiveness checking</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* If you forget a case: *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> bad o = <span style="color:var(--blue)">match</span> o <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Add -> "+"</span>
+<span class="line">  | Sub -> "-"</span>
+<span class="line"><span style="color:var(--red)">(* Warning 8: this pattern-matching</span></span>
+<span class="line"><span style="color:var(--red)">   is not exhaustive.</span></span>
+<span class="line"><span style="color:var(--red)">   Case not matched: Mul *)</span></span></div></div>
+      <div class="warning">
+        <strong>This is critical for analysis.</strong> When you add a new AST node type, the compiler tells you every function that needs updating.
+      </div>
+      <h3>Matching on tuples</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">let</span> classify (x, y) = <span style="color:var(--blue)">match</span> (x, y) <span style="color:var(--blue)">with</span></span>
+<span class="line">  | (0, 0) -> "origin"</span>
+<span class="line">  | (0, _) -> "y-axis"</span>
+<span class="line">  | (_, 0) -> "x-axis"</span>
+<span class="line">  | _      -> "other"</span></div></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s9: Recursion and Option ==================== -->
+<div class="slide" id="s9">
+  <h2>Recursion and the Option Type</h2>
+  <div class="cols">
+    <div>
+      <h3>Recursive functions with <code style="color:var(--amber)">let rec</code></h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* Count nodes in an expression tree *)</span></span>
+<span class="line"><span style="color:var(--blue)">let rec</span> count_nodes e =</span>
+<span class="line">  <span style="color:var(--blue)">match</span> e <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Num _ | Var _ -> 1</span>
+<span class="line">  | BinOp (_, l, r) -></span>
+<span class="line">    1 + count_nodes l + count_nodes r</span></div></div>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* Tree depth *)</span></span>
+<span class="line"><span style="color:var(--blue)">let rec</span> depth e =</span>
+<span class="line">  <span style="color:var(--blue)">match</span> e <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Num _ | Var _ -> 1</span>
+<span class="line">  | BinOp (_, l, r) -></span>
+<span class="line">    1 + max (depth l) (depth r)</span></div></div>
+    </div>
+    <div>
+      <h3>Option: safe "nullable" values</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* Option type: Some x or None *)</span></span>
+<span class="line"><span style="color:var(--blue)">type</span> 'a option = Some <span style="color:var(--blue)">of</span> 'a | None</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Evaluate if no variables present *)</span></span>
+<span class="line"><span style="color:var(--blue)">let rec</span> eval e =</span>
+<span class="line">  <span style="color:var(--blue)">match</span> e <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Num n -> Some n</span>
+<span class="line">  | Var _ -> None  <span style="color:var(--purple)">(* can't evaluate *)</span></span>
+<span class="line">  | BinOp (o, l, r) -></span>
+<span class="line">    <span style="color:var(--blue)">match</span> eval l, eval r <span style="color:var(--blue)">with</span></span>
+<span class="line">    | Some a, Some b -></span>
+<span class="line">      Some (apply_op o a b)</span>
+<span class="line">    | _ -> None</span></div></div>
+      <div class="analogy">
+        <strong>Foreshadow:</strong> "We might not know the exact value" is the norm in abstract interpretation (Module 4). Option is a tiny abstract domain: <code style="color:var(--amber)">Some n</code> = known, <code style="color:var(--amber)">None</code> = unknown.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s10: Expression Tree Transforms (interactive step-through) ==================== -->
+<div class="slide" id="s10">
+  <h2>Expression Tree Transforms</h2>
+  <p>Tree transformations are the core mechanic of program analysis. Watch <em>substitution</em> and <em>constant folding</em> in action.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <div class="tab-bar">
+        <button class="tab active" id="s10tabSub" onclick="s10Mode('sub')">Substitution</button>
+        <button class="tab" id="s10tabFold" onclick="s10Mode('fold')">Constant Folding</button>
+      </div>
+      <div id="s10-sub" class="tab-content active">
+        <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* substitute "x" 5 (x * (1 + y)) *)</span></span>
+<span class="line"><span style="color:var(--blue)">let rec</span> substitute var_name value e =</span>
+<span class="line">  <span style="color:var(--blue)">match</span> e <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Num _ -> e</span>
+<span class="line">  | Var x -></span>
+<span class="line">    <span style="color:var(--blue)">if</span> x = var_name</span>
+<span class="line">    <span style="color:var(--blue)">then</span> Num value <span style="color:var(--blue)">else</span> e</span>
+<span class="line">  | BinOp (o, l, r) -></span>
+<span class="line">    BinOp (o, substitute var_name value l,</span>
+<span class="line">               substitute var_name value r)</span></div></div>
+      </div>
+      <div id="s10-fold" class="tab-content">
+        <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* simplify (5 * (1 + y)) when y=3 *)</span></span>
+<span class="line"><span style="color:var(--blue)">let rec</span> simplify e =</span>
+<span class="line">  <span style="color:var(--blue)">match</span> e <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Num _ | Var _ -> e</span>
+<span class="line">  | BinOp (o, l, r) -></span>
+<span class="line">    <span style="color:var(--blue)">match</span> simplify l, simplify r <span style="color:var(--blue)">with</span></span>
+<span class="line">    | Num a, Num b -> Num (apply_op o a b)</span>
+<span class="line">    | l', r' -> BinOp (o, l', r')</span></div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+      <div class="log-panel" id="s10Log" style="margin-top:8px;min-height:50px;">Substitution: replace "x" with 5 in x*(1+y)</div>
+    </div>
+    <div>
+      <canvas id="cS10" width="480" height="380" style="width:100%;background:var(--bg3);"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s10Log');
+  let mode = 'sub';
+  let stepIdx = 0;
+  let timer = null;
+
+  // Substitution steps: substitute "x" with 5 in x * (1 + y)
+  // Tree: BinOp(*) -> [Var "x", BinOp(+) -> [Num 1, Var "y"]]
+  const subSteps = [
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Var "x"',x:140,y:150,c:'#22c55e'},
+      {l:'BinOp(+)',x:340,y:150,c:'#6366f1'},{l:'Num 1',x:270,y:250,c:'#f59e0b'},
+      {l:'Var "y"',x:410,y:250,c:'#22c55e'}],
+      edges:[[0,1],[0,2],[2,3],[2,4]], hi:-1,
+      msg:'Original: x * (1 + y)' },
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Var "x"',x:140,y:150,c:'#ef4444'},
+      {l:'BinOp(+)',x:340,y:150,c:'#6366f1'},{l:'Num 1',x:270,y:250,c:'#f59e0b'},
+      {l:'Var "y"',x:410,y:250,c:'#22c55e'}],
+      edges:[[0,1],[0,2],[2,3],[2,4]], hi:1,
+      msg:'Visit Var "x" — matches var_name! Replace with Num 5' },
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Num 5',x:140,y:150,c:'#f59e0b'},
+      {l:'BinOp(+)',x:340,y:150,c:'#6366f1'},{l:'Num 1',x:270,y:250,c:'#f59e0b'},
+      {l:'Var "y"',x:410,y:250,c:'#22c55e'}],
+      edges:[[0,1],[0,2],[2,3],[2,4]], hi:1,
+      msg:'Var "x" → Num 5. Now visit right subtree...' },
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Num 5',x:140,y:150,c:'#f59e0b'},
+      {l:'BinOp(+)',x:340,y:150,c:'#6366f1'},{l:'Num 1',x:270,y:250,c:'#f59e0b'},
+      {l:'Var "y"',x:410,y:250,c:'#22c55e'}],
+      edges:[[0,1],[0,2],[2,3],[2,4]], hi:3,
+      msg:'Num 1 — not a Var, skip.' },
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Num 5',x:140,y:150,c:'#f59e0b'},
+      {l:'BinOp(+)',x:340,y:150,c:'#6366f1'},{l:'Num 1',x:270,y:250,c:'#f59e0b'},
+      {l:'Var "y"',x:410,y:250,c:'#22c55e'}],
+      edges:[[0,1],[0,2],[2,3],[2,4]], hi:4,
+      msg:'Var "y" — not "x", skip. Done! Result: 5 * (1 + y)' },
+  ];
+
+  // Constant folding steps: fold 5 * (1 + 3) → 5 * 4 → 20
+  const foldSteps = [
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Num 5',x:140,y:150,c:'#f59e0b'},
+      {l:'BinOp(+)',x:340,y:150,c:'#6366f1'},{l:'Num 1',x:270,y:250,c:'#f59e0b'},
+      {l:'Num 3',x:410,y:250,c:'#f59e0b'}],
+      edges:[[0,1],[0,2],[2,3],[2,4]], hi:-1,
+      msg:'Start: 5 * (1 + 3)' },
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Num 5',x:140,y:150,c:'#f59e0b'},
+      {l:'BinOp(+)',x:340,y:150,c:'#6366f1'},{l:'Num 1',x:270,y:250,c:'#f59e0b'},
+      {l:'Num 3',x:410,y:250,c:'#f59e0b'}],
+      edges:[[0,1],[0,2],[2,3],[2,4]], hi:2,
+      msg:'Visit BinOp(+): both children are Num → can fold!' },
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Num 5',x:140,y:150,c:'#f59e0b'},
+      {l:'Num 4',x:340,y:150,c:'#22c55e'}],
+      edges:[[0,1],[0,2]], hi:2,
+      msg:'1 + 3 = 4 → BinOp(+) collapses to Num 4' },
+    { nodes: [
+      {l:'BinOp(*)',x:240,y:50,c:'#6366f1'},{l:'Num 5',x:140,y:150,c:'#f59e0b'},
+      {l:'Num 4',x:340,y:150,c:'#f59e0b'}],
+      edges:[[0,1],[0,2]], hi:0,
+      msg:'Visit BinOp(*): both children Num → fold!' },
+    { nodes: [{l:'Num 20',x:240,y:120,c:'#22c55e'}],
+      edges:[], hi:0,
+      msg:'5 * 4 = 20 → entire tree collapses to Num 20. Done!' },
+  ];
+
+  function getSteps() { return mode === 'sub' ? subSteps : foldSteps; }
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 380);
+    const steps = getSteps();
+    const s = steps[Math.min(stepIdx, steps.length - 1)];
+    // Edges
+    s.edges.forEach(([f,t]) => {
+      ctx.beginPath();
+      ctx.moveTo(s.nodes[f].x, s.nodes[f].y + 18);
+      ctx.lineTo(s.nodes[t].x, s.nodes[t].y - 18);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    // Nodes
+    ctx.font = 'bold 13px monospace';
+    s.nodes.forEach((n, i) => {
+      const w = Math.max(ctx.measureText(n.l).width + 20, 54);
+      ctx.beginPath();
+      ctx.roundRect(n.x - w/2, n.y - 16, w, 32, 8);
+      ctx.fillStyle = n.c;
+      ctx.globalAlpha = (s.hi === i) ? 1 : 0.75;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      if (s.hi === i) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke(); }
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.l, n.x, n.y);
+    });
+    // Mode label
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(mode === 'sub' ? 'Substitution: x → 5' : 'Constant Folding', 16, 370);
+  }
+
+  function init() {
+    stepIdx = 0;
+    log.textContent = mode === 'sub' ? 'Substitution: replace "x" with 5 in x*(1+y)' : 'Constant folding: simplify 5*(1+3)';
+    draw();
+  }
+
+  window.s10Mode = function(m) {
+    mode = m;
+    if (timer) { clearInterval(timer); timer = null; }
+    document.getElementById('s10tabSub').classList.toggle('active', m === 'sub');
+    document.getElementById('s10tabFold').classList.toggle('active', m === 'fold');
+    document.getElementById('s10-sub').classList.toggle('active', m === 'sub');
+    document.getElementById('s10-fold').classList.toggle('active', m === 'fold');
+    init();
+  };
+  window.s10Step = function() {
+    const steps = getSteps();
+    if (stepIdx >= steps.length - 1) return;
+    stepIdx++;
+    log.textContent = 'Step ' + stepIdx + ': ' + steps[stepIdx].msg;
+    draw();
+  };
+  window.s10Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      const steps = getSteps();
+      if (stepIdx >= steps.length - 1) { clearInterval(timer); timer = null; return; }
+      s10Step();
+    }, 1200);
+  };
+  window.s10Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    init();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s10').classList.contains('active')) { if (timer) {clearInterval(timer); timer=null;} init(); }
+  });
+  obs.observe(document.getElementById('s10'), {attributes: true, attributeFilter: ['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s11: Lists & fold_left (interactive step-through) ==================== -->
+<div class="slide" id="s11">
+  <h2>Lists and fold_left</h2>
+  <p>Lists are OCaml's primary collection. <code style="color:var(--amber)">fold_left</code> is the universal "reduce" &mdash; you'll use it everywhere in program analysis.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <h3>List basics</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">let</span> xs = [1; 2; 3; 4; 5]</span>
+<span class="line"><span style="color:var(--blue)">let</span> ys = 0 :: xs  <span style="color:var(--purple)">(* [0;1;2;3;4;5] *)</span></span></div></div>
+      <h3>fold_left &mdash; reduce to a single value</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">let</span> sum xs =</span>
+<span class="line">  List.fold_left (<span style="color:var(--blue)">fun</span> acc x -> acc + x) 0 xs</span>
+<span class="line"><span style="color:var(--purple)">(* sum [1;2;3;4] = 10 *)</span></span></div></div>
+      <h3>Also useful: map and filter</h3>
+      <div class="code-block"><div class="code-content"><span class="line">List.map (<span style="color:var(--blue)">fun</span> x -> x * 2) [1;2;3]</span>
+<span class="line"><span style="color:var(--purple)">(* [2; 4; 6] *)</span></span>
+<span class="line"></span>
+<span class="line">List.filter (<span style="color:var(--blue)">fun</span> x -> x > 0) [-1;3;0;5]</span>
+<span class="line"><span style="color:var(--purple)">(* [3; 5] *)</span></span></div></div>
+      <div class="key-idea">
+        <strong>Why this matters:</strong> You'll use <code style="color:var(--amber)">fold_left</code> to build environments from assignment lists, accumulate analysis results, and compute fixpoints.
+      </div>
+    </div>
+    <div>
+      <h3>Watch fold_left in action</h3>
+      <canvas id="cS11" width="480" height="300" style="width:100%;background:var(--bg3);"></canvas>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+      <div class="log-panel" id="s11Log" style="margin-top:8px;">fold_left (+) 0 [1; 2; 3; 4] — click Step to trace</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS11');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s11Log');
+
+  const items = [1, 2, 3, 4];
+  const steps = [
+    { acc: 0, idx: -1, msg: 'Start: acc = 0, list = [1; 2; 3; 4]' },
+    { acc: 0, idx: 0, msg: 'f(0, 1) → acc = 0 + 1 = 1' },
+    { acc: 1, idx: 1, msg: 'f(1, 2) → acc = 1 + 2 = 3' },
+    { acc: 3, idx: 2, msg: 'f(3, 3) → acc = 3 + 3 = 6' },
+    { acc: 6, idx: 3, msg: 'f(6, 4) → acc = 6 + 4 = 10' },
+    { acc: 10, idx: 4, msg: 'Done! Result = 10' },
+  ];
+
+  let stepIdx = 0;
+  let timer = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 300);
+    const s = steps[Math.min(stepIdx, steps.length - 1)];
+
+    // Draw list items as boxes
+    ctx.font = 'bold 16px monospace';
+    const boxW = 60, boxH = 44, startX = 60, y = 60;
+    items.forEach((v, i) => {
+      const x = startX + i * (boxW + 16);
+      ctx.beginPath();
+      ctx.roundRect(x, y, boxW, boxH, 8);
+      if (i < s.idx || (i === s.idx && stepIdx > 0 && stepIdx < steps.length - 1)) {
+        ctx.fillStyle = i === s.idx ? '#f59e0b' : '#334155';
+      } else if (stepIdx >= steps.length - 1) {
+        ctx.fillStyle = '#334155';
+      } else {
+        ctx.fillStyle = '#1e293b';
+      }
+      ctx.fill();
+      ctx.strokeStyle = i === s.idx && stepIdx > 0 && stepIdx < steps.length - 1 ? '#f59e0b' : '#475569';
+      ctx.lineWidth = i === s.idx && stepIdx > 0 && stepIdx < steps.length - 1 ? 2.5 : 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(v, x + boxW/2, y + boxH/2);
+    });
+
+    // Label
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('List:', 10, y + boxH/2 + 2);
+
+    // Accumulator display
+    const accY = 170;
+    ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('Accumulator', 240, accY - 10);
+
+    // Big accumulator box
+    ctx.beginPath();
+    ctx.roundRect(170, accY, 140, 56, 12);
+    ctx.fillStyle = stepIdx >= steps.length - 1 ? '#22c55e' : '#6366f1';
+    ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 28px monospace';
+    ctx.fillText(s.acc, 240, accY + 30);
+
+    // Arrow from current element to accumulator
+    if (s.idx >= 0 && s.idx < items.length && stepIdx > 0 && stepIdx < steps.length - 1) {
+      const ex = startX + s.idx * (boxW + 16) + boxW/2;
+      ctx.beginPath();
+      ctx.moveTo(ex, y + boxH + 4);
+      ctx.lineTo(240, accY - 2);
+      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Step description
+    ctx.fillStyle = '#e2e8f0'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(s.msg, 240, 270);
+  }
+
+  function init() {
+    stepIdx = 0;
+    log.textContent = 'fold_left (+) 0 [1; 2; 3; 4] — click Step to trace';
+    draw();
+  }
+
+  window.s11Step = function() {
+    if (stepIdx >= steps.length - 1) return;
+    stepIdx++;
+    log.textContent = steps[stepIdx].msg;
+    draw();
+  };
+  window.s11Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length - 1) { clearInterval(timer); timer = null; return; }
+      s11Step();
+    }, 1000);
+  };
+  window.s11Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    init();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s11').classList.contains('active')) { if(timer){clearInterval(timer);timer=null;} init(); }
+  });
+  obs.observe(document.getElementById('s11'), {attributes: true, attributeFilter: ['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s12: Map and Set (interactive playground) ==================== -->
+<div class="slide" id="s12">
+  <h2>Collections: Map and Set</h2>
+  <p>OCaml provides <strong>immutable</strong>, balanced-tree-backed Map and Set via functors.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <h3>StringMap &mdash; variable environments</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> StringMap = Map.Make(String)</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">let</span> build_env pairs =</span>
+<span class="line">  List.fold_left</span>
+<span class="line">    (<span style="color:var(--blue)">fun</span> env (k, v) -> StringMap.add k v env)</span>
+<span class="line">    StringMap.empty pairs</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">let</span> lookup env name =</span>
+<span class="line">  StringMap.find_opt name env</span></div></div>
+      <h3>StringSet &mdash; variable sets</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> StringSet = Set.Make(String)</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">let</span> s1 = StringSet.of_list ["x"; "y"; "z"]</span>
+<span class="line"><span style="color:var(--blue)">let</span> s2 = StringSet.of_list ["y"; "z"; "w"]</span>
+<span class="line">StringSet.union s1 s2  <span style="color:var(--purple)">(* {w,x,y,z} *)</span></span>
+<span class="line">StringSet.inter s1 s2  <span style="color:var(--purple)">(* {y,z} *)</span></span></div></div>
+      <div class="info">
+        <strong>Foreshadow:</strong> Modules 3-5 use <code style="color:var(--amber)">StringSet</code> for live-variable sets and taint sets. Map stores variable→abstract-value bindings.
+      </div>
+    </div>
+    <div>
+      <h3>Try it: build an environment</h3>
+      <canvas id="cS12" width="480" height="240" style="width:100%;background:var(--bg3);"></canvas>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="s12key" placeholder="var" value="x" style="width:60px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--fg);font-family:monospace;font-size:0.9em;">
+        <input type="text" id="s12val" placeholder="val" value="42" style="width:60px;padding:5px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--fg);font-family:monospace;font-size:0.9em;">
+        <button class="btn btn-sm" onclick="s12Add()">Add</button>
+        <button class="btn btn-sm" style="background:var(--amber)" onclick="s12Lookup()">Lookup</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Clear</button>
+      </div>
+      <div class="log-panel" id="s12Log" style="margin-top:8px;min-height:40px;">Add key-value pairs to build a StringMap.</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s12Log');
+  let env = {}; // simple JS object as map
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 240);
+    const keys = Object.keys(env).sort();
+    if (keys.length === 0) {
+      ctx.fillStyle = '#94a3b8'; ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('StringMap.empty', 240, 120);
+      return;
+    }
+    ctx.font = 'bold 13px monospace';
+    const cellW = 100, cellH = 44, startX = 240 - (keys.length * cellW) / 2, startY = 30;
+    // Header
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('StringMap (' + keys.length + ' binding' + (keys.length > 1 ? 's' : '') + ')', 240, 18);
+    keys.forEach((k, i) => {
+      const x = startX + i * cellW + 4;
+      // Key box
+      ctx.beginPath(); ctx.roundRect(x, startY, cellW - 8, cellH, 8);
+      ctx.fillStyle = '#6366f1'; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(k, x + (cellW - 8)/2, startY + cellH/2);
+      // Arrow
+      ctx.beginPath(); ctx.moveTo(x + (cellW-8)/2, startY + cellH + 2);
+      ctx.lineTo(x + (cellW-8)/2, startY + cellH + 18);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+      // Value box
+      const vy = startY + cellH + 20;
+      ctx.beginPath(); ctx.roundRect(x, vy, cellW - 8, cellH, 8);
+      ctx.fillStyle = '#f59e0b'; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px monospace';
+      ctx.fillText(env[k], x + (cellW - 8)/2, vy + cellH/2);
+    });
+    // find_opt illustration
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('find_opt "key" env → Some value | None', 240, 225);
+  }
+
+  window.s12Add = function() {
+    const k = document.getElementById('s12key').value.trim();
+    const v = document.getElementById('s12val').value.trim();
+    if (!k) return;
+    const existed = env.hasOwnProperty(k);
+    env[k] = v || '?';
+    log.textContent = (existed ? 'Updated' : 'Added') + ': ' + k + ' → ' + (v || '?');
+    draw();
+  };
+  window.s12Lookup = function() {
+    const k = document.getElementById('s12key').value.trim();
+    if (!k) return;
+    if (env.hasOwnProperty(k)) {
+      log.textContent = 'find_opt "' + k + '" env → Some ' + env[k];
+    } else {
+      log.textContent = 'find_opt "' + k + '" env → None';
+    }
+  };
+  window.s12Reset = function() {
+    env = {};
+    log.textContent = 'Cleared. Add key-value pairs to build a StringMap.';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s12').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s12'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s13: Records and Mutable State ==================== -->
+<div class="slide" id="s13">
+  <h2>Records and Mutable State</h2>
+  <div class="cols">
+    <div>
+      <h3>Records in practice</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">type</span> assignment = {</span>
+<span class="line">  var_name : string;</span>
+<span class="line">  value    : int;</span>
+<span class="line">  line     : int;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">let</span> a = { var_name="x"; value=5; line=1 }</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Functional update — NEW record *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> a' = { a <span style="color:var(--blue)">with</span> value = a.value + 3 }</span></div></div>
+    </div>
+    <div>
+      <h3>Mutable state with <code style="color:var(--amber)">ref</code></h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* ref creates a mutable cell *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> counter = ref 0</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Read with ! *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> current = !counter     <span style="color:var(--purple)">(* 0 *)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Write with := *)</span></span>
+<span class="line">counter := !counter + 1    <span style="color:var(--purple)">(* now 1 *)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Counter factory with closure *)</span></span>
+<span class="line"><span style="color:var(--blue)">let</span> make_counter () =</span>
+<span class="line">  <span style="color:var(--blue)">let</span> n = ref 0 <span style="color:var(--blue)">in</span></span>
+<span class="line">  <span style="color:var(--blue)">fun</span> () -></span>
+<span class="line">    <span style="color:var(--blue)">let</span> v = !n <span style="color:var(--blue)">in</span></span>
+<span class="line">    n := v + 1; v</span></div></div>
+      <div class="warning">
+        <strong>Use sparingly.</strong> You'll see <code style="color:var(--amber)">ref</code> in fixpoint loops (Modules 3-4) where a worklist updates until convergence.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== sCA: Challenge A — AST & Pattern Matching ==================== -->
+<div class="slide" id="sCA">
+  <h2 style="color:var(--amber);">Challenge A: AST &amp; Pattern Matching</h2>
+  <p>Given the ADT and function below, predict the output.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">type</span> expr =</span>
+<span class="line">  | Num <span style="color:var(--blue)">of</span> int</span>
+<span class="line">  | Var <span style="color:var(--blue)">of</span> string</span>
+<span class="line">  | BinOp <span style="color:var(--blue)">of</span> op * expr * expr</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">let rec</span> count_vars e =</span>
+<span class="line">  <span style="color:var(--blue)">match</span> e <span style="color:var(--blue)">with</span></span>
+<span class="line">  | Num _ -> 0</span>
+<span class="line">  | Var _ -> 1</span>
+<span class="line">  | BinOp (_, l, r) -></span>
+<span class="line">    count_vars l + count_vars r</span></div></div>
+      <h3 style="margin-top:12px;">What does this return?</h3>
+      <div class="code-block"><div class="code-content"><span class="line">count_vars</span>
+<span class="line">  (BinOp (Add,</span>
+<span class="line">    BinOp (Mul, Var "x", Num 3),</span>
+<span class="line">    BinOp (Add, Var "y", Var "z")))</span></div></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+        <span style="color:var(--fg2);">Your answer:</span>
+        <input type="text" id="sCAinput" placeholder="?" style="width:60px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--fg);font-family:monospace;font-size:1.1em;text-align:center;">
+        <button class="btn btn-sm" onclick="sCACheck()">Check</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCAReveal()">Show Answer</button>
+      </div>
+      <div id="sCAFeedback" style="margin-top:8px;font-size:0.95em;"></div>
+    </div>
+    <div>
+      <h3>Visualize the tree</h3>
+      <canvas id="cCA" width="480" height="340" style="width:100%;background:var(--bg3);"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cCA');
+  const ctx = canvas.getContext('2d');
+  let revealed = false;
+
+  const nodes = [
+    {l:'BinOp(+)', x:240, y:40, c:'#6366f1'},
+    {l:'BinOp(*)', x:120, y:130, c:'#6366f1'},
+    {l:'BinOp(+)', x:360, y:130, c:'#6366f1'},
+    {l:'Var "x"', x:60, y:220, c:'#22c55e'},
+    {l:'Num 3', x:180, y:220, c:'#f59e0b'},
+    {l:'Var "y"', x:300, y:220, c:'#22c55e'},
+    {l:'Var "z"', x:420, y:220, c:'#22c55e'},
+  ];
+  const edges = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]];
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 340);
+    ctx.font = 'bold 12px monospace';
+    edges.forEach(([f,t]) => {
+      ctx.beginPath();
+      ctx.moveTo(nodes[f].x, nodes[f].y + 16);
+      ctx.lineTo(nodes[t].x, nodes[t].y - 16);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    nodes.forEach((n, i) => {
+      const w = Math.max(ctx.measureText(n.l).width + 18, 50);
+      ctx.beginPath(); ctx.roundRect(n.x - w/2, n.y - 15, w, 30, 7);
+      ctx.fillStyle = n.c; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.l, n.x, n.y);
+      // Show count when revealed
+      if (revealed) {
+        const counts = [3, 1, 2, 1, 0, 1, 1]; // count_vars for each subtree
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('→ ' + counts[i], n.x, n.y + 24);
+        ctx.font = 'bold 12px monospace';
+      }
+    });
+    if (revealed) {
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('Result: 3 (three Var nodes)', 240, 310);
+    }
+  }
+
+  window.sCACheck = function() {
+    const ans = document.getElementById('sCAinput').value.trim();
+    const fb = document.getElementById('sCAFeedback');
+    if (ans === '3') {
+      fb.innerHTML = '<span style="color:var(--green)">&#10004; Correct! There are 3 Var nodes: "x", "y", "z".</span>';
+      revealed = true; draw();
+    } else if (ans === '') {
+      fb.innerHTML = '<span style="color:var(--fg2)">Type a number and click Check.</span>';
+    } else {
+      fb.innerHTML = '<span style="color:var(--red)">&#10008; Not quite. Count the Var nodes in the tree. Num nodes return 0.</span>';
+    }
+  };
+  window.sCAReveal = function() {
+    revealed = true;
+    document.getElementById('sCAFeedback').innerHTML = '<span style="color:var(--amber)">Answer: <strong>3</strong> — Var "x" (1) + Var "y" (1) + Var "z" (1). Num nodes contribute 0.</span>';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCA').classList.contains('active')) { revealed = false; document.getElementById('sCAFeedback').innerHTML = ''; document.getElementById('sCAinput').value = ''; draw(); }
+  });
+  obs.observe(document.getElementById('sCA'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s14: Why Modules? ==================== -->
+<div class="slide" id="s14">
+  <h2>Why Modules?</h2>
+  <p>As programs grow, you need ways to <strong>organize code</strong>, <strong>hide implementation details</strong>, and <strong>write reusable components</strong>.</p>
+  <div class="cols">
+    <div>
+      <h3 style="color:var(--red);">Without modules: name clashes</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">type</span> sign = Pos | Neg | Zero | Unknown</span>
+<span class="line"><span style="color:var(--blue)">let</span> sign_join a b = ...</span>
+<span class="line"><span style="color:var(--blue)">let</span> sign_to_string s = ...</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">type</span> taint = Clean | Tainted | TUnknown</span>
+<span class="line"><span style="color:var(--blue)">let</span> taint_join a b = ...</span>
+<span class="line"><span style="color:var(--blue)">let</span> taint_to_string t = ...</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--red)">(* Name clashes! Both need "join",</span></span>
+<span class="line"><span style="color:var(--red)">   "to_string", "Unknown" *)</span></span></div></div>
+    </div>
+    <div>
+      <h3 style="color:var(--green);">With modules: clean namespaces</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> Sign = <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t = Pos | Neg | Zero | Unknown</span>
+<span class="line">  <span style="color:var(--blue)">let</span> join a b = ...</span>
+<span class="line">  <span style="color:var(--blue)">let</span> to_string s = ...</span>
+<span class="line"><span style="color:var(--blue)">end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">module</span> Taint = <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t = Clean | Tainted | Unknown</span>
+<span class="line">  <span style="color:var(--blue)">let</span> join a b = ...</span>
+<span class="line"><span style="color:var(--blue)">end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--green)">(* No clashes! *)</span></span>
+<span class="line">Sign.join Sign.Pos Sign.Neg</span>
+<span class="line">Taint.join Taint.Clean Taint.Tainted</span></div></div>
+    </div>
+  </div>
+  <div class="key-idea">
+    <strong>Key insight:</strong> Modules are like "super structs" &mdash; they can contain types, values, functions, and even other modules. Each module is its own namespace.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s15: Signatures & Structures (merged, interactive) ==================== -->
+<div class="slide" id="s15">
+  <h2>Signatures &amp; Structures</h2>
+  <p>A <strong>signature</strong> = interface (what). A <strong>structure</strong> = implementation (how). Sealing hides internals.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <h3>Signature (module type)</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module type</span> COUNTER = <span style="color:var(--blue)">sig</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t              <span style="color:var(--purple)">(* abstract! *)</span></span>
+<span class="line">  <span style="color:var(--blue)">val</span> create : int -> t</span>
+<span class="line">  <span style="color:var(--blue)">val</span> increment : t -> t</span>
+<span class="line">  <span style="color:var(--blue)">val</span> value : t -> int</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+      <h3>Structure (sealed by signature)</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> SafeCounter : COUNTER = <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t = { count: int; max: int }</span>
+<span class="line">  <span style="color:var(--blue)">let</span> create max = { count=0; max }</span>
+<span class="line">  <span style="color:var(--blue)">let</span> increment c =</span>
+<span class="line">    <span style="color:var(--blue)">if</span> c.count &lt; c.max</span>
+<span class="line">    <span style="color:var(--blue)">then</span> { c <span style="color:var(--blue)">with</span> count = c.count+1 }</span>
+<span class="line">    <span style="color:var(--blue)">else</span> c</span>
+<span class="line">  <span style="color:var(--blue)">let</span> value c = c.count</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+    </div>
+    <div>
+      <h3>What the outside world sees</h3>
+      <canvas id="cS15" width="480" height="310" style="width:100%;background:var(--bg3);"></canvas>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-sm" id="s15SealBtn" onclick="s15Toggle()">Seal with Signature</button>
+      </div>
+      <div class="analogy" style="margin-top:8px;">
+        <strong>Analogy:</strong> A signature is like a Java <code style="color:var(--amber)">interface</code>. It says "you must provide these operations" without dictating implementation.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+  let sealed = false;
+
+  const allItems = [
+    { label: 'type t = {count; max}', visible: true, hidden: true, sig: false },
+    { label: 'create : int → t', visible: true, hidden: false, sig: true },
+    { label: 'increment : t → t', visible: true, hidden: false, sig: true },
+    { label: 'value : t → int', visible: true, hidden: false, sig: true },
+    { label: 'max field (internal)', visible: true, hidden: true, sig: false },
+    { label: 'capping logic (internal)', visible: true, hidden: true, sig: false },
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 310);
+    // Module box
+    ctx.beginPath(); ctx.roundRect(30, 20, 420, 270, 12);
+    ctx.fillStyle = 'rgba(99,102,241,0.08)'; ctx.fill();
+    ctx.strokeStyle = sealed ? '#22c55e' : '#6366f1'; ctx.lineWidth = 2.5; ctx.stroke();
+    // Title
+    ctx.fillStyle = sealed ? '#22c55e' : '#818cf8';
+    ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(sealed ? 'SafeCounter : COUNTER  (sealed)' : 'SafeCounter  (unsealed — everything visible)', 50, 48);
+    // Items
+    ctx.font = '13px monospace';
+    allItems.forEach((item, i) => {
+      const y = 72 + i * 38;
+      const show = sealed ? !item.hidden : item.visible;
+      const isSig = item.sig;
+
+      if (sealed && item.hidden) {
+        // Faded out with strikethrough
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = '#ef4444'; ctx.textAlign = 'left';
+        ctx.fillText('✗ ' + item.label, 60, y + 4);
+        ctx.beginPath(); ctx.moveTo(78, y + 4); ctx.lineTo(78 + ctx.measureText(item.label).width, y + 4);
+        ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillStyle = isSig ? '#22c55e' : '#e2e8f0';
+        ctx.textAlign = 'left';
+        ctx.fillText((sealed ? '✓ ' : '  ') + item.label, 60, y + 4);
+      }
+    });
+    // Legend
+    ctx.font = '11px sans-serif'; ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
+    if (sealed) {
+      ctx.fillText('Only signature items visible — internals hidden!', 240, 300);
+    } else {
+      ctx.fillText('Everything exposed — users can depend on internals', 240, 300);
+    }
+  }
+
+  window.s15Toggle = function() {
+    sealed = !sealed;
+    document.getElementById('s15SealBtn').textContent = sealed ? 'Unseal (show internals)' : 'Seal with Signature';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s15').classList.contains('active')) { sealed = false; document.getElementById('s15SealBtn').textContent = 'Seal with Signature'; draw(); }
+  });
+  obs.observe(document.getElementById('s15'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s16: What is a Lattice? (Canvas Hasse) ==================== -->
+<div class="slide" id="s16">
+  <h2>What is a Lattice?</h2>
+  <p>A <strong>lattice</strong> models "levels of knowledge" &mdash; the theoretical foundation of all program analysis in this bootcamp.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <h3>Everyday intuition</h3>
+      <div class="code-block" style="border-color:var(--purple);"><div class="code-content" style="color:var(--fg3);"><span class="line">What color is the next traffic light?</span>
+<span class="line"></span>
+<span class="line">Before driving:  <span style="color:var(--fg2)">"I have no idea"</span>     = <span style="color:var(--amber)">bottom</span></span>
+<span class="line">After GPS hint:  <span style="color:var(--fg2)">"Red or Yellow"</span>      = <span style="color:var(--amber)">partial info</span></span>
+<span class="line">After seeing it: <span style="color:var(--fg2)">"Red"</span>                = <span style="color:var(--amber)">precise</span></span>
+<span class="line">Conflicting GPS: <span style="color:var(--fg2)">"Could be anything"</span>  = <span style="color:var(--amber)">top</span></span></div></div>
+      <div class="key-idea">
+        <strong>Key rule:</strong> Information only flows <em>upward</em>. Once you say "Red or Yellow," you can't go back to "definitely Red" without new evidence.
+      </div>
+      <h3 style="margin-top:10px;">Why program analysis needs this</h3>
+      <p>Programs have branches (<code style="color:var(--amber)">if/else</code>, loops). At merge points, we must combine info from multiple paths. A lattice tells us <strong>how</strong> to combine safely.</p>
+    </div>
+    <div>
+      <h3>Hasse diagram — click nodes to explore</h3>
+      <canvas id="cS16" width="480" height="320" style="width:100%;background:var(--bg3);cursor:pointer;"></canvas>
+      <div class="log-panel" id="s16Log" style="margin-top:8px;">Click any node to learn about it.</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s16Log');
+
+  const nodes = [
+    { label: '⊤ (Top)', x: 240, y: 40, c: '#ef4444', r: 28, desc: 'TOP: "Could be anything." We\'ve lost all precision — the safe, conservative answer.' },
+    { label: 'Red', x: 100, y: 140, c: '#ef4444', r: 24, desc: 'Red: We know the exact value. Maximum precision.' },
+    { label: 'Yellow', x: 240, y: 140, c: '#f59e0b', r: 24, desc: 'Yellow: We know the exact value. Maximum precision.' },
+    { label: 'Green', x: 380, y: 140, c: '#22c55e', r: 24, desc: 'Green: We know the exact value. Maximum precision.' },
+    { label: '⊥ (Bot)', x: 240, y: 250, c: '#64748b', r: 28, desc: 'BOTTOM: "No information yet." The starting point for all analysis — unreachable or unanalyzed.' },
+  ];
+  const edges = [[4,1],[4,2],[4,3],[1,0],[2,0],[3,0]];
+  let highlight = -1;
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 320);
+    // Edges
+    edges.forEach(([f,t]) => {
+      ctx.beginPath();
+      ctx.moveTo(nodes[f].x, nodes[f].y - nodes[f].r);
+      ctx.lineTo(nodes[t].x, nodes[t].y + nodes[t].r);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    // Nodes
+    nodes.forEach((n, i) => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = n.c;
+      ctx.globalAlpha = (highlight === i) ? 1 : 0.7;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      if (highlight === i) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+      }
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+    });
+    // Arrow labels
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('↑ more info = higher in lattice', 240, 300);
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const sx = 480 / rect.width, sy = 320 / rect.height;
+    const mx = (e.clientX - rect.left) * sx, my = (e.clientY - rect.top) * sy;
+    highlight = -1;
+    nodes.forEach((n, i) => {
+      const dx = mx - n.x, dy = my - n.y;
+      if (dx*dx + dy*dy < n.r * n.r * 1.5) highlight = i;
+    });
+    if (highlight >= 0) {
+      log.textContent = nodes[highlight].desc;
+    } else {
+      log.textContent = 'Click any node to learn about it.';
+    }
+    draw();
+  });
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s16').classList.contains('active')) { highlight = -1; log.textContent = 'Click any node to learn about it.'; draw(); }
+  });
+  obs.observe(document.getElementById('s16'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s17: Lattice Operations — Interactive Join Calculator ==================== -->
+<div class="slide" id="s17">
+  <h2>Lattice Operations: Join</h2>
+  <p>Every lattice has <em>bottom</em>, <em>top</em>, and <em>join</em>. Let's explore with the <strong>Sign lattice</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <h3>The Sign lattice</h3>
+      <canvas id="cS17" width="480" height="260" style="width:100%;background:var(--bg3);"></canvas>
+      <div class="log-panel" id="s17Log" style="margin-top:8px;">Pick two values below and click Join to see the result on the diagram.</div>
+    </div>
+    <div>
+      <h3>Interactive join calculator</h3>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:8px;">
+        <div>
+          <label style="color:var(--fg2);font-size:0.85em;">Value A</label><br>
+          <select id="s17a" style="padding:6px 12px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--fg);font-family:monospace;font-size:1em;margin-top:4px;">
+            <option value="bot">⊥ (Bot)</option>
+            <option value="neg">Neg</option>
+            <option value="zero" selected>Zero</option>
+            <option value="pos">Pos</option>
+            <option value="top">⊤ (Top)</option>
+          </select>
+        </div>
+        <span style="font-size:1.3em;color:var(--purple);margin-top:16px;">⊔</span>
+        <div>
+          <label style="color:var(--fg2);font-size:0.85em;">Value B</label><br>
+          <select id="s17b" style="padding:6px 12px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--fg);font-family:monospace;font-size:1em;margin-top:4px;">
+            <option value="bot">⊥ (Bot)</option>
+            <option value="neg">Neg</option>
+            <option value="zero">Zero</option>
+            <option value="pos" selected>Pos</option>
+            <option value="top">⊤ (Top)</option>
+          </select>
+        </div>
+        <button class="btn btn-sm" style="margin-top:16px;" onclick="s17Join()">= Join</button>
+      </div>
+      <div id="s17Result" style="margin-top:12px;font-size:1.1em;color:var(--amber);font-weight:600;min-height:28px;"></div>
+      <h3 style="margin-top:12px;">Why it works this way</h3>
+      <div class="code-block" style="border-color:var(--purple);"><div class="code-content"><span class="line"><span style="color:var(--purple)">if</span> (cond) {</span>
+<span class="line">  x = 5;        <span style="color:var(--green)">// x is Pos</span></span>
+<span class="line">} <span style="color:var(--purple)">else</span> {</span>
+<span class="line">  x = -3;       <span style="color:var(--red)">// x is Neg</span></span>
+<span class="line">}</span>
+<span class="line"><span style="color:var(--fg2)">// What is x here?</span></span>
+<span class="line"><span style="color:var(--fg2)">// join(Pos, Neg) = ⊤ ("could be either")</span></span></div></div>
+      <div class="key-idea">
+        <strong>Rule:</strong> <code style="color:var(--amber)">join(a, b)</code> = smallest value <em>above</em> both a and b in the diagram. Same value? Keep it. Different? Go up.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS17');
+  const ctx = canvas.getContext('2d');
+  const logEl = document.getElementById('s17Log');
+
+  const positions = {
+    top: {x:240, y:30}, neg: {x:100, y:120}, zero: {x:240, y:120},
+    pos: {x:380, y:120}, bot: {x:240, y:220}
+  };
+  const labels = { top:'⊤ (Top)', neg:'Neg', zero:'Zero', pos:'Pos', bot:'⊥ (Bot)' };
+  const colors = { top:'#ef4444', neg:'#f472b6', zero:'#94a3b8', pos:'#38bdf8', bot:'#64748b' };
+  const edgeList = [['bot','neg'],['bot','zero'],['bot','pos'],['neg','top'],['zero','top'],['pos','top']];
+
+  let hiA = '', hiB = '', hiResult = '';
+
+  function joinFn(a, b) {
+    if (a === b) return a;
+    if (a === 'bot') return b;
+    if (b === 'bot') return a;
+    if (a === 'top' || b === 'top') return 'top';
+    return 'top'; // different non-bot/top values
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 260);
+    // Edges
+    edgeList.forEach(([f,t]) => {
+      const p1 = positions[f], p2 = positions[t];
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y - 20); ctx.lineTo(p2.x, p2.y + 20);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    // Nodes
+    Object.keys(positions).forEach(key => {
+      const p = positions[key];
+      const isA = key === hiA, isB = key === hiB, isR = key === hiResult;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 24, 0, Math.PI * 2);
+      ctx.fillStyle = colors[key];
+      ctx.globalAlpha = (isA || isB || isR) ? 1 : 0.5;
+      ctx.fill(); ctx.globalAlpha = 1;
+      if (isR) {
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4; ctx.stroke();
+      } else if (isA || isB) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
+      }
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(labels[key], p.x, p.y);
+      // Label A/B/Result
+      if (isA && !isR) { ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif'; ctx.fillText('A', p.x - 30, p.y); }
+      if (isB && !isR) { ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif'; ctx.fillText('B', p.x + 30, p.y); }
+      if (isR) { ctx.fillStyle='#f59e0b'; ctx.font='bold 11px sans-serif'; ctx.fillText('Result ⭐', p.x, p.y + 34); }
+    });
+  }
+
+  window.s17Join = function() {
+    const a = document.getElementById('s17a').value;
+    const b = document.getElementById('s17b').value;
+    const result = joinFn(a, b);
+    hiA = a; hiB = b; hiResult = result;
+    document.getElementById('s17Result').textContent = 'join(' + labels[a] + ', ' + labels[b] + ') = ' + labels[result];
+    logEl.textContent = labels[a] + ' ⊔ ' + labels[b] + ' = ' + labels[result] + (a === b ? ' (same value → keep it)' : a === 'bot' ? ' (bot + x → x)' : b === 'bot' ? ' (x + bot → x)' : ' (different → go up to Top)');
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s17').classList.contains('active')) { hiA=''; hiB=''; hiResult=''; document.getElementById('s17Result').textContent=''; logEl.textContent='Pick two values below and click Join to see the result on the diagram.'; draw(); }
+  });
+  obs.observe(document.getElementById('s17'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== sCB: Challenge B — Lattice Join ==================== -->
+<div class="slide" id="sCB">
+  <h2 style="color:var(--amber);">Challenge B: Lattice Join</h2>
+  <p>Given this code, predict the sign of <code style="color:var(--amber)">x</code> after the if/else using the Sign lattice.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <div class="code-block" style="border-color:var(--purple);font-size:0.95em;"><div class="code-content"><span class="line"><span style="color:var(--purple)">// Program 1:</span></span>
+<span class="line"><span style="color:var(--blue)">if</span> (cond) {</span>
+<span class="line">  x = 0;        <span style="color:var(--fg2)">// x is ??? </span></span>
+<span class="line">} <span style="color:var(--blue)">else</span> {</span>
+<span class="line">  x = 0;        <span style="color:var(--fg2)">// x is ???</span></span>
+<span class="line">}</span>
+<span class="line"><span style="color:var(--fg2)">// x after merge = ???</span></span></div></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+        <span style="color:var(--fg2);font-size:0.9em;">Program 1 result:</span>
+        <select id="sCBq1" style="padding:5px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--fg);font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="bot">⊥ (Bot)</option>
+          <option value="neg">Neg</option>
+          <option value="zero">Zero</option>
+          <option value="pos">Pos</option>
+          <option value="top">⊤ (Top)</option>
+        </select>
+        <span id="sCBr1" style="font-size:1.1em;"></span>
+      </div>
+
+      <div class="code-block" style="border-color:var(--purple);font-size:0.95em;margin-top:12px;"><div class="code-content"><span class="line"><span style="color:var(--purple)">// Program 2:</span></span>
+<span class="line"><span style="color:var(--blue)">if</span> (cond) {</span>
+<span class="line">  x = 7;        <span style="color:var(--fg2)">// x is ???</span></span>
+<span class="line">} <span style="color:var(--blue)">else</span> {</span>
+<span class="line">  x = -2;       <span style="color:var(--fg2)">// x is ???</span></span>
+<span class="line">}</span>
+<span class="line"><span style="color:var(--fg2)">// x after merge = ???</span></span></div></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+        <span style="color:var(--fg2);font-size:0.9em;">Program 2 result:</span>
+        <select id="sCBq2" style="padding:5px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--fg);font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="bot">⊥ (Bot)</option>
+          <option value="neg">Neg</option>
+          <option value="zero">Zero</option>
+          <option value="pos">Pos</option>
+          <option value="top">⊤ (Top)</option>
+        </select>
+        <span id="sCBr2" style="font-size:1.1em;"></span>
+      </div>
+
+      <div class="code-block" style="border-color:var(--purple);font-size:0.95em;margin-top:12px;"><div class="code-content"><span class="line"><span style="color:var(--purple)">// Program 3:</span></span>
+<span class="line"><span style="color:var(--blue)">if</span> (cond) {</span>
+<span class="line">  x = 3;        <span style="color:var(--fg2)">// x is ???</span></span>
+<span class="line">} <span style="color:var(--blue)">else</span> {</span>
+<span class="line">  x = 100;      <span style="color:var(--fg2)">// x is ???</span></span>
+<span class="line">}</span>
+<span class="line"><span style="color:var(--fg2)">// x after merge = ???</span></span></div></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+        <span style="color:var(--fg2);font-size:0.9em;">Program 3 result:</span>
+        <select id="sCBq3" style="padding:5px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--fg);font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="bot">⊥ (Bot)</option>
+          <option value="neg">Neg</option>
+          <option value="zero">Zero</option>
+          <option value="pos">Pos</option>
+          <option value="top">⊤ (Top)</option>
+        </select>
+        <span id="sCBr3" style="font-size:1.1em;"></span>
+      </div>
+    </div>
+    <div>
+      <h3>Sign Lattice Reference</h3>
+      <canvas id="cCB" width="480" height="200" style="width:100%;background:var(--bg3);"></canvas>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-sm" onclick="sCBCheck()">Check All</button>
+        <button class="btn btn-sm btn-secondary" onclick="sCBReveal()">Show Answers</button>
+      </div>
+      <div id="sCBScore" style="margin-top:10px;font-size:1em;color:var(--fg2);min-height:24px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cCB');
+  const ctx = canvas.getContext('2d');
+  // Draw reference lattice
+  function drawRef() {
+    ctx.clearRect(0, 0, 480, 200);
+    const pos = {top:{x:240,y:28}, neg:{x:100,y:100}, zero:{x:240,y:100}, pos:{x:380,y:100}, bot:{x:240,y:175}};
+    const labels = {top:'⊤',neg:'Neg',zero:'Zero',pos:'Pos',bot:'⊥'};
+    const colors = {top:'#ef4444',neg:'#f472b6',zero:'#94a3b8',pos:'#38bdf8',bot:'#64748b'};
+    [['bot','neg'],['bot','zero'],['bot','pos'],['neg','top'],['zero','top'],['pos','top']].forEach(([f,t]) => {
+      ctx.beginPath(); ctx.moveTo(pos[f].x, pos[f].y - 18); ctx.lineTo(pos[t].x, pos[t].y + 18);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    Object.keys(pos).forEach(k => {
+      const p = pos[k];
+      ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, Math.PI*2);
+      ctx.fillStyle = colors[k]; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(labels[k], p.x, p.y);
+    });
+  }
+
+  const answers = { sCBq1: 'zero', sCBq2: 'top', sCBq3: 'pos' };
+  const explain = {
+    sCBq1: 'join(Zero, Zero) = Zero (same value!)',
+    sCBq2: 'join(Pos, Neg) = ⊤ (different → Top)',
+    sCBq3: 'join(Pos, Pos) = Pos (same sign!)',
+  };
+
+  function check(id) {
+    const v = document.getElementById(id).value;
+    const span = document.getElementById(id.replace('q','r'));
+    if (!v) { span.textContent = ''; return -1; }
+    if (v === answers[id]) { span.innerHTML = '<span style="color:var(--green)">✓</span>'; return 1; }
+    span.innerHTML = '<span style="color:var(--red)">✗</span>'; return 0;
+  }
+
+  window.sCBCheck = function() {
+    let score = 0, total = 0;
+    ['sCBq1','sCBq2','sCBq3'].forEach(id => {
+      const r = check(id);
+      if (r >= 0) { total++; score += r; }
+    });
+    document.getElementById('sCBScore').textContent = total > 0 ? score + '/' + total + ' correct' : 'Select answers first.';
+  };
+  window.sCBReveal = function() {
+    ['sCBq1','sCBq2','sCBq3'].forEach(id => {
+      document.getElementById(id).value = answers[id];
+      document.getElementById(id.replace('q','r')).innerHTML = '<span style="color:var(--amber)" title="' + explain[id] + '">→ ' + explain[id] + '</span>';
+    });
+    document.getElementById('sCBScore').textContent = 'All answers revealed.';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCB').classList.contains('active')) drawRef();
+  });
+  obs.observe(document.getElementById('sCB'), {attributes: true, attributeFilter: ['class']});
+  drawRef();
+})();
+</script>
+
+<!-- ==================== s18: The LATTICE Signature ==================== -->
+<div class="slide" id="s18">
+  <h2>The LATTICE Signature in OCaml</h2>
+  <p>Now let's encode what we learned as an OCaml module signature. Every analysis domain implements this interface.</p>
+  <div class="cols">
+    <div>
+      <h3>The signature</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module type</span> LATTICE = <span style="color:var(--blue)">sig</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t</span>
+<span class="line">  <span style="color:var(--blue)">val</span> bottom : t</span>
+<span class="line">  <span style="color:var(--blue)">val</span> top : t</span>
+<span class="line">  <span style="color:var(--blue)">val</span> join : t -> t -> t</span>
+<span class="line">  <span style="color:var(--blue)">val</span> equal : t -> t -> bool</span>
+<span class="line">  <span style="color:var(--blue)">val</span> to_string : t -> string</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+      <h3>BoolLattice implementation</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> BoolLattice : LATTICE</span>
+<span class="line">  <span style="color:var(--blue)">with type</span> t = bool</span>
+<span class="line">= <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t = bool</span>
+<span class="line">  <span style="color:var(--blue)">let</span> bottom = false</span>
+<span class="line">  <span style="color:var(--blue)">let</span> top = true</span>
+<span class="line">  <span style="color:var(--blue)">let</span> join a b = a || b</span>
+<span class="line">  <span style="color:var(--blue)">let</span> equal a b = (a = b)</span>
+<span class="line">  <span style="color:var(--blue)">let</span> to_string b =</span>
+<span class="line">    <span style="color:var(--blue)">if</span> b <span style="color:var(--blue)">then</span> "true" <span style="color:var(--blue)">else</span> "false"</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+    </div>
+    <div>
+      <h3>What each part means</h3>
+      <table style="width:100%;">
+        <tr><th>Signature item</th><th>Purpose</th></tr>
+        <tr><td><code>type t</code></td><td>The abstract value type</td></tr>
+        <tr><td><code>bottom</code></td><td>Least element (no info / unreachable)</td></tr>
+        <tr><td><code>top</code></td><td>Greatest element (could be anything)</td></tr>
+        <tr><td><code>join</code></td><td>Merge info from two analysis paths</td></tr>
+        <tr><td><code>equal</code></td><td>Check convergence (fixpoint test)</td></tr>
+        <tr><td><code>to_string</code></td><td>For debugging / display</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:12px;">
+        <strong>Key insight:</strong> Different analyses use different types for <code style="color:var(--amber)">t</code> — booleans, signs, intervals, taint labels — but they all satisfy the <em>same</em> LATTICE interface.
+      </div>
+      <div class="info" style="margin-top:8px;">
+        <strong>Foreshadow:</strong> Modules 3-5 each define their own LATTICE implementations. The analysis framework code is <em>generic</em> over this interface.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s19: ThreeValueLattice (interactive join) ==================== -->
+<div class="slide" id="s19">
+  <h2>Building a Lattice Module</h2>
+  <p>Let's build a richer lattice — <strong>ThreeValueLattice</strong> — and test it interactively.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">type</span> three_value =</span>
+<span class="line">  | Bot | Zero | Positive | Unknown</span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--blue)">module</span> ThreeValueLattice</span>
+<span class="line">  : LATTICE <span style="color:var(--blue)">with type</span> t = three_value</span>
+<span class="line">= <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t = three_value</span>
+<span class="line">  <span style="color:var(--blue)">let</span> bottom = Bot</span>
+<span class="line">  <span style="color:var(--blue)">let</span> top = Unknown</span>
+<span class="line">  <span style="color:var(--blue)">let</span> join a b =</span>
+<span class="line">    <span style="color:var(--blue)">if</span> a = b <span style="color:var(--blue)">then</span> a</span>
+<span class="line">    <span style="color:var(--blue)">else if</span> a = Bot <span style="color:var(--blue)">then</span> b</span>
+<span class="line">    <span style="color:var(--blue)">else if</span> b = Bot <span style="color:var(--blue)">then</span> a</span>
+<span class="line">    <span style="color:var(--blue)">else</span> Unknown</span>
+<span class="line">  <span style="color:var(--blue)">let</span> equal a b = (a = b)</span>
+<span class="line">  <span style="color:var(--blue)">let</span> to_string = <span style="color:var(--blue)">function</span></span>
+<span class="line">    | Bot -> "Bot" | Zero -> "Zero"</span>
+<span class="line">    | Positive -> "Positive"</span>
+<span class="line">    | Unknown -> "Unknown"</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+    </div>
+    <div>
+      <h3>Test it: click two nodes to join</h3>
+      <canvas id="cS19" width="480" height="260" style="width:100%;background:var(--bg3);cursor:pointer;"></canvas>
+      <div class="log-panel" id="s19Log" style="margin-top:8px;">Click a node to select Value A, then another for Value B. The join result will be highlighted.</div>
+      <button class="btn btn-sm btn-secondary" style="margin-top:6px;" onclick="s19Reset()">Reset</button>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS19');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s19Log');
+
+  const nodeData = [
+    { key:'unknown', label:'Unknown (⊤)', x:240, y:30, c:'#ef4444' },
+    { key:'zero', label:'Zero', x:140, y:130, c:'#94a3b8' },
+    { key:'positive', label:'Positive', x:340, y:130, c:'#38bdf8' },
+    { key:'bot', label:'Bot (⊥)', x:240, y:230, c:'#64748b' },
+  ];
+  const edgeList = [[3,1],[3,2],[1,0],[2,0]];
+
+  let selA = null, selB = null, result = null;
+
+  function joinFn(a, b) {
+    if (a === b) return a;
+    if (a === 'bot') return b;
+    if (b === 'bot') return a;
+    return 'unknown';
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 260);
+    edgeList.forEach(([f,t]) => {
+      ctx.beginPath();
+      ctx.moveTo(nodeData[f].x, nodeData[f].y - 20);
+      ctx.lineTo(nodeData[t].x, nodeData[t].y + 20);
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    nodeData.forEach((n, i) => {
+      const isA = selA === n.key, isB = selB === n.key, isR = result === n.key;
+      ctx.beginPath(); ctx.arc(n.x, n.y, 26, 0, Math.PI * 2);
+      ctx.fillStyle = n.c;
+      ctx.globalAlpha = (isA || isB || isR) ? 1 : 0.45;
+      ctx.fill(); ctx.globalAlpha = 1;
+      if (isR) { ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4; ctx.stroke(); }
+      else if (isA || isB) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke(); }
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(n.label, n.x, n.y);
+      if (isA && !isR) { ctx.fillStyle='#e2e8f0'; ctx.font='bold 10px sans-serif'; ctx.fillText('A', n.x, n.y - 34); }
+      if (isB && !isR) { ctx.fillStyle='#e2e8f0'; ctx.font='bold 10px sans-serif'; ctx.fillText('B', n.x, n.y - 34); }
+      if (isR) { ctx.fillStyle='#f59e0b'; ctx.font='bold 11px sans-serif'; ctx.fillText('⭐ Result', n.x, n.y + 36); }
+    });
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const sx = 480/rect.width, sy = 260/rect.height;
+    const mx = (e.clientX - rect.left)*sx, my = (e.clientY - rect.top)*sy;
+    let clicked = null;
+    nodeData.forEach(n => {
+      if (Math.hypot(mx - n.x, my - n.y) < 30) clicked = n.key;
+    });
+    if (!clicked) return;
+    if (selA === null) {
+      selA = clicked; result = null;
+      log.textContent = 'A = ' + clicked + '. Now click Value B.';
+    } else if (selB === null) {
+      selB = clicked;
+      result = joinFn(selA, selB);
+      log.textContent = 'join(' + selA + ', ' + selB + ') = ' + result + (selA === selB ? ' (same!)' : selA === 'bot' ? ' (bot absorbed)' : selB === 'bot' ? ' (bot absorbed)' : ' (different → Unknown)');
+    } else {
+      selA = clicked; selB = null; result = null;
+      log.textContent = 'A = ' + clicked + '. Now click Value B.';
+    }
+    draw();
+  });
+
+  window.s19Reset = function() {
+    selA = null; selB = null; result = null;
+    log.textContent = 'Click a node to select Value A, then another for Value B.';
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s19').classList.contains('active')) { s19Reset(); }
+  });
+  obs.observe(document.getElementById('s19'), {attributes: true, attributeFilter: ['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s20: Functors (animated flow) ==================== -->
+<div class="slide" id="s20">
+  <h2>Functors: The Big Picture</h2>
+  <p>A <strong>functor</strong> = function from modules to modules. Write generic analysis code once, plug in different domains.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;flex:1;">
+    <div>
+      <h3>The code duplication problem</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="code-content"><span class="line"><span style="color:var(--red)">(* Copy-paste for every domain! *)</span></span>
+<span class="line"><span style="color:var(--blue)">module</span> SignEnv = <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">let</span> lookup env x =</span>
+<span class="line">    <span style="color:var(--blue)">match</span> find_opt x env <span style="color:var(--blue)">with</span></span>
+<span class="line">    | Some v -> v</span>
+<span class="line">    | None -> SignLattice.bottom</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+      <h3 style="color:var(--green);">The functor solution</h3>
+      <div class="code-block" style="font-size:0.85em;"><div class="code-content"><span class="line"><span style="color:var(--green)">(* Write once! *)</span></span>
+<span class="line"><span style="color:var(--blue)">module</span> MakeEnv (L : LATTICE) = <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">let</span> lookup env x =</span>
+<span class="line">    <span style="color:var(--blue)">match</span> find_opt x env <span style="color:var(--blue)">with</span></span>
+<span class="line">    | Some v -> v</span>
+<span class="line">    | None -> <span style="color:var(--amber)">L.bottom</span></span>
+<span class="line">  <span style="color:var(--blue)">let</span> join env1 env2 =</span>
+<span class="line">    union (fun _k v1 v2 -></span>
+<span class="line">      Some (<span style="color:var(--amber)">L.join</span> v1 v2)) env1 env2</span>
+<span class="line"><span style="color:var(--blue)">end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* Instantiate for each domain *)</span></span>
+<span class="line"><span style="color:var(--blue)">module</span> SignEnv = MakeEnv(SignLattice)</span>
+<span class="line"><span style="color:var(--blue)">module</span> TaintEnv = MakeEnv(TaintLattice)</span></div></div>
+    </div>
+    <div>
+      <h3>Animated: functor instantiation</h3>
+      <canvas id="cS20" width="480" height="340" style="width:100%;background:var(--bg3);"></canvas>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-sm" onclick="s20Step()">Step</button>
+        <button class="btn btn-sm" onclick="s20Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s20Reset()">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS20');
+  const ctx = canvas.getContext('2d');
+
+  const steps = [
+    { phase: 0, msg: 'LATTICE signature defines the contract' },
+    { phase: 1, msg: 'Three concrete lattice implementations' },
+    { phase: 2, msg: 'MakeEnv functor accepts any LATTICE' },
+    { phase: 3, msg: 'Plug in SignLattice → get SignEnv' },
+    { phase: 4, msg: 'Plug in TaintLattice → get TaintEnv' },
+    { phase: 5, msg: 'Plug in ThreeValue → get ThreeEnv. Done!' },
+  ];
+  let stepIdx = 0, timer = null;
+
+  function roundBox(x, y, w, h, r, fill, stroke, lw) {
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 2; ctx.stroke(); }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 480, 340);
+    const p = steps[Math.min(stepIdx, steps.length-1)].phase;
+    ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+    // LATTICE sig
+    const sigA = p >= 0 ? 1 : 0.2;
+    ctx.globalAlpha = sigA;
+    roundBox(170, 8, 140, 36, 8, '#6366f1', null);
+    ctx.fillStyle = '#fff'; ctx.fillText('LATTICE sig', 240, 26);
+
+    // Three implementations
+    const impls = [{l:'Sign',x:60,c:'#f472b6'},{l:'Taint',x:200,c:'#2dd4bf'},{l:'ThreeVal',x:360,c:'#38bdf8'}];
+    impls.forEach((im, i) => {
+      ctx.globalAlpha = p >= 1 ? 1 : 0.15;
+      roundBox(im.x - 42, 68, 104, 32, 8, im.c, null);
+      ctx.fillStyle = '#fff'; ctx.fillText(im.l, im.x + 10, 84);
+      // Arrow down from sig
+      if (p >= 1) {
+        ctx.beginPath(); ctx.moveTo(240, 44); ctx.lineTo(im.x + 10, 66);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+    });
+
+    // MakeEnv functor
+    ctx.globalAlpha = p >= 2 ? 1 : 0.15;
+    roundBox(120, 130, 240, 44, 10, '#1e293b', p >= 2 ? '#a78bfa' : '#334155', 2.5);
+    ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('MakeEnv(L : LATTICE)', 240, 152);
+
+    // Arrows from impls to functor
+    if (p >= 2) {
+      impls.forEach(im => {
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath(); ctx.moveTo(im.x + 10, 100); ctx.lineTo(240, 128);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.stroke();
+      });
+    }
+    ctx.globalAlpha = 1;
+
+    // Output modules
+    const outputs = [
+      {l:'SignEnv', x:60, c:'#f472b6', show: p >= 3},
+      {l:'TaintEnv', x:200, c:'#2dd4bf', show: p >= 4},
+      {l:'ThreeEnv', x:360, c:'#38bdf8', show: p >= 5},
+    ];
+    outputs.forEach((out, i) => {
+      ctx.globalAlpha = out.show ? 1 : 0.1;
+      roundBox(out.x - 42, 210, 104, 32, 8, out.c, '#fff', out.show ? 2 : 0);
+      ctx.fillStyle = '#fff'; ctx.fillText(out.l, out.x + 10, 226);
+      if (out.show) {
+        ctx.beginPath(); ctx.moveTo(240, 174); ctx.lineTo(out.x + 10, 208);
+        ctx.strokeStyle = out.c; ctx.lineWidth = 2;
+        ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
+      }
+    });
+    ctx.globalAlpha = 1;
+
+    // Step label
+    ctx.fillStyle = '#e2e8f0'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(steps[Math.min(stepIdx, steps.length-1)].msg, 240, 280);
+
+    // Java analogy
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px sans-serif';
+    ctx.fillText('Like Java generics: class Env<L extends Lattice>', 240, 320);
+  }
+
+  function init() { stepIdx = 0; draw(); }
+  window.s20Step = function() { if (stepIdx < steps.length - 1) { stepIdx++; draw(); } };
+  window.s20Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => { if (stepIdx >= steps.length-1) { clearInterval(timer); timer=null; return; } s20Step(); }, 1000);
+  };
+  window.s20Reset = function() { if (timer) { clearInterval(timer); timer=null; } init(); };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s20').classList.contains('active')) { if(timer){clearInterval(timer);timer=null;} init(); }
+  });
+  obs.observe(document.getElementById('s20'), {attributes: true, attributeFilter: ['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s21: You Already Use Functors ==================== -->
+<div class="slide" id="s21">
+  <h2>You Already Use Functors!</h2>
+  <p><code style="color:var(--amber)">Map.Make</code> and <code style="color:var(--amber)">Set.Make</code> from OCaml's standard library are functors. You used them on the Collections slide.</p>
+  <div class="cols">
+    <div>
+      <h3>Map.Make &mdash; the functor</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--purple)">(* Standard library: *)</span></span>
+<span class="line"><span style="color:var(--blue)">module</span> Map.Make (Ord : OrderedType) = <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> key = Ord.t</span>
+<span class="line">  <span style="color:var(--blue)">type</span> 'a t = ...  <span style="color:var(--purple)">(* balanced tree *)</span></span>
+<span class="line">  <span style="color:var(--blue)">val</span> find_opt : key -> 'a t -> 'a option</span>
+<span class="line">  <span style="color:var(--blue)">val</span> add : key -> 'a -> 'a t -> 'a t</span>
+<span class="line"><span style="color:var(--blue)">end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--purple)">(* OrderedType signature: *)</span></span>
+<span class="line"><span style="color:var(--blue)">module type</span> OrderedType = <span style="color:var(--blue)">sig</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t</span>
+<span class="line">  <span style="color:var(--blue)">val</span> compare : t -> t -> int</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+      <h3>Instantiation</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> StringMap = Map.Make(String)</span>
+<span class="line"><span style="color:var(--blue)">module</span> IntMap = Map.Make(Int)</span></div></div>
+    </div>
+    <div>
+      <h3>Module system summary</h3>
+      <table style="width:100%;">
+        <tr><th>Concept</th><th>What it is</th><th>Analogy</th></tr>
+        <tr><td><strong>Module</strong></td><td>Namespace + implementation</td><td>Java class</td></tr>
+        <tr><td><strong>Signature</strong></td><td>Interface / contract</td><td>Java interface</td></tr>
+        <tr><td><strong>Functor</strong></td><td>Module → Module function</td><td>Java generics</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:16px;">
+        <strong>The bootcamp pattern:</strong><br>
+        1. Define a <code style="color:var(--amber)">LATTICE</code> signature<br>
+        2. Implement it for each analysis domain<br>
+        3. Use <code style="color:var(--amber)">MakeEnv</code> functor to get environments<br>
+        4. Write analysis code generic over the interface
+      </div>
+      <div class="info" style="margin-top:8px;">
+        <strong>Foreshadow:</strong> This is exactly <code style="color:var(--amber)">lib/abstract_domains/abstract_env.ml</code>. Modules 3-5 plug in sign, interval, and taint domains.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s22: Module System Summary ==================== -->
+<div class="slide" id="s22">
+  <h2>Module System: Quick Reference</h2>
+  <p>Everything you need to know before Exercise 4.</p>
+  <div class="cols">
+    <div>
+      <h3>Defining a signature</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module type</span> SIG_NAME = <span style="color:var(--blue)">sig</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t            <span style="color:var(--purple)">(* abstract type *)</span></span>
+<span class="line">  <span style="color:var(--blue)">val</span> operation : t -> t -> t</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+      <h3>Implementing (with type exposed)</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> Impl : SIG_NAME</span>
+<span class="line">  <span style="color:var(--blue)">with type</span> t = my_type</span>
+<span class="line">= <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t = my_type</span>
+<span class="line">  <span style="color:var(--blue)">let</span> operation a b = ...</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+      <h3>Implementing (type hidden)</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> Impl : SIG_NAME = <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--blue)">type</span> t = my_secret_type</span>
+<span class="line">  <span style="color:var(--blue)">let</span> operation a b = ...</span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+    </div>
+    <div>
+      <h3>Defining a functor</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> MakeThing (M : SIG_NAME) = <span style="color:var(--blue)">struct</span></span>
+<span class="line">  <span style="color:var(--purple)">(* Use M.t, M.operation here *)</span></span>
+<span class="line">  <span style="color:var(--blue)">let</span> do_stuff x =</span>
+<span class="line">    M.operation x <span style="color:var(--amber)">M.???</span></span>
+<span class="line"><span style="color:var(--blue)">end</span></span></div></div>
+      <h3>Using a functor</h3>
+      <div class="code-block"><div class="code-content"><span class="line"><span style="color:var(--blue)">module</span> ConcreteThing = MakeThing(Impl)</span>
+<span class="line"><span style="color:var(--purple)">(* Now use ConcreteThing.do_stuff *)</span></span></div></div>
+      <div class="warning" style="margin-top:12px;">
+        <strong>Common mistake:</strong> Forgetting <code style="color:var(--amber)">with type t = ...</code> makes the type abstract. If callers need to create values of type <code style="color:var(--amber)">t</code> directly, you must expose it.
+      </div>
+      <div class="analogy" style="margin-top:8px;">
+        <strong>Think of it as:</strong> Signature = plug shape. Structure = the plug. Functor = an appliance that accepts any plug of that shape.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ========== SLIDE 23: What is Parsing? ========== -->
+<div class="slide" id="s23">
+  <h2>What is Parsing?</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Transforming raw source code into a structured tree — in two stages</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS23" width="520" height="400" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s23Step()">Step</button>
+        <button class="btn btn-sm" onclick="s23Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s23Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="key-idea" style="margin-bottom:1rem;">
+        <strong>Two-Stage Pipeline</strong><br>
+        <strong>1. Lexing</strong> — characters → tokens (words)<br>
+        <strong>2. Parsing</strong> — tokens → AST (tree)
+      </div>
+      <div class="analogy">
+        <strong>Analogy:</strong> Reading a sentence<br>
+        Lexing = recognizing individual words<br>
+        Parsing = understanding grammar structure
+      </div>
+      <div id="s23Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:120px;overflow-y:auto;margin-top:1rem;color:#cbd5e1;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS23');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s23Log');
+
+  const source = 'let x = 3 + y';
+  const tokens = [
+    {text:'let', type:'keyword', color:'#c084fc'},
+    {text:'x', type:'ident', color:'#38bdf8'},
+    {text:'=', type:'op', color:'#f59e0b'},
+    {text:'3', type:'int', color:'#22c55e'},
+    {text:'+', type:'op', color:'#f59e0b'},
+    {text:'y', type:'ident', color:'#38bdf8'}
+  ];
+
+  // AST tree nodes: Let(x, Add(3, y))
+  const astNodes = [
+    {label:'Let', x:260, y:180, color:'#c084fc', children:[1,2]},
+    {label:'"x"', x:160, y:260, color:'#38bdf8', children:[]},
+    {label:'Add', x:360, y:260, color:'#f59e0b', children:[3,4]},
+    {label:'3', x:300, y:340, color:'#22c55e', children:[]},
+    {label:'"y"', x:420, y:340, color:'#38bdf8', children:[]}
+  ];
+
+  const steps = [
+    {phase:'source', msg:'Source code: a flat string of characters'},
+    {phase:'lex-start', msg:'Stage 1: Lexing — scan characters into tokens...'},
+    {phase:'lex-1', msg:'Token: "let" → Keyword'},
+    {phase:'lex-2', msg:'Token: "x" → Identifier'},
+    {phase:'lex-3', msg:'Token: "=" → Operator'},
+    {phase:'lex-4', msg:'Token: "3" → Integer literal'},
+    {phase:'lex-5', msg:'Token: "+" → Operator'},
+    {phase:'lex-6', msg:'Token: "y" → Identifier'},
+    {phase:'parse-start', msg:'Stage 2: Parsing — build tree from tokens...'},
+    {phase:'parse-1', msg:'Parse "let" binding → Let node'},
+    {phase:'parse-2', msg:'Left child: variable name "x"'},
+    {phase:'parse-3', msg:'Parse "3 + y" → Add node'},
+    {phase:'parse-4', msg:'Left: literal 3, Right: variable y'},
+    {phase:'done', msg:'Complete AST ready for analysis!'}
+  ];
+
+  let stepIdx = 0;
+  let timer = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, 520, 400);
+    const phase = stepIdx > 0 ? steps[stepIdx - 1].phase : 'init';
+
+    // Draw source string at top
+    ctx.font = 'bold 16px monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText('Source:', 20, 30);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillText(source, 100, 30);
+
+    // Draw arrow from source to tokens
+    if (phase !== 'init' && phase !== 'source') {
+      ctx.beginPath();
+      ctx.moveTo(260, 42);
+      ctx.lineTo(260, 58);
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(254, 54);
+      ctx.lineTo(260, 62);
+      ctx.lineTo(266, 54);
+      ctx.fillStyle = '#6366f1';
+      ctx.fill();
+
+      // Label
+      ctx.font = '11px monospace';
+      ctx.fillStyle = '#818cf8';
+      ctx.textAlign = 'left';
+      ctx.fillText('LEXER', 272, 56);
+    }
+
+    // Draw tokens row
+    const lexPhases = ['lex-1','lex-2','lex-3','lex-4','lex-5','lex-6','parse-start','parse-1','parse-2','parse-3','parse-4','done'];
+    let tokensVisible = 0;
+    if (phase === 'lex-start') tokensVisible = 0;
+    else {
+      for (let i = 0; i < 6; i++) {
+        if (lexPhases.indexOf(phase) >= i) tokensVisible = i + 1;
+      }
+    }
+
+    if (tokensVisible > 0 || lexPhases.indexOf(phase) >= 0) {
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      let tx = 40;
+      for (let i = 0; i < tokensVisible; i++) {
+        const t = tokens[i];
+        const w = Math.max(ctx.measureText(t.text).width + 20, 50);
+        // Token box
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.strokeStyle = t.color;
+        ctx.lineWidth = 1.5;
+        const bx = tx, by = 70;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, w, 36, 6);
+        ctx.fill();
+        ctx.stroke();
+        // Token text
+        ctx.fillStyle = t.color;
+        ctx.font = 'bold 13px monospace';
+        ctx.fillText(t.text, bx + w/2, by + 16);
+        // Token type
+        ctx.fillStyle = '#64748b';
+        ctx.font = '9px monospace';
+        ctx.fillText(t.type, bx + w/2, by + 30);
+        tx += w + 8;
+      }
+    }
+
+    // Draw arrow from tokens to AST
+    const parsePhases = ['parse-start','parse-1','parse-2','parse-3','parse-4','done'];
+    if (parsePhases.indexOf(phase) >= 0) {
+      ctx.beginPath();
+      ctx.moveTo(260, 112);
+      ctx.lineTo(260, 140);
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(254, 136);
+      ctx.lineTo(260, 144);
+      ctx.lineTo(266, 136);
+      ctx.fillStyle = '#6366f1';
+      ctx.fill();
+
+      ctx.font = '11px monospace';
+      ctx.fillStyle = '#818cf8';
+      ctx.textAlign = 'left';
+      ctx.fillText('PARSER', 272, 132);
+    }
+
+    // Draw AST
+    let nodesVisible = 0;
+    if (phase === 'parse-1') nodesVisible = 1;
+    else if (phase === 'parse-2') nodesVisible = 2;
+    else if (phase === 'parse-3') nodesVisible = 3;
+    else if (phase === 'parse-4') nodesVisible = 5;
+    else if (phase === 'done') nodesVisible = 5;
+
+    // Draw edges first
+    for (let i = 0; i < nodesVisible; i++) {
+      const node = astNodes[i];
+      node.children.forEach(ci => {
+        if (ci < nodesVisible) {
+          const child = astNodes[ci];
+          ctx.beginPath();
+          ctx.moveTo(node.x, node.y + 14);
+          ctx.lineTo(child.x, child.y - 14);
+          ctx.strokeStyle = '#475569';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      });
+    }
+    // Draw nodes
+    for (let i = 0; i < nodesVisible; i++) {
+      const node = astNodes[i];
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = node.color;
+      ctx.globalAlpha = (phase === 'done') ? 1 : (i === nodesVisible - 1 ? 1 : 0.7);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(node.label, node.x, node.y);
+    }
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  function init() {
+    stepIdx = 0;
+    log.innerHTML = '<span style="color:#64748b;">Click Step to walk through the parsing pipeline...</span>';
+    draw();
+  }
+
+  window.s23Step = function() {
+    if (stepIdx >= steps.length) return;
+    const s = steps[stepIdx];
+    log.innerHTML += '<div>' + s.msg + '</div>';
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+    draw();
+  };
+  window.s23Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s23Step();
+    }, 900);
+  };
+  window.s23Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    init();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s23').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s23'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ========== SLIDE 24: Lexing Step by Step ========== -->
+<div class="slide" id="s24">
+  <h2>Lexing: Character by Character</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">The lexer scans left-to-right, grouping characters into tokens</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS24" width="520" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s24Step()">Step</button>
+        <button class="btn btn-sm" onclick="s24Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s24Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="warning" style="margin-bottom:1rem;">
+        <strong>Key Insight:</strong> Whitespace is consumed but <em>not</em> emitted as a token — it just separates things.
+      </div>
+      <div class="code-block" style="margin-bottom:1rem;">
+        <div class="code-content">
+          <div class="line" id="s24rule1"><span style="color:#c084fc;">rule token</span> = parse</div>
+          <div class="line" id="s24rule2">  | [' ' '\t'] { <span style="color:#64748b;">skip</span> }</div>
+          <div class="line" id="s24rule3">  | ['0'-'9']+ { <span style="color:#22c55e;">INT</span> }</div>
+          <div class="line" id="s24rule4">  | ['a'-'z']+ { <span style="color:#38bdf8;">IDENT</span> }</div>
+          <div class="line" id="s24rule5">  | '+' { <span style="color:#f59e0b;">PLUS</span> }</div>
+          <div class="line" id="s24rule6">  | '=' { <span style="color:#f59e0b;">EQUALS</span> }</div>
+        </div>
+      </div>
+      <div id="s24Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;max-height:100px;overflow-y:auto;color:#cbd5e1;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS24');
+  const ctx = canvas.getContext('2d');
+  const log = document.getElementById('s24Log');
+
+  const source = 'x = 42 + y';
+  const chars = source.split('');
+
+  // Each step: cursor position, action description, token emitted (or null), rule matched
+  const steps = [
+    {pos:0, end:1, tok:{text:'x',color:'#38bdf8',type:'IDENT'}, msg:'\'x\' matches [a-z]+ → emit IDENT("x")', rule:4},
+    {pos:1, end:2, tok:null, msg:'space → skip whitespace', rule:2},
+    {pos:2, end:3, tok:{text:'=',color:'#f59e0b',type:'EQUALS'}, msg:'\'=\' → emit EQUALS', rule:6},
+    {pos:3, end:4, tok:null, msg:'space → skip whitespace', rule:2},
+    {pos:4, end:6, tok:{text:'42',color:'#22c55e',type:'INT'}, msg:'\'4\',\'2\' matches [0-9]+ → emit INT(42)', rule:3},
+    {pos:6, end:7, tok:null, msg:'space → skip whitespace', rule:2},
+    {pos:7, end:8, tok:{text:'+',color:'#f59e0b',type:'PLUS'}, msg:'\'+\' → emit PLUS', rule:5},
+    {pos:8, end:9, tok:null, msg:'space → skip whitespace', rule:2},
+    {pos:9, end:10, tok:{text:'y',color:'#38bdf8',type:'IDENT'}, msg:'\'y\' matches [a-z]+ → emit IDENT("y")', rule:4}
+  ];
+
+  let stepIdx = 0;
+  let timer = null;
+  let emittedTokens = [];
+
+  function draw() {
+    ctx.clearRect(0, 0, 520, 380);
+
+    // Draw title
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText('Input characters:', 20, 25);
+
+    // Draw character cells
+    const cellW = 38, startX = 20, startY = 40;
+    chars.forEach((ch, i) => {
+      const x = startX + i * cellW;
+      // Highlight current scan range
+      let bg = 'rgba(0,0,0,0.3)';
+      let border = '#475569';
+      if (stepIdx > 0) {
+        const s = steps[stepIdx - 1];
+        if (i >= s.pos && i < s.end) {
+          bg = 'rgba(99,102,241,0.3)';
+          border = '#818cf8';
+        }
+      }
+      ctx.fillStyle = bg;
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(x, startY, cellW - 4, 36, 4);
+      ctx.fill();
+      ctx.stroke();
+      // Char
+      ctx.fillStyle = ch === ' ' ? '#475569' : '#e2e8f0';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(ch === ' ' ? '·' : ch, x + (cellW-4)/2, startY + 24);
+      // Index
+      ctx.fillStyle = '#475569';
+      ctx.font = '9px monospace';
+      ctx.fillText(i, x + (cellW-4)/2, startY + 48);
+    });
+
+    // Draw cursor arrow
+    if (stepIdx > 0 && stepIdx <= steps.length) {
+      const s = steps[stepIdx - 1];
+      const cx = startX + s.pos * cellW + ((s.end - s.pos) * cellW - 4) / 2;
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(cx - 6, startY - 4);
+      ctx.lineTo(cx, startY - 12);
+      ctx.lineTo(cx + 6, startY - 4);
+      ctx.fill();
+    }
+
+    // Draw emitted tokens
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText('Emitted tokens:', 20, 130);
+
+    let tx = 20;
+    emittedTokens.forEach(t => {
+      const w = Math.max(ctx.measureText(t.text).width + 24, 55);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.strokeStyle = t.color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(tx, 142, w, 44, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = t.color;
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(t.text, tx + w/2, 160);
+      ctx.fillStyle = '#64748b';
+      ctx.font = '9px monospace';
+      ctx.fillText(t.type, tx + w/2, 178);
+      tx += w + 8;
+    });
+
+    // Draw token stream at bottom (as OCaml-like)
+    if (emittedTokens.length > 0) {
+      ctx.font = '12px monospace';
+      ctx.fillStyle = '#64748b';
+      ctx.textAlign = 'left';
+      ctx.fillText('Token stream:', 20, 220);
+      let streamText = emittedTokens.map(t => {
+        if (t.type === 'IDENT') return 'IDENT("' + t.text + '")';
+        if (t.type === 'INT') return 'INT(' + t.text + ')';
+        return t.type;
+      }).join('  ');
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '12px monospace';
+      ctx.fillText(streamText, 20, 240);
+    }
+  }
+
+  function clearRuleHighlights() {
+    for (let i = 1; i <= 6; i++) {
+      const el = document.getElementById('s24rule' + i);
+      if (el) el.classList.remove('active');
+    }
+  }
+
+  function init() {
+    stepIdx = 0;
+    emittedTokens = [];
+    timer = null;
+    clearRuleHighlights();
+    log.innerHTML = '<span style="color:#64748b;">Click Step to scan characters into tokens...</span>';
+    draw();
+  }
+
+  window.s24Step = function() {
+    if (stepIdx >= steps.length) return;
+    clearRuleHighlights();
+    const s = steps[stepIdx];
+    if (s.tok) emittedTokens.push(s.tok);
+    // Highlight matching rule
+    const ruleEl = document.getElementById('s24rule' + s.rule);
+    if (ruleEl) ruleEl.classList.add('active');
+    log.innerHTML += '<div>' + s.msg + '</div>';
+    log.scrollTop = log.scrollHeight;
+    stepIdx++;
+    draw();
+  };
+  window.s24Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s24Step();
+    }, 800);
+  };
+  window.s24Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    init();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s24').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s24'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ========== SLIDE 25: ocamllex & Menhir ========== -->
+<div class="slide" id="s25">
+  <h2>ocamllex & Menhir</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">OCaml's standard tools for writing lexers and parsers</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3 style="color:#c084fc;font-size:1rem;margin-bottom:0.5rem;">Lexer — <code style="color:#f59e0b;">lexer.mll</code></h3>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line"><span style="color:#64748b;">{ open Parser }</span></div>
+          <div class="line">&nbsp;</div>
+          <div class="line"><span style="color:#c084fc;">rule</span> token = parse</div>
+          <div class="line">  | [' ' '\t' '\n'] { token lexbuf }</div>
+          <div class="line">  | ['0'-'9']+ <span style="color:#c084fc;">as</span> n</div>
+          <div class="line">      { <span style="color:#22c55e;">INT</span>(int_of_string n) }</div>
+          <div class="line">  | ['a'-'z' '_']['a'-'z' '0'-'9' '_']*</div>
+          <div class="line">      <span style="color:#c084fc;">as</span> s { <span style="color:#38bdf8;">IDENT</span>(s) }</div>
+          <div class="line">  | '+' { <span style="color:#f59e0b;">PLUS</span> }</div>
+          <div class="line">  | "let" { <span style="color:#c084fc;">LET</span> }</div>
+          <div class="line">  | '=' { <span style="color:#f59e0b;">EQUALS</span> }</div>
+          <div class="line">  | eof { <span style="color:#ef4444;">EOF</span> }</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#38bdf8;font-size:1rem;margin-bottom:0.5rem;">Parser — <code style="color:#f59e0b;">parser.mly</code></h3>
+      <div class="code-block">
+        <div class="code-content">
+          <div class="line"><span style="color:#c084fc;">%token</span>&lt;int&gt; INT</div>
+          <div class="line"><span style="color:#c084fc;">%token</span>&lt;string&gt; IDENT</div>
+          <div class="line"><span style="color:#c084fc;">%token</span> PLUS LET EQUALS EOF</div>
+          <div class="line"><span style="color:#c084fc;">%left</span> PLUS</div>
+          <div class="line"><span style="color:#c084fc;">%start</span>&lt;Ast.expr&gt; prog</div>
+          <div class="line"><span style="color:#c084fc;">%%</span></div>
+          <div class="line">&nbsp;</div>
+          <div class="line"><span style="color:#22c55e;">prog</span>: e=expr EOF { e }</div>
+          <div class="line">&nbsp;</div>
+          <div class="line"><span style="color:#22c55e;">expr</span>:</div>
+          <div class="line">  | n=INT { <span style="color:#38bdf8;">IntLit</span> n }</div>
+          <div class="line">  | x=IDENT { <span style="color:#38bdf8;">Var</span> x }</div>
+          <div class="line">  | e1=expr PLUS e2=expr</div>
+          <div class="line">      { <span style="color:#38bdf8;">BinOp</span>(Add,e1,e2) }</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div class="key-idea" style="padding:0.6rem;">
+      <strong>.mll files</strong><br>
+      <span style="font-size:0.85rem;">Regex rules → OCaml lexer code</span>
+    </div>
+    <div class="key-idea" style="padding:0.6rem;">
+      <strong>.mly files</strong><br>
+      <span style="font-size:0.85rem;">Grammar rules → OCaml parser code</span>
+    </div>
+    <div class="key-idea" style="padding:0.6rem;">
+      <strong>Both generate .ml</strong><br>
+      <span style="font-size:0.85rem;">Dune runs them automatically</span>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ========== SLIDE 26: Menhir Precedence & Associativity ========== -->
+<div class="slide" id="s26">
+  <h2>Parsing Ambiguity & Precedence</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">How does <code>1 + 2 * 3</code> parse? It depends on the rules.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <canvas id="cS26" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s26Toggle('wrong')">Without Precedence</button>
+        <button class="btn btn-sm" onclick="s26Toggle('right')">With Precedence</button>
+      </div>
+    </div>
+    <div>
+      <div class="warning" style="margin-bottom:1rem;">
+        <strong>Without precedence rules:</strong><br>
+        <code>1 + 2 * 3</code> could mean <code>(1 + 2) * 3 = 9</code><br>
+        The parser doesn't know which operator to group first!
+      </div>
+      <div class="key-idea" style="margin-bottom:1rem;">
+        <strong>Menhir precedence directives:</strong>
+        <div class="code-block" style="margin-top:0.5rem;">
+          <div class="code-content">
+            <div class="line"><span style="color:#64748b;">(* lowest precedence first *)</span></div>
+            <div class="line"><span style="color:#c084fc;">%left</span> PLUS MINUS</div>
+            <div class="line"><span style="color:#c084fc;">%left</span> TIMES DIV</div>
+            <div class="line"><span style="color:#64748b;">(* highest precedence last *)</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="s26Result" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.75rem;font-family:monospace;font-size:0.85rem;color:#cbd5e1;text-align:center;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS26');
+  const ctx = canvas.getContext('2d');
+  const result = document.getElementById('s26Result');
+  let mode = 'right';
+
+  function drawNode(x, y, label, color) {
+    ctx.beginPath();
+    ctx.arc(x, y, 24, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function drawEdge(x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1 + 24);
+    ctx.lineTo(x2, y2 - 24);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 520, 370);
+    ctx.textBaseline = 'alphabetic';
+
+    // Expression at top
+    ctx.font = 'bold 16px monospace';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'center';
+    ctx.fillText('1  +  2  *  3', 260, 30);
+
+    if (mode === 'wrong') {
+      // (1 + 2) * 3 — wrong tree
+      ctx.fillStyle = '#ef4444';
+      ctx.font = '13px monospace';
+      ctx.fillText('Without precedence: (1 + 2) * 3 = 9  ✗', 260, 58);
+
+      // Mul at root
+      drawEdge(260, 90, 160, 180);
+      drawEdge(260, 90, 360, 180);
+      drawNode(260, 90, '*', '#ef4444');
+
+      // Add left
+      drawEdge(160, 180, 100, 270);
+      drawEdge(160, 180, 220, 270);
+      drawNode(160, 180, '+', '#ef4444');
+
+      drawNode(100, 270, '1', '#22c55e');
+      drawNode(220, 270, '2', '#22c55e');
+      drawNode(360, 180, '3', '#22c55e');
+
+      result.innerHTML = '<span style="color:#ef4444;">✗ Wrong!</span> Evaluates as (1+2)*3 = 9';
+    } else {
+      // 1 + (2 * 3) — correct tree
+      ctx.fillStyle = '#22c55e';
+      ctx.font = '13px monospace';
+      ctx.fillText('With %left precedence: 1 + (2 * 3) = 7  ✓', 260, 58);
+
+      // Add at root
+      drawEdge(260, 90, 160, 180);
+      drawEdge(260, 90, 360, 180);
+      drawNode(260, 90, '+', '#22c55e');
+
+      drawNode(160, 180, '1', '#22c55e');
+
+      // Mul right
+      drawEdge(360, 180, 300, 270);
+      drawEdge(360, 180, 420, 270);
+      drawNode(360, 180, '*', '#f59e0b');
+
+      drawNode(300, 270, '2', '#22c55e');
+      drawNode(420, 270, '3', '#22c55e');
+
+      result.innerHTML = '<span style="color:#22c55e;">✓ Correct!</span> * binds tighter → 1+(2*3) = 7';
+    }
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  window.s26Toggle = function(m) {
+    mode = m;
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s26').classList.contains('active')) { mode = 'right'; draw(); }
+  });
+  obs.observe(document.getElementById('s26'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ========== CHALLENGE C: Parse This! ========== -->
+<div class="slide" id="sCC">
+  <h2 style="color:#f59e0b;">Challenge C: Parse This!</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Given this grammar and input, predict the token stream and AST</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <div class="code-block" style="margin-bottom:1rem;">
+        <div class="code-content" style="font-size:0.8rem;">
+          <div class="line"><span style="color:#64748b;">(* Input: *)</span> <span style="color:#e2e8f0;">let z = x + 1</span></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <label style="color:#94a3b8;font-size:0.85rem;">1. How many tokens (excluding EOF)?</label><br>
+        <select id="sCCq1" style="margin-top:0.3rem;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <label style="color:#94a3b8;font-size:0.85rem;">2. What is the root AST node?</label><br>
+        <select id="sCCq2" style="margin-top:0.3rem;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="binop">BinOp(Add, ...)</option>
+          <option value="let">Let("z", ...)</option>
+          <option value="var">Var("z")</option>
+          <option value="intlit">IntLit(1)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <label style="color:#94a3b8;font-size:0.85rem;">3. Right child of the Let node?</label><br>
+        <select id="sCCq3" style="margin-top:0.3rem;padding:0.4rem 0.6rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="var">Var("x")</option>
+          <option value="intlit">IntLit(1)</option>
+          <option value="binop">BinOp(Add, Var("x"), IntLit(1))</option>
+          <option value="equals">Equals</option>
+        </select>
+      </div>
+
+      <button class="btn btn-sm" onclick="sCCCheck()">Check Answers</button>
+    </div>
+    <div>
+      <canvas id="cSCC" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div id="sCCFeedback" style="margin-top:0.75rem;font-family:monospace;font-size:0.85rem;color:#cbd5e1;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cSCC');
+  const ctx = canvas.getContext('2d');
+  const fb = document.getElementById('sCCFeedback');
+  let revealed = false;
+
+  function drawNode(x, y, label, color, r) {
+    r = r || 22;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + (r > 20 ? '12' : '11') + 'px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function drawEdge(x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1 + 22);
+    ctx.lineTo(x2, y2 - 22);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 520, 370);
+
+    if (!revealed) {
+      ctx.font = '16px monospace';
+      ctx.fillStyle = '#475569';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Answer the questions,', 260, 165);
+      ctx.fillText('then check to see the AST', 260, 195);
+      ctx.textBaseline = 'alphabetic';
+      return;
+    }
+
+    // Token stream
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText('Tokens: LET  IDENT("z")  EQUALS  IDENT("x")  PLUS  INT(1)', 20, 22);
+
+    // AST: Let("z", BinOp(Add, Var("x"), IntLit(1)))
+    drawEdge(260, 65, 140, 150);
+    drawEdge(260, 65, 380, 150);
+    drawNode(260, 65, 'Let', '#c084fc', 26);
+
+    drawNode(140, 150, '"z"', '#38bdf8');
+
+    drawEdge(380, 150, 300, 240);
+    drawEdge(380, 150, 460, 240);
+    drawNode(380, 150, 'Add', '#f59e0b');
+
+    drawNode(300, 240, 'Var "x"', '#38bdf8', 30);
+    drawNode(460, 240, 'Int 1', '#22c55e', 26);
+
+    // Label
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#22c55e';
+    ctx.textAlign = 'center';
+    ctx.fillText('6 tokens → Let( "z", BinOp(Add, Var "x", IntLit 1) )', 260, 310);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  window.sCCCheck = function() {
+    const a1 = document.getElementById('sCCq1').value;
+    const a2 = document.getElementById('sCCq2').value;
+    const a3 = document.getElementById('sCCq3').value;
+    let score = 0;
+    let msgs = [];
+    if (a1 === '6') { score++; msgs.push('<span style="color:#22c55e;">Q1 ✓</span> LET, IDENT, EQUALS, IDENT, PLUS, INT = 6 tokens'); }
+    else msgs.push('<span style="color:#ef4444;">Q1 ✗</span> Correct: 6 tokens (LET, IDENT("z"), EQUALS, IDENT("x"), PLUS, INT(1))');
+    if (a2 === 'let') { score++; msgs.push('<span style="color:#22c55e;">Q2 ✓</span> "let z = ..." → Let is the root node'); }
+    else msgs.push('<span style="color:#ef4444;">Q2 ✗</span> Correct: Let("z", ...) — the whole expression is a let-binding');
+    if (a3 === 'binop') { score++; msgs.push('<span style="color:#22c55e;">Q3 ✓</span> The value bound to z is the expression x + 1'); }
+    else msgs.push('<span style="color:#ef4444;">Q3 ✗</span> Correct: BinOp(Add, Var("x"), IntLit(1)) — the bound value is the full expression');
+
+    fb.innerHTML = '<strong>' + score + '/3</strong><br>' + msgs.join('<br>');
+    revealed = true;
+    draw();
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCC').classList.contains('active')) {
+      revealed = false;
+      fb.innerHTML = '';
+      draw();
+    }
+  });
+  obs.observe(document.getElementById('sCC'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ========== SLIDE 27: Exercises Overview ========== -->
+<div class="slide" id="s27">
+  <h2>Warm-Up Exercises</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Hands-on practice to prepare you for the bootcamp</p>
+
+  <div style="display:grid;grid-template-columns:1fr;gap:0;">
+    <table style="width:100%;border-collapse:collapse;font-family:monospace;font-size:0.85rem;">
+      <thead>
+        <tr style="background:rgba(99,102,241,0.15);">
+          <th style="padding:0.6rem 0.8rem;text-align:left;color:#818cf8;border-bottom:2px solid #334155;">#</th>
+          <th style="padding:0.6rem 0.8rem;text-align:left;color:#818cf8;border-bottom:2px solid #334155;">Exercise</th>
+          <th style="padding:0.6rem 0.8rem;text-align:left;color:#818cf8;border-bottom:2px solid #334155;">Topics</th>
+          <th style="padding:0.6rem 0.8rem;text-align:center;color:#818cf8;border-bottom:2px solid #334155;">Tests</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #1e293b;">
+          <td style="padding:0.5rem 0.8rem;color:#f59e0b;">1</td>
+          <td style="padding:0.5rem 0.8rem;color:#e2e8f0;">ocaml-basics</td>
+          <td style="padding:0.5rem 0.8rem;color:#94a3b8;">Pattern matching, recursion, lists, options</td>
+          <td style="padding:0.5rem 0.8rem;text-align:center;color:#22c55e;">20</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e293b;">
+          <td style="padding:0.5rem 0.8rem;color:#f59e0b;">2</td>
+          <td style="padding:0.5rem 0.8rem;color:#e2e8f0;">ast-construction</td>
+          <td style="padding:0.5rem 0.8rem;color:#94a3b8;">Building AST nodes, pretty-printing</td>
+          <td style="padding:0.5rem 0.8rem;text-align:center;color:#22c55e;">15</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1e293b;">
+          <td style="padding:0.5rem 0.8rem;color:#f59e0b;">3</td>
+          <td style="padding:0.5rem 0.8rem;color:#e2e8f0;">ast-interpreter</td>
+          <td style="padding:0.5rem 0.8rem;color:#94a3b8;">Tree walking, environments, evaluation</td>
+          <td style="padding:0.5rem 0.8rem;text-align:center;color:#22c55e;">20</td>
+        </tr>
+        <tr>
+          <td style="padding:0.5rem 0.8rem;color:#f59e0b;">4</td>
+          <td style="padding:0.5rem 0.8rem;color:#e2e8f0;">simple-parser</td>
+          <td style="padding:0.5rem 0.8rem;color:#94a3b8;">Lexing, parsing, ocamllex/Menhir</td>
+          <td style="padding:0.5rem 0.8rem;text-align:center;color:#22c55e;">15</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;">
+    <div class="key-idea" style="padding:0.8rem;">
+      <strong>Workflow</strong><br>
+      <code style="font-size:0.8rem;">cd exercises/N-name/starter</code><br>
+      <code style="font-size:0.8rem;">dune build</code> → <code style="font-size:0.8rem;">dune runtest</code><br>
+      Fill in <code>TODO</code> stubs → tests pass ✓
+    </div>
+    <div class="analogy" style="padding:0.8rem;">
+      <strong>Tip:</strong> Start with Exercise 1. Each builds on skills from the previous one. Run <code>dune runtest</code> often — incremental progress is key!
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ========== SLIDE 28: Bootcamp Roadmap ========== -->
+<div class="slide" id="s28">
+  <h2>Bootcamp Roadmap</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Where this warm-up fits in the bigger picture</p>
+
+  <canvas id="cS28" width="900" height="380" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cS28');
+  const ctx = canvas.getContext('2d');
+
+  const modules = [
+    {label:'Module 0', sub:'OCaml Warm-Up', color:'#f59e0b', x:80, y:80},
+    {label:'Module 1', sub:'Parsing &\nLexing', color:'#6366f1', x:240, y:80},
+    {label:'Module 2', sub:'Control Flow\nGraphs', color:'#6366f1', x:400, y:80},
+    {label:'Module 3', sub:'Dataflow\nAnalysis', color:'#6366f1', x:560, y:80},
+    {label:'Module 4', sub:'Abstract\nInterpretation', color:'#8b5cf6', x:720, y:80},
+    {label:'Module 5', sub:'Taint\nAnalysis', color:'#8b5cf6', x:240, y:240},
+    {label:'Module 6', sub:'Tools\nIntegration', color:'#22c55e', x:480, y:240}
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, 900, 380);
+
+    // Draw arrows
+    const arrows = [
+      [0,1],[1,2],[2,3],[3,4],[3,5],[4,6],[5,6]
+    ];
+    arrows.forEach(([from, to]) => {
+      const f = modules[from], t = modules[to];
+      ctx.beginPath();
+      ctx.moveTo(f.x + 60, f.y + (f.y === t.y ? 25 : 50));
+      ctx.lineTo(t.x - 60, t.y + 25);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Arrowhead
+      const angle = Math.atan2(t.y + 25 - (f.y + 25), t.x - 60 - (f.x + 60));
+      const ax = t.x - 60, ay = t.y + 25;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(ax - 10 * Math.cos(angle - 0.3), ay - 10 * Math.sin(angle - 0.3));
+      ctx.lineTo(ax - 10 * Math.cos(angle + 0.3), ay - 10 * Math.sin(angle + 0.3));
+      ctx.closePath();
+      ctx.fillStyle = '#334155';
+      ctx.fill();
+    });
+
+    // Draw module boxes
+    modules.forEach((m, i) => {
+      const w = 110, h = 50, r = 10;
+      ctx.fillStyle = i === 0 ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.08)';
+      ctx.strokeStyle = m.color;
+      ctx.lineWidth = i === 0 ? 3 : 1.5;
+      ctx.beginPath();
+      ctx.roundRect(m.x - w/2, m.y, w, h, r);
+      ctx.fill();
+      ctx.stroke();
+
+      // Label
+      ctx.fillStyle = m.color;
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(m.label, m.x, m.y + 6);
+
+      // Sub text
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px monospace';
+      const lines = m.sub.split('\n');
+      lines.forEach((line, li) => {
+        ctx.fillText(line, m.x, m.y + 22 + li * 13);
+      });
+    });
+
+    // "You are here" callout
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('← You are here!', modules[0].x + 100, modules[0].y - 8);
+
+    // Arrow pointing to M0
+    ctx.beginPath();
+    ctx.moveTo(modules[0].x + 35, modules[0].y - 6);
+    ctx.lineTo(modules[0].x + 10, modules[0].y - 2);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Bottom caption
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Each module builds on the previous — master the warm-up and you\'re ready for everything!', 450, 360);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s28').classList.contains('active')) draw();
+  });
+  obs.observe(document.getElementById('s28'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ========== SLIDE 29: Key Takeaways ========== -->
+<div class="slide" id="s29">
+  <h2>Key Takeaways & Next Steps</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Everything you need to succeed in the bootcamp</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <h3 style="color:#38bdf8;font-size:1rem;margin-bottom:0.75rem;">What You Learned</h3>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <div style="background:rgba(34,197,94,0.1);border-left:3px solid #22c55e;padding:0.5rem 0.75rem;border-radius:0 6px 6px 0;">
+          <strong style="color:#22c55e;">OCaml Basics</strong><br>
+          <span style="color:#94a3b8;font-size:0.85rem;">Types, pattern matching, recursion, options</span>
+        </div>
+        <div style="background:rgba(56,189,248,0.1);border-left:3px solid #38bdf8;padding:0.5rem 0.75rem;border-radius:0 6px 6px 0;">
+          <strong style="color:#38bdf8;">ASTs & ADTs</strong><br>
+          <span style="color:#94a3b8;font-size:0.85rem;">Tree representation of code, variant types</span>
+        </div>
+        <div style="background:rgba(163,139,250,0.1);border-left:3px solid #a78bfa;padding:0.5rem 0.75rem;border-radius:0 6px 6px 0;">
+          <strong style="color:#a78bfa;">Module System</strong><br>
+          <span style="color:#94a3b8;font-size:0.85rem;">Signatures, structures, functors</span>
+        </div>
+        <div style="background:rgba(245,158,11,0.1);border-left:3px solid #f59e0b;padding:0.5rem 0.75rem;border-radius:0 6px 6px 0;">
+          <strong style="color:#f59e0b;">Lattices</strong><br>
+          <span style="color:#94a3b8;font-size:0.85rem;">Partial orders, join, bottom/top — the math of analysis</span>
+        </div>
+        <div style="background:rgba(244,114,182,0.1);border-left:3px solid #f472b6;padding:0.5rem 0.75rem;border-radius:0 6px 6px 0;">
+          <strong style="color:#f472b6;">Parsing Pipeline</strong><br>
+          <span style="color:#94a3b8;font-size:0.85rem;">Lexing → Parsing → AST via ocamllex/Menhir</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#f59e0b;font-size:1rem;margin-bottom:0.75rem;">Next Steps</h3>
+      <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:1rem;">
+        <div style="display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:1rem;">
+          <span style="background:#6366f1;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.85rem;flex-shrink:0;">1</span>
+          <div>
+            <strong style="color:#e2e8f0;">Fork the repo</strong><br>
+            <span style="color:#94a3b8;font-size:0.85rem;">Clone your fork, run <code>opam install . --deps-only</code></span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:1rem;">
+          <span style="background:#6366f1;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.85rem;flex-shrink:0;">2</span>
+          <div>
+            <strong style="color:#e2e8f0;">Complete the warm-up exercises</strong><br>
+            <span style="color:#94a3b8;font-size:0.85rem;">4 exercises, ~70 tests total. <code>dune runtest</code> to check.</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:1rem;">
+          <span style="background:#6366f1;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.85rem;flex-shrink:0;">3</span>
+          <div>
+            <strong style="color:#e2e8f0;">Submit your repo URL</strong><br>
+            <span style="color:#94a3b8;font-size:0.85rem;">Log in to the course site and enter your fork URL</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:0.75rem;">
+          <span style="background:#22c55e;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.85rem;flex-shrink:0;">!</span>
+          <div>
+            <strong style="color:#22c55e;">You're ready for Module 1!</strong><br>
+            <span style="color:#94a3b8;font-size:0.85rem;">Parsing & lexing in depth — building on what you learned today</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ========== QUIZ 1: OCaml & ASTs ========== -->
+<div class="slide" id="sQ1">
+  <h2 style="color:#f59e0b;">Quiz: OCaml & ASTs</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Test your understanding of OCaml basics and abstract syntax trees</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1q1box">
+      <p style="color:#818cf8;font-weight:bold;margin-bottom:0.5rem;">Q1: What does this return?</p>
+      <div class="code-block" style="margin-bottom:0.75rem;">
+        <div class="code-content" style="font-size:0.78rem;">
+          <div class="line"><span style="color:#c084fc;">match</span> [1;2;3] <span style="color:#c084fc;">with</span></div>
+          <div class="line">| [] -> 0</div>
+          <div class="line">| x :: _ -> x</div>
+        </div>
+      </div>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="a"> <span style="color:#cbd5e1;">0</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="b"> <span style="color:#cbd5e1;">1</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="c"> <span style="color:#cbd5e1;">[2; 3]</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q1" value="d"> <span style="color:#cbd5e1;">Type error</span></label>
+      <div id="sQ1q1fb" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1q2box">
+      <p style="color:#818cf8;font-weight:bold;margin-bottom:0.5rem;">Q2: AST for <code>x + 1</code>?</p>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="a"> <span style="color:#cbd5e1;">Add(Var "x", IntLit 1)</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="b"> <span style="color:#cbd5e1;">BinOp(Add, Var "x", IntLit 1)</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="c"> <span style="color:#cbd5e1;">Plus(x, 1)</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q2" value="d"> <span style="color:#cbd5e1;">Var "x + 1"</span></label>
+      <div id="sQ1q2fb" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+
+    <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;" id="sQ1q3box">
+      <p style="color:#818cf8;font-weight:bold;margin-bottom:0.5rem;">Q3: What does <code>Option</code> replace?</p>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="a"> <span style="color:#cbd5e1;">Exceptions</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="b"> <span style="color:#cbd5e1;">null / None</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="c"> <span style="color:#cbd5e1;">Boolean flags</span></label>
+      <label style="display:block;margin:0.3rem 0;cursor:pointer;"><input type="radio" name="sQ1q3" value="d"> <span style="color:#cbd5e1;">Default values</span></label>
+      <div id="sQ1q3fb" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-family:monospace;font-size:1rem;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const answers = {sQ1q1:'b', sQ1q2:'b', sQ1q3:'b'};
+  const explanations = {
+    sQ1q1: 'x :: _ matches the head of the list, so x = 1',
+    sQ1q2: 'Our AST uses BinOp(op, left, right) for binary operations',
+    sQ1q3: 'Option (Some x | None) safely represents nullable values without null pointer risks'
+  };
+
+  window.sQ1Check = function() {
+    let score = 0;
+    Object.keys(answers).forEach(q => {
+      const sel = document.querySelector('input[name="' + q + '"]:checked');
+      const fb = document.getElementById(q + 'fb');
+      const box = document.getElementById(q + 'box');
+      if (sel && sel.value === answers[q]) {
+        score++;
+        fb.innerHTML = '<span style="color:#22c55e;">✓ ' + explanations[q] + '</span>';
+        box.style.borderLeft = '3px solid #22c55e';
+      } else {
+        fb.innerHTML = '<span style="color:#ef4444;">✗ ' + explanations[q] + '</span>';
+        box.style.borderLeft = '3px solid #ef4444';
+      }
+    });
+    document.getElementById('sQ1Score').innerHTML = '<span style="color:' + (score === 3 ? '#22c55e' : '#f59e0b') + ';">' + score + '/3</span>';
+  };
+})();
+</script>
+
+<!-- ========== QUIZ 2: Lattices & Modules ========== -->
+<div class="slide" id="sQ2">
+  <h2 style="color:#f59e0b;">Quiz: Lattices & Modules</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Trace through lattice operations and module concepts</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:1rem;">
+        <p style="color:#818cf8;font-weight:bold;margin-bottom:0.5rem;">Given the Sign lattice:</p>
+        <div class="code-block" style="margin-bottom:0.75rem;">
+          <div class="code-content" style="font-size:0.8rem;">
+            <div class="line"><span style="color:#64748b;">(* Top = any sign *)</span></div>
+            <div class="line"><span style="color:#64748b;">(* Pos | Zero | Neg *)</span></div>
+            <div class="line"><span style="color:#64748b;">(* Bot = unreachable *)</span></div>
+          </div>
+        </div>
+        <p style="color:#cbd5e1;font-size:0.9rem;margin-bottom:0.5rem;">What is <code>join Pos Neg</code>?</p>
+        <select id="sQ2q1" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="pos">Pos</option>
+          <option value="neg">Neg</option>
+          <option value="zero">Zero</option>
+          <option value="top">Top</option>
+          <option value="bot">Bot</option>
+        </select>
+        <div id="sQ2q1fb" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;margin-bottom:1rem;">
+        <p style="color:#818cf8;font-weight:bold;margin-bottom:0.5rem;">What is <code>join Bot Neg</code>?</p>
+        <select id="sQ2q2" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;">
+          <option value="">Select...</option>
+          <option value="pos">Pos</option>
+          <option value="neg">Neg</option>
+          <option value="zero">Zero</option>
+          <option value="top">Top</option>
+          <option value="bot">Bot</option>
+        </select>
+        <div id="sQ2q2fb" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:1rem;">
+        <p style="color:#818cf8;font-weight:bold;margin-bottom:0.5rem;">What does a <strong>functor</strong> take as input?</p>
+        <select id="sQ2q3" style="padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;width:100%;">
+          <option value="">Select...</option>
+          <option value="func">A function</option>
+          <option value="mod">A module matching a signature</option>
+          <option value="type">A type parameter</option>
+          <option value="val">A value</option>
+        </select>
+        <div id="sQ2q3fb" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cSQ2" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="text-align:center;margin-top:0.75rem;">
+        <button class="btn" onclick="sQ2Check()">Check Answers</button>
+        <span id="sQ2Score" style="margin-left:1rem;font-family:monospace;font-size:1rem;"></span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cSQ2');
+  const ctx = canvas.getContext('2d');
+  let highlights = {};
+
+  function draw() {
+    ctx.clearRect(0, 0, 520, 370);
+
+    // Sign lattice Hasse diagram
+    const nodes = {
+      Top: {x:260, y:40, color:'#ef4444'},
+      Pos: {x:130, y:140, color:'#22c55e'},
+      Zero: {x:260, y:140, color:'#38bdf8'},
+      Neg: {x:390, y:140, color:'#f59e0b'},
+      Bot: {x:260, y:240, color:'#64748b'}
+    };
+
+    // Edges
+    const edges = [['Bot','Pos'],['Bot','Zero'],['Bot','Neg'],['Pos','Top'],['Zero','Top'],['Neg','Top']];
+    edges.forEach(([from, to]) => {
+      const f = nodes[from], t = nodes[to];
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y - 18);
+      ctx.lineTo(t.x, t.y + 18);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    // Nodes
+    Object.entries(nodes).forEach(([label, n]) => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 22, 0, Math.PI * 2);
+      ctx.fillStyle = highlights[label] ? highlights[label] : n.color;
+      ctx.globalAlpha = highlights[label] ? 1 : 0.8;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      if (highlights[label]) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, n.x, n.y);
+    });
+
+    // Title
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px monospace';
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'center';
+    ctx.fillText('Sign Lattice — click Check to see answers', 260, 300);
+
+    // Legend for highlights
+    if (Object.keys(highlights).length > 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px monospace';
+      ctx.fillText('Highlighted: inputs and result of join', 260, 325);
+    }
+  }
+
+  window.sQ2Check = function() {
+    const answers = {sQ2q1:'top', sQ2q2:'neg', sQ2q3:'mod'};
+    const explanations = {
+      sQ2q1: 'Pos and Neg are incomparable → their join is Top (least upper bound)',
+      sQ2q2: 'Bot is the identity for join → join Bot x = x for any x',
+      sQ2q3: 'A functor takes a module matching a specific signature and produces a new module'
+    };
+
+    let score = 0;
+    highlights = {};
+
+    Object.keys(answers).forEach(q => {
+      const sel = document.getElementById(q).value;
+      const fb = document.getElementById(q + 'fb');
+      if (sel === answers[q]) {
+        score++;
+        fb.innerHTML = '<span style="color:#22c55e;">✓ ' + explanations[q] + '</span>';
+      } else {
+        fb.innerHTML = '<span style="color:#ef4444;">✗ ' + explanations[q] + '</span>';
+      }
+    });
+
+    // Highlight lattice for Q1
+    highlights = {Pos:'#22c55e', Neg:'#f59e0b', Top:'#ef4444'};
+    draw();
+
+    document.getElementById('sQ2Score').innerHTML = '<span style="color:' + (score === 3 ? '#22c55e' : '#f59e0b') + ';">' + score + '/3</span>';
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sQ2').classList.contains('active')) { highlights = {}; draw(); }
+  });
+  obs.observe(document.getElementById('sQ2'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ========== QUIZ 3: Parsing ========== -->
+<div class="slide" id="sQ3">
+  <h2 style="color:#f59e0b;">Quiz: Predict the Token Stream</h2>
+  <p style="color:#94a3b8;margin-bottom:1rem;">Given source code, predict what the lexer produces</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div>
+      <div class="code-block" style="margin-bottom:1rem;">
+        <div class="code-content">
+          <div class="line"><span style="color:#64748b;">(* Source: *)</span></div>
+          <div class="line"><span style="color:#e2e8f0;">let f = x + 10</span></div>
+        </div>
+      </div>
+
+      <p style="color:#cbd5e1;margin-bottom:0.75rem;">Type the token stream (comma-separated):</p>
+      <input type="text" id="sQ3input" placeholder="e.g. LET, IDENT(f), EQUALS, ..." style="width:100%;padding:0.5rem 0.75rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.85rem;margin-bottom:0.75rem;">
+
+      <p style="color:#cbd5e1;margin-bottom:0.5rem;">How many tokens (excluding EOF)?</p>
+      <input type="number" id="sQ3count" placeholder="?" style="width:80px;padding:0.5rem 0.75rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:0.85rem;margin-bottom:1rem;">
+
+      <div style="display:flex;gap:0.5rem;">
+        <button class="btn btn-sm" onclick="sQ3Check()">Check</button>
+        <button class="btn btn-sm" onclick="sQ3Trace()">Show Trace</button>
+      </div>
+      <div id="sQ3Feedback" style="margin-top:0.75rem;font-family:monospace;font-size:0.85rem;color:#cbd5e1;"></div>
+    </div>
+    <div>
+      <canvas id="cSQ3" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('cSQ3');
+  const ctx = canvas.getContext('2d');
+  const fb = document.getElementById('sQ3Feedback');
+  let showTrace = false;
+  let traceStep = 0;
+  let timer = null;
+
+  const correctTokens = ['LET','IDENT(f)','EQUALS','IDENT(x)','PLUS','INT(10)'];
+  const source = 'let f = x + 10';
+  const chars = source.split('');
+
+  const traceSteps = [
+    {pos:0, end:3, tok:'LET', color:'#c084fc'},
+    {pos:3, end:4, tok:null, color:null},
+    {pos:4, end:5, tok:'IDENT(f)', color:'#38bdf8'},
+    {pos:5, end:6, tok:null, color:null},
+    {pos:6, end:7, tok:'EQUALS', color:'#f59e0b'},
+    {pos:7, end:8, tok:null, color:null},
+    {pos:8, end:9, tok:'IDENT(x)', color:'#38bdf8'},
+    {pos:9, end:10, tok:null, color:null},
+    {pos:10, end:11, tok:'PLUS', color:'#f59e0b'},
+    {pos:11, end:12, tok:null, color:null},
+    {pos:12, end:14, tok:'INT(10)', color:'#22c55e'}
+  ];
+
+  let emitted = [];
+
+  function draw() {
+    ctx.clearRect(0, 0, 520, 370);
+
+    if (!showTrace) {
+      ctx.font = '16px monospace';
+      ctx.fillStyle = '#475569';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Try first, then click', 260, 165);
+      ctx.fillText('"Show Trace" to see the answer', 260, 195);
+      ctx.textBaseline = 'alphabetic';
+      return;
+    }
+
+    // Characters
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText('Input:', 15, 25);
+
+    const cellW = 32, startX = 15, startY = 38;
+    chars.forEach((ch, i) => {
+      const x = startX + i * cellW;
+      let bg = 'rgba(0,0,0,0.3)';
+      let border = '#334155';
+      if (traceStep > 0 && traceStep <= traceSteps.length) {
+        const s = traceSteps[traceStep - 1];
+        if (i >= s.pos && i < s.end) {
+          bg = 'rgba(99,102,241,0.3)';
+          border = '#818cf8';
+        }
+      }
+      ctx.fillStyle = bg;
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, startY, cellW - 2, 30, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = ch === ' ' ? '#334155' : '#e2e8f0';
+      ctx.font = 'bold 15px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(ch === ' ' ? '·' : ch, x + (cellW-2)/2, startY + 20);
+    });
+
+    // Emitted tokens
+    ctx.font = '11px monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText('Tokens:', 15, 100);
+
+    let tx = 15;
+    emitted.forEach(t => {
+      const w = Math.max(ctx.measureText(t.tok).width + 16, 50);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.strokeStyle = t.color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(tx, 108, w, 32, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = t.color;
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(t.tok, tx + w/2, 128);
+      tx += w + 6;
+    });
+
+    // Full answer at bottom when done
+    if (traceStep >= traceSteps.length) {
+      ctx.font = '13px monospace';
+      ctx.fillStyle = '#22c55e';
+      ctx.textAlign = 'center';
+      ctx.fillText('Answer: ' + correctTokens.join(', '), 260, 190);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px monospace';
+      ctx.fillText('6 tokens total (+ EOF)', 260, 215);
+
+      // Draw the AST
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px monospace';
+      ctx.fillText('AST:', 260, 245);
+
+      function drawN(x, y, label, col, r) {
+        r = r || 18;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = col;
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, x, y);
+      }
+      function drawE(x1,y1,x2,y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1,y1+18);
+        ctx.lineTo(x2,y2-18);
+        ctx.strokeStyle='#475569';
+        ctx.lineWidth=1.5;
+        ctx.stroke();
+      }
+
+      drawE(260,268,170,310);
+      drawE(260,268,370,310);
+      drawN(260,268,'Let','#c084fc',20);
+      drawN(170,310,'"f"','#38bdf8');
+      drawE(370,310,320,350);
+      drawE(370,310,420,350);
+      drawN(370,310,'Add','#f59e0b');
+      drawN(320,350,'x','#38bdf8',16);
+      drawN(420,350,'10','#22c55e',16);
+      ctx.textBaseline = 'alphabetic';
+    }
+  }
+
+  window.sQ3Check = function() {
+    const input = document.getElementById('sQ3input').value.trim();
+    const count = parseInt(document.getElementById('sQ3count').value);
+    let msgs = [];
+
+    if (count === 6) msgs.push('<span style="color:#22c55e;">✓ Count correct: 6 tokens</span>');
+    else if (!isNaN(count)) msgs.push('<span style="color:#ef4444;">✗ Count: expected 6</span>');
+
+    if (input) {
+      // Normalize and check
+      const userTokens = input.split(',').map(t => t.trim().toUpperCase());
+      const expected = correctTokens.map(t => t.toUpperCase());
+      let matches = 0;
+      for (let i = 0; i < Math.min(userTokens.length, expected.length); i++) {
+        if (userTokens[i].replace(/\s/g,'') === expected[i].replace(/\s/g,'')) matches++;
+      }
+      if (matches === 6 && userTokens.length === 6) {
+        msgs.push('<span style="color:#22c55e;">✓ Perfect token stream!</span>');
+      } else {
+        msgs.push('<span style="color:#f59e0b;">' + matches + '/6 tokens correct</span>');
+      }
+    }
+
+    fb.innerHTML = msgs.join('<br>');
+  };
+
+  window.sQ3Trace = function() {
+    showTrace = true;
+    traceStep = 0;
+    emitted = [];
+    draw();
+    if (timer) clearInterval(timer);
+    timer = setInterval(() => {
+      if (traceStep >= traceSteps.length) { clearInterval(timer); timer = null; draw(); return; }
+      const s = traceSteps[traceStep];
+      if (s.tok) emitted.push({tok: s.tok, color: s.color});
+      traceStep++;
+      draw();
+    }, 600);
+  };
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sQ3').classList.contains('active')) {
+      if (timer) { clearInterval(timer); timer = null; }
+      showTrace = false;
+      emitted = [];
+      traceStep = 0;
+      draw();
+    }
+  });
+  obs.observe(document.getElementById('sQ3'), {attributes:true, attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','sCA','s14','s15','s16','s17','sCB','s18','s19','s20','s21','s22','s23','s24','s25','s26','sCC','s27','s28','s29','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.remove('fade-in');
+  slideEl.classList.add('active');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  currentIdx = idx;
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+  // Update slide numbers
+  const nums = document.querySelectorAll('.slide-number');
+  nums.forEach(n => n.textContent = (idx + 1) + ' / ' + slideOrder.length);
+}
+
+function navigate(dir) {
+  const next = currentIdx + dir;
+  if (next >= 0 && next < slideOrder.length) showSlide(next);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); navigate(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); navigate(-1); }
+  if (e.key === 'Home') { e.preventDefault(); showSlide(0); }
+  if (e.key === 'End') { e.preventDefault(); showSlide(slideOrder.length - 1); }
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) navigate(dx < 0 ? 1 : -1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>

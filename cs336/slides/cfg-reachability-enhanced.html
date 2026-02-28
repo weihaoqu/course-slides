@@ -1,0 +1,2517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Flow Graphs & Reachability Analysis</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;overflow:hidden;height:100vh;}
+.slide{display:none;padding:2rem 3rem;height:100vh;overflow-y:auto;}
+.slide.active{display:block;}
+.slide.fade-in{animation:fadeIn 0.4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+h1{font-size:2.2rem;color:#38bdf8;margin-bottom:0.5rem;}
+h2{font-size:1.55rem;color:#38bdf8;margin-bottom:0.5rem;}
+p{color:#94a3b8;font-size:0.95rem;line-height:1.5;margin-bottom:0.5rem;}
+.btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:0.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;transition:opacity 0.2s;}
+.btn:hover{opacity:0.85;}
+.btn-sm{padding:0.35rem 0.9rem;font-size:0.8rem;}
+.btn-secondary{background:#334155;color:#cbd5e1;}
+.btn-secondary:hover{background:#475569;}
+.key-idea{background:rgba(34,197,94,0.08);border-left:4px solid #22c55e;border-radius:8px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.88rem;}
+.warning{background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;border-radius:8px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.88rem;}
+.analogy{background:rgba(167,139,250,0.08);border-left:4px solid #a78bfa;border-radius:8px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.88rem;}
+.code-block{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:0.8rem;margin:0.5rem 0;overflow-x:auto;}
+.code-content{font-family:monospace;font-size:0.82rem;line-height:1.6;color:#e2e8f0;}
+.line{padding:0 0.5rem;border-left:3px solid transparent;white-space:pre;}
+.line.active{background:rgba(99,102,241,0.15);border-left-color:#6366f1;}
+.nav{position:fixed;bottom:1.5rem;right:2rem;display:flex;gap:0.75rem;z-index:100;}
+.nav button{background:#1e293b;color:#e2e8f0;border:1px solid #334155;padding:0.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:background 0.2s;}
+.nav button:hover:not(:disabled){background:#334155;}
+.nav button:disabled{opacity:0.3;cursor:not-allowed;}
+#progress-bar{position:fixed;top:0;left:0;width:100%;height:3px;background:#1e293b;z-index:200;}
+#progress{height:100%;background:linear-gradient(90deg,#6366f1,#a78bfa);width:0;transition:width 0.4s ease;}
+.slide-number{position:absolute;bottom:1rem;left:2rem;color:#475569;font-size:0.75rem;}
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+
+<!-- ==================== SLIDE 1: Title ==================== -->
+<div class="slide active" id="s1">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:85vh;text-align:center;">
+    <canvas id="cS1" width="600" height="260" style="width:520px;background:transparent;margin-bottom:1.5rem;"></canvas>
+    <h1 style="font-size:2.6rem;">Control Flow Graphs</h1>
+    <p style="font-size:1.2rem;color:#a78bfa;margin-top:0.3rem;">& Reachability Analysis</p>
+    <p style="font-size:0.95rem;color:#64748b;margin-top:1.5rem;">Fundamentals Deep Dive &bull; PA Bootcamp</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS1');
+  const ctx = canvas.getContext('2d');
+  const nodes = [
+    {id:'ENTRY',x:300,y:25,color:'#22c55e'},
+    {id:'B1',x:300,y:75,color:'#6366f1'},
+    {id:'B2',x:180,y:140,color:'#6366f1'},
+    {id:'B3',x:420,y:140,color:'#6366f1'},
+    {id:'B4',x:300,y:200,color:'#6366f1'},
+    {id:'EXIT',x:300,y:250,color:'#ef4444'}
+  ];
+  const edges = [[0,1],[1,2],[1,3],[2,4],[3,4],[4,5],[4,1]];
+  let flowIdx = 0, frame = 0;
+  // Flow paths: two paths through CFG
+  const paths = [
+    [0,1,2,4,5],[0,1,3,4,1,2,4,5],[0,1,2,4,1,3,4,5]
+  ];
+  let pathIdx = 0, pathStep = 0;
+
+  function draw(){
+    ctx.clearRect(0,0,600,260);
+    // edges
+    edges.forEach(([a,b])=>{
+      const na=nodes[a],nb=nodes[b];
+      ctx.beginPath();
+      if(a===4&&b===1){ // back edge
+        ctx.moveTo(na.x+30,na.y); ctx.quadraticCurveTo(na.x+100,na.y-60,nb.x+30,nb.y);
+        ctx.strokeStyle='#f59e0b'; ctx.setLineDash([4,4]);
+      } else {
+        ctx.moveTo(na.x,na.y+14); ctx.lineTo(nb.x,nb.y-14);
+        ctx.strokeStyle='#47556980'; ctx.setLineDash([]);
+      }
+      ctx.lineWidth=1.5; ctx.stroke(); ctx.setLineDash([]);
+    });
+    // nodes
+    const activeNode = paths[pathIdx][pathStep];
+    nodes.forEach((n,i)=>{
+      const isActive = i===activeNode;
+      ctx.beginPath(); ctx.arc(n.x,n.y,16,0,Math.PI*2);
+      ctx.fillStyle=isActive?n.color:'rgba(30,41,59,0.9)';
+      ctx.fill();
+      ctx.strokeStyle=n.color; ctx.lineWidth=isActive?3:1.5; ctx.stroke();
+      ctx.fillStyle=isActive?'#fff':n.color;
+      ctx.font=`${isActive?'bold ':''}10px monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    // flow trail
+    if(pathStep>0){
+      ctx.strokeStyle='#f59e0b40'; ctx.lineWidth=3;
+      for(let i=0;i<pathStep;i++){
+        const a=nodes[paths[pathIdx][i]],b=nodes[paths[pathIdx][i+1]];
+        ctx.beginPath();
+        if(paths[pathIdx][i]===4&&paths[pathIdx][i+1]===1){
+          ctx.moveTo(a.x+30,a.y); ctx.quadraticCurveTo(a.x+100,a.y-60,b.x+30,b.y);
+        } else {
+          ctx.moveTo(a.x,a.y+14); ctx.lineTo(b.x,b.y-14);
+        }
+        ctx.stroke();
+      }
+    }
+  }
+
+  let anim;
+  function tick(){
+    frame++;
+    if(frame%15===0){
+      pathStep++;
+      if(pathStep>=paths[pathIdx].length){
+        pathStep=0; pathIdx=(pathIdx+1)%paths.length;
+      }
+    }
+    draw();
+  }
+  function startAnim(){ anim=setInterval(tick,80); }
+  function init(){ frame=0;pathIdx=0;pathStep=0;draw();if(!anim)startAnim(); }
+  const obs=new MutationObserver(()=>{
+    if(document.getElementById('s1').classList.contains('active')) init();
+    else{clearInterval(anim);anim=null;}
+  });
+  obs.observe(document.getElementById('s1'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 2: Why CFGs? ==================== -->
+<div class="slide" id="s2">
+  <h2>Why CFGs? From Code to Graph</h2>
+  <p>Source code is <strong>linear text</strong>, but execution is a <strong>graph</strong>. CFGs make the flow explicit.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Source Code (click a line)</div>
+      <div class="code-block"><div class="code-content">
+<div class="line s2line" data-block="0" style="cursor:pointer;">x = input()</div>
+<div class="line s2line" data-block="1" style="cursor:pointer;">if x > 0:</div>
+<div class="line s2line" data-block="2" style="cursor:pointer;">    y = x * 2</div>
+<div class="line s2line" data-block="3" style="cursor:pointer;">else:</div>
+<div class="line s2line" data-block="3" style="cursor:pointer;">    y = -x</div>
+<div class="line s2line" data-block="4" style="cursor:pointer;">print(y)</div>
+      </div></div>
+      <div class="analogy" style="margin-top:0.75rem;">
+        <strong>Analogy:</strong> Code is like <strong>driving directions</strong> (turn left, then right...). A CFG is like a <strong>road map</strong> — it shows ALL possible routes at once.
+      </div>
+    </div>
+    <div>
+      <canvas id="cS2" width="520" height="320" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;margin-top:0.5rem;font-size:0.82rem;">
+        <div style="color:#f59e0b;font-weight:600;">Path Explosion:</div>
+        <div style="color:#cbd5e1;">This tiny program has <strong>2 paths</strong>. Add 10 more if-statements → 2<sup>10</sup> = <strong>1024 paths</strong>. CFGs + dataflow let us reason about ALL paths simultaneously.</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS2');
+  const ctx = canvas.getContext('2d');
+  const blocks = [
+    {id:'B0: x=input()',x:260,y:35,w:140,color:'#6366f1',bi:0},
+    {id:'B1: if x>0',x:260,y:100,w:120,color:'#f59e0b',bi:1},
+    {id:'B2: y=x*2',x:130,y:175,w:110,color:'#22c55e',bi:2},
+    {id:'B3: y=-x',x:390,y:175,w:100,color:'#a78bfa',bi:3},
+    {id:'B4: print(y)',x:260,y:255,w:120,color:'#6366f1',bi:4}
+  ];
+  const edges = [[0,1],[1,2],[1,3],[2,4],[3,4]];
+  const edgeLabels = ['','T','F','',''];
+  let highlighted = -1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,320);
+    // edges
+    edges.forEach(([a,b],i)=>{
+      const na=blocks[a],nb=blocks[b];
+      ctx.beginPath(); ctx.moveTo(na.x,na.y+18); ctx.lineTo(nb.x,nb.y-18);
+      ctx.strokeStyle=(highlighted===a||highlighted===b)?'#f59e0b':'#47556980';
+      ctx.lineWidth=1.5; ctx.stroke();
+      if(edgeLabels[i]){
+        const mx=(na.x+nb.x)/2+((b===2)?-15:15), my=(na.y+nb.y)/2;
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 10px monospace'; ctx.textAlign='center';
+        ctx.fillText(edgeLabels[i],mx,my-4);
+      }
+    });
+    // blocks
+    blocks.forEach((b,i)=>{
+      const hw=b.w/2;
+      ctx.beginPath(); ctx.roundRect(b.x-hw,b.y-16,b.w,32,8);
+      ctx.fillStyle=i===highlighted?b.color+'40':'rgba(30,41,59,0.9)';
+      ctx.fill();
+      ctx.strokeStyle=b.color; ctx.lineWidth=i===highlighted?3:1.5; ctx.stroke();
+      ctx.fillStyle=i===highlighted?'#fff':b.color;
+      ctx.font=`${i===highlighted?'bold ':''}11px monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(b.id,b.x,b.y);
+    });
+    // ENTRY/EXIT
+    ctx.fillStyle='#22c55e'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+    ctx.fillText('ENTRY ↓',260,12);
+    ctx.fillStyle='#ef4444'; ctx.fillText('↓ EXIT',260,290);
+  }
+
+  document.querySelectorAll('.s2line').forEach(el=>{
+    el.addEventListener('click',()=>{
+      document.querySelectorAll('.s2line').forEach(l=>l.classList.remove('active'));
+      const bi=parseInt(el.dataset.block);
+      highlighted=bi;
+      // highlight all lines with same block
+      document.querySelectorAll(`.s2line[data-block="${bi}"]`).forEach(l=>l.classList.add('active'));
+      draw();
+    });
+  });
+
+  function init(){ highlighted=-1; draw(); document.querySelectorAll('.s2line').forEach(l=>l.classList.remove('active')); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s2').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s2'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 3: Basic Blocks ==================== -->
+<div class="slide" id="s3">
+  <h2>Basic Blocks — The Building Units</h2>
+  <p>A basic block is a <strong>maximal sequence of consecutive statements</strong> with one entry point and one exit point.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Rules for Block Boundaries</div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-size:0.85rem;">
+        <div style="color:#22c55e;margin-bottom:0.4rem;">✓ <strong>Start</strong> a new block at:</div>
+        <div style="color:#cbd5e1;padding-left:1rem;margin-bottom:0.3rem;">• The first statement of the program</div>
+        <div style="color:#cbd5e1;padding-left:1rem;margin-bottom:0.3rem;">• Any target of a branch (jump destination)</div>
+        <div style="color:#cbd5e1;padding-left:1rem;margin-bottom:0.6rem;">• Any statement immediately after a branch</div>
+        <div style="color:#ef4444;margin-bottom:0.4rem;">✗ <strong>End</strong> a block at:</div>
+        <div style="color:#cbd5e1;padding-left:1rem;margin-bottom:0.3rem;">• A branch instruction (if, while, goto)</div>
+        <div style="color:#cbd5e1;padding-left:1rem;margin-bottom:0.3rem;">• A return statement</div>
+        <div style="color:#cbd5e1;padding-left:1rem;">• The last statement before a branch target</div>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>Key property:</strong> If the first statement of a block executes, ALL statements in that block execute, in order. No surprises inside a basic block.
+      </div>
+    </div>
+    <div>
+      <canvas id="cS3" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s3Show('good')">Valid Blocks</button>
+        <button class="btn btn-sm" onclick="s3Show('bad')">Invalid Blocks</button>
+        <button class="btn btn-sm btn-secondary" onclick="s3Show(null)">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS3');
+  const ctx = canvas.getContext('2d');
+  const codeLines = [
+    'x = 5',          // 0
+    'y = x + 1',      // 1
+    'if y > 10:',     // 2 ← end of B1
+    '  z = y * 2',    // 3 ← start of B2
+    '  w = z + 1',    // 4
+    'else:',          //
+    '  z = y - 3',    // 5 ← start of B3
+    'print(z)',        // 6 ← start of B4
+  ];
+
+  function draw(mode){
+    ctx.clearRect(0,0,520,340);
+    ctx.font='13px monospace';
+    const lh=32, startY=30, startX=40;
+
+    codeLines.forEach((line,i)=>{
+      const y=startY+i*lh;
+      // Block coloring
+      if(mode==='good'){
+        let bg='transparent';
+        if(i<=2) bg='rgba(99,102,241,0.15)'; // B1
+        else if(i===3||i===4) bg='rgba(34,197,94,0.15)'; // B2
+        else if(i===5||i===6) bg='rgba(167,139,250,0.15)'; // B3 (5 is else:z=y-3)
+        else if(i===7) bg='rgba(245,158,11,0.15)'; // B4
+        ctx.fillStyle=bg;
+        ctx.fillRect(startX-5,y-10,440,lh);
+      } else if(mode==='bad'){
+        // Wrong: one giant block
+        ctx.fillStyle='rgba(239,68,68,0.08)';
+        ctx.fillRect(startX-5,y-10,440,lh);
+      }
+
+      ctx.fillStyle='#64748b'; ctx.textAlign='right';
+      ctx.fillText((i+1)+'', startX-15, y+5);
+      ctx.fillStyle='#e2e8f0'; ctx.textAlign='left';
+      ctx.fillText(line, startX, y+5);
+    });
+
+    if(mode==='good'){
+      // Block labels
+      ctx.font='bold 11px monospace'; ctx.textAlign='left';
+      ctx.fillStyle='#6366f1'; ctx.fillText('B1', 420, startY+1*lh);
+      ctx.fillStyle='#22c55e'; ctx.fillText('B2', 420, startY+3.5*lh);
+      ctx.fillStyle='#a78bfa'; ctx.fillText('B3', 420, startY+5.5*lh);
+      ctx.fillStyle='#f59e0b'; ctx.fillText('B4', 420, startY+7*lh);
+      // Boundary arrows
+      ctx.strokeStyle='#ef4444'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+      [2,4,6].forEach(i=>{
+        const y=startY+i*lh+lh/2-10;
+        ctx.beginPath(); ctx.moveTo(startX-5,y); ctx.lineTo(460,y); ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      ctx.fillStyle='#ef4444'; ctx.font='9px monospace';
+      ctx.fillText('← branch ends block',462,startY+2*lh+8);
+      ctx.fillText('← branch target',462,startY+5*lh-8);
+    } else if(mode==='bad'){
+      ctx.fillStyle='#ef4444'; ctx.font='bold 12px monospace'; ctx.textAlign='center';
+      ctx.fillText('✗ WRONG: Branch at line 3 must end the block!',260,startY+8.5*lh);
+      ctx.fillText('Cannot have branch + non-branch in same block.',260,startY+9*lh+5);
+    }
+  }
+
+  window.s3Show = function(mode){ draw(mode); };
+
+  function init(){ draw(null); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s3').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s3'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 4: CFG Patterns: Sequential & If-Else ==================== -->
+<div class="slide" id="s4">
+  <h2>CFG Patterns: Sequential &amp; If-Else</h2>
+  <p>The two simplest patterns — click to see each constructed from code.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">
+        <button class="btn btn-sm" onclick="s4Show('seq')" id="s4btnSeq">Sequential</button>
+        <button class="btn btn-sm" onclick="s4Show('ifelse')" id="s4btnIf">If-Else (Diamond)</button>
+      </div>
+      <div id="s4Code" class="code-block"><div class="code-content" id="s4CodeContent"></div></div>
+      <div id="s4Explain" style="margin-top:0.75rem;font-size:0.85rem;color:#cbd5e1;"></div>
+    </div>
+    <div>
+      <canvas id="cS4" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+
+  const patterns = {
+    seq: {
+      code:'<div class="line">a = 1</div><div class="line">b = a + 2</div><div class="line">c = b * 3</div><div class="line">print(c)</div>',
+      explain:'<strong>Sequential:</strong> No branches → single basic block. One straight path from ENTRY to EXIT. Every statement executes exactly once.',
+      nodes:[{id:'ENTRY',x:260,y:30,c:'#22c55e'},{id:'B1: a=1; b=a+2;\n    c=b*3; print(c)',x:260,y:140,c:'#6366f1'},{id:'EXIT',x:260,y:260,c:'#ef4444'}],
+      edges:[[0,1],[1,2]], labels:['','']
+    },
+    ifelse: {
+      code:'<div class="line">x = input()</div><div class="line">if x > 0:</div><div class="line">    y = x</div><div class="line">else:</div><div class="line">    y = -x</div><div class="line">print(y)</div>',
+      explain:'<strong>If-Else (Diamond):</strong> Branch creates two paths that rejoin. The merge point (B4) is where dataflow must <em>join</em> information from both branches.',
+      nodes:[{id:'ENTRY',x:260,y:20,c:'#22c55e'},{id:'B1: x=input()\nif x>0',x:260,y:80,c:'#f59e0b'},{id:'B2: y=x',x:130,y:170,c:'#6366f1'},{id:'B3: y=-x',x:390,y:170,c:'#a78bfa'},{id:'B4: print(y)',x:260,y:260,c:'#6366f1'},{id:'EXIT',x:260,y:320,c:'#ef4444'}],
+      edges:[[0,1],[1,2],[1,3],[2,4],[3,4],[4,5]], labels:['','T','F','','','']
+    }
+  };
+  let mode = null;
+
+  function drawCFG(p){
+    ctx.clearRect(0,0,520,340);
+    if(!p){ ctx.fillStyle='#64748b'; ctx.font='14px monospace'; ctx.textAlign='center'; ctx.fillText('Select a pattern',260,170); return; }
+    // edges
+    p.edges.forEach(([a,b],i)=>{
+      const na=p.nodes[a],nb=p.nodes[b];
+      ctx.beginPath(); ctx.moveTo(na.x,na.y+20); ctx.lineTo(nb.x,nb.y-20);
+      ctx.strokeStyle='#47556980'; ctx.lineWidth=1.5; ctx.stroke();
+      if(p.labels[i]){
+        const mx=(na.x+nb.x)/2+((b===2)?-12:12), my=(na.y+nb.y)/2;
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 10px monospace'; ctx.textAlign='center';
+        ctx.fillText(p.labels[i],mx,my-3);
+      }
+      // arrowhead
+      const ax=nb.x, ay=nb.y-20;
+      ctx.beginPath(); ctx.moveTo(ax-4,ay-6); ctx.lineTo(ax,ay); ctx.lineTo(ax+4,ay-6);
+      ctx.strokeStyle='#475569'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    // nodes
+    p.nodes.forEach(n=>{
+      const lines = n.id.split('\n');
+      const h = Math.max(28, lines.length*14+10);
+      const w = Math.max(80, ...lines.map(l=>l.length*7+20));
+      ctx.beginPath(); ctx.roundRect(n.x-w/2,n.y-h/2,w,h,8);
+      ctx.fillStyle='rgba(30,41,59,0.9)'; ctx.fill();
+      ctx.strokeStyle=n.c; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle=n.c; ctx.font='bold 10px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      lines.forEach((l,i)=>ctx.fillText(l.trim(),n.x,n.y+(i-(lines.length-1)/2)*14));
+    });
+  }
+
+  window.s4Show = function(m){
+    mode=m;
+    const p=patterns[m];
+    document.getElementById('s4CodeContent').innerHTML=p.code;
+    document.getElementById('s4Explain').innerHTML=p.explain;
+    drawCFG(p);
+  };
+
+  function init(){ mode=null; drawCFG(null); document.getElementById('s4CodeContent').innerHTML='<div style="color:#94a3b8;">Select a pattern to see code → CFG</div>'; document.getElementById('s4Explain').innerHTML=''; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s4').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 5: While Loops & Back Edges ==================== -->
+<div class="slide" id="s5">
+  <h2>CFG Patterns: While Loops &amp; Back Edges</h2>
+  <p>Loops create <strong>back edges</strong> — edges that go "upstream" in the CFG, creating cycles.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content">
+<div class="line" id="s5L1">i = 0</div>
+<div class="line" id="s5L2">while i < 10:</div>
+<div class="line" id="s5L3">    sum = sum + i</div>
+<div class="line" id="s5L4">    i = i + 1</div>
+<div class="line" id="s5L5">print(sum)</div>
+      </div></div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s5Step()">Step Through</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+      <div id="s5Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;margin-top:0.75rem;font-family:monospace;font-size:0.75rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+    <div>
+      <canvas id="cS5" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div class="warning" style="margin-top:0.5rem;">
+        <strong>Back edge B3→B2</strong> creates a cycle. This is why dataflow needs <em>iterative fixpoint</em> — information loops back until it stabilizes.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+  const nodes = [
+    {id:'ENTRY',x:260,y:25,c:'#22c55e'},
+    {id:'B1: i=0',x:260,y:80,c:'#6366f1'},
+    {id:'B2: while i<10',x:260,y:150,c:'#f59e0b'},
+    {id:'B3: sum+=i; i++',x:140,y:240,c:'#a78bfa'},
+    {id:'B4: print(sum)',x:380,y:240,c:'#6366f1'},
+    {id:'EXIT',x:380,y:310,c:'#ef4444'}
+  ];
+  const edges = [[0,1],[1,2],[2,3],[2,4],[3,2],[4,5]];
+  const edgeTypes = ['','','T','F','back',''];
+
+  // Execution path: ENTRY→B1→B2→B3→B2→B3→B2→B4→EXIT (2 iterations shown)
+  const steps = [
+    {active:0,lines:[],msg:'Start at ENTRY'},
+    {active:1,lines:['s5L1'],msg:'B1: i = 0'},
+    {active:2,lines:['s5L2'],msg:'B2: check i < 10 → true (i=0)'},
+    {active:3,lines:['s5L3','s5L4'],msg:'B3: sum += 0, i = 1'},
+    {active:2,lines:['s5L2'],msg:'B2: check i < 10 → true (i=1) — BACK EDGE!'},
+    {active:3,lines:['s5L3','s5L4'],msg:'B3: sum += 1, i = 2'},
+    {active:2,lines:['s5L2'],msg:'B2: check i < 10 → ... (continues looping)'},
+    {active:4,lines:['s5L5'],msg:'B4: print(sum) — loop ended, i ≥ 10'},
+    {active:5,lines:[],msg:'EXIT — done!'}
+  ];
+  let stepIdx=0, timer=null;
+
+  function draw(activeIdx, prevIdx){
+    ctx.clearRect(0,0,520,340);
+    // edges
+    edges.forEach(([a,b],i)=>{
+      const na=nodes[a],nb=nodes[b];
+      ctx.beginPath();
+      if(edgeTypes[i]==='back'){
+        ctx.moveTo(na.x-50,na.y-5); ctx.quadraticCurveTo(na.x-110,na.y-50,nb.x-60,nb.y+5);
+        ctx.strokeStyle='#f59e0b'; ctx.setLineDash([4,4]);
+      } else {
+        ctx.moveTo(na.x,na.y+16); ctx.lineTo(nb.x,nb.y-16);
+        ctx.strokeStyle='#47556980'; ctx.setLineDash([]);
+      }
+      const isTraversed = prevIdx!==undefined && a===prevIdx && b===activeIdx;
+      if(isTraversed){ ctx.strokeStyle='#f59e0b'; ctx.lineWidth=3; } else { ctx.lineWidth=1.5; }
+      ctx.stroke(); ctx.setLineDash([]);
+      // label
+      if(edgeTypes[i]==='T'||edgeTypes[i]==='F'){
+        const mx=(na.x+nb.x)/2+((b===3)?-15:15),my=(na.y+nb.y)/2;
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 10px monospace'; ctx.textAlign='center';
+        ctx.fillText(edgeTypes[i],mx,my-4);
+      }
+      if(edgeTypes[i]==='back'){
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+        ctx.fillText('back edge',nodes[3].x-95,nodes[3].y-30);
+      }
+    });
+    // nodes
+    nodes.forEach((n,i)=>{
+      const isActive=i===activeIdx;
+      ctx.beginPath(); ctx.arc(n.x,n.y,18,0,Math.PI*2);
+      ctx.fillStyle=isActive?n.c:'rgba(30,41,59,0.9)'; ctx.fill();
+      ctx.strokeStyle=n.c; ctx.lineWidth=isActive?3:1.5; ctx.stroke();
+      ctx.fillStyle=isActive?'#fff':n.c;
+      ctx.font=`${isActive?'bold ':''}9px monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+
+  window.s5Step = function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    const prev = stepIdx>0?steps[stepIdx-1].active:undefined;
+    draw(s.active, prev);
+    ['s5L1','s5L2','s5L3','s5L4','s5L5'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    s.lines.forEach(id=>document.getElementById(id).classList.add('active'));
+    const log=document.getElementById('s5Log');
+    const isBack = s.msg.includes('BACK');
+    log.innerHTML+=`<div style="color:${isBack?'#f59e0b':'#cbd5e1'};">${s.msg}</div>`;
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+  window.s5Auto = function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s5Step(); },900);
+  };
+  window.s5Reset = function(){
+    if(timer){clearInterval(timer);timer=null;} stepIdx=0;
+    ['s5L1','s5L2','s5L3','s5L4','s5L5'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    document.getElementById('s5Log').innerHTML='';
+    draw(-1);
+  };
+
+  function init(){ s5Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s5').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s5'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 6: Nested & Complex Patterns ==================== -->
+<div class="slide" id="s6">
+  <h2>CFG Patterns: Nested &amp; Complex</h2>
+  <p>Real code nests these patterns. Click any block to see its <span style="color:#22c55e;">predecessors</span> and <span style="color:#f59e0b;">successors</span>.</p>
+  <div style="display:grid;grid-template-columns:1.3fr 0.7fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS6" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div>
+      <div class="code-block"><div class="code-content" style="font-size:0.72rem;">
+<div class="line">x = input()       <span style="color:#6366f1;">// B1</span></div>
+<div class="line">if x > 0:         <span style="color:#f59e0b;">// B2</span></div>
+<div class="line">  while x > 1:    <span style="color:#a78bfa;">// B3</span></div>
+<div class="line">    x = x / 2     <span style="color:#f472b6;">// B4</span></div>
+<div class="line">  print("pos")    <span style="color:#22c55e;">// B5</span></div>
+<div class="line">else:</div>
+<div class="line">  print("neg")    <span style="color:#38bdf8;">// B6</span></div>
+<div class="line">return x           <span style="color:#cbd5e1;">// B7</span></div>
+      </div></div>
+      <div id="s6Info" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;margin-top:0.5rem;font-family:monospace;font-size:0.82rem;min-height:80px;">
+        <div style="color:#94a3b8;">Click a node to see pred/succ</div>
+      </div>
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <strong>Nested pattern:</strong> The while loop (B3↔B4) is <em>inside</em> the if-else (B2→B3/B6). The merge point B7 collects both branches.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS6');
+  const ctx = canvas.getContext('2d');
+  // B1→B2, B2→B3(T), B2→B6(F), B3→B4(T), B3→B5(F), B4→B3(back), B5→B7, B6→B7, B7→EXIT
+  const nodes = [
+    {id:'B1',label:'x=input()',x:260,y:35,c:'#6366f1'},
+    {id:'B2',label:'if x>0',x:260,y:95,c:'#f59e0b'},
+    {id:'B3',label:'while x>1',x:160,y:165,c:'#a78bfa'},
+    {id:'B4',label:'x=x/2',x:80,y:245,c:'#f472b6'},
+    {id:'B5',label:'print("pos")',x:250,y:245,c:'#22c55e'},
+    {id:'B6',label:'print("neg")',x:400,y:165,c:'#38bdf8'},
+    {id:'B7',label:'return x',x:300,y:325,c:'#cbd5e1'}
+  ];
+  const edges = [[0,1],[1,2],[1,5],[2,3],[2,4],[3,2],[4,6],[5,6]];
+  const edgeLabels = ['','T','F','T','F','back','',''];
+  const preds = [[],[0],[1,3],[2],[2],[1],[4,5]];
+  const succs = [[1],[2,5],[3,4],[2],[6],[6],[]];
+  let selected = -1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,370);
+    // edges
+    edges.forEach(([a,b],i)=>{
+      const na=nodes[a],nb=nodes[b];
+      ctx.beginPath();
+      if(edgeLabels[i]==='back'){
+        ctx.moveTo(na.x-10,na.y-10); ctx.quadraticCurveTo(na.x-70,na.y-60,nb.x-30,nb.y+10);
+        ctx.strokeStyle='#f59e0b'; ctx.setLineDash([4,4]);
+      } else {
+        ctx.moveTo(na.x,na.y+16); ctx.lineTo(nb.x,nb.y-16);
+        ctx.strokeStyle='#47556980'; ctx.setLineDash([]);
+      }
+      const isPred = selected>=0 && preds[selected].includes(a) && b===selected;
+      const isSucc = selected>=0 && a===selected && succs[selected].includes(b);
+      if(isPred){ ctx.strokeStyle='#22c55e'; ctx.lineWidth=3; ctx.setLineDash([]); }
+      else if(isSucc){ ctx.strokeStyle='#f59e0b'; ctx.lineWidth=3; ctx.setLineDash([]); }
+      else { ctx.lineWidth=1.5; }
+      ctx.stroke(); ctx.setLineDash([]);
+      if(edgeLabels[i]&&edgeLabels[i]!=='back'){
+        const mx=(na.x+nb.x)/2+((b<a||b===2)?-12:12), my=(na.y+nb.y)/2;
+        ctx.fillStyle='#f59e0b'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+        ctx.fillText(edgeLabels[i],mx,my-4);
+      }
+    });
+    // nodes
+    nodes.forEach((n,i)=>{
+      const isPred = selected>=0 && preds[selected].includes(i);
+      const isSucc = selected>=0 && succs[selected].includes(i);
+      const isSel = i===selected;
+      ctx.beginPath(); ctx.arc(n.x,n.y,22,0,Math.PI*2);
+      ctx.fillStyle=isSel?n.c+'60':isPred?'rgba(34,197,94,0.2)':isSucc?'rgba(245,158,11,0.2)':'rgba(30,41,59,0.9)';
+      ctx.fill();
+      ctx.strokeStyle=isSel?'#fff':isPred?'#22c55e':isSucc?'#f59e0b':n.c;
+      ctx.lineWidth=isSel||isPred||isSucc?3:1.5; ctx.stroke();
+      ctx.fillStyle=isSel?'#fff':n.c;
+      ctx.font=`bold 10px monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y-4);
+      ctx.font='8px monospace'; ctx.fillStyle=isSel?'#fff':'#94a3b8';
+      ctx.fillText(n.label,n.x,n.y+8);
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(370/rect.height);
+    let found=-1;
+    nodes.forEach((n,i)=>{ if(Math.hypot(mx-n.x,my-n.y)<25) found=i; });
+    selected=found;
+    draw();
+    if(found>=0){
+      const n=nodes[found];
+      document.getElementById('s6Info').innerHTML=`
+        <div style="color:${n.c};font-weight:700;">${n.id}: ${n.label}</div>
+        <div style="color:#22c55e;">Predecessors: {${preds[found].map(i=>nodes[i].id).join(', ')||'none'}}</div>
+        <div style="color:#f59e0b;">Successors: {${succs[found].map(i=>nodes[i].id).join(', ')||'none (EXIT)'}}</div>
+      `;
+    } else {
+      document.getElementById('s6Info').innerHTML='<div style="color:#94a3b8;">Click a node to see pred/succ</div>';
+    }
+  });
+
+  function init(){ selected=-1; draw(); document.getElementById('s6Info').innerHTML='<div style="color:#94a3b8;">Click a node to see pred/succ</div>'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s6').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 7: Predecessors & Successors ==================== -->
+<div class="slide" id="s7">
+  <h2>Predecessors &amp; Successors</h2>
+  <p>The foundation of dataflow: information flows along edges. <span style="color:#22c55e;">pred(B)</span> = where info comes from, <span style="color:#f59e0b;">succ(B)</span> = where it goes.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS7" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Pred/Succ Table</div>
+      <table id="s7Table" style="width:100%;border-collapse:collapse;font-family:monospace;font-size:0.8rem;">
+        <tr><th style="padding:6px;color:#94a3b8;text-align:left;border-bottom:1px solid #334155;">Block</th><th style="padding:6px;color:#22c55e;text-align:left;border-bottom:1px solid #334155;">pred(B)</th><th style="padding:6px;color:#f59e0b;text-align:left;border-bottom:1px solid #334155;">succ(B)</th></tr>
+      </table>
+      <div style="margin-top:1rem;">
+        <div class="key-idea">
+          <strong>Forward analysis:</strong> IN[B] = ⊔ { OUT[p] | p ∈ <span style="color:#22c55e;">pred(B)</span> }<br>
+          Merge information from ALL predecessors.
+        </div>
+        <div class="key-idea" style="margin-top:0.5rem;">
+          <strong>Backward analysis:</strong> OUT[B] = ⊔ { IN[s] | s ∈ <span style="color:#f59e0b;">succ(B)</span> }<br>
+          Merge information from ALL successors.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS7');
+  const ctx = canvas.getContext('2d');
+  // Diamond CFG with merge
+  const nodes = [
+    {id:'ENTRY',x:260,y:25,c:'#22c55e'},
+    {id:'B1',x:260,y:80,c:'#6366f1'},
+    {id:'B2',x:140,y:155,c:'#a78bfa'},
+    {id:'B3',x:380,y:155,c:'#f472b6'},
+    {id:'B4',x:260,y:230,c:'#f59e0b'},
+    {id:'EXIT',x:260,y:285,c:'#ef4444'}
+  ];
+  const edges=[[0,1],[1,2],[1,3],[2,4],[3,4],[4,5]];
+  const preds=[[],[0],[1],[1],[2,3],[4]];
+  const succs=[[1],[2,3],[4],[4],[5],[]];
+  let selected=-1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,300);
+    edges.forEach(([a,b])=>{
+      const na=nodes[a],nb=nodes[b];
+      ctx.beginPath(); ctx.moveTo(na.x,na.y+14); ctx.lineTo(nb.x,nb.y-14);
+      const isPred=selected>=0&&preds[selected].includes(a)&&b===selected;
+      const isSucc=selected>=0&&a===selected&&succs[selected].includes(b);
+      ctx.strokeStyle=isPred?'#22c55e':isSucc?'#f59e0b':'#47556980';
+      ctx.lineWidth=isPred||isSucc?3:1.5; ctx.stroke();
+    });
+    nodes.forEach((n,i)=>{
+      const isSel=i===selected;
+      const isPred=selected>=0&&preds[selected].includes(i);
+      const isSucc=selected>=0&&succs[selected].includes(i);
+      ctx.beginPath(); ctx.arc(n.x,n.y,18,0,Math.PI*2);
+      ctx.fillStyle=isSel?n.c:isPred?'rgba(34,197,94,0.3)':isSucc?'rgba(245,158,11,0.3)':'rgba(30,41,59,0.9)';
+      ctx.fill();
+      ctx.strokeStyle=isSel?'#fff':n.c; ctx.lineWidth=isSel?3:1.5; ctx.stroke();
+      ctx.fillStyle=isSel?'#fff':n.c;
+      ctx.font='bold 11px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+
+  function buildTable(){
+    let html='<tr><th style="padding:6px;color:#94a3b8;text-align:left;border-bottom:1px solid #334155;">Block</th><th style="padding:6px;color:#22c55e;text-align:left;border-bottom:1px solid #334155;">pred(B)</th><th style="padding:6px;color:#f59e0b;text-align:left;border-bottom:1px solid #334155;">succ(B)</th></tr>';
+    nodes.forEach((n,i)=>{
+      const isSel=i===selected;
+      html+=`<tr style="background:${isSel?'rgba(99,102,241,0.15)':'transparent'};"><td style="padding:4px 6px;color:${n.c};font-weight:${isSel?'700':'400'};">${n.id}</td><td style="padding:4px 6px;color:#22c55e;">{${preds[i].map(j=>nodes[j].id).join(',')}}</td><td style="padding:4px 6px;color:#f59e0b;">{${succs[i].map(j=>nodes[j].id).join(',')}}</td></tr>`;
+    });
+    document.getElementById('s7Table').innerHTML=html;
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(300/rect.height);
+    selected=-1;
+    nodes.forEach((n,i)=>{ if(Math.hypot(mx-n.x,my-n.y)<20) selected=i; });
+    draw(); buildTable();
+  });
+
+  function init(){ selected=-1; draw(); buildTable(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s7').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s7'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 8: Dominance ==================== -->
+<div class="slide" id="s8">
+  <h2>Dominance — Who Controls Whom?</h2>
+  <p>Block A <strong>dominates</strong> block B if <em>every</em> path from ENTRY to B passes through A. Click a node to see its dominators.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS8" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;cursor:pointer;"></canvas>
+    </div>
+    <div>
+      <div id="s8Info" style="background:rgba(0,0,0,0.25);border-radius:12px;padding:1rem;font-size:0.85rem;min-height:140px;">
+        <div style="color:#94a3b8;">Click a node to see which blocks dominate it</div>
+      </div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.75rem 0 0.4rem;">Dominator Tree</div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-family:monospace;font-size:0.78rem;color:#cbd5e1;">
+        <pre style="margin:0;">ENTRY
+├── B1
+│   ├── B2
+│   ├── B3
+│   └── B4
+│       └── EXIT</pre>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>Why dominance matters:</strong> The <em>immediate dominator</em> of a block is where φ-functions go in SSA form. Dominance is also used to identify natural loops (back edge target dominates source).
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS8');
+  const ctx = canvas.getContext('2d');
+  // Same diamond: ENTRY→B1→B2/B3→B4→EXIT
+  const nodes = [
+    {id:'ENTRY',x:260,y:30,c:'#22c55e'},
+    {id:'B1',x:260,y:95,c:'#6366f1'},
+    {id:'B2',x:140,y:175,c:'#a78bfa'},
+    {id:'B3',x:380,y:175,c:'#f472b6'},
+    {id:'B4',x:260,y:255,c:'#f59e0b'},
+    {id:'EXIT',x:260,y:320,c:'#ef4444'}
+  ];
+  const edges=[[0,1],[1,2],[1,3],[2,4],[3,4],[4,5]];
+  // Dominators: dom(ENTRY)={ENTRY}, dom(B1)={E,B1}, dom(B2)={E,B1,B2}, dom(B3)={E,B1,B3}, dom(B4)={E,B1,B4}, dom(EXIT)={E,B1,B4,EXIT}
+  const doms = [
+    [0],        // ENTRY dominates itself
+    [0,1],      // B1: ENTRY, B1
+    [0,1,2],    // B2: ENTRY, B1, B2
+    [0,1,3],    // B3: ENTRY, B1, B3
+    [0,1,4],    // B4: ENTRY, B1, B4
+    [0,1,4,5]   // EXIT: ENTRY, B1, B4, EXIT
+  ];
+  let selected=-1;
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    edges.forEach(([a,b])=>{
+      const na=nodes[a],nb=nodes[b];
+      ctx.beginPath(); ctx.moveTo(na.x,na.y+16); ctx.lineTo(nb.x,nb.y-16);
+      ctx.strokeStyle='#47556980'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    nodes.forEach((n,i)=>{
+      const isSel=i===selected;
+      const isDom=selected>=0&&doms[selected].includes(i);
+      ctx.beginPath(); ctx.arc(n.x,n.y,20,0,Math.PI*2);
+      ctx.fillStyle=isSel?n.c:isDom?'rgba(34,197,94,0.3)':'rgba(30,41,59,0.9)';
+      ctx.fill();
+      ctx.strokeStyle=isDom&&!isSel?'#22c55e':n.c;
+      ctx.lineWidth=isSel?3:isDom?2.5:1.5; ctx.stroke();
+      ctx.fillStyle=isSel?'#fff':isDom?'#22c55e':n.c;
+      ctx.font='bold 11px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+  }
+
+  canvas.addEventListener('click',function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(520/rect.width);
+    const my=(e.clientY-rect.top)*(340/rect.height);
+    selected=-1;
+    nodes.forEach((n,i)=>{ if(Math.hypot(mx-n.x,my-n.y)<22) selected=i; });
+    draw();
+    if(selected>=0){
+      const n=nodes[selected];
+      const domNames=doms[selected].map(i=>nodes[i].id);
+      const idom=domNames.length>1?domNames[domNames.length-2]:'none (this is ENTRY)';
+      document.getElementById('s8Info').innerHTML=`
+        <div style="color:${n.c};font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">${n.id}</div>
+        <div style="color:#22c55e;margin-bottom:0.3rem;">Dominators: <strong>{${domNames.join(', ')}}</strong></div>
+        <div style="color:#f59e0b;margin-bottom:0.3rem;">Immediate dominator: <strong>${idom}</strong></div>
+        <div style="color:#94a3b8;margin-top:0.5rem;font-size:0.82rem;">Every path from ENTRY to ${n.id} must pass through: ${domNames.join(' → ')}</div>
+      `;
+    } else {
+      document.getElementById('s8Info').innerHTML='<div style="color:#94a3b8;">Click a node to see which blocks dominate it</div>';
+    }
+  });
+
+  function init(){ selected=-1; draw(); document.getElementById('s8Info').innerHTML='<div style="color:#94a3b8;">Click a node to see which blocks dominate it</div>'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s8').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCA: Build the CFG ==================== -->
+<div class="slide" id="sCA">
+  <h2>Challenge A: Build the CFG</h2>
+  <p>Given this code, select the correct CFG structure for each question.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div class="code-block"><div class="code-content" style="font-size:0.8rem;">
+<div class="line">x = input()</div>
+<div class="line">while x > 0:</div>
+<div class="line">    if x % 2 == 0:</div>
+<div class="line">        x = x / 2</div>
+<div class="line">    else:</div>
+<div class="line">        x = 3*x + 1</div>
+<div class="line">print("done")</div>
+      </div></div>
+    </div>
+    <div>
+      <div id="sCAq1" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;margin-bottom:0.75rem;">
+        <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q1: How many basic blocks?</div>
+        <select id="sCAa1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;margin-top:0.4rem;">
+          <option value="">Select...</option>
+          <option value="a">4 blocks</option>
+          <option value="b">5 blocks</option>
+          <option value="c">6 blocks</option>
+          <option value="d">7 blocks</option>
+        </select>
+      </div>
+      <div id="sCAq2" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;margin-bottom:0.75rem;">
+        <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q2: Which block has the back edge?</div>
+        <select id="sCAa2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;margin-top:0.4rem;">
+          <option value="">Select...</option>
+          <option value="a">From the if-condition block back to while-header</option>
+          <option value="b">From the merge point (after if-else) back to while-header</option>
+          <option value="c">From print block back to x=input</option>
+          <option value="d">From x=x/2 back to if-condition</option>
+        </select>
+      </div>
+      <div id="sCAq3" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+        <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q3: What are the predecessors of the print block?</div>
+        <select id="sCAa3" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;margin-top:0.4rem;">
+          <option value="">Select...</option>
+          <option value="a">{x=x/2, x=3x+1} — both branches of if</option>
+          <option value="b">{while x>0} — the loop header when condition is false</option>
+          <option value="c">{x=input()} — the initial assignment</option>
+          <option value="d">{merge point after if-else}</option>
+        </select>
+      </div>
+      <div style="text-align:center;margin-top:0.75rem;">
+        <button class="btn" onclick="sCACheck()">Check All</button>
+      </div>
+      <div id="sCAFeedback" style="display:none;margin-top:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.8rem;"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const answers={sCAa1:'c',sCAa2:'b',sCAa3:'b'};
+  const explanations={
+    sCAa1:'<strong>6 blocks:</strong> B1(x=input), B2(while x>0), B3(if x%2==0), B4(x=x/2), B5(x=3x+1), B6(print). The while header and if condition are separate blocks because the if is inside the loop body.',
+    sCAa2:'<strong>From merge point back to while-header.</strong> After x=x/2 or x=3x+1, control merges and loops back to the while condition. The back edge goes from the post-if merge to B2, not from anywhere else.',
+    sCAa3:'<strong>{while x>0}</strong> — The print block is reached when the while condition is FALSE. Its only predecessor is the while-header block (B2), taking the false branch. The if-else branches loop back, they don\'t exit!'
+  };
+  window.sCACheck=function(){
+    let score=0,html='';
+    [1,2,3].forEach(i=>{
+      const sel=document.getElementById('sCAa'+i).value;
+      const correct=sel===answers['sCAa'+i];
+      if(correct) score++;
+      document.getElementById('sCAq'+i).style.borderColor=sel===''?'#475569':correct?'#22c55e':'#ef4444';
+      html+=`<div style="color:${correct?'#22c55e':'#ef4444'};margin-bottom:0.4rem;">${correct?'✓':'✗'} Q${i}: ${explanations['sCAa'+i]}</div>`;
+    });
+    const fb=document.getElementById('sCAFeedback');
+    fb.innerHTML=`<div style="font-weight:700;color:${score>=2?'#22c55e':'#f59e0b'};margin-bottom:0.5rem;">Score: ${score}/3</div>`+html;
+    fb.style.display='block';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 9: Reachability Analysis ==================== -->
+<div class="slide" id="s9">
+  <h2>Reachability Analysis — Which Blocks Execute?</h2>
+  <p>Forward flood from ENTRY: mark each reachable block. Unreachable blocks = <span style="color:#ef4444;">dead code</span>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS9" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s9Step()">Flood Step</button>
+        <button class="btn btn-sm" onclick="s9Auto()">Auto Flood</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.5rem;">Algorithm</div>
+      <div class="code-block"><div class="code-content" style="font-size:0.75rem;">
+<div class="line" id="s9c1">reachable = {ENTRY}</div>
+<div class="line" id="s9c2">worklist = [ENTRY]</div>
+<div class="line" id="s9c3">while worklist ≠ ∅:</div>
+<div class="line" id="s9c4">  b = worklist.pop()</div>
+<div class="line" id="s9c5">  for s in succ(b):</div>
+<div class="line" id="s9c6">    if s ∉ reachable:</div>
+<div class="line" id="s9c7">      reachable.add(s)</div>
+<div class="line" id="s9c8">      worklist.push(s)</div>
+      </div></div>
+      <div id="s9Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;margin-top:0.5rem;font-family:monospace;font-size:0.75rem;max-height:100px;overflow-y:auto;"></div>
+      <div class="key-idea" style="margin-top:0.5rem;">
+        <strong>Key insight:</strong> Reachability is the simplest dataflow analysis — the "domain" is just {reachable, unreachable}. It's also the foundation: unreachable blocks can be pruned before running any other analysis.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS9');
+  const ctx=canvas.getContext('2d');
+  // CFG with unreachable block: ENTRY→B1→B2(if)→B3/B4→B5→EXIT, B6 is orphan (after return)
+  const nodes=[
+    {id:'ENTRY',x:260,y:25,c:'#22c55e'},
+    {id:'B1',x:260,y:80,c:'#6366f1'},
+    {id:'B2: if ...',x:260,y:140,c:'#f59e0b'},
+    {id:'B3',x:140,y:210,c:'#6366f1'},
+    {id:'B4',x:380,y:210,c:'#6366f1'},
+    {id:'B5',x:260,y:280,c:'#6366f1'},
+    {id:'EXIT',x:260,y:330,c:'#ef4444'},
+    {id:'B6: dead!',x:480,y:80,c:'#ef4444'} // unreachable
+  ];
+  const edges=[[0,1],[1,2],[2,3],[2,4],[3,5],[4,5],[5,6]];
+  const succs=[[1],[2],[3,4],[5],[5],[6],[]];
+  let reachable=new Set(), worklist=[], stepIdx=0, timer=null;
+
+  function draw(){
+    ctx.clearRect(0,0,520,340);
+    edges.forEach(([a,b])=>{
+      const na=nodes[a],nb=nodes[b];
+      ctx.beginPath(); ctx.moveTo(na.x,na.y+14); ctx.lineTo(nb.x,nb.y-14);
+      ctx.strokeStyle=reachable.has(a)&&reachable.has(b)?'#22c55e60':'#47556940';
+      ctx.lineWidth=1.5; ctx.stroke();
+    });
+    nodes.forEach((n,i)=>{
+      const isReached=reachable.has(i);
+      const isWorklist=worklist.includes(i);
+      ctx.beginPath(); ctx.arc(n.x,n.y,18,0,Math.PI*2);
+      ctx.fillStyle=isWorklist?'#f59e0b':isReached?'rgba(34,197,94,0.3)':i===7?'rgba(239,68,68,0.15)':'rgba(30,41,59,0.9)';
+      ctx.fill();
+      ctx.strokeStyle=isReached?'#22c55e':i===7?'#ef4444':'#475569';
+      ctx.lineWidth=isWorklist?3:isReached?2:1; ctx.stroke();
+      ctx.fillStyle=isReached?'#22c55e':i===7?'#ef4444':'#64748b';
+      ctx.font='bold 9px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.id,n.x,n.y);
+    });
+    // "UNREACHABLE" label
+    if(stepIdx>0 && !reachable.has(7)){
+      ctx.fillStyle='#ef4444'; ctx.font='bold 10px monospace'; ctx.textAlign='center';
+      ctx.fillText('UNREACHABLE',480,110);
+      ctx.strokeStyle='#ef4444'; ctx.setLineDash([3,3]); ctx.lineWidth=1;
+      ctx.strokeRect(455,62,50,36); ctx.setLineDash([]);
+    }
+  }
+
+  window.s9Step=function(){
+    if(worklist.length===0&&stepIdx>0) return;
+    if(stepIdx===0){
+      reachable.add(0); worklist=[0];
+      ['s9c1','s9c2'].forEach(id=>document.getElementById(id).classList.add('active'));
+      document.getElementById('s9Log').innerHTML='<div style="color:#22c55e;">Init: reachable={ENTRY}, worklist=[ENTRY]</div>';
+      draw(); stepIdx++; return;
+    }
+    ['s9c1','s9c2','s9c3','s9c4','s9c5','s9c6','s9c7','s9c8'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    const b=worklist.shift();
+    ['s9c3','s9c4'].forEach(id=>document.getElementById(id).classList.add('active'));
+    const newNodes=[];
+    (succs[b]||[]).forEach(s=>{
+      if(!reachable.has(s)){
+        reachable.add(s); worklist.push(s); newNodes.push(nodes[s].id);
+        ['s9c6','s9c7','s9c8'].forEach(id=>document.getElementById(id).classList.add('active'));
+      }
+    });
+    const log=document.getElementById('s9Log');
+    const msg=newNodes.length>0?`Process ${nodes[b].id}: found ${newNodes.join(',')}`:
+      worklist.length===0?`Process ${nodes[b].id}: no new nodes. Worklist empty — done!`:`Process ${nodes[b].id}: successors already reached`;
+    log.innerHTML+=`<div style="color:${newNodes.length>0?'#22c55e':'#94a3b8'};">${msg}</div>`;
+    log.scrollTop=log.scrollHeight;
+    draw(); stepIdx++;
+  };
+  window.s9Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(worklist.length===0&&stepIdx>0){clearInterval(timer);timer=null;return;} s9Step(); },700);
+  };
+  window.s9Reset=function(){
+    if(timer){clearInterval(timer);timer=null;} stepIdx=0;
+    reachable=new Set(); worklist=[];
+    ['s9c1','s9c2','s9c3','s9c4','s9c5','s9c6','s9c7','s9c8'].forEach(id=>document.getElementById(id).classList.remove('active'));
+    document.getElementById('s9Log').innerHTML='';
+    draw();
+  };
+
+  function init(){ s9Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s9').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 10: Dead Code Detection Patterns ==================== -->
+<div class="slide" id="s10">
+  <h2>Dead Code Detection Patterns</h2>
+  <p>Four common patterns of dead code — click each to see why it's unreachable.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS10" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.75rem;">
+        <button class="btn btn-sm" onclick="s10Show(0)" style="font-size:0.75rem;">After Return</button>
+        <button class="btn btn-sm" onclick="s10Show(1)" style="font-size:0.75rem;">Impossible Branch</button>
+        <button class="btn btn-sm" onclick="s10Show(2)" style="font-size:0.75rem;">Unreachable Function</button>
+        <button class="btn btn-sm" onclick="s10Show(3)" style="font-size:0.75rem;">Dead Store</button>
+      </div>
+      <div id="s10Info" style="background:rgba(0,0,0,0.25);border-radius:12px;padding:1rem;font-size:0.85rem;min-height:200px;">
+        <div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click a pattern to see an example</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS10');
+  const ctx=canvas.getContext('2d');
+  const patterns=[
+    {title:'After Return',
+     code:'def f(x):\n  if x > 0:\n    return x\n  return -x\n  print("oops")  ← DEAD',
+     nodes:[{l:'return x',x:140,y:120,ok:true},{l:'return -x',x:260,y:200,ok:true},{l:'print("oops")',x:420,y:200,ok:false}],
+     explain:'<strong>After Return:</strong> Code after <code>return</code> can never execute. The simplest dead code pattern — purely syntactic, no dataflow needed.<br><br><span style="color:#f59e0b;">Detection:</span> Walk the AST; flag any statement after a <code>return</code> in the same block.'},
+    {title:'Impossible Branch',
+     code:'x = 5\nif x > 10:    ← always false\n  print("big")\nelse:\n  print("small")',
+     nodes:[{l:'x=5',x:260,y:60,ok:true},{l:'if x>10',x:260,y:130,ok:true},{l:'print("big")',x:140,y:210,ok:false},{l:'print("small")',x:380,y:210,ok:true}],
+     explain:'<strong>Impossible Branch:</strong> Constant propagation proves <code>x=5</code>, so <code>x>10</code> is always false. The true branch is dead.<br><br><span style="color:#f59e0b;">Detection:</span> Requires dataflow analysis (constant propagation) to determine branch outcome.'},
+    {title:'Unreachable Function',
+     code:'def helper():\n  ...\n\ndef main():\n  # never calls helper()\n  process(data)',
+     nodes:[{l:'main()',x:180,y:100,ok:true},{l:'process()',x:180,y:200,ok:true},{l:'helper()',x:400,y:100,ok:false}],
+     explain:'<strong>Unreachable Function:</strong> <code>helper()</code> is defined but never called from any reachable code. The entire function body is dead.<br><br><span style="color:#f59e0b;">Detection:</span> Build a call graph from <code>main</code>; functions not in the reachable set are dead.'},
+    {title:'Dead Store',
+     code:'x = compute()  ← DEAD STORE\nx = other()    ← overwrites\nprint(x)',
+     nodes:[{l:'x=compute()',x:260,y:80,ok:false},{l:'x=other()',x:260,y:160,ok:true},{l:'print(x)',x:260,y:240,ok:true}],
+     explain:'<strong>Dead Store:</strong> The first assignment to <code>x</code> is overwritten before being read. The <code>compute()</code> call is wasted work.<br><br><span style="color:#f59e0b;">Detection:</span> Live variable analysis — if x is NOT live after <code>x=compute()</code>, the store is dead.'}
+  ];
+  let active=-1;
+
+  function draw(p){
+    ctx.clearRect(0,0,520,340);
+    if(!p){ ctx.fillStyle='#64748b'; ctx.font='14px monospace'; ctx.textAlign='center'; ctx.fillText('Select a pattern',260,170); return; }
+    // Title
+    ctx.fillStyle='#38bdf8'; ctx.font='bold 14px monospace'; ctx.textAlign='center';
+    ctx.fillText(p.title,260,25);
+    // Code
+    ctx.font='11px monospace'; ctx.textAlign='left'; ctx.fillStyle='#e2e8f0';
+    p.code.split('\n').forEach((line,i)=>{
+      const isDead=line.includes('DEAD')||line.includes('← always');
+      ctx.fillStyle=isDead?'#ef4444':'#cbd5e1';
+      ctx.fillText(line.replace(' ← DEAD','').replace('← always false',''),30,290+i*16);
+    });
+    // Nodes
+    p.nodes.forEach(n=>{
+      ctx.beginPath(); ctx.roundRect(n.x-55,n.y-14,110,28,8);
+      ctx.fillStyle=n.ok?'rgba(34,197,94,0.15)':'rgba(239,68,68,0.15)'; ctx.fill();
+      ctx.strokeStyle=n.ok?'#22c55e':'#ef4444'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle=n.ok?'#22c55e':'#ef4444';
+      ctx.font='bold 10px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.l,n.x,n.y);
+      if(!n.ok){
+        ctx.font='bold 16px monospace'; ctx.fillStyle='#ef4444';
+        ctx.fillText('✗',n.x+60,n.y);
+      }
+    });
+  }
+
+  window.s10Show=function(i){
+    active=i; draw(patterns[i]);
+    document.getElementById('s10Info').innerHTML=patterns[i].explain;
+  };
+
+  function init(){ active=-1; draw(null); document.getElementById('s10Info').innerHTML='<div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click a pattern to see an example</div>'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s10').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 11: Forward Dataflow — Reaching Definitions ==================== -->
+<div class="slide" id="s11">
+  <h2>Forward Dataflow — Reaching Definitions</h2>
+  <p>Which definitions <em>might</em> reach each point? Forward, may-analysis using union at merge points.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS11" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s11Step()">Step</button>
+        <button class="btn btn-sm" onclick="s11Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s11Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.4rem;">IN / OUT Sets</div>
+      <div id="s11Table" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;max-height:140px;overflow-y:auto;"></div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.5rem 0 0.3rem;">Equations</div>
+      <div class="code-block"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">IN[B]  = ∪ OUT[p] for p ∈ pred(B)</div>
+<div class="line">OUT[B] = gen[B] ∪ (IN[B] − kill[B])</div>
+      </div></div>
+      <div id="s11Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;margin-top:0.5rem;font-family:monospace;font-size:0.7rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS11');
+  const ctx=canvas.getContext('2d');
+  // Diamond CFG: B1(x=5,d1), B2(y=x+1,d2; true branch), B3(y=x-1,d3; false branch), B4(print)
+  const blocks=[
+    {id:'B1',label:'x=5',x:260,y:40,gen:['d1'],kill:[]},
+    {id:'B2',label:'y=x+1',x:140,y:140,gen:['d2'],kill:['d3']},
+    {id:'B3',label:'y=x-1',x:380,y:140,gen:['d3'],kill:['d2']},
+    {id:'B4',label:'print(x,y)',x:260,y:240,gen:[],kill:[]}
+  ];
+  const edges=[[0,1],[0,2],[1,3],[2,3]];
+  const preds=[[],[0],[0],[1,2]];
+
+  let inSets,outSets,stepIdx,timer;
+  function setsEqual(a,b){ return a.size===b.size&&[...a].every(v=>b.has(v)); }
+  function fmt(s){ return s.size?'{'+[...s].sort().join(',')+'}':'∅'; }
+
+  function buildSteps(){
+    let steps=[];
+    inSets=blocks.map(()=>new Set());
+    outSets=blocks.map(()=>new Set());
+    steps.push({type:'init',inS:inSets.map(s=>new Set(s)),outS:outSets.map(s=>new Set(s)),active:-1,msg:'Initialize: all IN/OUT = ∅'});
+    let changed=true;
+    let iter=0;
+    while(changed&&iter<5){
+      changed=false; iter++;
+      for(let i=0;i<blocks.length;i++){
+        // IN = union of pred OUT
+        let newIn=new Set();
+        preds[i].forEach(p=>outSets[p].forEach(v=>newIn.add(v)));
+        // OUT = gen ∪ (IN - kill)
+        let newOut=new Set(blocks[i].gen);
+        newIn.forEach(v=>{ if(!blocks[i].kill.includes(v)) newOut.add(v); });
+        if(!setsEqual(newIn,inSets[i])||!setsEqual(newOut,outSets[i])) changed=true;
+        inSets[i]=newIn; outSets[i]=newOut;
+        steps.push({type:'process',block:i,inS:inSets.map(s=>new Set(s)),outS:outSets.map(s=>new Set(s)),active:i,
+          msg:`Iter ${iter}: ${blocks[i].id} — IN=${fmt(newIn)}, OUT=${fmt(newOut)}`});
+      }
+    }
+    steps.push({type:'done',inS:inSets.map(s=>new Set(s)),outS:outSets.map(s=>new Set(s)),active:-1,msg:'Fixed point reached!'});
+    return steps;
+  }
+
+  let steps;
+
+  function drawCFG(activeIdx,inS,outS){
+    ctx.clearRect(0,0,520,300);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath(); ctx.moveTo(blocks[a].x,blocks[a].y+18); ctx.lineTo(blocks[b].x,blocks[b].y-18);
+      ctx.strokeStyle='#47556980'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    blocks.forEach((b,i)=>{
+      const isActive=i===activeIdx;
+      ctx.beginPath(); ctx.roundRect(b.x-55,b.y-16,110,32,8);
+      ctx.fillStyle=isActive?'rgba(245,158,11,0.2)':'rgba(30,41,59,0.9)'; ctx.fill();
+      ctx.strokeStyle=isActive?'#f59e0b':'#818cf8'; ctx.lineWidth=isActive?3:1.5; ctx.stroke();
+      ctx.fillStyle=isActive?'#fff':'#e2e8f0';
+      ctx.font='bold 11px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`${b.id}: ${b.label}`,b.x,b.y);
+      // IN/OUT labels
+      if(inS&&outS){
+        ctx.font='9px monospace';
+        ctx.fillStyle='#22c55e'; ctx.textAlign='right';
+        ctx.fillText('IN:'+fmt(inS[i]),b.x-60,b.y-5);
+        ctx.fillStyle='#38bdf8'; ctx.textAlign='left';
+        ctx.fillText('OUT:'+fmt(outS[i]),b.x+60,b.y+5);
+      }
+    });
+    // Edge labels
+    ctx.fillStyle='#f59e0b'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+    ctx.fillText('T',(blocks[0].x+blocks[1].x)/2-10,(blocks[0].y+blocks[1].y)/2-5);
+    ctx.fillText('F',(blocks[0].x+blocks[2].x)/2+10,(blocks[0].y+blocks[2].y)/2-5);
+  }
+
+  function renderTable(inS,outS){
+    let h='<table style="width:100%;border-collapse:collapse;"><tr><th style="color:#94a3b8;padding:2px 4px;">Block</th><th style="color:#94a3b8;padding:2px 4px;">gen</th><th style="color:#94a3b8;padding:2px 4px;">kill</th><th style="color:#22c55e;padding:2px 4px;">IN</th><th style="color:#38bdf8;padding:2px 4px;">OUT</th></tr>';
+    blocks.forEach((b,i)=>{
+      h+=`<tr><td style="color:#e2e8f0;padding:2px 4px;">${b.id}</td><td style="color:#f59e0b;padding:2px 4px;">{${b.gen.join(',')}}</td><td style="color:#ef4444;padding:2px 4px;">{${b.kill.join(',')||'—'}}</td><td style="color:#22c55e;padding:2px 4px;">${fmt(inS[i])}</td><td style="color:#38bdf8;padding:2px 4px;">${fmt(outS[i])}</td></tr>`;
+    });
+    h+='</table>'; document.getElementById('s11Table').innerHTML=h;
+  }
+
+  window.s11Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    drawCFG(s.active,s.inS,s.outS);
+    renderTable(s.inS,s.outS);
+    const log=document.getElementById('s11Log');
+    const color=s.type==='done'?'#22c55e':'#f59e0b';
+    log.innerHTML+=`<div style="color:${color};">${s.msg}</div>`;
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+  window.s11Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s11Step(); },900);
+  };
+  window.s11Reset=function(){
+    if(timer){clearInterval(timer);timer=null;} stepIdx=0;
+    steps=buildSteps();
+    document.getElementById('s11Log').innerHTML='';
+    drawCFG(-1,null,null);
+    renderTable(blocks.map(()=>new Set()),blocks.map(()=>new Set()));
+  };
+
+  function init(){ s11Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s11').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s11'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 12: Backward Dataflow — Live Variables ==================== -->
+<div class="slide" id="s12">
+  <h2>Backward Dataflow — Live Variables</h2>
+  <p>Which variables might be <em>read before redefinition</em>? Backward, may-analysis using union at successors.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS12" width="520" height="300" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s12Step()">Step</button>
+        <button class="btn btn-sm" onclick="s12Auto()">Auto</button>
+        <button class="btn btn-sm btn-secondary" onclick="s12Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#38bdf8;margin-bottom:0.4rem;">IN / OUT Sets (Backward!)</div>
+      <div id="s12Table" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.72rem;max-height:140px;overflow-y:auto;"></div>
+      <div style="font-weight:600;color:#38bdf8;margin:0.5rem 0 0.3rem;">Equations (note: successors!)</div>
+      <div class="code-block"><div class="code-content" style="font-size:0.7rem;">
+<div class="line">OUT[B] = ∪ IN[s] for s ∈ <span style="color:#f59e0b;">succ(B)</span></div>
+<div class="line">IN[B]  = use[B] ∪ (OUT[B] − def[B])</div>
+      </div></div>
+      <div id="s12Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.6rem;margin-top:0.5rem;font-family:monospace;font-size:0.7rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS12');
+  const ctx=canvas.getContext('2d');
+  // Same diamond: B1(x=5), B2(y=x+1), B3(y=x-1), B4(print(x,y))
+  const blocks=[
+    {id:'B1',label:'x=5',x:260,y:40,use:[],def:['x']},
+    {id:'B2',label:'y=x+1',x:140,y:140,use:['x'],def:['y']},
+    {id:'B3',label:'y=x-1',x:380,y:140,use:['x'],def:['y']},
+    {id:'B4',label:'print(x,y)',x:260,y:240,use:['x','y'],def:[]}
+  ];
+  const edges=[[0,1],[0,2],[1,3],[2,3]];
+  const succs=[[1,2],[3],[3],[]];
+
+  let inSets,outSets,stepIdx,timer;
+  function setsEqual(a,b){ return a.size===b.size&&[...a].every(v=>b.has(v)); }
+  function fmt(s){ return s.size?'{'+[...s].sort().join(',')+'}':'∅'; }
+
+  function buildSteps(){
+    let steps=[];
+    inSets=blocks.map(()=>new Set());
+    outSets=blocks.map(()=>new Set());
+    steps.push({type:'init',inS:inSets.map(s=>new Set(s)),outS:outSets.map(s=>new Set(s)),active:-1,msg:'Initialize: all IN/OUT = ∅'});
+    let changed=true,iter=0;
+    while(changed&&iter<5){
+      changed=false; iter++;
+      for(let i=blocks.length-1;i>=0;i--){ // backward: process from exit
+        let newOut=new Set();
+        succs[i].forEach(s=>inSets[s].forEach(v=>newOut.add(v)));
+        let newIn=new Set(blocks[i].use);
+        newOut.forEach(v=>{ if(!blocks[i].def.includes(v)) newIn.add(v); });
+        if(!setsEqual(newIn,inSets[i])||!setsEqual(newOut,outSets[i])) changed=true;
+        inSets[i]=newIn; outSets[i]=newOut;
+        steps.push({type:'process',block:i,inS:inSets.map(s=>new Set(s)),outS:outSets.map(s=>new Set(s)),active:i,
+          msg:`Iter ${iter}: ${blocks[i].id} — OUT=${fmt(newOut)}, IN=${fmt(newIn)}`});
+      }
+    }
+    steps.push({type:'done',inS:inSets.map(s=>new Set(s)),outS:outSets.map(s=>new Set(s)),active:-1,msg:'Fixed point reached!'});
+    return steps;
+  }
+
+  let steps;
+
+  function drawCFG(activeIdx,inS,outS){
+    ctx.clearRect(0,0,520,300);
+    // Draw edges with BACKWARD arrows
+    edges.forEach(([a,b])=>{
+      ctx.beginPath(); ctx.moveTo(blocks[a].x,blocks[a].y+18); ctx.lineTo(blocks[b].x,blocks[b].y-18);
+      ctx.strokeStyle='#47556980'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    // Backward flow arrows
+    ctx.strokeStyle='#a78bfa40'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    edges.forEach(([a,b])=>{
+      ctx.beginPath(); ctx.moveTo(blocks[b].x+2,blocks[b].y-16); ctx.lineTo(blocks[a].x+2,blocks[a].y+16); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    blocks.forEach((b,i)=>{
+      const isActive=i===activeIdx;
+      ctx.beginPath(); ctx.roundRect(b.x-55,b.y-16,110,32,8);
+      ctx.fillStyle=isActive?'rgba(167,139,250,0.2)':'rgba(30,41,59,0.9)'; ctx.fill();
+      ctx.strokeStyle=isActive?'#a78bfa':'#818cf8'; ctx.lineWidth=isActive?3:1.5; ctx.stroke();
+      ctx.fillStyle=isActive?'#fff':'#e2e8f0';
+      ctx.font='bold 11px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`${b.id}: ${b.label}`,b.x,b.y);
+      if(inS&&outS){
+        ctx.font='9px monospace';
+        ctx.fillStyle='#22c55e'; ctx.textAlign='right';
+        ctx.fillText('IN:'+fmt(inS[i]),b.x-60,b.y-5);
+        ctx.fillStyle='#38bdf8'; ctx.textAlign='left';
+        ctx.fillText('OUT:'+fmt(outS[i]),b.x+60,b.y+5);
+      }
+    });
+    ctx.fillStyle='#a78bfa'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+    ctx.fillText('← backward flow',420,20);
+  }
+
+  function renderTable(inS,outS){
+    let h='<table style="width:100%;border-collapse:collapse;"><tr><th style="color:#94a3b8;padding:2px 4px;">Block</th><th style="color:#94a3b8;padding:2px 4px;">use</th><th style="color:#94a3b8;padding:2px 4px;">def</th><th style="color:#22c55e;padding:2px 4px;">IN</th><th style="color:#38bdf8;padding:2px 4px;">OUT</th></tr>';
+    blocks.forEach((b,i)=>{
+      h+=`<tr><td style="color:#e2e8f0;padding:2px 4px;">${b.id}</td><td style="color:#f59e0b;padding:2px 4px;">{${b.use.join(',')||'—'}}</td><td style="color:#ef4444;padding:2px 4px;">{${b.def.join(',')||'—'}}</td><td style="color:#22c55e;padding:2px 4px;">${fmt(inS[i])}</td><td style="color:#38bdf8;padding:2px 4px;">${fmt(outS[i])}</td></tr>`;
+    });
+    h+='</table>'; document.getElementById('s12Table').innerHTML=h;
+  }
+
+  window.s12Step=function(){
+    if(stepIdx>=steps.length) return;
+    const s=steps[stepIdx];
+    drawCFG(s.active,s.inS,s.outS);
+    renderTable(s.inS,s.outS);
+    const log=document.getElementById('s12Log');
+    log.innerHTML+=`<div style="color:${s.type==='done'?'#22c55e':'#a78bfa'};">${s.msg}</div>`;
+    log.scrollTop=log.scrollHeight;
+    stepIdx++;
+  };
+  window.s12Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=steps.length){clearInterval(timer);timer=null;return;} s12Step(); },900);
+  };
+  window.s12Reset=function(){
+    if(timer){clearInterval(timer);timer=null;} stepIdx=0;
+    steps=buildSteps();
+    document.getElementById('s12Log').innerHTML='';
+    drawCFG(-1,null,null);
+    renderTable(blocks.map(()=>new Set()),blocks.map(()=>new Set()));
+  };
+
+  function init(){ s12Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s12').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s12'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 13: Forward vs Backward Side-by-Side ==================== -->
+<div class="slide" id="s13">
+  <h2>Forward vs Backward — Side by Side</h2>
+  <p>Same CFG, two analyses running simultaneously. Compare how information flows.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div>
+      <div style="font-weight:600;color:#6366f1;text-align:center;margin-bottom:0.3rem;">Reaching Defs (Forward →)</div>
+      <canvas id="cS13F" width="240" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="font-weight:600;color:#a78bfa;text-align:center;margin-bottom:0.3rem;">Live Variables (← Backward)</div>
+      <canvas id="cS13B" width="240" height="250" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+  </div>
+  <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:0.75rem;">
+    <button class="btn btn-sm" onclick="s13Step()">Step Both</button>
+    <button class="btn btn-sm" onclick="s13Auto()">Auto</button>
+    <button class="btn btn-sm btn-secondary" onclick="s13Reset()">Reset</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.75rem;">
+    <div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:8px;padding:0.6rem;font-size:0.78rem;">
+      <div style="color:#6366f1;font-weight:600;">Forward: IN = ∪ OUT[pred]</div>
+      <div style="color:#cbd5e1;">Info flows ENTRY→EXIT. Merge = union of predecessors. Tells us what <em>definitions</em> reach each point.</div>
+    </div>
+    <div style="background:rgba(167,139,250,0.1);border:1px solid #a78bfa;border-radius:8px;padding:0.6rem;font-size:0.78rem;">
+      <div style="color:#a78bfa;font-weight:600;">Backward: OUT = ∪ IN[succ]</div>
+      <div style="color:#cbd5e1;">Info flows EXIT→ENTRY. Merge = union of successors. Tells us what <em>variables</em> are needed later.</div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const cF=document.getElementById('cS13F').getContext('2d');
+  const cB=document.getElementById('cS13B').getContext('2d');
+  const blocks=[{id:'B1',y:30},{id:'B2',y:90},{id:'B3',y:90},{id:'B4',y:170}];
+  const posF=[{x:120,y:30},{x:60,y:100},{x:180,y:100},{x:120,y:170}];
+  const posB=[{x:120,y:30},{x:60,y:100},{x:180,y:100},{x:120,y:170}];
+  // Forward reaching defs results by step
+  const fwdSteps=[
+    [{in:'∅',out:'∅'},{in:'∅',out:'∅'},{in:'∅',out:'∅'},{in:'∅',out:'∅'}],
+    [{in:'∅',out:'{d1}'},{in:'∅',out:'∅'},{in:'∅',out:'∅'},{in:'∅',out:'∅'}],
+    [{in:'∅',out:'{d1}'},{in:'{d1}',out:'{d1,d2}'},{in:'{d1}',out:'{d1,d3}'},{in:'∅',out:'∅'}],
+    [{in:'∅',out:'{d1}'},{in:'{d1}',out:'{d1,d2}'},{in:'{d1}',out:'{d1,d3}'},{in:'{d1,d2,d3}',out:'{d1,d2,d3}'}]
+  ];
+  // Backward live vars results by step
+  const bwdSteps=[
+    [{in:'∅',out:'∅'},{in:'∅',out:'∅'},{in:'∅',out:'∅'},{in:'∅',out:'∅'}],
+    [{in:'∅',out:'∅'},{in:'∅',out:'∅'},{in:'∅',out:'∅'},{in:'{x,y}',out:'∅'}],
+    [{in:'∅',out:'∅'},{in:'{x}',out:'{x,y}'},{in:'{x}',out:'{x,y}'},{in:'{x,y}',out:'∅'}],
+    [{in:'∅',out:'{x}'},{in:'{x}',out:'{x,y}'},{in:'{x}',out:'{x,y}'},{in:'{x,y}',out:'∅'}]
+  ];
+  let stepIdx=0,timer=null;
+
+  function drawMini(ctx2d,pos,data,color,dir){
+    ctx2d.clearRect(0,0,240,250);
+    // edges
+    [[0,1],[0,2],[1,3],[2,3]].forEach(([a,b])=>{
+      ctx2d.beginPath(); ctx2d.moveTo(pos[a].x,pos[a].y+14); ctx2d.lineTo(pos[b].x,pos[b].y-14);
+      ctx2d.strokeStyle='#47556960'; ctx2d.lineWidth=1; ctx2d.stroke();
+    });
+    // flow arrow
+    if(dir==='fwd'){
+      ctx2d.fillStyle='#6366f140'; ctx2d.beginPath();
+      ctx2d.moveTo(115,5); ctx2d.lineTo(125,5); ctx2d.lineTo(120,0); ctx2d.fill();
+    }
+    // nodes
+    pos.forEach((p,i)=>{
+      ctx2d.beginPath(); ctx2d.arc(p.x,p.y,16,0,Math.PI*2);
+      ctx2d.fillStyle='rgba(30,41,59,0.9)'; ctx2d.fill();
+      ctx2d.strokeStyle=color; ctx2d.lineWidth=1.5; ctx2d.stroke();
+      ctx2d.fillStyle=color; ctx2d.font='bold 10px monospace'; ctx2d.textAlign='center'; ctx2d.textBaseline='middle';
+      ctx2d.fillText(blocks[i].id,p.x,p.y);
+      // IN/OUT
+      ctx2d.font='8px monospace';
+      ctx2d.fillStyle='#22c55e'; ctx2d.textAlign='right';
+      ctx2d.fillText('I:'+data[i].in,p.x-20,p.y-5);
+      ctx2d.fillStyle='#38bdf8'; ctx2d.textAlign='left';
+      ctx2d.fillText('O:'+data[i].out,p.x+20,p.y+5);
+    });
+    // Step label
+    ctx2d.fillStyle='#94a3b8'; ctx2d.font='10px monospace'; ctx2d.textAlign='center';
+    ctx2d.fillText(`Step ${stepIdx}/${fwdSteps.length-1}`,120,230);
+  }
+
+  window.s13Step=function(){
+    if(stepIdx>=fwdSteps.length) return;
+    drawMini(cF,posF,fwdSteps[stepIdx],'#6366f1','fwd');
+    drawMini(cB,posB,bwdSteps[stepIdx],'#a78bfa','bwd');
+    stepIdx++;
+  };
+  window.s13Auto=function(){
+    if(timer) return;
+    timer=setInterval(()=>{ if(stepIdx>=fwdSteps.length){clearInterval(timer);timer=null;return;} s13Step(); },1000);
+  };
+  window.s13Reset=function(){
+    if(timer){clearInterval(timer);timer=null;} stepIdx=0;
+    cF.clearRect(0,0,240,250); cB.clearRect(0,0,240,250);
+    cF.fillStyle=cB.fillStyle='#64748b'; cF.font=cB.font='12px monospace'; cF.textAlign=cB.textAlign='center';
+    cF.fillText('Press Step',120,125); cB.fillText('Press Step',120,125);
+  };
+
+  function init(){ s13Reset(); }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s13').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s13'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 14: The Dataflow Framework ==================== -->
+<div class="slide" id="s14">
+  <h2>The Dataflow Framework — Unifying Pattern</h2>
+  <p>All four classic analyses follow the same skeleton. Select one to see how the parameters fill in.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.75rem;">
+        <button class="btn btn-sm" onclick="s14Show('rd')" style="font-size:0.75rem;">Reaching Defs</button>
+        <button class="btn btn-sm" onclick="s14Show('lv')" style="font-size:0.75rem;">Live Variables</button>
+        <button class="btn btn-sm" onclick="s14Show('ae')" style="font-size:0.75rem;">Available Exprs</button>
+        <button class="btn btn-sm" onclick="s14Show('vb')" style="font-size:0.75rem;">Very Busy Exprs</button>
+      </div>
+      <div id="s14Template" class="code-block"><div class="code-content" id="s14Code" style="font-size:0.75rem;">
+<div class="line" style="color:#94a3b8;">Select an analysis to fill in the template</div>
+      </div></div>
+    </div>
+    <div>
+      <div id="s14Info" style="background:rgba(0,0,0,0.25);border-radius:12px;padding:1rem;font-size:0.85rem;min-height:200px;">
+        <div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click an analysis type</div>
+      </div>
+      <div class="key-idea" style="margin-top:0.75rem;">
+        <strong>The framework is domain-agnostic.</strong> Swap the 5 parameters (direction, merge, init, gen, kill) and the same fixpoint engine solves any analysis. This is exactly how your OCaml bootcamp code works!
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const analyses={
+    rd:{name:'Reaching Definitions',dir:'Forward',merge:'Union (∪)',type:'May',init:'IN[entry]=∅, all OUT=∅',
+      gen:'gen[B] = definitions generated in B',kill:'kill[B] = definitions killed (same var redefined)',
+      eq:'IN[B] = ∪ OUT[p] for p ∈ pred(B)\nOUT[B] = gen[B] ∪ (IN[B] − kill[B])',
+      app:'Dead store detection, use-def chains, constant propagation input',color:'#6366f1'},
+    lv:{name:'Live Variables',dir:'Backward',merge:'Union (∪)',type:'May',init:'OUT[exit]=∅, all IN=∅',
+      gen:'use[B] = variables read before redefinition in B',kill:'def[B] = variables assigned in B',
+      eq:'OUT[B] = ∪ IN[s] for s ∈ succ(B)\nIN[B] = use[B] ∪ (OUT[B] − def[B])',
+      app:'Register allocation, dead variable elimination, garbage collection',color:'#a78bfa'},
+    ae:{name:'Available Expressions',dir:'Forward',merge:'Intersection (∩)',type:'Must',init:'IN[entry]=∅, all OUT=U (all exprs)',
+      gen:'gen[B] = expressions computed in B (not later killed)',kill:'kill[B] = expressions using vars redefined in B',
+      eq:'IN[B] = ∩ OUT[p] for p ∈ pred(B)\nOUT[B] = gen[B] ∪ (IN[B] − kill[B])',
+      app:'Common subexpression elimination (CSE), redundant computation removal',color:'#22c55e'},
+    vb:{name:'Very Busy Expressions',dir:'Backward',merge:'Intersection (∩)',type:'Must',init:'IN[exit]=∅, all OUT=U (all exprs)',
+      gen:'use[B] = expressions computed in B',kill:'kill[B] = expressions with vars redefined in B',
+      eq:'OUT[B] = ∩ IN[s] for s ∈ succ(B)\nIN[B] = use[B] ∪ (OUT[B] − kill[B])',
+      app:'Code hoisting — move computations to earlier points to avoid redundancy',color:'#f59e0b'}
+  };
+
+  window.s14Show=function(key){
+    const a=analyses[key];
+    document.getElementById('s14Code').innerHTML=`
+<div class="line"><span style="color:#94a3b8;">// ${a.name}</span></div>
+<div class="line active"><span style="color:#38bdf8;">Direction:</span>  ${a.dir}</div>
+<div class="line active"><span style="color:#38bdf8;">Merge op:</span>  ${a.merge}</div>
+<div class="line active"><span style="color:#38bdf8;">Type:</span>      ${a.type}-analysis</div>
+<div class="line active"><span style="color:#38bdf8;">Init:</span>      ${a.init}</div>
+<div class="line"><span style="color:#38bdf8;">Gen:</span>       ${a.gen}</div>
+<div class="line"><span style="color:#38bdf8;">Kill:</span>      ${a.kill}</div>
+<div class="line" style="margin-top:0.3rem;">${a.eq.split('\n').join('</div><div class="line">')}</div>`;
+
+    document.getElementById('s14Info').innerHTML=`
+      <div style="color:${a.color};font-weight:700;font-size:1.05rem;margin-bottom:0.75rem;">${a.name}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+        <tr><td style="padding:4px;color:#94a3b8;">Direction:</td><td style="padding:4px;color:#e2e8f0;font-weight:600;">${a.dir}</td></tr>
+        <tr><td style="padding:4px;color:#94a3b8;">Merge:</td><td style="padding:4px;color:#e2e8f0;font-weight:600;">${a.merge}</td></tr>
+        <tr><td style="padding:4px;color:#94a3b8;">Type:</td><td style="padding:4px;color:#e2e8f0;font-weight:600;">${a.type}</td></tr>
+        <tr><td style="padding:4px;color:#94a3b8;">Init:</td><td style="padding:4px;color:#e2e8f0;">${a.init}</td></tr>
+        <tr><td style="padding:4px;color:#94a3b8;">Application:</td><td style="padding:4px;color:${a.color};font-weight:600;">${a.app}</td></tr>
+      </table>
+      <div style="margin-top:0.75rem;padding:0.5rem;background:rgba(0,0,0,0.2);border-radius:6px;font-size:0.8rem;color:#cbd5e1;">
+        ${a.type==='May'?'<span style="color:#f59e0b;">May-analysis:</span> "might happen on SOME path" → use ∪ (safe overapprox)':'<span style="color:#22c55e;">Must-analysis:</span> "definitely happens on ALL paths" → use ∩ (conservative)'}
+      </div>`;
+  };
+
+  function init(){ document.getElementById('s14Code').innerHTML='<div class="line" style="color:#94a3b8;">Select an analysis to fill in the template</div>'; document.getElementById('s14Info').innerHTML='<div style="color:#94a3b8;text-align:center;padding-top:2rem;">Click an analysis type</div>'; }
+  const obs=new MutationObserver(()=>{ if(document.getElementById('s14').classList.contains('active')) init(); });
+  obs.observe(document.getElementById('s14'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== CHALLENGE sCB: Trace the Dataflow ==================== -->
+<div class="slide" id="sCB">
+  <h2>Challenge B: Trace the Dataflow</h2>
+  <p>Given this CFG with gen/kill sets, predict IN and OUT at iteration 2.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-family:monospace;font-size:0.78rem;">
+        <div style="color:#38bdf8;font-weight:600;margin-bottom:0.4rem;">CFG: B1→B2, B1→B3, B2→B4, B3→B4</div>
+        <div style="margin-bottom:0.3rem;">B1: gen={d1,d2}, kill={}</div>
+        <div style="margin-bottom:0.3rem;">B2: gen={d3}, kill={d1}</div>
+        <div style="margin-bottom:0.3rem;">B3: gen={d4}, kill={d2}</div>
+        <div style="margin-bottom:0.3rem;">B4: gen={}, kill={}</div>
+        <div style="color:#f59e0b;margin-top:0.5rem;">After iteration 1: OUT[B1]={d1,d2}</div>
+      </div>
+    </div>
+    <div>
+      <div id="sCBq1" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;margin-bottom:0.75rem;">
+        <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q1: What is IN[B4] at iteration 2?</div>
+        <div style="color:#94a3b8;font-size:0.78rem;margin:0.3rem 0;">Hint: IN[B4] = OUT[B2] ∪ OUT[B3]</div>
+        <select id="sCBa1" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;">
+          <option value="">Select...</option>
+          <option value="a">{d3, d4}</option>
+          <option value="b">{d1, d2, d3, d4}</option>
+          <option value="c">{d2, d3, d1, d4}</option>
+          <option value="d">{d2, d3, d4}</option>
+        </select>
+      </div>
+      <div id="sCBq2" style="background:rgba(0,0,0,0.2);border:2px solid #475569;border-radius:10px;padding:0.8rem;">
+        <div style="font-weight:600;color:#38bdf8;font-size:0.85rem;">Q2: Why does IN[B4] contain both d2 and d3?</div>
+        <select id="sCBa2" style="width:100%;padding:0.4rem;background:#1e293b;border:1px solid #475569;border-radius:6px;color:#e2e8f0;font-size:0.82rem;">
+          <option value="">Select...</option>
+          <option value="a">B2 and B3 both generate them</option>
+          <option value="b">B2 kills d1 but keeps d2, B3 kills d2 but keeps d1</option>
+          <option value="c">d2 survives through B2 (not killed), d3 is generated by B2 — UNION merges both paths</option>
+          <option value="d">The merge operator is intersection, not union</option>
+        </select>
+      </div>
+      <div style="text-align:center;margin-top:0.75rem;">
+        <button class="btn" onclick="sCBCheck()">Check</button>
+      </div>
+      <div id="sCBFeedback" style="display:none;margin-top:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.8rem;"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const answers={sCBa1:'c',sCBa2:'c'};
+  const explanations={
+    sCBa1:'<strong>{d2, d3, d1, d4}</strong> — OUT[B2] = gen[B2] ∪ (IN[B2]−kill[B2]) = {d3} ∪ ({d1,d2}−{d1}) = {d3,d2}. OUT[B3] = {d4} ∪ ({d1,d2}−{d2}) = {d4,d1}. IN[B4] = {d2,d3} ∪ {d1,d4} = {d1,d2,d3,d4}. All four definitions reach B4!',
+    sCBa2:'<strong>Union merges both paths.</strong> B2\'s path: d1 is killed, d2 survives, d3 is generated → OUT={d2,d3}. B3\'s path: d2 is killed, d1 survives, d4 is generated → OUT={d1,d4}. Union at B4 combines everything — this is may-analysis: a definition reaches if it comes from ANY path.'
+  };
+  window.sCBCheck=function(){
+    let score=0,html='';
+    [1,2].forEach(i=>{
+      const sel=document.getElementById('sCBa'+i).value;
+      const correct=sel===answers['sCBa'+i];
+      if(correct) score++;
+      document.getElementById('sCBq'+i).style.borderColor=sel===''?'#475569':correct?'#22c55e':'#ef4444';
+      html+=`<div style="color:${correct?'#22c55e':'#ef4444'};margin-bottom:0.4rem;">${correct?'✓':'✗'} ${explanations['sCBa'+i]}</div>`;
+    });
+    const fb=document.getElementById('sCBFeedback');
+    fb.innerHTML=`<div style="font-weight:700;color:${score===2?'#22c55e':'#f59e0b'};margin-bottom:0.5rem;">Score: ${score}/2</div>`+html;
+    fb.style.display='block';
+  };
+})();
+</script>
+
+<!-- ==================== SLIDE 15: Interprocedural — Call Graphs ==================== -->
+<div class="slide" id="s15">
+  <h2>Interprocedural: Call Graphs</h2>
+  <p style="color:#94a3b8;">When analysis crosses function boundaries, we need a <strong style="color:#f59e0b;">call graph</strong> layered on top of the CFG.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS15" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s15Expand('main')">main()</button>
+        <button class="btn btn-sm" onclick="s15Expand('validate')">validate()</button>
+        <button class="btn btn-sm" onclick="s15Expand('process')">process()</button>
+        <button class="btn btn-sm" onclick="s15Expand('log')">log()</button>
+        <button class="btn btn-sm btn-secondary" onclick="s15Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s15Info" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;font-family:monospace;font-size:0.82rem;color:#cbd5e1;min-height:160px;">
+        <span style="color:#94a3b8;">Click a function to see its CFG body and call sites.</span>
+      </div>
+      <div class="key-idea" style="margin-top:1rem;">
+        <strong>Key Idea:</strong> A call graph edge A→B means "function A may call function B." Combining call graphs with per-function CFGs enables <em>interprocedural</em> dataflow analysis — tracking facts across function boundaries.
+      </div>
+      <div class="analogy" style="margin-top:0.75rem;">
+        <strong>Analogy:</strong> If each function's CFG is a building floor plan, the call graph is the elevator directory connecting floors.
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS15');
+  const ctx = canvas.getContext('2d');
+
+  const funcs = {
+    main:     { x:260, y:60,  color:'#6366f1', calls:['validate','process'], body:'x = input()\\nif validate(x):\\n  process(x)' },
+    validate: { x:140, y:180, color:'#22c55e', calls:['log'], body:'if x < 0:\\n  log("invalid")\\n  return false\\nreturn true' },
+    process:  { x:380, y:180, color:'#f59e0b', calls:['log'], body:'result = x * 2\\nlog("done")\\nreturn result' },
+    log:      { x:260, y:300, color:'#f472b6', calls:[], body:'print(msg)' }
+  };
+  let expanded = null;
+
+  function draw() {
+    ctx.clearRect(0,0,520,370);
+    // Draw call edges
+    Object.entries(funcs).forEach(([name, f]) => {
+      f.calls.forEach(target => {
+        const t = funcs[target];
+        ctx.beginPath();
+        ctx.moveTo(f.x, f.y);
+        ctx.lineTo(t.x, t.y);
+        ctx.strokeStyle = expanded === name ? '#f59e0b' : '#475569';
+        ctx.lineWidth = expanded === name ? 2.5 : 1.5;
+        ctx.stroke();
+        // Arrowhead
+        const angle = Math.atan2(t.y - f.y, t.x - f.x);
+        const ax = t.x - 25*Math.cos(angle), ay = t.y - 25*Math.sin(angle);
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax - 10*Math.cos(angle - 0.4), ay - 10*Math.sin(angle - 0.4));
+        ctx.lineTo(ax - 10*Math.cos(angle + 0.4), ay - 10*Math.sin(angle + 0.4));
+        ctx.closePath();
+        ctx.fillStyle = expanded === name ? '#f59e0b' : '#475569';
+        ctx.fill();
+      });
+    });
+    // Draw nodes
+    Object.entries(funcs).forEach(([name, f]) => {
+      const isExp = expanded === name;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, isExp ? 28 : 22, 0, Math.PI*2);
+      ctx.fillStyle = isExp ? f.color : f.color + '99';
+      ctx.fill();
+      ctx.strokeStyle = isExp ? '#fff' : f.color;
+      ctx.lineWidth = isExp ? 3 : 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = (isExp ? 'bold 13px' : '12px') + ' monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(name + '()', f.x, f.y);
+    });
+  }
+
+  window.s15Expand = function(name) {
+    expanded = name;
+    const f = funcs[name];
+    const callees = f.calls.length > 0 ? f.calls.map(c => c + '()').join(', ') : 'none';
+    const callers = Object.entries(funcs).filter(([_,v]) => v.calls.includes(name)).map(([k]) => k + '()').join(', ') || 'none (entry point)';
+    document.getElementById('s15Info').innerHTML =
+      `<div style="color:${f.color};font-weight:700;font-size:1rem;margin-bottom:0.5rem;">${name}()</div>` +
+      `<div style="margin-bottom:0.5rem;"><span style="color:#94a3b8;">Body:</span></div>` +
+      `<div style="background:rgba(0,0,0,0.3);padding:0.5rem;border-radius:6px;margin-bottom:0.5rem;white-space:pre;font-size:0.78rem;">${f.body}</div>` +
+      `<div><span style="color:#94a3b8;">Calls:</span> <span style="color:#38bdf8;">${callees}</span></div>` +
+      `<div><span style="color:#94a3b8;">Called by:</span> <span style="color:#a78bfa;">${callers}</span></div>`;
+    draw();
+  };
+
+  window.s15Reset = function() {
+    expanded = null;
+    document.getElementById('s15Info').innerHTML = '<span style="color:#94a3b8;">Click a function to see its CFG body and call sites.</span>';
+    draw();
+  };
+
+  function init() { expanded = null; draw(); }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s15').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s15'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 16: From CFG to SSA Form ==================== -->
+<div class="slide" id="s16">
+  <h2>From CFG to SSA Form</h2>
+  <p style="color:#94a3b8;">SSA = <strong style="color:#38bdf8;">Static Single Assignment</strong> — every variable is defined exactly once. Merge points get <strong style="color:#f59e0b;">φ (phi) functions</strong>.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cS16" width="520" height="370" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button class="btn btn-sm" onclick="s16Step()">Step</button>
+        <button class="btn btn-sm" onclick="s16Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s16Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="code-block" style="font-size:0.78rem;">
+        <div class="code-content" id="s16Code">
+          <div class="line" id="s16L0">B1: x = 5</div>
+          <div class="line" id="s16L1">    if (x > 0) goto B2 else B3</div>
+          <div class="line" id="s16L2">B2: x = x + 1</div>
+          <div class="line" id="s16L3">B3: x = x - 1</div>
+          <div class="line" id="s16L4">B4: print(x)   ← which x?</div>
+        </div>
+      </div>
+      <div style="margin-top:0.5rem;font-size:0.75rem;color:#94a3b8;">↓ After SSA conversion:</div>
+      <div class="code-block" style="font-size:0.78rem;">
+        <div class="code-content" id="s16SSA">
+          <div class="line" id="s16S0" style="opacity:0.3;">B1: x₁ = 5</div>
+          <div class="line" id="s16S1" style="opacity:0.3;">    if (x₁ > 0) goto B2 else B3</div>
+          <div class="line" id="s16S2" style="opacity:0.3;">B2: x₂ = x₁ + 1</div>
+          <div class="line" id="s16S3" style="opacity:0.3;">B3: x₃ = x₁ - 1</div>
+          <div class="line" id="s16S4" style="opacity:0.3;">B4: x₄ = φ(x₂, x₃)</div>
+          <div class="line" id="s16S5" style="opacity:0.3;">    print(x₄)</div>
+        </div>
+      </div>
+      <div id="s16Log" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.5rem;font-family:monospace;font-size:0.75rem;color:#cbd5e1;margin-top:0.5rem;max-height:80px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS16');
+  const ctx = canvas.getContext('2d');
+
+  const blocks = [
+    { id:'B1', x:260, y:50,  w:120, h:40, label:'B1: x = 5' },
+    { id:'B2', x:140, y:160, w:130, h:40, label:'B2: x = x+1' },
+    { id:'B3', x:380, y:160, w:130, h:40, label:'B3: x = x-1' },
+    { id:'B4', x:260, y:280, w:140, h:40, label:'B4: print(x)' }
+  ];
+  const edges = [[0,1],[0,2],[1,3],[2,3]];
+
+  const steps = [
+    { msg:'Original CFG: x is redefined in B2 and B3. At B4, which x?', highlight:[], ssaLines:[], codeLines:[4], blockHL:['B4'] },
+    { msg:'SSA Step 1: Rename x in B1 to x₁ (first definition)', highlight:['B1'], ssaLines:[0,1], codeLines:[0,1], blockHL:['B1'] },
+    { msg:'SSA Step 2: B2 defines x₂ = x₁ + 1 (second definition)', highlight:['B2'], ssaLines:[2], codeLines:[2], blockHL:['B2'] },
+    { msg:'SSA Step 3: B3 defines x₃ = x₁ - 1 (third definition)', highlight:['B3'], ssaLines:[3], codeLines:[3], blockHL:['B3'] },
+    { msg:'SSA Step 4: B4 is a merge point — insert φ(x₂, x₃) to select the right version', highlight:['B4'], ssaLines:[4,5], codeLines:[4], blockHL:['B4'] },
+    { msg:'Done! φ-functions placed at dominance frontiers (where control flow merges). Each variable has exactly one definition.', highlight:['B1','B2','B3','B4'], ssaLines:[0,1,2,3,4,5], codeLines:[], blockHL:[] }
+  ];
+  let stepIdx = 0;
+  let timer = null;
+  let activeSSA = new Set();
+
+  function draw() {
+    ctx.clearRect(0,0,520,370);
+    const st = steps[stepIdx] || steps[0];
+    // edges
+    edges.forEach(([fi,ti]) => {
+      const f = blocks[fi], t = blocks[ti];
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y + f.h/2);
+      ctx.lineTo(t.x, t.y - t.h/2);
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // arrow
+      const angle = Math.atan2((t.y-t.h/2)-(f.y+f.h/2), t.x-f.x);
+      const ax = t.x - (t.h/2)*Math.cos(angle)*0.1, ay = t.y - t.h/2;
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y - t.h/2);
+      ctx.lineTo(t.x - 8*Math.cos(angle-0.5), t.y - t.h/2 - 8*Math.sin(angle-0.5));
+      ctx.lineTo(t.x - 8*Math.cos(angle+0.5), t.y - t.h/2 - 8*Math.sin(angle+0.5));
+      ctx.closePath();
+      ctx.fillStyle = '#475569';
+      ctx.fill();
+    });
+    // blocks
+    blocks.forEach(b => {
+      const hl = st.blockHL.includes(b.id);
+      ctx.fillStyle = st.highlight.includes(b.id) ? '#6366f1' : '#1e293b';
+      ctx.strokeStyle = hl ? '#f59e0b' : '#475569';
+      ctx.lineWidth = hl ? 3 : 1.5;
+      ctx.beginPath();
+      ctx.roundRect(b.x - b.w/2, b.y - b.h/2, b.w, b.h, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = hl ? '#f59e0b' : '#e2e8f0';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // SSA label?
+      let label = b.label;
+      if (stepIdx >= 5) {
+        if (b.id === 'B1') label = 'B1: x₁ = 5';
+        if (b.id === 'B2') label = 'B2: x₂ = x₁+1';
+        if (b.id === 'B3') label = 'B3: x₃ = x₁-1';
+        if (b.id === 'B4') label = 'B4: x₄=φ(x₂,x₃)';
+      } else if (stepIdx >= 4 && b.id === 'B4') label = 'B4: x₄=φ(x₂,x₃)';
+      else if (stepIdx >= 3 && b.id === 'B3') label = 'B3: x₃ = x₁-1';
+      else if (stepIdx >= 2 && b.id === 'B2') label = 'B2: x₂ = x₁+1';
+      else if (stepIdx >= 1 && b.id === 'B1') label = 'B1: x₁ = 5';
+      ctx.fillText(label, b.x, b.y);
+    });
+    // Phi annotation
+    if (stepIdx >= 4) {
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText('φ', 260, 250);
+      ctx.font = '11px monospace';
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('merge point', 260, 330);
+    }
+  }
+
+  function updateUI() {
+    const st = steps[stepIdx] || steps[0];
+    // Code highlight
+    for (let i = 0; i < 5; i++) {
+      const el = document.getElementById('s16L' + i);
+      el.classList.toggle('active', st.codeLines.includes(i));
+    }
+    // SSA reveal
+    st.ssaLines.forEach(i => activeSSA.add(i));
+    for (let i = 0; i < 6; i++) {
+      document.getElementById('s16S' + i).style.opacity = activeSSA.has(i) ? '1' : '0.3';
+    }
+    // Log
+    const log = document.getElementById('s16Log');
+    log.innerHTML += `<div style="color:#38bdf8;">Step ${stepIdx}: </span><span style="color:#e2e8f0;">${st.msg}</span></div>`;
+    log.scrollTop = log.scrollHeight;
+    draw();
+  }
+
+  window.s16Step = function() {
+    if (stepIdx >= steps.length) return;
+    updateUI();
+    stepIdx++;
+  };
+  window.s16Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s16Step();
+    }, 1200);
+  };
+  window.s16Reset = function() {
+    if (timer) clearInterval(timer); timer = null;
+    stepIdx = 0;
+    activeSSA = new Set();
+    document.getElementById('s16Log').innerHTML = '';
+    for (let i = 0; i < 5; i++) document.getElementById('s16L' + i).classList.remove('active');
+    for (let i = 0; i < 6; i++) document.getElementById('s16S' + i).style.opacity = '0.3';
+    draw();
+  };
+
+  function init() { s16Reset(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s16').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s16'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== SLIDE 17: Key Takeaways ==================== -->
+<div class="slide" id="s17">
+  <h2>Key Takeaways</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.2rem;">
+    <div class="key-idea">
+      <strong>1. CFGs Make Flow Explicit</strong><br>
+      Code has hidden control flow (loops, branches, exceptions). The CFG makes <em>every possible execution path</em> visible as edges between basic blocks. No more guessing "can this line reach that line?"
+    </div>
+    <div class="key-idea">
+      <strong>2. Dataflow = Lattice + Transfer + Iteration</strong><br>
+      Every dataflow analysis follows one pattern: pick a lattice of facts, define transfer functions for each block, and iterate to a fixpoint. Only the lattice and transfer functions change between analyses.
+    </div>
+    <div class="key-idea">
+      <strong>3. Reachability Is the First Analysis</strong><br>
+      Before any optimization, ask: "Can execution even reach this point?" Forward reachability from entry is the simplest CFG analysis and the foundation for dead code elimination.
+    </div>
+    <div class="key-idea">
+      <strong>4. Dominance Unlocks SSA</strong><br>
+      If block A dominates block B, every path to B goes through A. This relationship determines where φ-functions go in SSA form — the backbone of modern compiler optimizations.
+    </div>
+  </div>
+  <div class="analogy" style="margin-top:1.2rem;">
+    <strong>The City Analogy:</strong> A CFG is like a city map. Basic blocks are city blocks. Edges are one-way streets. Reachability asks "can I drive from downtown to the airport?" Dominance asks "must I pass through the toll booth?" Dataflow analysis tracks what's in your trunk as you drive every possible route.
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== SLIDE 18: CFGs Across the Bootcamp ==================== -->
+<div class="slide" id="s18">
+  <h2>CFGs Across the Bootcamp</h2>
+  <p style="color:#94a3b8;">Click each module to see where CFG concepts appear.</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-top:1.2rem;" id="s18Grid">
+    <div class="module-card" onclick="s18Show('m3')" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.8rem;cursor:pointer;transition:all 0.2s;">
+      <div style="color:#6366f1;font-weight:700;">M3: Dataflow</div>
+      <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.3rem;">CFG construction, reaching definitions, live variables</div>
+    </div>
+    <div class="module-card" onclick="s18Show('m4')" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.8rem;cursor:pointer;transition:all 0.2s;">
+      <div style="color:#22c55e;font-weight:700;">M4: Abstract Interp</div>
+      <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.3rem;">Abstract domains evaluated over CFG edges</div>
+    </div>
+    <div class="module-card" onclick="s18Show('m5')" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.8rem;cursor:pointer;transition:all 0.2s;">
+      <div style="color:#f59e0b;font-weight:700;">M5: Taint Analysis</div>
+      <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.3rem;">Taint propagation along CFG paths</div>
+    </div>
+    <div class="module-card" onclick="s18Show('m6')" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.8rem;cursor:pointer;transition:all 0.2s;">
+      <div style="color:#f472b6;font-weight:700;">M6: Constraint-Based</div>
+      <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.3rem;">Constraints generated from CFG structure</div>
+    </div>
+    <div class="module-card" onclick="s18Show('labs')" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.8rem;cursor:pointer;transition:all 0.2s;">
+      <div style="color:#a78bfa;font-weight:700;">Labs</div>
+      <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.3rem;">Hands-on CFG building, worklist implementation</div>
+    </div>
+    <div class="module-card" onclick="s18Show('ssa')" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.8rem;cursor:pointer;transition:all 0.2s;">
+      <div style="color:#38bdf8;font-weight:700;">Advanced</div>
+      <div style="color:#94a3b8;font-size:0.78rem;margin-top:0.3rem;">SSA form, interprocedural analysis</div>
+    </div>
+  </div>
+  <div id="s18Detail" style="background:rgba(0,0,0,0.25);border-radius:8px;padding:0.8rem;margin-top:0.8rem;font-size:0.82rem;color:#cbd5e1;min-height:80px;display:none;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const details = {
+    m3: '<strong style="color:#6366f1;">Module 3 — Dataflow Analysis</strong><br><br>• <strong>Exercise 1:</strong> Build CFG from AST (stmt → basic blocks → edges)<br>• <strong>Exercise 2:</strong> Reaching definitions — gen/kill sets per block, forward iteration<br>• <strong>Exercise 3:</strong> Live variables — backward analysis on CFG<br>• <strong>Exercise 4:</strong> Available expressions — forward must analysis<br>• <strong>Exercise 5:</strong> Very busy expressions — backward must analysis',
+    m4: '<strong style="color:#22c55e;">Module 4 — Abstract Interpretation</strong><br><br>• Abstract domains (Sign, Constant, Interval) evaluated at each CFG node<br>• Transfer functions map abstract states across CFG edges<br>• Widening at loop headers (back edges) ensures termination<br>• Fixpoint iteration over the CFG using worklist algorithm',
+    m5: '<strong style="color:#f59e0b;">Module 5 — Taint Analysis</strong><br><br>• Sources, sinks, sanitizers mapped to CFG nodes<br>• Taint propagation follows CFG edges (forward analysis)<br>• Path sensitivity: some paths sanitize, others don\'t<br>• Interprocedural taint requires call graph + per-function CFGs',
+    m6: '<strong style="color:#f472b6;">Module 6 — Constraint-Based Analysis</strong><br><br>• Generate constraints from CFG edges: each edge → one constraint<br>• Solve constraint system to get analysis results<br>• Equivalent to iterative dataflow but different perspective<br>• Scales to interprocedural via context-sensitive constraints',
+    labs: '<strong style="color:#a78bfa;">Labs — Hands-On</strong><br><br>• <strong>Lab 1:</strong> CFG construction from OCaml AST<br>• <strong>Lab 2:</strong> Worklist algorithm implementation on your CFG<br>• <strong>Lab 3:</strong> Reaching definitions on constructed CFG<br>• <strong>Lab 4:</strong> Live variable analysis (backward)<br>• <strong>Lab 5:</strong> Full analysis pipeline: parse → CFG → analyze → report',
+    ssa: '<strong style="color:#38bdf8;">Advanced Topics</strong><br><br>• SSA form: rename variables so each has exactly one definition<br>• φ-functions placed at dominance frontiers (CFG merge points)<br>• Enables: constant propagation, dead code elimination, register allocation<br>• Interprocedural: call graph + per-function CFGs + summaries'
+  };
+  window.s18Show = function(key) {
+    const el = document.getElementById('s18Detail');
+    el.innerHTML = details[key];
+    el.style.display = 'block';
+    // highlight card
+    document.querySelectorAll('#s18Grid .module-card').forEach(c => c.style.borderColor = '#475569');
+    event.currentTarget.style.borderColor = '#38bdf8';
+  };
+})();
+</script>
+
+<!-- ==================== CHALLENGE C: Find the Dead Code ==================== -->
+<div class="slide" id="sCC">
+  <h2>Challenge C: Find the Dead Code</h2>
+  <p style="color:#94a3b8;">Each snippet has <strong style="color:#ef4444;">dead code</strong>. Identify the dead line and the reason.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div id="sCC1" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.7rem;">
+      <div style="color:#38bdf8;font-weight:700;font-size:0.85rem;">Snippet 1</div>
+      <div class="code-block" style="font-size:0.75rem;margin:0.4rem 0;"><div class="code-content">
+<div class="line">def foo(x):</div>
+<div class="line">  if x > 0:</div>
+<div class="line">    return x</div>
+<div class="line">  else:</div>
+<div class="line">    return -x</div>
+<div class="line">  print("done")  # line 6</div>
+      </div></div>
+      <select id="sCCa1" style="width:100%;padding:0.3rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+        <option value="">Select dead code reason...</option>
+        <option value="a">Line 6 — unreachable after return in both branches</option>
+        <option value="b">Line 6 — unreachable only when x > 0</option>
+        <option value="c">No dead code</option>
+      </select>
+    </div>
+    <div id="sCC2" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.7rem;">
+      <div style="color:#38bdf8;font-weight:700;font-size:0.85rem;">Snippet 2</div>
+      <div class="code-block" style="font-size:0.75rem;margin:0.4rem 0;"><div class="code-content">
+<div class="line">x = 10</div>
+<div class="line">while x > 100:</div>
+<div class="line">  x = x - 1</div>
+<div class="line">  print(x)</div>
+<div class="line">print("end")</div>
+      </div></div>
+      <select id="sCCa2" style="width:100%;padding:0.3rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+        <option value="">Select dead code reason...</option>
+        <option value="a">Lines 3-4 — loop body never executes (10 > 100 is false)</option>
+        <option value="b">Line 5 — unreachable because of the loop</option>
+        <option value="c">No dead code</option>
+      </select>
+    </div>
+    <div id="sCC3" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.7rem;">
+      <div style="color:#38bdf8;font-weight:700;font-size:0.85rem;">Snippet 3</div>
+      <div class="code-block" style="font-size:0.75rem;margin:0.4rem 0;"><div class="code-content">
+<div class="line">def bar():</div>
+<div class="line">  x = compute()</div>
+<div class="line">  y = x + 1</div>
+<div class="line">  return x</div>
+      </div></div>
+      <select id="sCCa3" style="width:100%;padding:0.3rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+        <option value="">Select dead code reason...</option>
+        <option value="a">Line 2 — x is overwritten by y</option>
+        <option value="b">Line 3 — dead store (y is never used after assignment)</option>
+        <option value="c">No dead code</option>
+      </select>
+    </div>
+    <div id="sCC4" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.7rem;">
+      <div style="color:#38bdf8;font-weight:700;font-size:0.85rem;">Snippet 4</div>
+      <div class="code-block" style="font-size:0.75rem;margin:0.4rem 0;"><div class="code-content">
+<div class="line">def baz(x):</div>
+<div class="line">  if x > 0:</div>
+<div class="line">    y = 1</div>
+<div class="line">  if x > 0:</div>
+<div class="line">    print(y)</div>
+<div class="line">  else:</div>
+<div class="line">    print(0)</div>
+      </div></div>
+      <select id="sCCa4" style="width:100%;padding:0.3rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+        <option value="">Select dead code reason...</option>
+        <option value="a">Line 3 is dead — y is never defined when x ≤ 0</option>
+        <option value="b">Redundant branch — same condition tested twice (not dead code but a smell)</option>
+        <option value="c">No dead code — both branches are reachable</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:0.8rem;">
+    <button class="btn" onclick="sCCCheck()">Check All</button>
+  </div>
+  <div id="sCCFeedback" style="margin-top:0.5rem;font-size:0.82rem;display:none;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = { sCCa1:'a', sCCa2:'a', sCCa3:'b', sCCa4:'c' };
+  const explanations = {
+    sCCa1: 'Both if and else branches return, so line 6 is unreachable from any path.',
+    sCCa2: 'x=10 and condition is x>100, which is false. The loop body (lines 3-4) never executes. This is the "impossible branch" pattern — detectable by constant propagation.',
+    sCCa3: 'y = x + 1 computes a value that is never read before the function returns x. This is a dead store — live variable analysis would flag y as not live after line 3.',
+    sCCa4: 'No dead code! Both branches of both ifs are reachable (x could be positive or not). The redundant condition is a code smell but NOT dead code — a simple CFG analysis cannot prove the two conditions are correlated.'
+  };
+  window.sCCCheck = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const card = sel.closest('[id^="sCC"]');
+      if (sel.value === correct) {
+        card.style.borderColor = '#22c55e';
+        score++;
+      } else {
+        card.style.borderColor = '#ef4444';
+      }
+    });
+    const fb = document.getElementById('sCCFeedback');
+    let html = Object.entries(explanations).map(([id, exp]) => {
+      const sel = document.getElementById(id);
+      const ok = sel.value === answers[id];
+      return `<div style="margin:0.3rem 0;color:${ok?'#22c55e':'#f59e0b'};">${ok?'✓':'✗'} ${exp}</div>`;
+    }).join('');
+    fb.innerHTML = `<div style="font-weight:700;color:${score===4?'#22c55e':'#f59e0b'};margin-bottom:0.5rem;">Score: ${score}/4</div>` + html;
+    fb.style.display = 'block';
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ Q1: CFG Properties ==================== -->
+<div class="slide" id="sQ1">
+  <h2>Quiz: CFG Properties</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;">
+      <div style="color:#6366f1;font-weight:700;font-size:0.85rem;">Q1: Basic Blocks</div>
+      <p style="font-size:0.8rem;color:#cbd5e1;margin:0.5rem 0;">A basic block has the property that:</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1a" value="a"> It contains exactly one statement
+      </label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1a" value="b"> If any statement executes, all statements execute in order
+      </label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1a" value="c"> It has exactly one predecessor
+      </label>
+      <div id="sQ1f1" style="margin-top:0.4rem;font-size:0.75rem;display:none;"></div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;">
+      <div style="color:#6366f1;font-weight:700;font-size:0.85rem;">Q2: Back Edges</div>
+      <p style="font-size:0.8rem;color:#cbd5e1;margin:0.5rem 0;">A back edge in a CFG indicates:</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1b" value="a"> An unreachable block
+      </label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1b" value="b"> A loop (edge from a block to a block that dominates it)
+      </label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1b" value="c"> A function call
+      </label>
+      <div id="sQ1f2" style="margin-top:0.4rem;font-size:0.75rem;display:none;"></div>
+    </div>
+    <div style="background:#1e293b;border-radius:10px;padding:0.8rem;">
+      <div style="color:#6366f1;font-weight:700;font-size:0.85rem;">Q3: Dominance</div>
+      <p style="font-size:0.8rem;color:#cbd5e1;margin:0.5rem 0;">If block A dominates block B, then:</p>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1c" value="a"> A always executes before B on every path from entry
+      </label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1c" value="b"> A and B are in the same loop
+      </label>
+      <label style="display:block;margin:0.3rem 0;font-size:0.78rem;color:#e2e8f0;cursor:pointer;">
+        <input type="radio" name="sQ1c" value="c"> A has more predecessors than B
+      </label>
+      <div id="sQ1f3" style="margin-top:0.4rem;font-size:0.75rem;display:none;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1Score" style="margin-left:1rem;font-weight:700;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const ans = {sQ1a:'b', sQ1b:'b', sQ1c:'a'};
+  const fb = {
+    sQ1a: {b:'Correct! A basic block is a maximal sequence of straight-line code — if the first statement runs, they all run in order.', _:'A basic block can have multiple statements and multiple predecessors. The key property is sequential execution with no branches in or out (except entry/exit).'},
+    sQ1b: {b:'Correct! A back edge goes from a block to one of its dominators, indicating a loop.', _:'Back edges indicate loops, not unreachable code or function calls. They\'re edges that go "backward" in the dominator tree.'},
+    sQ1c: {a:'Correct! Dominance means A is on every path from entry to B.', _:'Dominance is about paths: A dominates B means you cannot reach B from the entry without passing through A first.'}
+  };
+  window.sQ1Check = function() {
+    let score = 0;
+    Object.entries(ans).forEach(([name, correct], i) => {
+      const sel = document.querySelector(`input[name="${name}"]:checked`);
+      const div = document.getElementById('sQ1f' + (i+1));
+      if (!sel) { div.innerHTML = '<span style="color:#f59e0b;">Please select an answer.</span>'; div.style.display='block'; return; }
+      const ok = sel.value === correct;
+      if (ok) score++;
+      div.innerHTML = `<span style="color:${ok?'#22c55e':'#ef4444'};">${ok?'✓':'✗'} ${fb[name][ok?correct:'_']}</span>`;
+      div.style.display = 'block';
+    });
+    document.getElementById('sQ1Score').textContent = `Score: ${score}/3`;
+    document.getElementById('sQ1Score').style.color = score === 3 ? '#22c55e' : '#f59e0b';
+  };
+})();
+</script>
+
+<!-- ==================== QUIZ Q2: Dataflow Trace ==================== -->
+<div class="slide" id="sQ2">
+  <h2>Quiz: Dataflow Trace</h2>
+  <p style="color:#94a3b8;">Given this CFG and reaching definitions state after iteration 1, predict <strong style="color:#f59e0b;">IN[B3]</strong> after iteration 2.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;">
+    <div>
+      <canvas id="cSQ2" width="520" height="340" style="width:100%;background:rgba(0,0,0,0.2);border-radius:12px;"></canvas>
+    </div>
+    <div>
+      <div style="background:#1e293b;border-radius:8px;padding:0.6rem;font-family:monospace;font-size:0.78rem;color:#e2e8f0;">
+        <div style="color:#94a3b8;margin-bottom:0.4rem;">After iteration 1:</div>
+        <div>OUT[B1] = {d1: x=5}</div>
+        <div>OUT[B2] = {d1: x=5, d2: y=x+1}</div>
+        <div>OUT[B3] = {d1: x=5, d3: x=y*2}</div>
+        <div style="color:#94a3b8;margin-top:0.4rem;">B3 preds: B2, B4 (back edge)</div>
+        <div>OUT[B4] = {d1: x=5, d3: x=y*2, d4: y=0}</div>
+      </div>
+      <div style="margin-top:0.8rem;">
+        <div style="color:#cbd5e1;font-size:0.82rem;margin-bottom:0.4rem;">What is IN[B3] after iteration 2?</div>
+        <select id="sQ2Ans" style="width:100%;padding:0.4rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+          <option value="">Select your answer...</option>
+          <option value="a">{d1, d2} — just from B2</option>
+          <option value="b">{d1, d2, d3, d4} — union of OUT[B2] and OUT[B4]</option>
+          <option value="c">{d2, d4} — only the y definitions</option>
+          <option value="d">{d1, d3} — only the x definitions</option>
+        </select>
+        <button class="btn btn-sm" style="margin-top:0.6rem;" onclick="sQ2Check()">Check</button>
+      </div>
+      <div id="sQ2Feedback" style="margin-top:0.5rem;font-size:0.78rem;display:none;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cSQ2');
+  const ctx = canvas.getContext('2d');
+
+  const blocks = [
+    { id:'B1', x:260, y:45,  label:'B1: x=5',    gen:'d1: x=5' },
+    { id:'B2', x:260, y:120, label:'B2: y=x+1',   gen:'d2: y=x+1' },
+    { id:'B3', x:260, y:200, label:'B3: x=y*2',   gen:'d3: x=y*2' },
+    { id:'B4', x:260, y:280, label:'B4: y=0',      gen:'d4: y=0' }
+  ];
+  const edges = [[0,1],[1,2],[2,3],[3,2]]; // B4→B3 is back edge
+
+  function draw() {
+    ctx.clearRect(0,0,520,340);
+    // edges
+    edges.forEach(([fi,ti]) => {
+      const f = blocks[fi], t = blocks[ti];
+      const isBack = fi === 3 && ti === 2;
+      const sx = isBack ? f.x + 70 : f.x;
+      const sy = f.y + 18;
+      const ex = isBack ? t.x + 70 : t.x;
+      const ey = t.y - 18;
+      ctx.beginPath();
+      if (isBack) {
+        ctx.moveTo(sx, sy);
+        ctx.quadraticCurveTo(sx + 60, (sy + ey) / 2, ex, ey);
+      } else {
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+      }
+      ctx.strokeStyle = isBack ? '#f59e0b' : '#475569';
+      ctx.lineWidth = isBack ? 2.5 : 1.5;
+      ctx.setLineDash(isBack ? [6,4] : []);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // arrow
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex - 6, ey - 10);
+      ctx.lineTo(ex + 6, ey - 10);
+      ctx.closePath();
+      ctx.fillStyle = isBack ? '#f59e0b' : '#475569';
+      ctx.fill();
+    });
+    // back edge label
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '11px monospace';
+    ctx.fillText('back edge', 370, 240);
+    // blocks
+    blocks.forEach(b => {
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(b.x - 65, b.y - 18, 130, 36, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(b.label, b.x, b.y - 3);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px monospace';
+      ctx.fillText('gen: ' + b.gen, b.x, b.y + 11);
+    });
+    // Highlight B3 merge
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.roundRect(260-72, 200-22, 144, 44, 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('IN[B3] = ?', 90, 200);
+  }
+
+  window.sQ2Check = function() {
+    const sel = document.getElementById('sQ2Ans').value;
+    const fb = document.getElementById('sQ2Feedback');
+    if (!sel) { fb.innerHTML = '<span style="color:#f59e0b;">Please select an answer.</span>'; fb.style.display='block'; return; }
+    const ok = sel === 'b';
+    fb.innerHTML = ok
+      ? '<span style="color:#22c55e;">✓ Correct!</span> IN[B3] = OUT[B2] ∪ OUT[B4] = {d1, d2} ∪ {d1, d3, d4} = {d1, d2, d3, d4}. Reaching definitions is a <strong>forward may</strong> analysis — merge is union, so ALL definitions from ALL predecessors are included.'
+      : '<span style="color:#ef4444;">✗ Not quite.</span> Reaching definitions uses <strong>union</strong> at merge points (it\'s a "may" analysis). IN[B3] = OUT[B2] ∪ OUT[B4]. B3 has two predecessors: B2 and B4 (via back edge). So IN[B3] = {d1, d2} ∪ {d1, d3, d4} = <strong>{d1, d2, d3, d4}</strong>.';
+    fb.style.display = 'block';
+  };
+
+  function init() { draw(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sQ2').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('sQ2'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== QUIZ Q3: Analysis Design ==================== -->
+<div class="slide" id="sQ3">
+  <h2>Quiz: Analysis Design</h2>
+  <p style="color:#94a3b8;">For each scenario, choose the correct dataflow analysis type.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+    <div id="sQ3c1" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.7rem;">
+      <div style="color:#38bdf8;font-weight:700;font-size:0.85rem;">Scenario 1</div>
+      <p style="font-size:0.8rem;color:#cbd5e1;margin:0.4rem 0;">"Which variable assignments <em>might</em> reach this point?"</p>
+      <select id="sQ3a1" style="width:100%;padding:0.3rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+        <option value="">Direction × Merge...</option>
+        <option value="a">Forward May (union)</option>
+        <option value="b">Forward Must (intersection)</option>
+        <option value="c">Backward May (union)</option>
+        <option value="d">Backward Must (intersection)</option>
+      </select>
+    </div>
+    <div id="sQ3c2" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.7rem;">
+      <div style="color:#38bdf8;font-weight:700;font-size:0.85rem;">Scenario 2</div>
+      <p style="font-size:0.8rem;color:#cbd5e1;margin:0.4rem 0;">"Which variables are <em>definitely</em> used after this point on some path?"</p>
+      <select id="sQ3a2" style="width:100%;padding:0.3rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+        <option value="">Direction × Merge...</option>
+        <option value="a">Forward May (union)</option>
+        <option value="b">Forward Must (intersection)</option>
+        <option value="c">Backward May (union)</option>
+        <option value="d">Backward Must (intersection)</option>
+      </select>
+    </div>
+    <div id="sQ3c3" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.7rem;">
+      <div style="color:#38bdf8;font-weight:700;font-size:0.85rem;">Scenario 3</div>
+      <p style="font-size:0.8rem;color:#cbd5e1;margin:0.4rem 0;">"Which expressions are <em>guaranteed</em> already computed at this point?"</p>
+      <select id="sQ3a3" style="width:100%;padding:0.3rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+        <option value="">Direction × Merge...</option>
+        <option value="a">Forward May (union)</option>
+        <option value="b">Forward Must (intersection)</option>
+        <option value="c">Backward May (union)</option>
+        <option value="d">Backward Must (intersection)</option>
+      </select>
+    </div>
+    <div id="sQ3c4" style="background:#1e293b;border:2px solid #475569;border-radius:10px;padding:0.7rem;">
+      <div style="color:#38bdf8;font-weight:700;font-size:0.85rem;">Scenario 4</div>
+      <p style="font-size:0.8rem;color:#cbd5e1;margin:0.4rem 0;">"Which expressions are <em>guaranteed</em> to be used on <em>all</em> paths from this point?"</p>
+      <select id="sQ3a4" style="width:100%;padding:0.3rem;background:#0f172a;color:#e2e8f0;border:1px solid #475569;border-radius:6px;font-size:0.78rem;">
+        <option value="">Direction × Merge...</option>
+        <option value="a">Forward May (union)</option>
+        <option value="b">Forward Must (intersection)</option>
+        <option value="c">Backward May (union)</option>
+        <option value="d">Backward Must (intersection)</option>
+      </select>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:0.8rem;">
+    <button class="btn" onclick="sQ3Check()">Check All</button>
+    <span id="sQ3Score" style="margin-left:1rem;font-weight:700;"></span>
+  </div>
+  <div id="sQ3Feedback" style="margin-top:0.5rem;font-size:0.78rem;display:none;"></div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = { sQ3a1:'a', sQ3a2:'c', sQ3a3:'b', sQ3a4:'d' };
+  const explanations = {
+    sQ3a1: '"Might reach" = <strong>Forward May</strong>. We look forward from definitions, and "might" means union (any path suffices). This is <em>Reaching Definitions</em>.',
+    sQ3a2: '"Used after this point on some path" = <strong>Backward May</strong>. We look backward from uses, and "some path" means union. This is <em>Live Variables</em>. Trap: "definitely used" sounds like must, but "on some path" makes it may!',
+    sQ3a3: '"Guaranteed already computed" = <strong>Forward Must</strong>. We look forward from computations, and "guaranteed" means intersection (must hold on ALL paths). This is <em>Available Expressions</em>.',
+    sQ3a4: '"Guaranteed on all paths from here" = <strong>Backward Must</strong>. We look backward from uses, and "all paths" means intersection. This is <em>Very Busy Expressions</em>.'
+  };
+  window.sQ3Check = function() {
+    let score = 0;
+    Object.entries(answers).forEach(([id, correct]) => {
+      const sel = document.getElementById(id);
+      const card = document.getElementById(id.replace('a','c'));
+      if (sel.value === correct) {
+        card.style.borderColor = '#22c55e';
+        score++;
+      } else {
+        card.style.borderColor = '#ef4444';
+      }
+    });
+    const fb = document.getElementById('sQ3Feedback');
+    let html = Object.entries(explanations).map(([id, exp]) => {
+      const sel = document.getElementById(id);
+      const ok = sel.value === answers[id];
+      return `<div style="margin:0.3rem 0;color:${ok?'#22c55e':'#f59e0b'};">${ok?'✓':'✗'} ${exp}</div>`;
+    }).join('');
+    fb.innerHTML = `<div style="font-weight:700;color:${score===4?'#22c55e':'#f59e0b'};margin-bottom:0.5rem;">Score: ${score}/4</div>` + html;
+    fb.style.display = 'block';
+    document.getElementById('sQ3Score').textContent = `Score: ${score}/4`;
+    document.getElementById('sQ3Score').style.color = score === 4 ? '#22c55e' : '#f59e0b';
+  };
+})();
+</script>
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+</div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','sCA','s9','s10','s11','s12','s13','s14','sCB','s15','s16','s17','s18','sCC','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+
+function showSlide(idx) {
+  slideOrder.forEach(id => document.getElementById(id).classList.remove('active'));
+  const slideEl = document.getElementById(slideOrder[idx]);
+  slideEl.classList.add('active');
+  slideEl.classList.remove('fade-in');
+  void slideEl.offsetWidth;
+  slideEl.classList.add('fade-in');
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === slideOrder.length - 1);
+  const pct = slideOrder.length > 1 ? (idx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+function navigate(dir) {
+  const newIdx = currentIdx + dir;
+  if (newIdx < 0 || newIdx >= slideOrder.length) return;
+  currentIdx = newIdx;
+  showSlide(currentIdx);
+}
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+showSlide(0);
+</script>
+</body>
+</html>
