@@ -70,6 +70,25 @@ ul li { margin-bottom: 6px; }
   <div class="slide-number"></div>
 </div>
 <script>
+function drawSelfLoopBezier(ctx, x, y, r, label, opts) {
+  opts = opts || {};
+  var c = opts.color || '#475569';
+  var lc = opts.labelColor || '#f59e0b';
+  var lf = opts.labelFont || 'bold 12px monospace';
+  var bot = opts.bottom;
+  var dir = bot ? 1 : -1;
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y + dir*r); ctx.bezierCurveTo(x - 30, y + dir*(r+38), x + 30, y + dir*(r+38), x + 8, y + dir*r);
+  ctx.strokeStyle = c; ctx.lineWidth = opts.lineWidth || 2; ctx.stroke();
+  var ang = Math.atan2((y+dir*r) - (y+dir*(r+38)), (x+8) - (x+30));
+  ctx.beginPath(); ctx.moveTo(x+8, y+dir*r);
+  ctx.lineTo(x+8 - 7*Math.cos(ang-0.4), y+dir*r - 7*Math.sin(ang-0.4));
+  ctx.lineTo(x+8 - 7*Math.cos(ang+0.4), y+dir*r - 7*Math.sin(ang+0.4));
+  ctx.closePath(); ctx.fillStyle = c; ctx.fill();
+  if (label) { ctx.fillStyle = lc; ctx.font = lf; ctx.textAlign = 'center'; ctx.fillText(label, x, y + dir*(r+34)); }
+}
+</script>
+<script>
 (function(){
   const c = document.getElementById('cS1'), ctx = c.getContext('2d');
   let frame = 0, animId = null, pumpI = 0, timer = 0;
@@ -264,12 +283,7 @@ ul li { margin-bottom: 6px; }
       ctx.strokeStyle='#334155';ctx.lineWidth=1.5;
       if(e.from===e.to){
         // self-loop
-        const dy = e.selfBot?30:-30;
-        ctx.beginPath();
-        ctx.arc(a.x,a.y+dy,16,0.2*Math.PI,0.8*Math.PI,dy>0);
-        ctx.stroke();
-        ctx.fillStyle='#64748b';ctx.font='11px monospace';ctx.textAlign='center';
-        ctx.fillText(e.label,a.x,a.y+dy+(dy>0?22:-18));
+        drawSelfLoopBezier(ctx,a.x,a.y,22,e.label,{bottom:!!e.selfBot,labelFont:'11px monospace',labelColor:'#64748b',lineWidth:1.5});
       } else {
         ctx.beginPath();ctx.moveTo(a.x+22*(b.x-a.x)/Math.hypot(b.x-a.x,b.y-a.y),a.y+22*(b.y-a.y)/Math.hypot(b.x-a.x,b.y-a.y));
         ctx.lineTo(b.x-24*(b.x-a.x)/Math.hypot(b.x-a.x,b.y-a.y),b.y-24*(b.y-a.y)/Math.hypot(b.x-a.x,b.y-a.y));

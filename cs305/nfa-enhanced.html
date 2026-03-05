@@ -162,6 +162,23 @@
   <div class="slide-number"></div>
 </div>
 <script>
+function drawSelfLoopBezier(ctx, x, y, r, label, opts) {
+  opts = opts || {};
+  var c = opts.color || '#475569';
+  var lc = opts.labelColor || '#f59e0b';
+  var lf = opts.labelFont || 'bold 12px monospace';
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y - r); ctx.bezierCurveTo(x - 30, y - r - 38, x + 30, y - r - 38, x + 8, y - r);
+  ctx.strokeStyle = c; ctx.lineWidth = opts.lineWidth || 2; ctx.stroke();
+  var ang = Math.atan2((y - r) - (y - r - 38), (x + 8) - (x + 30));
+  ctx.beginPath(); ctx.moveTo(x + 8, y - r);
+  ctx.lineTo(x + 8 - 7 * Math.cos(ang - 0.4), y - r - 7 * Math.sin(ang - 0.4));
+  ctx.lineTo(x + 8 - 7 * Math.cos(ang + 0.4), y - r - 7 * Math.sin(ang + 0.4));
+  ctx.closePath(); ctx.fillStyle = c; ctx.fill();
+  if (label) { ctx.fillStyle = lc; ctx.font = lf; ctx.textAlign = 'center'; ctx.fillText(label, x, y - r - 34); }
+}
+</script>
+<script>
 (function(){
   const canvas = document.getElementById('cS2');
   const ctx = canvas.getContext('2d');
@@ -462,21 +479,9 @@
     ctx.fillText('0', 140, 82);
 
     // Self-loop hint on A
-    ctx.beginPath();
-    ctx.arc(80, 55, 15, 0.3, Math.PI - 0.3);
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillText('1', 80, 38);
-
+    drawSelfLoopBezier(ctx,80,90,22,'1',{labelColor:'#f59e0b',labelFont:'12px monospace'});
     // Self-loop on B
-    ctx.beginPath();
-    ctx.arc(200, 55, 15, 0.3, Math.PI - 0.3);
-    ctx.strokeStyle = '#475569';
-    ctx.stroke();
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillText('0,1', 200, 38);
+    drawSelfLoopBezier(ctx,200,90,22,'0,1',{labelColor:'#f59e0b',labelFont:'12px monospace'});
 
     // Back arrow B->A for 1
     ctx.beginPath();
@@ -523,15 +528,7 @@
 
     // Draw NFA transitions
     // q0 self-loop on 0,1
-    ctx.beginPath();
-    ctx.arc(80, 215, 15, 0.3, Math.PI - 0.3);
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.font = '11px monospace';
-    ctx.fillStyle = '#f59e0b';
-    ctx.textAlign = 'center';
-    ctx.fillText('0,1', 80, 198);
+    drawSelfLoopBezier(ctx,80,250,22,'0,1',{labelColor:'#f59e0b',labelFont:'11px monospace'});
 
     // q0 -> q1 on 0
     drawArrow(80, 250, 200, 250, '#475569');
@@ -1030,14 +1027,8 @@
     // q0 self-loop (0,1)
     const q0 = positions.q0;
     ctx.beginPath();
-    ctx.arc(q0.x, q0.y - 40, 18, 0.4, Math.PI - 0.4);
-    ctx.strokeStyle = edgeHighlighted('q0', 'q0') ? '#f59e0b' : '#475569';
-    ctx.lineWidth = edgeHighlighted('q0', 'q0') ? 3 : 1.5;
-    ctx.stroke();
-    ctx.font = '12px monospace';
-    ctx.fillStyle = edgeHighlighted('q0', 'q0') ? '#f59e0b' : '#94a3b8';
-    ctx.textAlign = 'center';
-    ctx.fillText('0, 1', q0.x, q0.y - 62);
+    var q0hl = edgeHighlighted('q0', 'q0');
+    drawSelfLoopBezier(ctx,q0.x,q0.y,22,'0, 1',{color:q0hl?'#f59e0b':'#475569',labelColor:q0hl?'#f59e0b':'#94a3b8',labelFont:'12px monospace',lineWidth:q0hl?3:1.5});
 
     // q0 -> q1 on 0
     drawEdge(positions.q0, positions.q1, '0', edgeHighlighted('q0', 'q1'));
@@ -1857,11 +1848,7 @@
 
     // Edges
     // q0 self-loop
-    nctx.beginPath();
-    nctx.arc(80, 25, 16, 0.4, Math.PI-0.4);
-    nctx.strokeStyle = '#475569'; nctx.lineWidth = 1.5; nctx.stroke();
-    nctx.font = '11px monospace'; nctx.fillStyle = '#f59e0b'; nctx.textAlign = 'center';
-    nctx.fillText('0, 1', 80, 8);
+    drawSelfLoopBezier(nctx,80,60,20,'0, 1',{labelColor:'#f59e0b',labelFont:'11px monospace'});
 
     // q0 -> q1
     nctx.beginPath(); nctx.moveTo(104,60); nctx.lineTo(194,60);
@@ -2122,19 +2109,8 @@
 
       if (e.from === e.to) {
         // Self-loop
-        const cx = from.x, cy = from.y - 40;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 18, 0.3, Math.PI-0.3);
-        ctx.strokeStyle = isLatest ? '#f59e0b' : '#475569';
-        ctx.lineWidth = isLatest ? 3 : 1.5;
-        ctx.stroke();
-        ctx.font = '11px monospace';
-        ctx.fillStyle = isLatest ? '#f59e0b' : '#94a3b8';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'alphabetic';
-        // Collect all self-loop symbols
         const selfSyms = visEdges.filter(x=>x.from===e.from&&x.to===e.to).map(x=>x.sym);
-        ctx.fillText(selfSyms.join(','), cx, cy-20);
+        drawSelfLoopBezier(ctx,from.x,from.y,22,selfSyms.join(','),{color:isLatest?'#f59e0b':'#475569',labelColor:isLatest?'#f59e0b':'#94a3b8',labelFont:'11px monospace',lineWidth:isLatest?3:1.5});
         return;
       }
 

@@ -80,6 +80,24 @@
   </div>
 </div>
 <script>
+// Global self-loop drawing utility
+function drawSelfLoopBezier(ctx, x, y, r, label, opts) {
+  opts = opts || {};
+  var c = opts.color || '#475569';
+  var lc = opts.labelColor || '#f59e0b';
+  var lf = opts.labelFont || 'bold 12px monospace';
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y - r); ctx.bezierCurveTo(x - 30, y - r - 38, x + 30, y - r - 38, x + 8, y - r);
+  ctx.strokeStyle = c; ctx.lineWidth = opts.lineWidth || 2; ctx.stroke();
+  var ang = Math.atan2((y - r) - (y - r - 38), (x + 8) - (x + 30));
+  ctx.beginPath(); ctx.moveTo(x + 8, y - r);
+  ctx.lineTo(x + 8 - 7 * Math.cos(ang - 0.4), y - r - 7 * Math.sin(ang - 0.4));
+  ctx.lineTo(x + 8 - 7 * Math.cos(ang + 0.4), y - r - 7 * Math.sin(ang + 0.4));
+  ctx.closePath(); ctx.fillStyle = c; ctx.fill();
+  if (label) { ctx.fillStyle = lc; ctx.font = lf; ctx.textAlign = 'center'; ctx.fillText(label, x, y - r - 34); }
+}
+</script>
+<script>
 (function(){
   const canvas = document.getElementById('cS2');
   const ctx = canvas.getContext('2d');
@@ -199,10 +217,8 @@
     drawArrow(ctx,lx+r+5,cy+25,lx+r,cy+20,'#475569');
     ctx.fillStyle='#94a3b8';ctx.fillText('push',260,cy+80);
     // self-loops
-    ctx.beginPath();ctx.arc(lx,cy-r-20,18,0.3,Math.PI-0.3);ctx.strokeStyle='#475569';ctx.stroke();
-    ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.fillText('push',lx,cy-r-45);
-    ctx.beginPath();ctx.arc(ux,cy-r-20,18,0.3,Math.PI-0.3);ctx.stroke();
-    ctx.fillText('coin',ux,cy-r-45);
+    drawSelfLoopBezier(ctx,lx,cy,r,null);ctx.fillStyle='#94a3b8';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('push',lx,cy-r-34);
+    drawSelfLoopBezier(ctx,ux,cy,r,null);ctx.fillText('coin',ux,cy-r-34);
     // nodes
     [['Locked',lx],['Unlocked',ux]].forEach(([name,x])=>{
       ctx.beginPath();ctx.arc(x,cy,r,0,Math.PI*2);
@@ -323,9 +339,7 @@
       const f=pos(e.from),t=pos(e.to);
       ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
       if(e.self){
-        ctx.beginPath();ctx.arc(f.x,f.y-40,18,0.4,Math.PI-0.4);ctx.stroke();
-        ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';
-        ctx.fillText(e.label,f.x,f.y-65);
+        drawSelfLoopBezier(ctx,f.x,f.y,18,e.label,{labelFont:'13px monospace',labelColor:'#94a3b8'});
       } else {
         ctx.beginPath();
         ctx.quadraticCurveTo!=null;
@@ -432,9 +446,7 @@
       const fp=pos(f),tp=pos(t);
       ctx.strokeStyle='#334155';ctx.lineWidth=1.5;
       if(self){
-        ctx.beginPath();ctx.arc(fp.x,fp.y-40,18,0.4,Math.PI-0.4);ctx.stroke();
-        ctx.fillStyle='#64748b';ctx.font='12px monospace';ctx.textAlign='center';
-        ctx.fillText(lab,fp.x,fp.y-65);
+        drawSelfLoopBezier(ctx,fp.x,fp.y,18,lab,{labelFont:'12px monospace',labelColor:'#64748b'});
       } else {
         ctx.beginPath();ctx.moveTo(fp.x,fp.y);ctx.quadraticCurveTo(cx,cy,tp.x,tp.y);ctx.stroke();
         ctx.fillStyle='#64748b';ctx.font='12px monospace';ctx.textAlign='center';
@@ -536,12 +548,10 @@
     ctx.clearRect(0,0,520,300);
     const ex=160,ox=360,cy=130,r=40;
     // self-loops
-    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.arc(ex,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();
-    ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';ctx.fillText('1',ex,cy-r-42);
-    ctx.beginPath();ctx.arc(ox,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();
-    ctx.fillText('1',ox,cy-r-42);
+    drawSelfLoopBezier(ctx,ex,cy,r,'1',{labelFont:'13px monospace',labelColor:'#94a3b8'});
+    drawSelfLoopBezier(ctx,ox,cy,r,'1',{labelFont:'13px monospace',labelColor:'#94a3b8'});
     // E->O top
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
     ctx.beginPath();ctx.moveTo(ex+r,cy-10);ctx.quadraticCurveTo(260,cy-60,ox-r,cy-10);ctx.strokeStyle='#475569';ctx.stroke();
     ctx.fillStyle='#94a3b8';ctx.fillText('0',260,cy-45);
     // O->E bottom
@@ -645,10 +655,10 @@
     const ex=160,ox=360,cy=110,r=40;
     ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
     // self-loops
-    ctx.beginPath();ctx.arc(ex,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();
-    ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';ctx.fillText('1',ex,cy-r-42);
-    ctx.beginPath();ctx.arc(ox,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('1',ox,cy-r-42);
+    drawSelfLoopBezier(ctx,ex,cy,r,'1',{labelFont:'13px monospace',labelColor:'#94a3b8'});
+    drawSelfLoopBezier(ctx,ox,cy,r,'1',{labelFont:'13px monospace',labelColor:'#94a3b8'});
     // E->O, O->E
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
     ctx.beginPath();ctx.moveTo(ex+r,cy-10);ctx.quadraticCurveTo(260,cy-60,ox-r,cy-10);ctx.stroke();
     ctx.fillStyle='#94a3b8';ctx.fillText('0',260,cy-45);
     ctx.beginPath();ctx.moveTo(ox-r,cy+10);ctx.quadraticCurveTo(260,cy+60,ex+r,cy+10);ctx.stroke();
@@ -894,9 +904,7 @@
       const fp=positions[f],tp=positions[t];
       ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
       if(f===t){
-        ctx.beginPath();ctx.arc(fp.x,fp.y-40,18,0.4,Math.PI-0.4);ctx.stroke();
-        ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';
-        ctx.fillText(lab,fp.x,fp.y-65);
+        drawSelfLoopBezier(ctx,fp.x,fp.y,18,lab,{labelFont:'13px monospace',labelColor:'#94a3b8'});
       } else {
         const above=fp.y>=tp.y&&fp.x<tp.x;
         const cy2=fp.x<tp.x?(fp.y>tp.y?fp.y+50:fp.y-50):fp.y;
@@ -1038,7 +1046,14 @@
       ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
       if(self){
         const side=fp.x>260?1:-1;
-        ctx.beginPath();ctx.arc(fp.x+side*35,fp.y,16,side>0?Math.PI+0.4:0.4-Math.PI,side>0?-0.4:Math.PI-0.4);ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(fp.x+side*18,fp.y-8);ctx.bezierCurveTo(fp.x+side*58,fp.y-36,fp.x+side*58,fp.y+36,fp.x+side*18,fp.y+8);
+        ctx.strokeStyle='#475569';ctx.lineWidth=1.5;ctx.stroke();
+        var sAng=Math.atan2(8-36,fp.x+side*18-(fp.x+side*58));
+        ctx.beginPath();ctx.moveTo(fp.x+side*18,fp.y+8);
+        ctx.lineTo(fp.x+side*18-6*Math.cos(sAng-0.4),fp.y+8-6*Math.sin(sAng-0.4));
+        ctx.lineTo(fp.x+side*18-6*Math.cos(sAng+0.4),fp.y+8-6*Math.sin(sAng+0.4));
+        ctx.closePath();ctx.fillStyle='#475569';ctx.fill();
         ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
         ctx.fillText(lab,fp.x+side*58,fp.y-4);
       } else {
@@ -1132,13 +1147,14 @@
     ctx.beginPath();ctx.moveTo(130,120);ctx.lineTo(230,120);ctx.stroke();
     ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';ctx.fillText('a',180,112);
     // S --b--> S (self-loop)
-    ctx.beginPath();ctx.arc(100,80,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('b',100,56);
+    drawSelfLoopBezier(ctx,100,130,30,'b',{labelFont:'13px monospace',labelColor:'#94a3b8'});
     // A --b--> F
-    ctx.beginPath();ctx.moveTo(290,120);ctx.lineTo(390,120);ctx.stroke();ctx.fillText('b',340,112);
+    ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(290,120);ctx.lineTo(390,120);ctx.stroke();ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';ctx.fillText('b',340,112);
     // A --a--> A (self-loop)
-    ctx.beginPath();ctx.arc(260,80,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('a',260,56);
+    drawSelfLoopBezier(ctx,260,130,30,'a',{labelFont:'13px monospace',labelColor:'#94a3b8'});
     // F --a,b--> F (self-loop)
-    ctx.beginPath();ctx.arc(420,80,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('a,b',420,56);
+    drawSelfLoopBezier(ctx,420,130,30,'a,b',{labelFont:'13px monospace',labelColor:'#94a3b8'});
     // start arrow
     ctx.beginPath();ctx.moveTo(30,130);ctx.lineTo(70,130);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
     // arrowheads on edges
@@ -1219,11 +1235,10 @@
     ctx.fillStyle='#94a3b8';ctx.font='12px sans-serif';ctx.textAlign='center';
     ctx.fillText(complemented?'Complemented: accepts ODD # of 0s':'Original: accepts EVEN # of 0s',260,25);
     // edges
+    drawSelfLoopBezier(ctx,ex,cy,r,'1',{labelFont:'13px monospace',labelColor:'#94a3b8'});
+    drawSelfLoopBezier(ctx,ox,cy,r,'1',{labelFont:'13px monospace',labelColor:'#94a3b8'});
     ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.arc(ex,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();
-    ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.fillText('1',ex,cy-r-42);
-    ctx.beginPath();ctx.arc(ox,cy-r-18,16,0.4,Math.PI-0.4);ctx.stroke();ctx.fillText('1',ox,cy-r-42);
-    ctx.beginPath();ctx.moveTo(ex+r,cy-10);ctx.quadraticCurveTo(260,cy-60,ox-r,cy-10);ctx.stroke();ctx.fillText('0',260,cy-45);
+    ctx.beginPath();ctx.moveTo(ex+r,cy-10);ctx.quadraticCurveTo(260,cy-60,ox-r,cy-10);ctx.stroke();ctx.fillStyle='#94a3b8';ctx.font='13px monospace';ctx.textAlign='center';ctx.fillText('0',260,cy-45);
     ctx.beginPath();ctx.moveTo(ox-r,cy+10);ctx.quadraticCurveTo(260,cy+60,ex+r,cy+10);ctx.stroke();ctx.fillText('0',260,cy+50);
     // start arrow
     ctx.beginPath();ctx.moveTo(50,cy);ctx.lineTo(ex-r-2,cy);ctx.strokeStyle='#e2e8f0';ctx.lineWidth=2;ctx.stroke();
@@ -1732,9 +1747,7 @@
       const fn=p.nodes.find(n=>n.id===e.f),tn=p.nodes.find(n=>n.id===e.t);
       ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
       if(e.self){
-        ctx.beginPath();ctx.arc(fn.x,fn.y-32,14,0.4,Math.PI-0.4);ctx.stroke();
-        ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
-        ctx.fillText(e.label,fn.x,fn.y-52);
+        drawSelfLoopBezier(ctx,fn.x,fn.y,18,e.label,{labelFont:'12px monospace',labelColor:'#94a3b8'});
       } else {
         const cy2=e.cy||((fn.y+tn.y)/2);
         ctx.beginPath();ctx.moveTo(fn.x,fn.y);ctx.quadraticCurveTo((fn.x+tn.x)/2,cy2,tn.x,tn.y);ctx.stroke();
@@ -2097,10 +2110,7 @@
       const fn=nodes.find(n=>n.id===f),tn=nodes.find(n=>n.id===t);
       ctx.strokeStyle='#475569';ctx.lineWidth=1.5;
       if(self){
-        const angle=f==='0'?-Math.PI/2:f==='2'?0:Math.PI;
-        ctx.beginPath();ctx.arc(fn.x+30*Math.cos(angle),fn.y+30*Math.sin(angle)-15,14,0.4,Math.PI-0.4);ctx.stroke();
-        ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.textAlign='center';
-        ctx.fillText(lab,fn.x+30*Math.cos(angle),fn.y+30*Math.sin(angle)-36);
+        drawSelfLoopBezier(ctx,fn.x,fn.y,18,lab,{labelFont:'12px monospace',labelColor:'#94a3b8'});
       } else {
         ctx.beginPath();ctx.moveTo(fn.x,fn.y);
         const mx=(fn.x+tn.x)/2,my=(fn.y+tn.y)/2;

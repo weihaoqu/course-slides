@@ -69,6 +69,23 @@ td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
   <div class="slide-number"></div>
 </div>
 <script>
+function drawSelfLoopBezier(ctx, x, y, r, label, opts) {
+  opts = opts || {};
+  var c = opts.color || '#475569';
+  var lc = opts.labelColor || '#f59e0b';
+  var lf = opts.labelFont || 'bold 12px monospace';
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y - r); ctx.bezierCurveTo(x - 30, y - r - 38, x + 30, y - r - 38, x + 8, y - r);
+  ctx.strokeStyle = c; ctx.lineWidth = opts.lineWidth || 2; ctx.stroke();
+  var ang = Math.atan2((y - r) - (y - r - 38), (x + 8) - (x + 30));
+  ctx.beginPath(); ctx.moveTo(x + 8, y - r);
+  ctx.lineTo(x + 8 - 7 * Math.cos(ang - 0.4), y - r - 7 * Math.sin(ang - 0.4));
+  ctx.lineTo(x + 8 - 7 * Math.cos(ang + 0.4), y - r - 7 * Math.sin(ang + 0.4));
+  ctx.closePath(); ctx.fillStyle = c; ctx.fill();
+  if (label) { ctx.fillStyle = lc; ctx.font = lf; ctx.textAlign = 'center'; ctx.fillText(label, x, y - r - 34); }
+}
+</script>
+<script>
 (function(){
   const c = document.getElementById('cS1'), ctx = c.getContext('2d');
   let frame = 0, animId = null;
@@ -743,12 +760,11 @@ td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
     });
     // Labels
     ctx.strokeStyle='#475569'; ctx.lineWidth=1;
-    ctx.beginPath();ctx.arc(100,18,16,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
-    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText('a: push',100,4);
+    drawSelfLoopBezier(ctx,100,50,24,'a: push',{labelFont:'9px monospace',labelColor:'#94a3b8',lineWidth:1});
+    ctx.strokeStyle='#475569';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(126,50);ctx.lineTo(274,50);ctx.stroke();
-    ctx.fillText('b,a/\u03B5',200,42);
-    ctx.beginPath();ctx.arc(300,18,16,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
-    ctx.fillText('b,a/\u03B5',300,4);
+    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText('b,a/\u03B5',200,42);
+    drawSelfLoopBezier(ctx,300,50,24,'b,a/\u03B5',{labelFont:'9px monospace',labelColor:'#94a3b8',lineWidth:1});
     ctx.beginPath();ctx.moveTo(108,72);ctx.lineTo(184,114);ctx.stroke();
     ctx.fillText('\u03B5,$/$',128,100);
     ctx.beginPath();ctx.moveTo(292,72);ctx.lineTo(216,114);ctx.stroke();
@@ -957,9 +973,7 @@ td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
     drawArrow(ctxA,374,60,426,60,'\u03B5,any/\u03B5');
     drawState(ctxA,450,60,'qdrain','#ef4444',false);
     // Loop on drain
-    ctxA.beginPath();ctxA.arc(450,30,14,0.3*Math.PI,0.7*Math.PI,true);
-    ctxA.strokeStyle='#ef4444';ctxA.lineWidth=1.5;ctxA.stroke();
-    ctxA.fillStyle='#f87171';ctxA.font='9px monospace';ctxA.fillText('\u03B5,any/\u03B5',450,10);
+    drawSelfLoopBezier(ctxA,450,60,20,'\u03B5,any/\u03B5',{color:'#ef4444',labelColor:'#f87171',labelFont:'9px monospace',lineWidth:1.5});
     // Labels
     ctxA.fillStyle='#94a3b8';ctxA.font='11px system-ui';ctxA.textAlign='left';
     ctxA.fillText('Steps:',20,120);
@@ -1050,10 +1064,7 @@ td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
       ctx.fillText(s.id,s.x,s.y+4);
     });
     // Self-loop on q0
-    ctx.strokeStyle='#475569';ctx.lineWidth=1;
-    ctx.beginPath();ctx.arc(120,18,16,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
-    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='center';
-    ctx.fillText('(: push L  ): pop L',120,2);
+    drawSelfLoopBezier(ctx,120,50,22,'(: push L  ): pop L',{labelFont:'9px monospace',labelColor:'#94a3b8',lineWidth:1});
     // q0->qacc
     ctx.beginPath();ctx.moveTo(146,50);ctx.lineTo(324,50);ctx.stroke();
     ctx.fillText('\u03B5,$/$',235,42);
@@ -1231,14 +1242,11 @@ td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
       ctx.fillStyle=(state===s.id)?'#93c5fd':'#94a3b8';ctx.font='11px monospace';ctx.textAlign='center';
       ctx.fillText(s.id,s.x,s.y+4);
     });
+    drawSelfLoopBezier(ctx,100,50,22,'0,1:push',{labelFont:'8px monospace',labelColor:'#94a3b8',lineWidth:1});
     ctx.strokeStyle='#475569';ctx.lineWidth=1;
-    ctx.beginPath();ctx.arc(100,20,14,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
-    ctx.fillStyle='#94a3b8';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText('0,1:push',100,6);
     ctx.beginPath();ctx.moveTo(124,50);ctx.lineTo(276,50);ctx.stroke();
-    ctx.fillStyle='#a78bfa';ctx.fillText('\u03B5 (guess mid!)',200,42);
-    ctx.strokeStyle='#475569';
-    ctx.beginPath();ctx.arc(300,20,14,0.3*Math.PI,0.7*Math.PI,true);ctx.stroke();
-    ctx.fillStyle='#94a3b8';ctx.fillText('match&pop',300,6);
+    ctx.fillStyle='#a78bfa';ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText('\u03B5 (guess mid!)',200,42);
+    drawSelfLoopBezier(ctx,300,50,22,'match&pop',{labelFont:'8px monospace',labelColor:'#94a3b8',lineWidth:1});
     ctx.beginPath();ctx.moveTo(106,70);ctx.lineTo(184,116);ctx.stroke();
     ctx.fillText('\u03B5,$/$',130,100);
     ctx.beginPath();ctx.moveTo(294,70);ctx.lineTo(216,116);ctx.stroke();
@@ -1469,11 +1477,10 @@ td { background: #1e293b; color: #e2e8f0; font-size: 0.95em; }
     ctxA.fillText('\u03B5, $ / $',350,70);
     // Self-loop on qloop
     const pulse=0.5+0.5*Math.sin(t*2);
-    ctxA.strokeStyle='rgba(59,130,246,'+pulse+')';
-    ctxA.beginPath();ctxA.arc(260,48,18,0.3*Math.PI,0.7*Math.PI,true);ctxA.stroke();
-    ctxA.fillStyle='#93c5fd';ctxA.font='9px monospace';
-    ctxA.fillText('A\u2192w: \u03B5,A/w',260,24);
-    ctxA.fillText('terminal a: a,a/\u03B5',260,36);
+    drawSelfLoopBezier(ctxA,260,80,22,null,{color:'rgba(59,130,246,'+pulse+')',lineWidth:1.5});
+    ctxA.fillStyle='#93c5fd';ctxA.font='9px monospace';ctxA.textAlign='center';
+    ctxA.fillText('A\u2192w: \u03B5,A/w',260,80-22-40);
+    ctxA.fillText('terminal a: a,a/\u03B5',260,80-22-28);
     frame++;animId=requestAnimationFrame(drawA);
   }
 
