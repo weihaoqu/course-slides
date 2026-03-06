@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BF422 — Chapter 13: Equity Valuation — Enhanced</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f172a; --bg-slide: #1e293b; --text: #e2e8f0; --text-muted: #94a3b8;
+  --accent: #38bdf8; --accent2: #6366f1; --accent3: #a78bfa; --amber: #f59e0b;
+  --green: #22c55e; --red: #ef4444; --pink: #f472b6; --border: #334155; --border2: #475569;
+  --card-bg: rgba(255,255,255,0.05); --code-bg: rgba(0,0,0,0.2); --shadow: rgba(0,0,0,0.4);
+}
+[data-theme="light"] {
+  --bg: #f1f5f9; --bg-slide: #ffffff; --text: #1e293b; --text-muted: #64748b;
+  --accent: #0284c7; --accent2: #4f46e5; --accent3: #7c3aed; --amber: #d97706;
+  --green: #16a34a; --red: #dc2626; --pink: #db2777; --border: #cbd5e1; --border2: #94a3b8;
+  --card-bg: rgba(0,0,0,0.03); --code-bg: rgba(0,0,0,0.05); --shadow: rgba(0,0,0,0.1);
+}
+html, body { height: 100%; overflow: hidden; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 1000; background: var(--border); }
+#progress { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 0.4s ease; }
+#controls { position: fixed; top: 12px; right: 16px; z-index: 1000; display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--text-muted); }
+#slide-counter { font-variant-numeric: tabular-nums; font-weight: 600; }
+.ctrl-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-muted); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; transition: all 0.2s; font-family: inherit; }
+.ctrl-btn:hover { background: rgba(99,102,241,0.15); border-color: var(--accent2); color: var(--text); }
+#deck { width: 100%; height: 100%; display: grid; place-items: center; }
+.slide { grid-row: 1; grid-column: 1; width: 96%; max-width: 1280px; padding: 44px 52px; border-radius: 14px; background: var(--bg-slide); box-shadow: 0 8px 32px var(--shadow); opacity: 0; transform: translateX(60px); transition: opacity 0.45s ease, transform 0.45s ease; pointer-events: none; max-height: 88vh; overflow-y: auto; }
+.slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.slide.exit-left { opacity: 0; transform: translateX(-60px); }
+.slide::-webkit-scrollbar { width: 6px; } .slide::-webkit-scrollbar-track { background: transparent; } .slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.slide h1 { font-size: 2.2rem; color: var(--accent); margin-bottom: 8px; line-height: 1.2; }
+.slide h2 { font-size: 1.7rem; color: var(--accent); margin-bottom: 14px; line-height: 1.25; }
+.slide h3 { font-size: 1.15rem; color: var(--accent3); margin-bottom: 8px; margin-top: 12px; }
+.slide p, .slide li { font-size: 1.05rem; line-height: 1.6; }
+.slide p { margin-bottom: 8px; } .slide ul, .slide ol { margin: 6px 0 12px 24px; } .slide li { margin-bottom: 4px; }
+.subtitle { font-size: 1.1rem; color: var(--text-muted); margin-top: 8px; }
+.small { font-size: 0.88rem; color: var(--text-muted); }
+.label { display: inline-block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent2); margin-bottom: 6px; }
+strong { color: var(--accent); } [data-theme="light"] strong { color: var(--accent2); }
+.source-tag { font-size: 0.68rem; color: var(--text-muted); float: right; opacity: 0.6; font-style: italic; }
+.title-slide { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 420px; }
+.title-slide h1 { font-size: 2.3rem; margin-bottom: 4px; }
+.title-slide .course-code { font-size: 0.9rem; color: var(--text-muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+.title-slide .divider { width: 80px; height: 3px; background: linear-gradient(90deg, var(--accent2), var(--accent)); margin: 16px auto; border-radius: 2px; }
+.section-slide { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; }
+.section-slide h2 { font-size: 2rem; margin-bottom: 10px; }
+.section-num { font-size: 3.5rem; font-weight: 800; color: var(--accent2); opacity: 0.3; margin-bottom: -10px; }
+.btn { background: linear-gradient(135deg, var(--accent2), #8b5cf6); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-weight: 600; font-family: inherit; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+.btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+.btn-secondary { background: var(--border); color: var(--text); } .btn-secondary:hover { background: var(--border2); box-shadow: none; }
+.key-idea { background: rgba(34,197,94,0.08); border-left: 4px solid var(--green); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0; }
+.warning { background: rgba(239,68,68,0.08); border-left: 4px solid var(--red); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0; }
+.analogy { background: rgba(167,139,250,0.08); border-left: 4px solid var(--accent3); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0; }
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin: 6px 0; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
+.formula { display: block; background: var(--code-bg); border-left: 3px solid var(--accent2); border-radius: 0 8px 8px 0; padding: 12px 20px; margin: 10px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 1.1rem; }
+.formula-center { text-align: center; border-left: none; border: 1px solid var(--border); border-radius: 8px; }
+.data-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.95rem; }
+.data-table th { background: rgba(99,102,241,0.1); color: var(--accent); padding: 7px 10px; text-align: left; border-bottom: 2px solid var(--border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.data-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.data-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .highlight-row td { background: rgba(99,102,241,0.08); font-weight: 700; }
+.compact-table { font-size: 0.85rem; } .compact-table th { padding: 5px 8px; font-size: 0.72rem; } .compact-table td { padding: 4px 8px; }
+.cols { display: flex; gap: 18px; margin: 10px 0; } .cols > div { flex: 1; }
+.think-prompt { background: rgba(99,102,241,0.08); border: 2px dashed var(--accent2); border-radius: 10px; padding: 12px 16px; margin: 10px 0; text-align: center; }
+.think-prompt p { font-weight: 600; color: var(--accent2); margin-bottom: 0; }
+.canvas-wrap { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px; display: inline-block; width: 100%; }
+.canvas-wrap canvas { width: 100%; display: block; }
+.nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); z-index: 500; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-muted); width: 36px; height: 52px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: 0.4; }
+.nav-arrow:hover { opacity: 1; background: rgba(99,102,241,0.15); color: var(--accent); }
+#nav-prev { left: 10px; } #nav-next { right: 10px; }
+#notes-panel { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 2px solid var(--border); padding: 10px 20px; font-size: 0.9rem; color: var(--text-muted); transform: translateY(100%); transition: transform 0.3s ease; z-index: 999; max-height: 110px; overflow-y: auto; }
+#notes-panel.visible { transform: translateY(0); }
+#notes-label { font-weight: 700; color: var(--accent2); margin-right: 8px; }
+.quiz-input { background: var(--code-bg); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 0.95rem; width: 110px; font-family: inherit; }
+@media print { body { background: #fff !important; color: #000 !important; overflow: visible !important; } #progress-bar, #controls, .nav-arrow, #notes-panel { display: none !important; } #deck { display: block !important; height: auto !important; } .slide { position: relative !important; opacity: 1 !important; transform: none !important; pointer-events: auto !important; page-break-after: always; box-shadow: none !important; border: 1px solid #ccc; margin: 20px auto; max-height: none !important; overflow: visible !important; background: #fff !important; } }
+@media (max-width: 700px) { .slide { padding: 24px 18px; width: 97%; } .slide h1 { font-size: 1.6rem; } .slide h2 { font-size: 1.35rem; } .cols { flex-direction: column; gap: 8px; } .card-grid { grid-template-columns: 1fr; } .nav-arrow { display: none; } }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+<div id="controls">
+  <span id="slide-counter">1 / 28</span>
+  <button class="ctrl-btn" id="theme-toggle" title="Toggle theme (T)">Light</button>
+  <button class="ctrl-btn" id="notes-btn" title="Toggle notes (N)">Notes</button>
+</div>
+<button class="nav-arrow" id="nav-prev" title="Previous">&lsaquo;</button>
+<button class="nav-arrow" id="nav-next" title="Next">&rsaquo;</button>
+<div id="notes-panel"><span id="notes-label">Notes:</span><span id="notes-text"></span></div>
+
+<div id="deck">
+
+<!-- ==================== s1: Title ==================== -->
+<div class="slide title-slide active" id="s1" data-notes="Chapter 13: Equity Valuation. Fundamental analysis to identify mispriced stocks.">
+  <div class="course-code">BF422 — Investments</div>
+  <h1>Equity Valuation</h1>
+  <div class="divider"></div>
+  <p class="subtitle">Chapter 13 — Bodie, Kane &amp; Marcus</p>
+  <p class="small" style="margin-top:12px;"><strong>Monmouth University</strong></p>
+</div>
+
+<!-- ==================== s2: Road Map ==================== -->
+<div class="slide" id="s2" data-notes="Five-part structure: valuation framework, DDM, multistage/PE, FCF, and comparable valuation.">
+  <span class="label">Overview</span>
+  <h2>Road Map</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card"><h3>I. Valuation Framework</h3><p class="small">Intrinsic value vs. market price, required return via CAPM</p></div>
+    <div class="card"><h3>II. Dividend Discount Models</h3><p class="small">Constant-growth DDM, growth estimation, PVGO</p></div>
+    <div class="card"><h3>III. Multistage Growth &amp; P/E</h3><p class="small">Life cycles, two-stage DDM, P/E ratio analysis</p></div>
+    <div class="card"><h3>IV. Free Cash Flow Models</h3><p class="small">FCFF, FCFE, firm valuation</p></div>
+  </div>
+  <div class="key-idea">
+    <p><strong>Core idea:</strong> The search for mispriced securities (intrinsic value ≠ market price) is what maintains a <em>nearly</em> efficient market.</p>
+  </div>
+</div>
+
+<!-- ==================== s3: Section I ==================== -->
+<div class="slide section-slide" id="s3" data-notes="Section I: Intrinsic value vs market price.">
+  <div class="section-num">I</div>
+  <h2>Valuation Framework</h2>
+  <p class="subtitle">Intrinsic value, market price, and the required return</p>
+</div>
+
+<!-- ==================== s4: IV vs MV ==================== -->
+<div class="slide" id="s4" data-notes="Intrinsic value = investor's assessment of true worth (PV of all cash flows). Market price = consensus of all participants. Alpha = E(r) - required return.">
+  <span class="label">Framework</span>
+  <span class="source-tag">Bodie Ch. 13</span>
+  <h2>Intrinsic Value vs. Market Price</h2>
+  <div class="cols">
+    <div>
+      <div class="card">
+        <h3>Intrinsic Value (IV)</h3>
+        <p class="small">Your assessment of the stock's <strong>true worth</strong> — the PV of all expected future cash payments to the investor.</p>
+      </div>
+      <div class="card">
+        <h3>Market Value (MV)</h3>
+        <p class="small">The <strong>consensus</strong> value set by all market participants — where supply meets demand.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Expected Holding Period Return</h3>
+      <div class="formula" style="font-size:1rem;">
+        E(r) = (D₁ + P₁ − P₀) / P₀
+      </div>
+      <h3>Required Return (via CAPM)</h3>
+      <div class="formula" style="font-size:1rem;">
+        k = r<sub>f</sub> + β × [E(r<sub>M</sub>) − r<sub>f</sub>]
+      </div>
+      <div class="key-idea">
+        <p class="small">If <strong>IV &gt; MV</strong> → stock is underpriced → buy.<br>
+        If <strong>IV &lt; MV</strong> → stock is overpriced → sell or short.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== sCA: Checkpoint A ==================== -->
+<div class="slide" id="sCA" data-notes="Checkpoint A: ABC stock — compute HPR, required return, intrinsic value.">
+  <span class="label">Checkpoint A</span>
+  <h2>Intrinsic Value Exercise</h2>
+  <div class="card">
+    <p><strong>ABC stock:</strong> Expected dividend = $4/share, current price P₀ = $48, expected year-end price P₁ = $52. Beta = 1.2, r<sub>f</sub> = 6%, E(r<sub>M</sub>) = 11%.</p>
+  </div>
+
+  <div class="card" style="margin-top:8px;">
+    <h3>a) Expected HPR:</h3>
+    <p class="small">E(r) = (D₁ + P₁ − P₀) / P₀ = ?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCAa" placeholder="e.g. 16.67"> <span class="small">%</span>
+      <button class="btn btn-sm" onclick="sCAchk('a')">Check</button>
+    </div>
+    <div id="sCAfba" class="small" style="margin-top:4px;"></div>
+  </div>
+
+  <div class="card" style="margin-top:8px;">
+    <h3>b) Required rate of return (CAPM):</h3>
+    <p class="small">k = r<sub>f</sub> + β × [E(r<sub>M</sub>) − r<sub>f</sub>] = ?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCAb" placeholder="e.g. 12"> <span class="small">%</span>
+      <button class="btn btn-sm" onclick="sCAchk('b')">Check</button>
+    </div>
+    <div id="sCAfbb" class="small" style="margin-top:4px;"></div>
+  </div>
+
+  <div class="card" style="margin-top:8px;">
+    <h3>c) Intrinsic value V₀ = (D₁ + P₁) / (1 + k) = ?</h3>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCAc" placeholder="e.g. 50"> <span class="small">$</span>
+      <button class="btn btn-sm" onclick="sCAchk('c')">Check</button>
+    </div>
+    <div id="sCAfbc" class="small" style="margin-top:4px;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  window.sCAchk=function(q){
+    if(q==='a'){
+      const v=parseFloat(document.getElementById('sCAa').value);
+      const fb=document.getElementById('sCAfba');
+      // (4+52-48)/48 = 8/48 = 16.67%
+      if(Math.abs(v-16.67)<0.5) fb.innerHTML='<span style="color:var(--green)">Correct!</span> (4 + 52 − 48) / 48 = 8/48 = 16.67%';
+      else fb.innerHTML='<span style="color:var(--red)">Try again.</span> E(r) = (D₁ + P₁ − P₀) / P₀ = (4 + 52 − 48) / 48';
+    } else if(q==='b'){
+      const v=parseFloat(document.getElementById('sCAb').value);
+      const fb=document.getElementById('sCAfbb');
+      // 6 + 1.2*(11-6) = 6+6 = 12%
+      if(Math.abs(v-12)<0.3) fb.innerHTML='<span style="color:var(--green)">Correct!</span> k = 6% + 1.2 × (11% − 6%) = 6% + 6% = 12%';
+      else fb.innerHTML='<span style="color:var(--red)">Try again.</span> k = 6% + 1.2 × 5% = 12%';
+    } else if(q==='c'){
+      const v=parseFloat(document.getElementById('sCAc').value);
+      const fb=document.getElementById('sCAfbc');
+      // (4+52)/(1.12) = 56/1.12 = 50
+      if(Math.abs(v-50)<0.5) fb.innerHTML='<span style="color:var(--green)">Correct!</span> V₀ = (4 + 52) / 1.12 = $50. Since IV ($50) > MV ($48), the stock is <strong>underpriced</strong>.';
+      else fb.innerHTML='<span style="color:var(--red)">Try again.</span> V₀ = (D₁ + P₁) / (1 + k) = 56 / 1.12';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== s5: Section II ==================== -->
+<div class="slide section-slide" id="s5" data-notes="Section II: Dividend Discount Models — the workhorse of equity valuation.">
+  <div class="section-num">II</div>
+  <h2>Dividend Discount Models</h2>
+  <p class="subtitle">Valuing stocks from their cash flows to shareholders</p>
+</div>
+
+<!-- ==================== s6: Constant Growth DDM ==================== -->
+<div class="slide" id="s6" data-notes="Gordon Growth Model: V0 = D1/(k-g). Valid only when g < k. Higher D, lower k, or higher g → higher stock value.">
+  <span class="label">DDM</span>
+  <span class="source-tag">Bodie Ch. 13</span>
+  <h2>Constant-Growth DDM</h2>
+  <p>If dividends grow at a <strong>constant rate g</strong> forever:</p>
+  <div class="formula formula-center" style="font-size:1.2rem;">
+    V₀ = D₁ / (k − g)
+  </div>
+  <div class="cols" style="margin-top:10px;">
+    <div>
+      <h3>Implications</h3>
+      <ul>
+        <li class="small">Valid only when <strong>g &lt; k</strong> (otherwise price → ∞)</li>
+        <li class="small">Stock price grows at rate <strong>g</strong> over time</li>
+        <li class="small">Higher D₁ → higher value</li>
+        <li class="small">Lower k → higher value</li>
+        <li class="small">Higher g → higher value</li>
+      </ul>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Example (Q8)</h3>
+        <p class="small">Dividend just paid: $3/share, g = 8%, k = 14%.</p>
+        <div class="formula" style="font-size:0.95rem;padding:8px 14px;">
+          D₁ = 3 × 1.08 = $3.24<br>
+          V₀ = 3.24 / (0.14 − 0.08) = <strong>$54</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s7: Growth Rate Estimation ==================== -->
+<div class="slide" id="s7" data-notes="Sustainable growth rate g = ROE × b, where b is the plowback (retention) ratio. Higher reinvestment in profitable projects → faster growth.">
+  <span class="label">DDM</span>
+  <h2>Estimating the Growth Rate</h2>
+  <div class="formula formula-center" style="font-size:1.15rem;">
+    g = ROE × b
+  </div>
+  <p class="small" style="text-align:center;margin-top:4px;">where <strong>b = plowback (retention) ratio</strong> = 1 − payout ratio</p>
+  <div class="cols" style="margin-top:12px;">
+    <div class="card">
+      <h3>Example</h3>
+      <p class="small">ROE = 12%, payout ratio = 60%.</p>
+      <p class="small">b = 1 − 0.60 = 0.40</p>
+      <p class="small">g = 12% × 0.40 = <strong>4.8%</strong></p>
+    </div>
+    <div class="card">
+      <h3>Intuition</h3>
+      <p class="small">The more a firm <strong>retains</strong> and reinvests at a high <strong>ROE</strong>, the faster earnings and dividends grow.</p>
+      <p class="small">But growth is only valuable if <strong>ROE &gt; k</strong>! Otherwise the firm destroys value by reinvesting.</p>
+    </div>
+  </div>
+  <div class="key-idea">
+    <p class="small"><strong>Key insight:</strong> Growth for its own sake isn't valuable. Growth <em>enhances</em> value only when projects earn returns above the cost of capital (ROE &gt; k).</p>
+  </div>
+</div>
+
+<!-- ==================== s8: PVGO ==================== -->
+<div class="slide" id="s8" data-notes="PVGO = price per share minus no-growth value. No-growth value = E₁/k. PVGO represents the value the market assigns to future growth opportunities.">
+  <span class="label">DDM</span>
+  <h2>Present Value of Growth Opportunities</h2>
+  <div class="formula formula-center" style="font-size:1.1rem;">
+    V₀ = E₁/k + PVGO
+  </div>
+  <p class="small" style="text-align:center;">Stock price = <strong>No-growth value</strong> + <strong>Value of growth opportunities</strong></p>
+  <div class="cols" style="margin-top:10px;">
+    <div>
+      <div class="card">
+        <h3>No-Growth Value</h3>
+        <div class="formula" style="font-size:0.95rem;padding:8px 14px;">
+          No-growth price = E₁ / k
+        </div>
+        <p class="small">If the firm pays out all earnings as dividends with zero reinvestment, this is the stock's value.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>PVGO</h3>
+        <div class="formula" style="font-size:0.95rem;padding:8px 14px;">
+          PVGO = V₀ − E₁/k
+        </div>
+        <p class="small">The <strong>extra value</strong> the market assigns for reinvesting earnings in profitable projects.</p>
+        <p class="small">If PVGO &lt; 0 → firm should stop reinvesting!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s9: DDM Interactive ==================== -->
+<div class="slide" id="s9" data-notes="Interactive DDM: adjust growth rate and see how it affects stock price. Small changes in g produce large price swings.">
+  <span class="label">DDM</span>
+  <h2>DDM Sensitivity to Growth</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS9" width="480" height="320"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">Growth rate g: <strong id="s9gLabel">4.0%</strong></label>
+        <input type="range" id="s9slider" min="0" max="120" value="40" style="width:100%;accent-color:var(--accent2);" oninput="s9Update()">
+      </div>
+    </div>
+    <div>
+      <div id="s9detail" class="card" style="font-size:0.9rem;line-height:1.7;"></div>
+      <div class="warning" style="margin-top:8px;">
+        <p class="small"><strong>Sensitivity:</strong> A small change in g produces a <em>huge</em> change in price. This is the DDM's biggest weakness — it's very sensitive to growth assumptions.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS9');
+  const ctx=canvas.getContext('2d');
+  const W=480,H=320;
+  function gc(n){return getComputedStyle(document.documentElement).getPropertyValue({'text':'--text','muted':'--text-muted','accent':'--accent','accent2':'--accent2','green':'--green','amber':'--amber','red':'--red','border':'--border'}[n]||'--text').trim()||'#e2e8f0';}
+  const D1=3,k=0.12;
+  function ddmPrice(g){ return g>=k? Infinity : D1/(k-g); }
+  window.s9Update=function(){ draw(); };
+  function draw(){
+    const gPct=parseInt(document.getElementById('s9slider').value)/10;
+    document.getElementById('s9gLabel').textContent=gPct.toFixed(1)+'%';
+    const g=gPct/100;
+    ctx.clearRect(0,0,W,H);
+    const mx=60,my=20,gw=W-mx-20,gh=H-my-40;
+    // axes
+    ctx.strokeStyle=gc('border');ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(mx,my+gh);ctx.lineTo(mx+gw,my+gh);ctx.stroke();
+    ctx.fillStyle=gc('muted');ctx.font='11px Inter,sans-serif';ctx.textAlign='center';
+    ctx.fillText('Growth Rate g (%)',mx+gw/2,H-3);
+    ctx.save();ctx.translate(14,my+gh/2);ctx.rotate(-Math.PI/2);ctx.fillText('Stock Price ($)',0,0);ctx.restore();
+    // y-axis labels
+    const maxP=200;
+    for(let p=0;p<=maxP;p+=50){
+      const y=my+gh-p/maxP*gh;
+      ctx.fillStyle=gc('muted');ctx.font='10px Inter,sans-serif';ctx.textAlign='right';
+      ctx.fillText('$'+p,mx-6,y+3);
+      if(p>0){ctx.strokeStyle=gc('border');ctx.globalAlpha=0.3;ctx.beginPath();ctx.moveTo(mx,y);ctx.lineTo(mx+gw,y);ctx.stroke();ctx.globalAlpha=1;}
+    }
+    // x-axis labels
+    for(let gv=0;gv<=12;gv+=2){
+      const x=mx+gv/12*gw;
+      ctx.fillStyle=gc('muted');ctx.font='10px Inter,sans-serif';ctx.textAlign='center';
+      ctx.fillText(gv+'%',x,my+gh+14);
+    }
+    // curve
+    ctx.beginPath();ctx.strokeStyle=gc('accent');ctx.lineWidth=2.5;
+    let first=true;
+    for(let gv=0;gv<k*100-0.5;gv+=0.2){
+      const price=D1/(k-gv/100);
+      const x=mx+gv/12*gw;
+      const y=my+gh-Math.min(price,maxP)/maxP*gh;
+      if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // asymptote
+    const asymX=mx+k*100/12*gw;
+    ctx.strokeStyle=gc('red');ctx.lineWidth=1;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(asymX,my);ctx.lineTo(asymX,my+gh);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=gc('red');ctx.font='10px Inter,sans-serif';ctx.textAlign='left';
+    ctx.fillText('k = '+k*100+'%',asymX+4,my+12);
+    // current point
+    if(g<k){
+      const price=ddmPrice(g);
+      const px=mx+gPct/12*gw;
+      const py=my+gh-Math.min(price,maxP)/maxP*gh;
+      ctx.fillStyle=gc('amber');
+      ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=gc('amber');ctx.lineWidth=1;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(mx,py);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,my+gh);ctx.stroke();
+      ctx.setLineDash([]);
+      document.getElementById('s9detail').innerHTML=
+        '<h3>Constant-Growth DDM</h3>'+
+        '<p>D₁ = $'+D1+', k = '+(k*100)+'%</p>'+
+        '<p>g = <strong>'+gPct.toFixed(1)+'%</strong></p>'+
+        '<p>V₀ = '+D1+' / ('+(k*100)+'% − '+gPct.toFixed(1)+'%)</p>'+
+        '<p>V₀ = <strong style="color:var(--amber);">$'+price.toFixed(2)+'</strong></p>'+
+        '<p class="small" style="margin-top:6px;">No-growth value: E/k ≈ $'+(D1/k).toFixed(2)+'</p>';
+    } else {
+      document.getElementById('s9detail').innerHTML=
+        '<h3>Invalid!</h3>'+
+        '<p style="color:var(--red);">When g ≥ k, the DDM formula breaks — price approaches infinity.</p>'+
+        '<p class="small">The constant-growth DDM only works when <strong>g &lt; k</strong>.</p>';
+    }
+  }
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+  document.addEventListener('themeChanged',draw);
+  draw();
+})();
+</script>
+
+<!-- ==================== sCB: Checkpoint B ==================== -->
+<div class="slide" id="sCB" data-notes="Checkpoint B: PVGO calculation (Firm IBX) and DDM value of stock.">
+  <span class="label">Checkpoint B</span>
+  <h2>PVGO &amp; DDM Exercise</h2>
+
+  <div class="card" style="margin-bottom:10px;">
+    <h3>Q1: PVGO (Firm IBX)</h3>
+    <p class="small">Retention ratio b = 60%, ROE = 10%, k = 15%, D₁ = $2/share, E₁ = $5/share.</p>
+    <p class="small"><strong>Step 1:</strong> g = ROE × b = ?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCBg" placeholder="e.g. 6"> <span class="small">%</span>
+      <button class="btn btn-sm" onclick="sCBchk('g')">Check</button>
+      <span id="sCBfbg" class="small"></span>
+    </div>
+    <p class="small" style="margin-top:6px;"><strong>Step 2:</strong> V₀ = D₁/(k−g) = ?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCBv" placeholder="e.g. 22.22"> <span class="small">$</span>
+      <button class="btn btn-sm" onclick="sCBchk('v')">Check</button>
+      <span id="sCBfbv" class="small"></span>
+    </div>
+    <p class="small" style="margin-top:6px;"><strong>Step 3:</strong> PVGO = V₀ − E₁/k = ?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCBpvgo" placeholder="e.g. -11.11"> <span class="small">$</span>
+      <button class="btn btn-sm" onclick="sCBchk('pvgo')">Check</button>
+      <span id="sCBfbpvgo" class="small"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Q2: What does negative PVGO mean?</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+      <button class="btn btn-sm btn-secondary" onclick="sCBq2(1,this)">The firm is growing too slowly</button>
+      <button class="btn btn-sm btn-secondary" onclick="sCBq2(2,this)">The firm's reinvestment destroys value (ROE &lt; k)</button>
+      <button class="btn btn-sm btn-secondary" onclick="sCBq2(3,this)">The firm pays too many dividends</button>
+    </div>
+    <div id="sCBfbq2" class="small" style="margin-top:4px;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  window.sCBchk=function(q){
+    if(q==='g'){
+      const v=parseFloat(document.getElementById('sCBg').value);
+      const fb=document.getElementById('sCBfbg');
+      if(Math.abs(v-6)<0.3) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> g = 10% × 0.6 = 6%';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> g = ROE × b = 10% × 0.6';
+    } else if(q==='v'){
+      const v=parseFloat(document.getElementById('sCBv').value);
+      const fb=document.getElementById('sCBfbv');
+      // 2/(0.15-0.06) = 2/0.09 = 22.22
+      if(Math.abs(v-22.22)<0.5) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> V₀ = 2/(0.15−0.06) = $22.22';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> V₀ = D₁/(k−g) = 2/(0.15−0.06)';
+    } else if(q==='pvgo'){
+      const v=parseFloat(document.getElementById('sCBpvgo').value);
+      const fb=document.getElementById('sCBfbpvgo');
+      // 22.22 - 5/0.15 = 22.22 - 33.33 = -11.11
+      if(Math.abs(v-(-11.11))<0.5) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> PVGO = 22.22 − 33.33 = −$11.11. Growth is destroying value!';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> PVGO = V₀ − E₁/k = 22.22 − (5/0.15) = 22.22 − 33.33';
+    }
+  };
+  window.sCBq2=function(n,btn){
+    const fb=document.getElementById('sCBfbq2');
+    if(n===2) fb.innerHTML='<span style="color:var(--green)">Correct!</span> When ROE (10%) < k (15%), reinvesting earnings earns less than what investors require. The firm should pay out all earnings instead.';
+    else fb.innerHTML='<span style="color:var(--red)">Not quite.</span> Negative PVGO means the firm\'s growth opportunities earn less than the cost of capital (ROE < k). Reinvestment destroys value.';
+  };
+})();
+</script>
+
+<!-- ==================== s10: Section III ==================== -->
+<div class="slide section-slide" id="s10" data-notes="Section III: Multistage growth models and P/E ratio analysis.">
+  <div class="section-num">III</div>
+  <h2>Multistage Growth &amp; P/E</h2>
+  <p class="subtitle">When constant growth doesn't cut it</p>
+</div>
+
+<!-- ==================== s11: Multistage DDM ==================== -->
+<div class="slide" id="s11" data-notes="Multistage DDM: manually compute dividends during high-growth phase, then use Gordon model for the terminal value when growth settles.">
+  <span class="label">Multistage</span>
+  <h2>Multistage Growth Models</h2>
+  <p>Firms go through <strong>life cycle stages</strong> with different growth rates:</p>
+  <div class="cols">
+    <div>
+      <div class="card" style="border-left:3px solid var(--green);">
+        <h3>Early Years</h3>
+        <p class="small">Rapid growth, low payout, ample reinvestment opportunities. Competitors haven't entered yet.</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--amber);">
+        <h3>Later Years</h3>
+        <p class="small">Growth slows, payout rises, fewer profitable projects. Competitors in the market.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Two-Stage DDM Approach:</h3>
+      <ol>
+        <li class="small"><strong>Stage 1:</strong> Manually compute PV of dividends during the high-growth period</li>
+        <li class="small"><strong>Stage 2:</strong> At the end of Stage 1, use <strong>constant-growth DDM</strong> for the terminal value</li>
+        <li class="small"><strong>Total:</strong> V₀ = PV(Stage 1 dividends) + PV(Terminal value)</li>
+      </ol>
+      <div class="formula" style="font-size:0.9rem;padding:8px 14px;">
+        V₀ = Σ D<sub>t</sub>/(1+k)<sup>t</sup> + P<sub>T</sub>/(1+k)<sup>T</sup><br>
+        where P<sub>T</sub> = D<sub>T+1</sub>/(k − g<sub>steady</sub>)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s12: P/E Ratio ==================== -->
+<div class="slide" id="s12" data-notes="P/E ratio is related to growth: P/E = (1-b)/(k-g). Higher growth → higher P/E. But growth must be profitable (ROE > k).">
+  <span class="label">Multistage</span>
+  <h2>P/E Ratio and Growth</h2>
+  <div class="cols">
+    <div>
+      <p>From the DDM: V₀ = D₁/(k−g) = E₁(1−b)/(k−g)</p>
+      <div class="formula formula-center" style="font-size:1.1rem;">
+        P/E = (1 − b) / (k − g)
+      </div>
+      <div class="key-idea">
+        <p class="small"><strong>P/E is higher when:</strong></p>
+        <ul>
+          <li class="small">Higher plowback (b) → higher growth g</li>
+          <li class="small">Higher ROE → more valuable growth</li>
+          <li class="small">Lower k → lower required return</li>
+        </ul>
+        <p class="small"><strong>But only if ROE &gt; k!</strong> Otherwise, higher plowback <em>reduces</em> P/E.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Wall Street Rule of Thumb</h3>
+        <p class="small">"If the P/E ratio is less than the growth rate, you may have found yourself a bargain." — Peter Lynch</p>
+        <p class="small">The <strong>PEG ratio</strong> = P/E ÷ g. PEG &lt; 1 may signal undervaluation.</p>
+      </div>
+      <div class="warning" style="margin-top:8px;">
+        <p class="small"><strong>P/E pitfalls:</strong> Accounting earnings ≠ economic earnings. Historical cost, earnings management, business cycle effects, and inflation all distort P/E comparisons.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s13: Section IV ==================== -->
+<div class="slide section-slide" id="s13" data-notes="Section IV: Free Cash Flow valuation — FCFF and FCFE.">
+  <div class="section-num">IV</div>
+  <h2>Free Cash Flow Valuation</h2>
+  <p class="subtitle">Cash flow available after reinvestment</p>
+</div>
+
+<!-- ==================== s14: FCFF ==================== -->
+<div class="slide" id="s14" data-notes="FCFF = EBIT(1-T) + Depreciation - CapEx - ΔWC. Cash flow available to all capital providers (debt + equity).">
+  <span class="label">FCF</span>
+  <span class="source-tag">Bodie Ch. 13</span>
+  <h2>Free Cash Flow to the Firm (FCFF)</h2>
+  <div class="formula formula-center" style="font-size:1rem;line-height:1.8;">
+    FCFF = EBIT(1 − T<sub>c</sub>) + Depreciation − Capital Expenditures − Δ Working Capital
+  </div>
+  <div class="cols" style="margin-top:12px;">
+    <div>
+      <div class="card">
+        <h3>Example (Q4)</h3>
+        <p class="small">EBIT = $100M, Depreciation = $20M, Tax rate = 35%, CapEx + ΔWC = $10M.</p>
+        <div class="formula" style="font-size:0.88rem;padding:8px 14px;">
+          FCFF = 100(1−0.35) + 20 − 10<br>
+          FCFF = 65 + 20 − 10 = <strong>$75M</strong>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Firm Value</h3>
+        <p class="small">Discount FCFF at the <strong>WACC</strong>:</p>
+        <div class="formula" style="font-size:0.9rem;padding:8px 14px;">
+          Firm Value = FCFF₁ / (WACC − g)
+        </div>
+        <p class="small">Equity value = Firm value − Debt</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s15: FCFE ==================== -->
+<div class="slide" id="s15" data-notes="FCFE = FCFF - Interest(1-T) + Net new borrowing. Cash flow available to equity holders only. Discount at cost of equity k.">
+  <span class="label">FCF</span>
+  <h2>Free Cash Flow to Equity (FCFE)</h2>
+  <div class="formula formula-center" style="font-size:1rem;line-height:1.8;">
+    FCFE = FCFF − Interest × (1 − T<sub>c</sub>) + Increase in Net Debt
+  </div>
+  <div class="cols" style="margin-top:12px;">
+    <div>
+      <div class="card">
+        <h3>Example (Q5)</h3>
+        <p class="small">FCFF = $205M, Interest = $22M, T = 35%, Net debt increase = $25M.</p>
+        <div class="formula" style="font-size:0.88rem;padding:8px 14px;">
+          FCFE = 205 − 22(1−0.35) + 25<br>
+          FCFE = 205 − 14.3 + 25 = <strong>$215.7M</strong>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Equity Value</h3>
+        <p class="small">Discount FCFE at the <strong>cost of equity</strong>:</p>
+        <div class="formula" style="font-size:0.9rem;padding:8px 14px;">
+          Equity Value = FCFE₁ / (k<sub>e</sub> − g)
+        </div>
+        <p class="small">If FCFE grows at g = 2%, k<sub>e</sub> = 11%:</p>
+        <div class="formula" style="font-size:0.9rem;padding:8px 14px;">
+          = 215.7 / (0.11 − 0.02) = <strong>$2,396.7M</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== sCC: Checkpoint C ==================== -->
+<div class="slide" id="sCC" data-notes="Checkpoint C: DDM with reinvestment (Q6) and ROE vs k (Q7).">
+  <span class="label">Checkpoint C</span>
+  <h2>DDM &amp; Growth Exercises</h2>
+
+  <div class="card" style="margin-bottom:10px;">
+    <h3>Q1: DDM with Reinvestment</h3>
+    <p class="small">Expected earnings E₁ = $3/share. Reinvestment rate b = 25%, ROE = 20%, k = 11%.</p>
+    <p class="small">Step 1: g = ROE × b = ?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCCg" placeholder="e.g. 5"> <span class="small">%</span>
+      <button class="btn btn-sm" onclick="sCCchk('g')">Check</button>
+      <span id="sCCfbg" class="small"></span>
+    </div>
+    <p class="small" style="margin-top:6px;">Step 2: D₁ = E₁ × (1−b) = ?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCCd" placeholder="e.g. 2.25"> <span class="small">$</span>
+      <button class="btn btn-sm" onclick="sCCchk('d')">Check</button>
+      <span id="sCCfbd" class="small"></span>
+    </div>
+    <p class="small" style="margin-top:6px;">Step 3: V₀ = D₁/(k−g) = ?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sCCv" placeholder="e.g. 37.50"> <span class="small">$</span>
+      <button class="btn btn-sm" onclick="sCCchk('v')">Check</button>
+      <span id="sCCfbv" class="small"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Q2: ROE vs. Cost of Capital</h3>
+    <p class="small">Eagle Brand: E₁ = $1.25, k = 12%, g = 5%, b = 40%. By how much does ROE exceed k?</p>
+    <p class="small">Hint: g = ROE × b → ROE = g/b</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="small">ROE − k =</span>
+      <input type="text" class="quiz-input" id="sCCroe" placeholder="e.g. 0.5"> <span class="small">%</span>
+      <button class="btn btn-sm" onclick="sCCchk('roe')">Check</button>
+      <span id="sCCfbroe" class="small"></span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  window.sCCchk=function(q){
+    if(q==='g'){
+      const v=parseFloat(document.getElementById('sCCg').value);
+      const fb=document.getElementById('sCCfbg');
+      if(Math.abs(v-5)<0.3) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> g = 20% × 0.25 = 5%';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> g = ROE × b = 20% × 0.25';
+    } else if(q==='d'){
+      const v=parseFloat(document.getElementById('sCCd').value);
+      const fb=document.getElementById('sCCfbd');
+      if(Math.abs(v-2.25)<0.05) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> D₁ = 3 × (1−0.25) = $2.25';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> D₁ = E₁ × (1−b) = 3 × 0.75';
+    } else if(q==='v'){
+      const v=parseFloat(document.getElementById('sCCv').value);
+      const fb=document.getElementById('sCCfbv');
+      // 2.25/(0.11-0.05) = 2.25/0.06 = 37.50
+      if(Math.abs(v-37.50)<0.5) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> V₀ = 2.25/(0.11−0.05) = $37.50';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> V₀ = 2.25/(0.11−0.05)';
+    } else if(q==='roe'){
+      const v=parseFloat(document.getElementById('sCCroe').value);
+      const fb=document.getElementById('sCCfbroe');
+      // ROE = 5%/0.4 = 12.5%, ROE-k = 0.5%
+      if(Math.abs(v-0.5)<0.2) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> ROE = g/b = 5%/0.4 = 12.5%. ROE − k = 12.5% − 12% = 0.5%';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> ROE = g/b = 5%/0.4 = 12.5%, then 12.5% − 12% = ?';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== s16: Section V ==================== -->
+<div class="slide section-slide" id="s16" data-notes="Section V: Relative valuation using comparables and multiples.">
+  <div class="section-num">V</div>
+  <h2>Relative Valuation</h2>
+  <p class="subtitle">Pricing by comparison</p>
+</div>
+
+<!-- ==================== s17: Comparables ==================== -->
+<div class="slide" id="s17" data-notes="Comparable valuation: compare P/E, P/B, P/S, P/CF ratios to industry peers. Useful for startups (P/S) with no earnings.">
+  <span class="label">Comparables</span>
+  <h2>Valuation by Comparables</h2>
+  <p>Compare a firm's valuation ratios to <strong>industry peers</strong>:</p>
+  <table class="data-table">
+    <tr><th>Ratio</th><th>Formula</th><th>Best For</th></tr>
+    <tr><td><strong>P/E Ratio</strong></td><td>Price / Earnings per share</td><td>Profitable, mature firms</td></tr>
+    <tr><td><strong>P/B Ratio</strong></td><td>Price / Book value per share</td><td>Asset-heavy firms (banks, REITs)</td></tr>
+    <tr><td><strong>P/S Ratio</strong></td><td>Price / Sales per share</td><td>Startups with no earnings yet</td></tr>
+    <tr><td><strong>P/CF Ratio</strong></td><td>Price / Cash flow per share</td><td>When earnings are distorted by accounting</td></tr>
+  </table>
+  <div class="cols" style="margin-top:8px;">
+    <div class="key-idea">
+      <p class="small"><strong>Logic:</strong> If similar firms trade at 15× earnings and your firm earns $3/share, it should be worth ~$45/share.</p>
+    </div>
+    <div class="analogy">
+      <p class="small"><strong>Limitation:</strong> "Similar" firms may not be truly comparable. Industry averages mask wide variation in growth, risk, and margins.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s18: Book Value & Limitations ==================== -->
+<div class="slide" id="s18" data-notes="Book value = historical cost, not market value. Liquidation value is the floor. Tobin's q = market value / replacement cost.">
+  <span class="label">Comparables</span>
+  <h2>Book Value &amp; Its Limitations</h2>
+  <div class="cols">
+    <div>
+      <div class="card">
+        <h3>Book Value Problems</h3>
+        <ul>
+          <li class="small">Based on <strong>historical cost</strong>, not market value</li>
+          <li class="small">Excludes intangibles: brand, expertise, IP</li>
+          <li class="small">Rarely equals market value (usually much lower)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Liquidation Value</h3>
+        <p class="small">The "floor" — break up the firm, sell assets, repay debt, distribute remainder.</p>
+        <p class="small">If Market Value &lt; Liquidation Value → potential <strong>arbitrage</strong> opportunity (buy, break up, profit).</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Tobin's q</h3>
+        <div class="formula" style="font-size:0.95rem;padding:8px 14px;">
+          q = Market Value / Replacement Cost
+        </div>
+        <p class="small">q &gt; 1 → market values the firm's assets above their replacement cost (growth premium).</p>
+        <p class="small">q &lt; 1 → market values the firm below replacement cost (potential undervaluation or poor management).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s19: Comparing Models ==================== -->
+<div class="slide" id="s19" data-notes="Different valuation models give different answers because of simplifying assumptions. Use multiple approaches and triangulate.">
+  <span class="label">Summary</span>
+  <h2>Comparing Valuation Models</h2>
+  <table class="data-table">
+    <tr><th>Model</th><th>Inputs</th><th>Strengths</th><th>Weaknesses</th></tr>
+    <tr><td><strong>DDM</strong></td><td>Dividends, g, k</td><td>Theoretically sound</td><td>Very sensitive to g; useless for non-dividend firms</td></tr>
+    <tr><td><strong>FCFF/FCFE</strong></td><td>Cash flows, WACC/k</td><td>Works for non-dividend firms</td><td>Forecasting cash flows is hard</td></tr>
+    <tr><td><strong>P/E Comparables</strong></td><td>Peer ratios</td><td>Simple, market-based</td><td>"Similar" firms may differ significantly</td></tr>
+    <tr><td><strong>P/B, P/S</strong></td><td>Book value, sales</td><td>Useful for special cases</td><td>Historical cost; ignores growth</td></tr>
+  </table>
+  <div class="key-idea">
+    <p class="small"><strong>Best practice:</strong> Use <em>multiple</em> valuation methods and triangulate. If they converge, you have more confidence. If they diverge, investigate why.</p>
+  </div>
+  <div class="warning">
+    <p class="small"><strong>DCF sensitivity warning:</strong> Small changes in growth rate, discount rate, or terminal value assumptions can produce wildly different valuations. Always perform sensitivity analysis.</p>
+  </div>
+</div>
+
+<!-- ==================== s20: Key Formulas ==================== -->
+<div class="slide" id="s20" data-notes="All key formulas from Chapter 13 in one place.">
+  <span class="label">Reference</span>
+  <h2>Key Formulas</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card" style="padding:10px 14px;">
+      <h3>Expected HPR</h3>
+      <div class="formula" style="font-size:0.88rem;padding:6px 12px;margin:4px 0;">E(r) = (D₁ + P₁ − P₀) / P₀</div>
+    </div>
+    <div class="card" style="padding:10px 14px;">
+      <h3>Intrinsic Value</h3>
+      <div class="formula" style="font-size:0.88rem;padding:6px 12px;margin:4px 0;">V₀ = (D₁ + P₁) / (1 + k)</div>
+    </div>
+    <div class="card" style="padding:10px 14px;">
+      <h3>Constant-Growth DDM</h3>
+      <div class="formula" style="font-size:0.88rem;padding:6px 12px;margin:4px 0;">V₀ = D₁ / (k − g)</div>
+    </div>
+    <div class="card" style="padding:10px 14px;">
+      <h3>Growth Rate</h3>
+      <div class="formula" style="font-size:0.88rem;padding:6px 12px;margin:4px 0;">g = ROE × b</div>
+    </div>
+    <div class="card" style="padding:10px 14px;">
+      <h3>PVGO</h3>
+      <div class="formula" style="font-size:0.88rem;padding:6px 12px;margin:4px 0;">PVGO = V₀ − E₁/k</div>
+    </div>
+    <div class="card" style="padding:10px 14px;">
+      <h3>P/E Ratio</h3>
+      <div class="formula" style="font-size:0.88rem;padding:6px 12px;margin:4px 0;">P/E = (1−b) / (k−g)</div>
+    </div>
+    <div class="card" style="padding:10px 14px;">
+      <h3>FCFF</h3>
+      <div class="formula" style="font-size:0.82rem;padding:6px 12px;margin:4px 0;">EBIT(1−T) + Dep − CapEx − ΔWC</div>
+    </div>
+    <div class="card" style="padding:10px 14px;">
+      <h3>FCFE</h3>
+      <div class="formula" style="font-size:0.82rem;padding:6px 12px;margin:4px 0;">FCFF − Int(1−T) + ΔDebt</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== sQ1: Quiz 1 ==================== -->
+<div class="slide" id="sQ1" data-notes="Quiz: P/E ratio and growth calculation.">
+  <span class="label">Quiz 1</span>
+  <h2>Quiz: DDM &amp; P/E</h2>
+
+  <div class="card" style="margin-bottom:10px;">
+    <h3>A stock has ROE = 12%, E₁ = $2, payout ratio = 75%, k = 10%.</h3>
+    <p class="small"><strong>a)</strong> What is the dividend D₁?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sQ1a" placeholder="e.g. 1.50"> <span class="small">$</span>
+      <button class="btn btn-sm" onclick="sQ1chk('a')">Check</button>
+      <span id="sQ1fba" class="small"></span>
+    </div>
+    <p class="small" style="margin-top:6px;"><strong>b)</strong> What is the growth rate g?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sQ1b" placeholder="e.g. 3"> <span class="small">%</span>
+      <button class="btn btn-sm" onclick="sQ1chk('b')">Check</button>
+      <span id="sQ1fbb" class="small"></span>
+    </div>
+    <p class="small" style="margin-top:6px;"><strong>c)</strong> What is the stock price V₀?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sQ1c" placeholder="e.g. 21.43"> <span class="small">$</span>
+      <button class="btn btn-sm" onclick="sQ1chk('c')">Check</button>
+      <span id="sQ1fbc" class="small"></span>
+    </div>
+    <p class="small" style="margin-top:6px;"><strong>d)</strong> What is the P/E ratio?</p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" class="quiz-input" id="sQ1d" placeholder="e.g. 10.71"> <span class="small">×</span>
+      <button class="btn btn-sm" onclick="sQ1chk('d')">Check</button>
+      <span id="sQ1fbd" class="small"></span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  // ROE=12%, E1=2, payout=75%, b=25%, k=10%
+  // D1 = 2*0.75 = 1.50, g = 12%*0.25 = 3%, V0 = 1.5/(0.10-0.03) = 21.43, P/E = 21.43/2 = 10.71
+  window.sQ1chk=function(q){
+    if(q==='a'){
+      const v=parseFloat(document.getElementById('sQ1a').value);
+      const fb=document.getElementById('sQ1fba');
+      if(Math.abs(v-1.50)<0.05) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> D₁ = E₁ × payout = 2 × 0.75 = $1.50';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> D₁ = E₁ × payout ratio = 2 × 0.75';
+    } else if(q==='b'){
+      const v=parseFloat(document.getElementById('sQ1b').value);
+      const fb=document.getElementById('sQ1fbb');
+      if(Math.abs(v-3)<0.3) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> g = ROE × b = 12% × 0.25 = 3%';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> g = ROE × b, where b = 1 − payout = 0.25';
+    } else if(q==='c'){
+      const v=parseFloat(document.getElementById('sQ1c').value);
+      const fb=document.getElementById('sQ1fbc');
+      if(Math.abs(v-21.43)<0.5) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> V₀ = 1.50/(0.10−0.03) = $21.43';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> V₀ = D₁/(k−g) = 1.50/(0.10−0.03)';
+    } else if(q==='d'){
+      const v=parseFloat(document.getElementById('sQ1d').value);
+      const fb=document.getElementById('sQ1fbd');
+      if(Math.abs(v-10.71)<0.3) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> P/E = V₀/E₁ = 21.43/2 = 10.71×';
+      else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> P/E = V₀/E₁ = 21.43/2';
+    }
+  };
+})();
+</script>
+
+<!-- ==================== sQ2: Quiz 2 ==================== -->
+<div class="slide" id="sQ2" data-notes="Quiz 2: FCFF calculation.">
+  <span class="label">Quiz 2</span>
+  <h2>Quiz: Free Cash Flow</h2>
+
+  <div class="card">
+    <h3>A firm reports the following:</h3>
+    <table class="data-table compact-table" style="max-width:350px;">
+      <tr><td>EBIT</td><td class="num">$80 million</td></tr>
+      <tr><td>Depreciation</td><td class="num">$15 million</td></tr>
+      <tr><td>Tax rate</td><td class="num">30%</td></tr>
+      <tr><td>CapEx + ΔWC</td><td class="num">$12 million</td></tr>
+    </table>
+
+    <p class="small" style="margin-top:10px;"><strong>What is FCFF?</strong></p>
+    <p class="small">FCFF = EBIT(1−T) + Dep − CapEx − ΔWC</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+      <span class="small">FCFF = $</span>
+      <input type="text" class="quiz-input" id="sQ2a" placeholder="e.g. 59"> <span class="small">million</span>
+      <button class="btn btn-sm" onclick="sQ2chk()">Check</button>
+    </div>
+    <div id="sQ2fb" class="small" style="margin-top:4px;"></div>
+
+    <p class="small" style="margin-top:10px;">If FCFF grows at 3% and WACC = 10%, what is the firm value?</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+      <span class="small">Firm value = $</span>
+      <input type="text" class="quiz-input" id="sQ2b" placeholder="e.g. 843"> <span class="small">million</span>
+      <button class="btn btn-sm" onclick="sQ2chk2()">Check</button>
+    </div>
+    <div id="sQ2fb2" class="small" style="margin-top:4px;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  // FCFF = 80*(1-0.3) + 15 - 12 = 56 + 15 - 12 = 59
+  window.sQ2chk=function(){
+    const v=parseFloat(document.getElementById('sQ2a').value);
+    const fb=document.getElementById('sQ2fb');
+    if(Math.abs(v-59)<1) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> FCFF = 80(0.70) + 15 − 12 = 56 + 15 − 12 = $59M';
+    else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> FCFF = 80(1−0.30) + 15 − 12';
+  };
+  // Firm value = 59/(0.10-0.03) = 59/0.07 = 842.86
+  window.sQ2chk2=function(){
+    const v=parseFloat(document.getElementById('sQ2b').value);
+    const fb=document.getElementById('sQ2fb2');
+    if(Math.abs(v-842.86)<5) fb.innerHTML='<span style="color:var(--green)">&#10003;</span> Firm value = 59/(0.10−0.03) = 59/0.07 ≈ $842.9M';
+    else fb.innerHTML='<span style="color:var(--red)">&#10007;</span> Firm value = FCFF/(WACC−g) = 59/(0.10−0.03)';
+  };
+})();
+</script>
+
+<!-- ==================== s21: Key Takeaways ==================== -->
+<div class="slide" id="s21" data-notes="Final takeaways from Chapter 13 Equity Valuation.">
+  <span class="label">Takeaways</span>
+  <h2>Key Takeaways</h2>
+  <ol>
+    <li><strong>Intrinsic value</strong> = PV of all expected future cash flows. Compare to market price to find mispricing.</li>
+    <li>The <strong>constant-growth DDM</strong> (V₀ = D₁/(k−g)) is elegant but extremely sensitive to growth assumptions.</li>
+    <li><strong>Growth is not inherently valuable</strong> — only when ROE &gt; k. Negative PVGO means the firm should stop reinvesting.</li>
+    <li><strong>Multistage models</strong> handle firms transitioning from high to steady-state growth.</li>
+    <li><strong>FCFF and FCFE</strong> models work for non-dividend-paying firms — the more flexible valuation approach.</li>
+    <li><strong>Comparable valuation</strong> (P/E, P/B, P/S) provides market-based sanity checks but requires truly comparable peers.</li>
+    <li><strong>Use multiple models</strong> and triangulate. No single approach is perfect.</li>
+  </ol>
+  <div class="think-prompt" style="margin-top:10px;">
+    <p>Equity valuation is as much art as science — the models provide structure, but the real skill is in the assumptions.</p>
+  </div>
+</div>
+
+</div><!-- end #deck -->
+
+<!-- ==================== Navigation JS ==================== -->
+<script>
+(function(){
+  const slideOrder = ['s1','s2','s3','s4','sCA','s5','s6','s7','s8','s9','sCB','s10','s11','s12','s13','s14','s15','sCC','s16','s17','s18','s19','s20','sQ1','sQ2','s21'];
+  let cur = 0;
+  const total = slideOrder.length;
+
+  function showSlide(n){
+    if(n<0||n>=total) return;
+    const prev = document.getElementById(slideOrder[cur]);
+    const next = document.getElementById(slideOrder[n]);
+    if(prev) { prev.classList.remove('active'); prev.classList.add(n>cur?'exit-left':''); setTimeout(()=>prev.classList.remove('exit-left'),500); }
+    cur = n;
+    next.classList.add('active');
+    updateNav();
+  }
+
+  function updateNav(){
+    document.getElementById('slide-counter').textContent = (cur+1)+' / '+total;
+    document.getElementById('progress').style.width = ((cur+1)/total*100)+'%';
+    const notes = document.getElementById(slideOrder[cur]).getAttribute('data-notes')||'';
+    document.getElementById('notes-text').textContent = notes;
+  }
+
+  document.getElementById('nav-prev').onclick = ()=>showSlide(cur-1);
+  document.getElementById('nav-next').onclick = ()=>showSlide(cur+1);
+
+  document.addEventListener('keydown', e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown') { e.preventDefault(); showSlide(cur+1); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp') { e.preventDefault(); showSlide(cur-1); }
+    else if(e.key==='Home') { e.preventDefault(); showSlide(0); }
+    else if(e.key==='End') { e.preventDefault(); showSlide(total-1); }
+    else if(e.key==='t'||e.key==='T') document.getElementById('theme-toggle').click();
+    else if(e.key==='n'||e.key==='N') document.getElementById('notes-btn').click();
+  });
+
+  let touchX = 0;
+  document.addEventListener('touchstart', e=>{ touchX=e.changedTouches[0].screenX; }, {passive:true});
+  document.addEventListener('touchend', e=>{ const dx=e.changedTouches[0].screenX-touchX; if(Math.abs(dx)>50){ dx<0?showSlide(cur+1):showSlide(cur-1); } }, {passive:true});
+
+  document.getElementById('theme-toggle').onclick = function(){
+    const isLight = document.documentElement.getAttribute('data-theme')==='light';
+    document.documentElement.setAttribute('data-theme', isLight?'':'light');
+    this.textContent = isLight?'Light':'Dark';
+    document.dispatchEvent(new Event('themeChanged'));
+  };
+
+  document.getElementById('notes-btn').onclick = ()=>document.getElementById('notes-panel').classList.toggle('visible');
+
+  updateNav();
+})();
+</script>
+
+</body>
+</html>

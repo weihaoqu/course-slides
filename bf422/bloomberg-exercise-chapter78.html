@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BF422 — Bloomberg Exercise: CAPM, APT &amp; EMH (Chapters 7 &amp; 8)</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f8fafc; color: #1e293b; max-width: 850px; margin: 0 auto; padding: 32px 28px;
+  line-height: 1.6; font-size: 0.95rem;
+}
+h1 { font-size: 1.6rem; color: #0f172a; margin-bottom: 4px; }
+h2 { font-size: 1.15rem; color: #4f46e5; margin: 24px 0 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; }
+h3 { font-size: 1rem; color: #1e293b; margin: 12px 0 6px; }
+p { margin-bottom: 8px; }
+.subtitle { color: #64748b; font-size: 0.88rem; margin-bottom: 16px; }
+.command {
+  display: inline-block; background: #0f172a; color: #f59e0b; font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.85rem; padding: 2px 10px; border-radius: 4px; font-weight: 600; letter-spacing: 0.5px;
+}
+.step {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 14px 18px; margin: 10px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.step-num {
+  display: inline-block; background: #4f46e5; color: #fff; width: 24px; height: 24px;
+  border-radius: 50%; text-align: center; line-height: 24px; font-size: 0.78rem; font-weight: 700;
+  margin-right: 8px; flex-shrink: 0;
+}
+.answer-box {
+  background: #f1f5f9; border: 1px dashed #94a3b8; border-radius: 6px;
+  padding: 10px 14px; margin: 8px 0; min-height: 40px;
+}
+.answer-box::before { content: 'Your answer: '; color: #64748b; font-size: 0.82rem; font-style: italic; }
+.tip {
+  background: #eff6ff; border-left: 3px solid #3b82f6; padding: 8px 14px;
+  border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 0.88rem;
+}
+.warning {
+  background: #fef3c7; border-left: 3px solid #f59e0b; padding: 8px 14px;
+  border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 0.88rem;
+}
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.88rem; }
+th { background: #f1f5f9; padding: 6px 10px; text-align: left; border-bottom: 2px solid #e2e8f0; font-size: 0.78rem; text-transform: uppercase; color: #4f46e5; }
+td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; }
+.header-bar {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  border-bottom: 3px solid #4f46e5; padding-bottom: 12px; margin-bottom: 20px;
+}
+.header-bar .meta { text-align: right; font-size: 0.82rem; color: #64748b; }
+@media print {
+  body { padding: 16px; font-size: 0.88rem; }
+  .step { break-inside: avoid; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div>
+    <h1>Bloomberg Terminal Exercise</h1>
+    <p class="subtitle">Chapters 7 &amp; 8: CAPM, Beta &amp; Market Efficiency</p>
+  </div>
+  <div class="meta">
+    <p>BF422 — Investments</p>
+    <p>Name: ________________________</p>
+    <p>Date: ________________________</p>
+  </div>
+</div>
+
+<div class="tip">
+  <strong>Getting started:</strong> Log into a Bloomberg terminal on campus. Press <span class="command">HELP</span> twice at any time for Bloomberg customer support. Use <span class="command">GO</span> (green key) to execute commands.
+</div>
+
+<!-- ==================== PART 1 ==================== -->
+<h2>Part 1: Finding Beta &amp; Computing Expected Returns</h2>
+
+<div class="step">
+  <p><span class="step-num">1</span><strong>Look up beta for three stocks.</strong></p>
+  <p>Type each ticker followed by <span class="command">Equity</span> then <span class="command">BETA</span> <span class="command">GO</span>.</p>
+  <p>For example: <span class="command">AAPL Equity BETA</span></p>
+  <p>Use <strong>2-year weekly</strong> returns against the <strong>S&P 500</strong> (default settings).</p>
+
+  <table>
+    <tr><th>Stock</th><th>Ticker</th><th>Beta (β)</th><th>R² (%)</th></tr>
+    <tr><td>Apple</td><td>AAPL</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td class="answer-box" style="min-height:20px;display:table-cell;"></td></tr>
+    <tr><td>JPMorgan Chase</td><td>JPM</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td class="answer-box" style="min-height:20px;display:table-cell;"></td></tr>
+    <tr><td>Johnson &amp; Johnson</td><td>JNJ</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td class="answer-box" style="min-height:20px;display:table-cell;"></td></tr>
+  </table>
+</div>
+
+<div class="step">
+  <p><span class="step-num">2</span><strong>Find the current risk-free rate.</strong></p>
+  <p>Type <span class="command">GT10 Govt</span> <span class="command">GO</span> to see the 10-year Treasury yield. Record the current yield.</p>
+  <div class="answer-box">r<sub>f</sub> = </div>
+  <p>For the market risk premium, use the historical average: <strong>E(r<sub>M</sub>) − r<sub>f</sub> ≈ 8%</strong></p>
+</div>
+
+<div class="step">
+  <p><span class="step-num">3</span><strong>Compute CAPM expected returns.</strong></p>
+  <p>Use the formula: E(r<sub>i</sub>) = r<sub>f</sub> + β<sub>i</sub> × 8%</p>
+  <table>
+    <tr><th>Stock</th><th>Beta</th><th>E(r) Calculation</th><th>E(r) %</th></tr>
+    <tr><td>AAPL</td><td></td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td></td></tr>
+    <tr><td>JPM</td><td></td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td></td></tr>
+    <tr><td>JNJ</td><td></td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td></td></tr>
+  </table>
+</div>
+
+<!-- ==================== PART 2 ==================== -->
+<h2>Part 2: Estimating Alpha</h2>
+
+<div class="step">
+  <p><span class="step-num">4</span><strong>Find actual 1-year returns.</strong></p>
+  <p>For each stock, type <span class="command">AAPL Equity TRA</span> <span class="command">GO</span> (Total Return Analysis). Set the period to 1 year.</p>
+  <table>
+    <tr><th>Stock</th><th>Actual 1Y Return</th><th>CAPM Expected</th><th>Alpha (α)</th><th>Over/Under/Fair?</th></tr>
+    <tr><td>AAPL</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td></td><td></td><td></td></tr>
+    <tr><td>JPM</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td></td><td></td><td></td></tr>
+    <tr><td>JNJ</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td><td></td><td></td><td></td></tr>
+  </table>
+</div>
+
+<div class="step">
+  <p><span class="step-num">5</span><strong>Interpret your findings.</strong></p>
+  <p>Which stock had the highest alpha? Does positive alpha mean the stock is a guaranteed "buy"? What are the limitations of this analysis?</p>
+  <div class="answer-box" style="min-height:60px;"></div>
+</div>
+
+<!-- ==================== PART 3 ==================== -->
+<h2>Part 3: Fama-French Factors &amp; Anomalies</h2>
+
+<div class="step">
+  <p><span class="step-num">6</span><strong>Compare size and value characteristics.</strong></p>
+  <p>For each stock, type <span class="command">AAPL Equity FA</span> <span class="command">GO</span> (Financial Analysis). Find:</p>
+  <table>
+    <tr><th>Stock</th><th>Market Cap ($B)</th><th>Book Value/Share</th><th>Price/Book Ratio</th><th>Size: Large/Small?</th><th>Value or Growth?</th></tr>
+    <tr><td>AAPL</td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>JPM</td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>JNJ</td><td></td><td></td><td></td><td></td><td></td></tr>
+  </table>
+  <div class="tip">
+    <strong>Value vs. Growth:</strong> High Price/Book (P/B > 3) → Growth stock. Low P/B (< 2) → Value stock. Fama-French predicts value stocks earn higher returns over time.
+  </div>
+</div>
+
+<div class="step">
+  <p><span class="step-num">7</span><strong>Check recent factor performance.</strong></p>
+  <p>Type <span class="command">FAMA</span> <span class="command">GO</span> or search "Fama French" on Bloomberg. Alternatively, type <span class="command">EQS</span> <span class="command">GO</span> and create screens for small-cap value vs. large-cap growth stocks.</p>
+  <p>Based on recent data, are the size and value premiums still positive?</p>
+  <div class="answer-box" style="min-height:50px;"></div>
+</div>
+
+<!-- ==================== PART 4 ==================== -->
+<h2>Part 4: Market Efficiency Test</h2>
+
+<div class="step">
+  <p><span class="step-num">8</span><strong>Event study: Earnings announcement reaction.</strong></p>
+  <p>Pick any stock. Type <span class="command">AAPL Equity ERN</span> <span class="command">GO</span> to see recent earnings announcements.</p>
+  <p>Find the most recent earnings surprise (actual vs. estimate). Then type <span class="command">GP</span> <span class="command">GO</span> and zoom in to the announcement date.</p>
+
+  <table>
+    <tr><th>Field</th><th>Your Finding</th></tr>
+    <tr><td>Stock ticker</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td></tr>
+    <tr><td>Earnings date</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td></tr>
+    <tr><td>EPS estimate vs. actual</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td></tr>
+    <tr><td>Stock price change on announcement day</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td></tr>
+    <tr><td>Price change over next 5 days</td><td class="answer-box" style="min-height:20px;display:table-cell;"></td></tr>
+  </table>
+</div>
+
+<div class="step">
+  <p><span class="step-num">9</span><strong>Assess market efficiency.</strong></p>
+  <p>Based on your event study:</p>
+  <ul>
+    <li>Did the price adjust quickly (within the announcement day)?</li>
+    <li>Was there post-announcement drift (continued movement in the same direction)?</li>
+    <li>Which form of EMH does your evidence support or challenge?</li>
+  </ul>
+  <div class="answer-box" style="min-height:60px;"></div>
+</div>
+
+<div class="warning">
+  <strong>Reminder:</strong> One data point does not prove or disprove EMH. Professional research uses hundreds of events and statistical tests. This exercise is designed to familiarize you with the data and the logic, not to reach definitive conclusions.
+</div>
+
+<!-- ==================== BLOOMBERG QUICK REFERENCE ==================== -->
+<h2>Bloomberg Quick Reference</h2>
+<table>
+  <tr><th>Command</th><th>Function</th><th>Example</th></tr>
+  <tr><td><span class="command">BETA</span></td><td>Beta analysis (regression)</td><td><span class="command">AAPL Equity BETA</span></td></tr>
+  <tr><td><span class="command">TRA</span></td><td>Total Return Analysis</td><td><span class="command">AAPL Equity TRA</span></td></tr>
+  <tr><td><span class="command">FA</span></td><td>Financial Analysis</td><td><span class="command">AAPL Equity FA</span></td></tr>
+  <tr><td><span class="command">GP</span></td><td>Graph/Price Chart</td><td><span class="command">AAPL Equity GP</span></td></tr>
+  <tr><td><span class="command">ERN</span></td><td>Earnings Analysis</td><td><span class="command">AAPL Equity ERN</span></td></tr>
+  <tr><td><span class="command">GT10 Govt</span></td><td>10-Year Treasury</td><td><span class="command">GT10 Govt GO</span></td></tr>
+  <tr><td><span class="command">EQS</span></td><td>Equity Screening</td><td><span class="command">EQS GO</span></td></tr>
+</table>
+
+</body>
+</html>

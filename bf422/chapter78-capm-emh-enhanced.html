@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BF422 — Chapters 7 & 8: CAPM, APT & EMH — Enhanced</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f172a;
+  --bg-slide: #1e293b;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent: #38bdf8;
+  --accent2: #6366f1;
+  --accent3: #a78bfa;
+  --amber: #f59e0b;
+  --green: #22c55e;
+  --red: #ef4444;
+  --pink: #f472b6;
+  --border: #334155;
+  --border2: #475569;
+  --card-bg: rgba(255,255,255,0.05);
+  --code-bg: rgba(0,0,0,0.2);
+  --shadow: rgba(0,0,0,0.4);
+}
+
+[data-theme="light"] {
+  --bg: #f1f5f9;
+  --bg-slide: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --accent: #0284c7;
+  --accent2: #4f46e5;
+  --accent3: #7c3aed;
+  --amber: #d97706;
+  --green: #16a34a;
+  --red: #dc2626;
+  --pink: #db2777;
+  --border: #cbd5e1;
+  --border2: #94a3b8;
+  --card-bg: rgba(0,0,0,0.03);
+  --code-bg: rgba(0,0,0,0.05);
+  --shadow: rgba(0,0,0,0.1);
+}
+
+html, body {
+  height: 100%; overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ===== PROGRESS BAR ===== */
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 1000; background: var(--border); }
+#progress { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 0.4s ease; }
+
+/* ===== CONTROLS ===== */
+#controls {
+  position: fixed; top: 12px; right: 16px; z-index: 1000;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.82rem; color: var(--text-muted);
+}
+#slide-counter { font-variant-numeric: tabular-nums; font-weight: 600; }
+.ctrl-btn {
+  background: var(--card-bg); border: 1px solid var(--border);
+  color: var(--text-muted); padding: 5px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 0.78rem; transition: all 0.2s;
+  font-family: inherit;
+}
+.ctrl-btn:hover { background: rgba(99,102,241,0.15); border-color: var(--accent2); color: var(--text); }
+
+/* ===== SLIDE CONTAINER ===== */
+#deck {
+  width: 100%; height: 100%;
+  display: grid; place-items: center;
+}
+.slide {
+  grid-row: 1; grid-column: 1;
+  width: 96%; max-width: 1280px;
+  padding: 44px 52px; border-radius: 14px;
+  background: var(--bg-slide);
+  box-shadow: 0 8px 32px var(--shadow);
+  opacity: 0; transform: translateX(60px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
+  max-height: 88vh; overflow-y: auto;
+}
+.slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.slide.exit-left { opacity: 0; transform: translateX(-60px); }
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== TYPOGRAPHY ===== */
+.slide h1 { font-size: 2.2rem; color: var(--accent); margin-bottom: 8px; line-height: 1.2; }
+.slide h2 { font-size: 1.7rem; color: var(--accent); margin-bottom: 14px; line-height: 1.25; }
+.slide h3 { font-size: 1.15rem; color: var(--accent3); margin-bottom: 8px; margin-top: 12px; }
+.slide p, .slide li { font-size: 1.05rem; line-height: 1.6; }
+.slide p { margin-bottom: 8px; }
+.slide ul, .slide ol { margin: 6px 0 12px 24px; }
+.slide li { margin-bottom: 4px; }
+.subtitle { font-size: 1.1rem; color: var(--text-muted); margin-top: 8px; }
+.small { font-size: 0.88rem; color: var(--text-muted); }
+.label { display: inline-block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent2); margin-bottom: 6px; }
+strong { color: var(--accent); }
+[data-theme="light"] strong { color: var(--accent2); }
+.source-tag { font-size: 0.68rem; color: var(--text-muted); float: right; opacity: 0.6; font-style: italic; }
+
+/* ===== TITLE SLIDE ===== */
+.title-slide { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 420px; }
+.title-slide h1 { font-size: 2.3rem; margin-bottom: 4px; }
+.title-slide .course-code { font-size: 0.9rem; color: var(--text-muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+.title-slide .divider { width: 80px; height: 3px; background: linear-gradient(90deg, var(--accent2), var(--accent)); margin: 16px auto; border-radius: 2px; }
+
+/* ===== SECTION DIVIDER ===== */
+.section-slide { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; }
+.section-slide h2 { font-size: 2rem; margin-bottom: 10px; }
+.section-num { font-size: 3.5rem; font-weight: 800; color: var(--accent2); opacity: 0.3; margin-bottom: -10px; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  background: linear-gradient(135deg, var(--accent2), #8b5cf6);
+  color: #fff; border: none; padding: 8px 20px; border-radius: 8px;
+  cursor: pointer; font-size: 0.88rem; font-weight: 600;
+  font-family: inherit; transition: all 0.2s;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+.btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-secondary:hover { background: var(--border2); box-shadow: none; }
+
+/* ===== CALLOUTS ===== */
+.key-idea {
+  background: rgba(34,197,94,0.08); border-left: 4px solid var(--green);
+  padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0;
+}
+.warning {
+  background: rgba(239,68,68,0.08); border-left: 4px solid var(--red);
+  padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0;
+}
+.analogy {
+  background: rgba(167,139,250,0.08); border-left: 4px solid var(--accent3);
+  padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0;
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px; margin: 6px 0;
+}
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
+
+/* ===== FORMULA ===== */
+.formula {
+  display: block; background: var(--code-bg); border-left: 3px solid var(--accent2);
+  border-radius: 0 8px 8px 0; padding: 12px 20px; margin: 10px 0;
+  font-family: Georgia, 'Times New Roman', serif; font-size: 1.1rem;
+}
+.formula-center { text-align: center; border-left: none; border: 1px solid var(--border); border-radius: 8px; }
+
+/* ===== TABLE ===== */
+.data-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.95rem; }
+.data-table th { background: rgba(99,102,241,0.1); color: var(--accent); padding: 7px 10px; text-align: left; border-bottom: 2px solid var(--border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.data-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.data-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .highlight-row td { background: rgba(99,102,241,0.08); font-weight: 700; }
+.compact-table { font-size: 0.85rem; }
+.compact-table th { padding: 5px 8px; font-size: 0.72rem; }
+.compact-table td { padding: 4px 8px; }
+
+/* ===== COLUMNS ===== */
+.cols { display: flex; gap: 18px; margin: 10px 0; }
+.cols > div { flex: 1; }
+
+/* ===== THINK PROMPT ===== */
+.think-prompt {
+  background: rgba(99,102,241,0.08); border: 2px dashed var(--accent2);
+  border-radius: 10px; padding: 12px 16px; margin: 10px 0; text-align: center;
+}
+.think-prompt p { font-weight: 600; color: var(--accent2); margin-bottom: 0; }
+
+/* ===== CANVAS CONTAINER ===== */
+.canvas-wrap {
+  background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px;
+  display: inline-block; width: 100%;
+}
+.canvas-wrap canvas { width: 100%; display: block; }
+
+/* ===== NAV ARROWS ===== */
+.nav-arrow {
+  position: fixed; top: 50%; transform: translateY(-50%); z-index: 500;
+  background: var(--card-bg); border: 1px solid var(--border);
+  color: var(--text-muted); width: 36px; height: 52px; border-radius: 8px;
+  cursor: pointer; font-size: 1.2rem; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s; opacity: 0.4;
+}
+.nav-arrow:hover { opacity: 1; background: rgba(99,102,241,0.15); color: var(--accent); }
+#nav-prev { left: 10px; }
+#nav-next { right: 10px; }
+
+/* ===== SPEAKER NOTES ===== */
+#notes-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg); border-top: 2px solid var(--border);
+  padding: 10px 20px; font-size: 0.9rem; color: var(--text-muted);
+  transform: translateY(100%); transition: transform 0.3s ease; z-index: 999;
+  max-height: 110px; overflow-y: auto;
+}
+#notes-panel.visible { transform: translateY(0); }
+#notes-label { font-weight: 700; color: var(--accent2); margin-right: 8px; }
+
+/* ===== PRINT ===== */
+@media print {
+  body { background: #fff !important; color: #000 !important; overflow: visible !important; }
+  #progress-bar, #controls, .nav-arrow, #notes-panel { display: none !important; }
+  #deck { display: block !important; height: auto !important; }
+  .slide {
+    position: relative !important; opacity: 1 !important; transform: none !important;
+    pointer-events: auto !important; page-break-after: always;
+    box-shadow: none !important; border: 1px solid #ccc; margin: 20px auto;
+    max-height: none !important; overflow: visible !important; background: #fff !important;
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 700px) {
+  .slide { padding: 24px 18px; width: 97%; }
+  .slide h1 { font-size: 1.6rem; }
+  .slide h2 { font-size: 1.35rem; }
+  .cols { flex-direction: column; gap: 8px; }
+  .card-grid { grid-template-columns: 1fr; }
+  .nav-arrow { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+
+<div id="controls">
+  <span id="slide-counter">1 / 38</span>
+  <button class="ctrl-btn" id="theme-toggle" title="Toggle theme (T)">Light</button>
+  <button class="ctrl-btn" id="notes-btn" title="Toggle notes (N)">Notes</button>
+</div>
+
+<button class="nav-arrow" id="nav-prev" title="Previous (&larr;)">&lsaquo;</button>
+<button class="nav-arrow" id="nav-next" title="Next (&rarr;)">&rsaquo;</button>
+
+<div id="notes-panel">
+  <span id="notes-label">Notes:</span>
+  <span id="notes-text"></span>
+</div>
+
+<div id="deck">
+
+<!-- ==================== s1: Title ==================== -->
+<div class="slide title-slide active" id="s1" data-notes="Chapters 7 & 8 combined deck. Covers CAPM derivation and applications, APT, multifactor models, and the Efficient Market Hypothesis with anomalies.">
+  <div class="course-code">BF422 — Investments</div>
+  <h1>Capital Asset Pricing Model,<br>Arbitrage Pricing Theory &amp; EMH</h1>
+  <div class="divider"></div>
+  <p class="subtitle">Chapters 7 &amp; 8 — Bodie, Kane &amp; Marcus</p>
+  <p class="small" style="margin-top:12px;"><strong>Monmouth University</strong></p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s2: Road Map ==================== -->
+<div class="slide" id="s2" data-notes="Overview of the two-chapter arc: from individual portfolio theory to market equilibrium (CAPM), extensions (APT), and whether prices actually reflect information (EMH).">
+  <span class="label">Overview</span>
+  <h2>Road Map</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>I. Market Behavior</h3>
+      <p class="small">Risk-return in U.S. markets, random walks, and why prices are hard to predict</p>
+    </div>
+    <div class="card">
+      <h3>II. The CAPM</h3>
+      <p class="small">Assumptions, CML, SML, beta, alpha — the workhorse pricing model</p>
+    </div>
+    <div class="card">
+      <h3>III. Beyond CAPM</h3>
+      <p class="small">APT, multifactor models, Fama-French, and CAPM's real-world limitations</p>
+    </div>
+    <div class="card">
+      <h3>IV. EMH</h3>
+      <p class="small">Three forms, anomalies, active vs. passive management, and market efficiency</p>
+    </div>
+  </div>
+  <div class="key-idea">
+    <p><strong>Big picture:</strong> Chapter 6 told us how to build efficient portfolios. Chapter 7 asks: <em>if everyone does this, what happens to prices?</em> Chapter 8 asks: <em>do prices actually behave that way?</em></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s3: Section I ==================== -->
+<div class="slide section-slide" id="s3" data-notes="Section I: Empirical properties of financial markets that motivate CAPM.">
+  <div class="section-num">I</div>
+  <h2>Market Behavior &amp; Random Walks</h2>
+  <p class="subtitle">What does the data actually look like?</p>
+</div>
+
+<!-- ==================== s4: Risk-Return Properties ==================== -->
+<div class="slide" id="s4" data-notes="Historical risk-return tradeoff in U.S. markets. Higher average return comes with higher volatility. This is the empirical motivation for portfolio theory.">
+  <span class="label">Market Data</span>
+  <span class="source-tag">Bodie Ch. 7</span>
+  <h2>U.S. Financial Markets: Risk vs. Return</h2>
+  <p>Historical annual data (1927–2020) shows the fundamental tradeoff:</p>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem; margin-top: 8px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS4" width="480" height="320"></canvas>
+      </div>
+    </div>
+    <div>
+      <table class="data-table compact-table">
+        <tr><th>Asset Class</th><th class="num">Avg Return</th><th class="num">Std Dev</th></tr>
+        <tr><td>T-Bills</td><td class="num">3.3%</td><td class="num">3.1%</td></tr>
+        <tr><td>T-Bonds</td><td class="num">5.6%</td><td class="num">7.7%</td></tr>
+        <tr><td>Corporate Bonds</td><td class="num">6.4%</td><td class="num">7.0%</td></tr>
+        <tr class="highlight-row"><td>Large Stocks</td><td class="num">11.7%</td><td class="num">20.0%</td></tr>
+        <tr><td>Small Stocks</td><td class="num">16.3%</td><td class="num">31.7%</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:10px;">
+        <p class="small"><strong>Key insight:</strong> Higher risk → higher average return. But is this relationship <em>linear</em>? CAPM says yes.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+  const W = 480, H = 320;
+  function gc(n) { return {text:'#e2e8f0',muted:'#94a3b8',accent:'#38bdf8',accent2:'#6366f1',red:'#ef4444',green:'#22c55e',border:'#334155',amber:'#f59e0b'}[n]||'#e2e8f0'; }
+
+  const data = [
+    {name:'T-Bills', ret:3.3, sd:3.1, color:gc('muted')},
+    {name:'T-Bonds', ret:5.6, sd:7.7, color:gc('accent2')},
+    {name:'Corp Bonds', ret:6.4, sd:7.0, color:gc('green')},
+    {name:'Large Stocks', ret:11.7, sd:20.0, color:gc('accent')},
+    {name:'Small Stocks', ret:16.3, sd:31.7, color:gc('amber')},
+  ];
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    const L=60, R=W-20, T=20, B=H-40;
+    const cW=R-L, cH=B-T;
+
+    // axes
+    ctx.strokeStyle=gc('border'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,B); ctx.lineTo(R,B); ctx.stroke();
+
+    // labels
+    ctx.fillStyle=gc('muted'); ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('Standard Deviation (%)', (L+R)/2, H-5);
+    ctx.save(); ctx.translate(14,(T+B)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('Average Return (%)',0,0); ctx.restore();
+
+    // grid
+    for(let v=0;v<=20;v+=5){
+      const y=B-(v/20)*cH;
+      ctx.strokeStyle='rgba(148,163,184,0.1)'; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(R,y); ctx.stroke();
+      ctx.fillStyle=gc('muted'); ctx.textAlign='right'; ctx.font='10px monospace';
+      ctx.fillText(v+'%',L-6,y+3);
+    }
+    for(let v=0;v<=35;v+=5){
+      const x=L+(v/38)*cW;
+      ctx.strokeStyle='rgba(148,163,184,0.1)'; ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,B); ctx.stroke();
+      ctx.fillStyle=gc('muted'); ctx.textAlign='center'; ctx.font='10px monospace';
+      ctx.fillText(v+'%',x,B+14);
+    }
+
+    // points
+    data.forEach(d=>{
+      const x=L+(d.sd/38)*cW, y=B-(d.ret/20)*cH;
+      ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2);
+      ctx.fillStyle=d.color; ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle=gc('text'); ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(d.name,x,y-12);
+    });
+
+    // trend line
+    ctx.setLineDash([5,4]); ctx.strokeStyle='rgba(99,102,241,0.4)'; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    const x1=L+(3.1/38)*cW, y1=B-(3.3/20)*cH;
+    const x2=L+(31.7/38)*cW, y2=B-(16.3/20)*cH;
+    ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  const obs=new MutationObserver(()=>{if(document.getElementById('s4').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s4'),{attributes:true,attributeFilter:['class']});
+  draw();
+})();
+</script>
+
+<!-- ==================== s5: Random Walks ==================== -->
+<div class="slide" id="s5" data-notes="Random walk concept. If markets are efficient, price changes are unpredictable. The Challenger disaster example shows how quickly markets process information.">
+  <span class="label">Market Efficiency Preview</span>
+  <span class="source-tag">Bodie Ch. 8</span>
+  <h2>Random Walks &amp; Price Predictability</h2>
+  <div class="cols">
+    <div>
+      <h3>What is a Random Walk?</h3>
+      <p>Stock price changes are <strong>independently and identically distributed</strong> (i.i.d.) over time.</p>
+      <ul>
+        <li>Future prices cannot be predicted from past prices</li>
+        <li>Prices follow a "random walk with drift" — the drift is the expected return</li>
+        <li>Any predictable pattern would be exploited away by traders</li>
+      </ul>
+      <div class="analogy">
+        <p class="small"><strong>Analogy:</strong> If you knew a stock would rise tomorrow, you'd buy today — pushing the price up <em>today</em> instead. The opportunity self-destructs.</p>
+      </div>
+    </div>
+    <div>
+      <h3>The Challenger Test</h3>
+      <p class="small">On Jan 28, 1986, the Challenger exploded. Within minutes, the market correctly identified Morton Thiokol (O-ring maker) as responsible — its stock dropped 12% while other contractors barely moved.</p>
+      <div class="key-idea">
+        <p class="small"><strong>Implication:</strong> Markets process information <em>extremely</em> fast. By the time you read the news, the price has already adjusted.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s6: Scatterplot Evidence ==================== -->
+<div class="slide" id="s6" data-notes="Empirical evidence for random walk: autocorrelation in returns is essentially zero. IBM daily returns today vs yesterday show no pattern.">
+  <span class="label">Empirical Evidence</span>
+  <h2>Return Autocorrelation: Is There a Pattern?</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS6" width="440" height="340"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <button class="btn btn-sm" onclick="s6Regen()">New Random Sample</button>
+        <button class="btn btn-sm btn-secondary" style="margin-left:4px;" onclick="s6Toggle()">Show Regression</button>
+      </div>
+    </div>
+    <div>
+      <h3>What You'd See</h3>
+      <p class="small">Scatterplots of return<sub>today</sub> vs. return<sub>yesterday</sub> look like <strong>random blobs</strong> — no upward or downward slope.</p>
+      <table class="data-table compact-table" style="margin-top:8px;">
+        <tr><th>Data</th><th>Correlation</th></tr>
+        <tr><td>IBM Daily (1927–2016)</td><td class="num">≈ 0.01</td></tr>
+        <tr><td>S&P Monthly (1927–2020)</td><td class="num">≈ 0.03</td></tr>
+        <tr><td>IBM vs. Market</td><td class="num">≈ 0.55</td></tr>
+      </table>
+      <div class="key-idea" style="margin-top:8px;">
+        <p class="small"><strong>Serial correlation ≈ 0</strong> means past returns don't predict future returns. But <em>cross-sectional</em> correlation (stock vs. market) is very real — that's beta.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS6');
+  const ctx=canvas.getContext('2d');
+  const W=440,H=340;
+  let showLine=false;
+  let pts=[];
+  function gc(n){return{text:'#e2e8f0',muted:'#94a3b8',accent:'#38bdf8',accent2:'#6366f1',border:'#334155'}[n]||'#e2e8f0';}
+
+  function generate(){
+    pts=[];
+    for(let i=0;i<200;i++){
+      pts.push({x:(Math.random()-0.5)*8, y:(Math.random()-0.5)*8});
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const L=50,R=W-15,T=15,B=H-35,cW=R-L,cH=B-T;
+    const cx=L+cW/2, cy=T+cH/2;
+
+    // axes
+    ctx.strokeStyle=gc('border'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,cy); ctx.lineTo(R,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,T); ctx.lineTo(cx,B); ctx.stroke();
+
+    // labels
+    ctx.fillStyle=gc('muted'); ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('Return Yesterday (%)',cx,H-5);
+    ctx.save(); ctx.translate(12,cy); ctx.rotate(-Math.PI/2);
+    ctx.fillText('Return Today (%)',0,0); ctx.restore();
+
+    // ticks
+    for(let v=-4;v<=4;v+=2){
+      if(v===0) continue;
+      const x=cx+(v/5)*cW*0.5;
+      ctx.fillStyle=gc('muted'); ctx.font='9px monospace';
+      ctx.fillText(v+'%',x,cy+14);
+      const y=cy-(v/5)*cH*0.5;
+      ctx.textAlign='right';
+      ctx.fillText(v+'%',L-4,y+3);
+      ctx.textAlign='center';
+    }
+
+    // points
+    pts.forEach(p=>{
+      const x=cx+(p.x/5)*cW*0.5;
+      const y=cy-(p.y/5)*cH*0.5;
+      ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2);
+      ctx.fillStyle='rgba(56,189,248,0.4)'; ctx.fill();
+    });
+
+    // regression line
+    if(showLine){
+      ctx.setLineDash([6,4]); ctx.strokeStyle=gc('accent2'); ctx.lineWidth=2;
+      ctx.beginPath();
+      const x1=cx+(-5/5)*cW*0.5, x2=cx+(5/5)*cW*0.5;
+      // near-zero slope
+      const slope=0.02;
+      const y1=cy-(-5*slope/5)*cH*0.5;
+      const y2=cy-(5*slope/5)*cH*0.5;
+      ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=gc('accent2'); ctx.font='bold 11px sans-serif';
+      ctx.fillText('slope ≈ 0.02 (essentially zero)',cx,T+15);
+    }
+  }
+
+  generate(); draw();
+  window.s6Regen=function(){generate();showLine=false;draw();};
+  window.s6Toggle=function(){showLine=!showLine;draw();};
+  const obs=new MutationObserver(()=>{if(document.getElementById('s6').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s6'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s7: Section II ==================== -->
+<div class="slide section-slide" id="s7" data-notes="Section II: The CAPM — the central model linking risk and expected return.">
+  <div class="section-num">II</div>
+  <h2>The Capital Asset Pricing Model</h2>
+  <p class="subtitle">What return should you expect for bearing risk?</p>
+</div>
+
+<!-- ==================== s8: CAPM Assumptions ==================== -->
+<div class="slide" id="s8" data-notes="CAPM assumptions. These are strong but useful — they give us a clean framework for thinking about risk pricing.">
+  <span class="label">CAPM</span>
+  <span class="source-tag">Bodie Ch. 7, Sec 7.1</span>
+  <h2>CAPM Assumptions</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>Market Assumptions</h3>
+      <ul>
+        <li class="small">Many investors, each with small wealth relative to market</li>
+        <li class="small">All investors plan for the same single period</li>
+        <li class="small">No taxes or transaction costs</li>
+        <li class="small">All information freely available</li>
+        <li class="small">Investors can borrow/lend at the risk-free rate</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Investor Assumptions</h3>
+      <ul>
+        <li class="small">All investors are rational mean-variance optimizers</li>
+        <li class="small">Homogeneous expectations — everyone agrees on E(r), σ, and correlations</li>
+        <li class="small">All assets are publicly traded and perfectly divisible</li>
+      </ul>
+    </div>
+  </div>
+  <div class="warning">
+    <p class="small"><strong>Reality check:</strong> These assumptions are obviously unrealistic. But CAPM's value isn't in its assumptions — it's in its <em>predictions</em>. If the SML approximately holds, the model is useful even if assumptions are violated.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s9: CML ==================== -->
+<div class="slide" id="s9" data-notes="The CML shows the efficient set when a risk-free asset exists. All investors hold the same risky portfolio (the market portfolio) combined with the risk-free asset.">
+  <span class="label">CAPM</span>
+  <span class="source-tag">Bodie Ch. 7, Fig 7.1</span>
+  <h2>The Capital Market Line (CML)</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS9" width="480" height="340"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="formula" style="font-size:0.95rem;">
+        E(r<sub>C</sub>) = r<sub>f</sub> + [(E(r<sub>M</sub>) − r<sub>f</sub>) / σ<sub>M</sub>] × σ<sub>C</sub>
+      </div>
+      <p class="small" style="margin-top:8px;">The CML is the <strong>efficient frontier when a risk-free asset exists</strong>. Its slope is the market's Sharpe ratio.</p>
+      <div class="key-idea">
+        <p class="small"><strong>Separation theorem:</strong> The investment decision (pick the market portfolio) is separate from the financing decision (how much to borrow/lend at r<sub>f</sub>).</p>
+      </div>
+      <p class="small">Conservative investors hold more r<sub>f</sub> and less M. Aggressive investors lever up beyond 100% in M.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS9');
+  const ctx=canvas.getContext('2d');
+  const W=480,H=340;
+  function gc(n){return{text:'#e2e8f0',muted:'#94a3b8',accent:'#38bdf8',accent2:'#6366f1',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',border:'#334155'}[n]||'#e2e8f0';}
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const L=55,R=W-15,T=15,B=H-35,cW=R-L,cH=B-T;
+    const rf=3, rM=11, sM=20, maxS=35, maxR=18;
+
+    // axes
+    ctx.strokeStyle=gc('border'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,B); ctx.lineTo(R,B); ctx.stroke();
+    ctx.fillStyle=gc('muted'); ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('σ (%)',(L+R)/2,H-5);
+    ctx.save(); ctx.translate(14,(T+B)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('E(r) %',0,0); ctx.restore();
+
+    // grid
+    for(let v=0;v<=maxR;v+=3){
+      const y=B-(v/maxR)*cH;
+      ctx.strokeStyle='rgba(148,163,184,0.08)';ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(R,y);ctx.stroke();
+      ctx.fillStyle=gc('muted');ctx.textAlign='right';ctx.font='10px monospace';ctx.fillText(v+'%',L-5,y+3);
+    }
+
+    // efficient frontier (parabola approximation)
+    ctx.strokeStyle='rgba(148,163,184,0.3)'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    for(let s=8;s<=maxS;s+=0.5){
+      const r=3+0.35*s-0.003*s*s;
+      const x=L+(s/maxS)*cW, y=B-(r/maxR)*cH;
+      if(s===8)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // CML line
+    const slope=(rM-rf)/sM;
+    ctx.strokeStyle=gc('accent'); ctx.lineWidth=2.5;
+    ctx.beginPath();
+    const x0=L, y0=B-(rf/maxR)*cH;
+    const xEnd=L+(maxS/maxS)*cW, yEnd=B-((rf+slope*maxS)/maxR)*cH;
+    ctx.moveTo(x0,y0); ctx.lineTo(xEnd,yEnd); ctx.stroke();
+
+    // rf point
+    ctx.beginPath(); ctx.arc(x0,y0,5,0,Math.PI*2);
+    ctx.fillStyle=gc('green'); ctx.fill();
+    ctx.fillStyle=gc('text'); ctx.font='bold 10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('rf = 3%',x0+8,y0-6);
+
+    // M point
+    const xM=L+(sM/maxS)*cW, yM=B-(rM/maxR)*cH;
+    ctx.beginPath(); ctx.arc(xM,yM,6,0,Math.PI*2);
+    ctx.fillStyle=gc('amber'); ctx.fill();
+    ctx.fillStyle=gc('text'); ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('M',xM,yM-12);
+
+    // CML label
+    ctx.fillStyle=gc('accent'); ctx.font='bold 11px sans-serif';
+    ctx.save(); ctx.translate(L+cW*0.75, B-(14/maxR)*cH); ctx.rotate(-Math.atan(slope*(cH/maxR)/(cW/maxS)));
+    ctx.fillText('CML',0,-8); ctx.restore();
+
+    // Frontier label
+    ctx.fillStyle=gc('muted'); ctx.font='italic 10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('Efficient Frontier',L+cW*0.7,B-cH*0.25);
+  }
+
+  draw();
+  const obs=new MutationObserver(()=>{if(document.getElementById('s9').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s9'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s10: SML ==================== -->
+<div class="slide" id="s10" data-notes="The SML prices ALL assets (not just efficient portfolios). Expected return is linear in beta. Alpha = distance above/below SML.">
+  <span class="label">CAPM</span>
+  <span class="source-tag">Bodie Ch. 7, Fig 7.3</span>
+  <h2>The Security Market Line (SML)</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS10" width="480" height="340"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">Beta: <strong id="s10betaLabel">1.2</strong></label>
+        <input type="range" id="s10slider" min="0" max="200" value="120" style="width:100%;accent-color:var(--accent2);" oninput="s10Update()">
+      </div>
+    </div>
+    <div>
+      <div class="formula formula-center" style="font-size:1rem; line-height:2;">
+        E(r<sub>i</sub>) = r<sub>f</sub> + β<sub>i</sub> × [E(r<sub>M</sub>) − r<sub>f</sub>]
+      </div>
+      <p class="small" style="margin-top:8px;">Unlike the CML (which plots σ), the SML plots <strong>beta</strong> on the x-axis. It prices <em>any</em> asset, not just efficient portfolios.</p>
+      <div class="card" style="margin-top:8px;">
+        <h3>Alpha (α)</h3>
+        <p class="small"><strong>α > 0:</strong> Asset plots <em>above</em> SML → underpriced, buy</p>
+        <p class="small"><strong>α < 0:</strong> Asset plots <em>below</em> SML → overpriced, sell</p>
+        <p class="small"><strong>α = 0:</strong> Asset is fairly priced by CAPM</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS10');
+  const ctx=canvas.getContext('2d');
+  const W=480,H=340;
+  function gc(n){return{text:'#e2e8f0',muted:'#94a3b8',accent:'#38bdf8',accent2:'#6366f1',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',border:'#334155'}[n]||'#e2e8f0';}
+
+  const rf=4, rM=12, maxBeta=2.2, maxR=22;
+
+  function draw(){
+    const beta=parseInt(document.getElementById('s10slider').value)/100;
+    document.getElementById('s10betaLabel').textContent=beta.toFixed(1);
+    ctx.clearRect(0,0,W,H);
+    const L=50,R=W-15,T=15,B=H-35,cW=R-L,cH=B-T;
+
+    // axes
+    ctx.strokeStyle=gc('border'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,B); ctx.lineTo(R,B); ctx.stroke();
+    ctx.fillStyle=gc('muted'); ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('Beta (β)',(L+R)/2,H-5);
+    ctx.save(); ctx.translate(14,(T+B)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('E(r) %',0,0); ctx.restore();
+
+    // grid
+    for(let v=0;v<=20;v+=4){
+      const y=B-(v/maxR)*cH;
+      ctx.strokeStyle='rgba(148,163,184,0.08)'; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(R,y); ctx.stroke();
+      ctx.fillStyle=gc('muted'); ctx.textAlign='right'; ctx.font='10px monospace';
+      ctx.fillText(v+'%',L-5,y+3);
+    }
+    for(let v=0;v<=2;v+=0.5){
+      const x=L+(v/maxBeta)*cW;
+      ctx.fillStyle=gc('muted'); ctx.textAlign='center'; ctx.font='10px monospace';
+      ctx.fillText(v.toFixed(1),x,B+14);
+    }
+
+    // SML line
+    ctx.strokeStyle=gc('accent'); ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.moveTo(L, B-(rf/maxR)*cH);
+    ctx.lineTo(L+(maxBeta/maxBeta)*cW, B-((rf+(rM-rf)*maxBeta)/maxR)*cH);
+    ctx.stroke();
+
+    // SML label
+    ctx.fillStyle=gc('accent'); ctx.font='bold 11px sans-serif';
+    ctx.fillText('SML', L+cW*0.85, B-((rf+(rM-rf)*1.9)/maxR)*cH-8);
+
+    // rf point
+    ctx.beginPath(); ctx.arc(L,B-(rf/maxR)*cH,4,0,Math.PI*2);
+    ctx.fillStyle=gc('green'); ctx.fill();
+    ctx.fillStyle=gc('text'); ctx.font='10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('rf=4%',L+8,B-(rf/maxR)*cH-6);
+
+    // M point (beta=1)
+    const xM=L+(1/maxBeta)*cW, yM=B-(rM/maxR)*cH;
+    ctx.beginPath(); ctx.arc(xM,yM,5,0,Math.PI*2);
+    ctx.fillStyle=gc('amber'); ctx.fill();
+    ctx.fillStyle=gc('text'); ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('M',xM,yM-10);
+
+    // Interactive beta point
+    const expectedR=rf+beta*(rM-rf);
+    const xB=L+(beta/maxBeta)*cW, yB=B-(expectedR/maxR)*cH;
+    ctx.beginPath(); ctx.arc(xB,yB,7,0,Math.PI*2);
+    ctx.fillStyle=gc('accent2'); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=2; ctx.stroke();
+
+    // label
+    ctx.fillStyle=gc('text'); ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('β='+beta.toFixed(1)+', E(r)='+expectedR.toFixed(1)+'%',xB,yB-14);
+
+    // positive alpha example
+    const alphaStock={beta:0.8, actualR:14};
+    const expectedAlpha=rf+alphaStock.beta*(rM-rf);
+    const xA=L+(alphaStock.beta/maxBeta)*cW;
+    const yAexp=B-(expectedAlpha/maxR)*cH;
+    const yAact=B-(alphaStock.actualR/maxR)*cH;
+
+    ctx.beginPath(); ctx.arc(xA,yAact,5,0,Math.PI*2);
+    ctx.fillStyle=gc('green'); ctx.fill();
+    ctx.setLineDash([3,3]); ctx.strokeStyle=gc('green'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(xA,yAexp); ctx.lineTo(xA,yAact); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=gc('green'); ctx.font='bold 10px sans-serif';
+    ctx.fillText('α>0',xA+14,(yAexp+yAact)/2+3);
+  }
+
+  window.s10Update=function(){draw();};
+  draw();
+  const obs=new MutationObserver(()=>{if(document.getElementById('s10').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s10'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s11: CAPM Applications ==================== -->
+<div class="slide" id="s11" data-notes="Practical uses of CAPM: computing required return for investments, capital budgeting via NPV, evaluating fund performance via alpha.">
+  <span class="label">CAPM</span>
+  <h2>CAPM Applications</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="card">
+      <h3>1. Required Return</h3>
+      <p class="small">Given β, compute the hurdle rate for any asset:</p>
+      <div class="formula" style="font-size:0.85rem;">
+        k = r<sub>f</sub> + β(E(r<sub>M</sub>) − r<sub>f</sub>)
+      </div>
+    </div>
+    <div class="card">
+      <h3>2. Capital Budgeting</h3>
+      <p class="small">Discount project cash flows at CAPM rate to find NPV:</p>
+      <div class="formula" style="font-size:0.85rem;">
+        NPV = Σ CF<sub>t</sub>/(1+k)<sup>t</sup> − C<sub>0</sub>
+      </div>
+    </div>
+    <div class="card">
+      <h3>3. Performance Evaluation</h3>
+      <p class="small">Alpha = actual return minus CAPM-predicted return:</p>
+      <div class="formula" style="font-size:0.85rem;">
+        α = r<sub>i</sub> − [r<sub>f</sub> + β(r<sub>M</sub> − r<sub>f</sub>)]
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:10px;">
+    <h3>Example: Capital Budgeting with CAPM</h3>
+    <p class="small">A project has β = 1.7, r<sub>f</sub> = 9%, E(r<sub>M</sub>) = 19%. Cash flows: −$20M today, $10M in years 1–3.</p>
+    <p class="small"><strong>Step 1:</strong> k = 9% + 1.7(19% − 9%) = 9% + 17% = <strong>26%</strong></p>
+    <p class="small"><strong>Step 2:</strong> NPV = 10/1.26 + 10/1.26² + 10/1.26³ − 20 = 7.94 + 6.30 + 5.00 − 20 = <strong>−$0.75M</strong></p>
+    <p class="small"><strong>Decision:</strong> NPV < 0 → Reject the project.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== sCA: Checkpoint A — CAPM Calculation ==================== -->
+<div class="slide" id="sCA" data-notes="Checkpoint A: CAPM calculation exercise from Stop Point 1. Students compute expected return and alpha.">
+  <span class="label" style="color:var(--amber);">Checkpoint A</span>
+  <h2>Challenge: CAPM Expected Return &amp; Alpha</h2>
+  <p>Given the information below:</p>
+  <table class="data-table compact-table" style="max-width:400px;">
+    <tr><th>Parameter</th><th class="num">Value</th></tr>
+    <tr><td>E(r<sub>M</sub>)</td><td class="num">14%</td></tr>
+    <tr><td>r<sub>f</sub></td><td class="num">5%</td></tr>
+    <tr><td>Portfolio A β</td><td class="num">1.5</td></tr>
+    <tr><td>Portfolio A actual return</td><td class="num">20%</td></tr>
+  </table>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:10px;">
+    <div class="card">
+      <h3>1. CAPM Expected Return (%)</h3>
+      <p class="small">E(r) = r<sub>f</sub> + β × [E(r<sub>M</sub>) − r<sub>f</sub>]</p>
+      <input type="text" id="sCAin1" placeholder="%" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCAr1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>2. Alpha of Portfolio A (%)</h3>
+      <p class="small">α = Actual − Expected</p>
+      <input type="text" id="sCAin2" placeholder="%" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCAr2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sCACheck()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sCAReveal()">Show Solution</button>
+  </div>
+  <div id="sCAsol" style="display:none;margin-top:10px;" class="key-idea">
+    <p class="small"><strong>1.</strong> E(r) = 5 + 1.5 × (14 − 5) = 5 + 13.5 = <strong>18.5%</strong></p>
+    <p class="small"><strong>2.</strong> α = 20 − 18.5 = <strong>1.5%</strong> (positive alpha → outperformed CAPM prediction)</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const ans=[{id:'sCAin1',rid:'sCAr1',val:18.5,tol:0.5},{id:'sCAin2',rid:'sCAr2',val:1.5,tol:0.3}];
+  window.sCACheck=function(){
+    ans.forEach(a=>{const v=parseFloat(document.getElementById(a.id).value);const r=document.getElementById(a.rid);
+    if(isNaN(v)){r.textContent='';return;}
+    if(Math.abs(v-a.val)<a.tol){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+    else{r.textContent='✗ Try again';r.style.color='#ef4444';}});
+  };
+  window.sCAReveal=function(){const el=document.getElementById('sCAsol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== s12: Section III ==================== -->
+<div class="slide section-slide" id="s12" data-notes="Section III: Extensions and alternatives to CAPM.">
+  <div class="section-num">III</div>
+  <h2>Beyond CAPM</h2>
+  <p class="subtitle">APT, multifactor models, and real-world limitations</p>
+</div>
+
+<!-- ==================== s13: CAPM vs SML vs CML ==================== -->
+<div class="slide" id="s13" data-notes="Distinguishing the key lines. CML plots efficient portfolios vs total risk (sigma). SML plots all assets vs systematic risk (beta). SCL estimates alpha and beta from regression.">
+  <span class="label">Lines We Covered</span>
+  <h2>CML vs. SML vs. SCL</h2>
+  <table class="data-table">
+    <tr><th>Line</th><th>X-axis</th><th>Y-axis</th><th>Applies to</th><th>Purpose</th></tr>
+    <tr><td><strong>CML</strong></td><td>σ (total risk)</td><td>E(r)</td><td>Efficient portfolios only</td><td>Optimal risk-return tradeoff</td></tr>
+    <tr class="highlight-row"><td><strong>SML</strong></td><td>β (systematic risk)</td><td>E(r)</td><td>All assets</td><td>Pricing / fair return</td></tr>
+    <tr><td><strong>SCL</strong></td><td>r<sub>M</sub> − r<sub>f</sub></td><td>r<sub>i</sub> − r<sub>f</sub></td><td>Single asset</td><td>Estimate α and β via regression</td></tr>
+    <tr><td><strong>CAL</strong></td><td>σ</td><td>E(r)</td><td>Any risky + r<sub>f</sub></td><td>Investor's portfolio line</td></tr>
+  </table>
+  <div class="key-idea">
+    <p class="small"><strong>Key distinction:</strong> CML uses <em>total risk</em> (σ) — only efficient portfolios lie on it. SML uses <em>systematic risk</em> (β) — every asset should lie on it if CAPM holds.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s14: APT ==================== -->
+<div class="slide" id="s14" data-notes="APT: an alternative to CAPM that requires fewer assumptions. Instead of a single market factor, returns depend on multiple economic factors.">
+  <span class="label">APT</span>
+  <span class="source-tag">Bodie Ch. 7</span>
+  <h2>Arbitrage Pricing Theory (APT)</h2>
+  <div class="cols">
+    <div>
+      <h3>The APT Model</h3>
+      <div class="formula" style="font-size:0.9rem;">
+        E(r<sub>i</sub>) = r<sub>f</sub> + β<sub>i1</sub>RP<sub>1</sub> + β<sub>i2</sub>RP<sub>2</sub> + ... + β<sub>ik</sub>RP<sub>k</sub>
+      </div>
+      <p class="small" style="margin-top:8px;">where RP<sub>j</sub> = risk premium for factor j</p>
+      <h3 style="margin-top:12px;">APT Assumptions</h3>
+      <ul>
+        <li class="small">Returns driven by a <em>factor model</em></li>
+        <li class="small">Enough securities to diversify away firm-specific risk</li>
+        <li class="small"><strong>No arbitrage</strong> — no free lunch</li>
+      </ul>
+    </div>
+    <div>
+      <h3>APT vs. CAPM</h3>
+      <table class="data-table compact-table">
+        <tr><th></th><th>CAPM</th><th>APT</th></tr>
+        <tr><td>Factors</td><td>1 (market)</td><td>Multiple</td></tr>
+        <tr><td>Assumptions</td><td>Strong</td><td>Weaker</td></tr>
+        <tr><td>Identifies factors?</td><td>Yes (market)</td><td>No</td></tr>
+        <tr><td>Testable?</td><td>Joint test issue</td><td>Same issue</td></tr>
+      </table>
+      <div class="warning" style="margin-top:8px;">
+        <p class="small"><strong>APT weakness:</strong> It doesn't tell you <em>which</em> factors matter. CAPM at least identifies the market portfolio.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s15: Fama-French ==================== -->
+<div class="slide" id="s15" data-notes="Fama-French three-factor model: market, size (SMB), value (HML). Later extended to five factors. This is the practical replacement for single-factor CAPM.">
+  <span class="label">Multifactor Models</span>
+  <span class="source-tag">Bodie Ch. 7</span>
+  <h2>Fama-French Three-Factor Model</h2>
+  <div class="formula formula-center" style="font-size:0.95rem; line-height:2;">
+    E(r<sub>i</sub>) − r<sub>f</sub> = β<sub>M</sub>(r<sub>M</sub> − r<sub>f</sub>) + β<sub>SMB</sub> × SMB + β<sub>HML</sub> × HML
+  </div>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:10px;">
+    <div class="card">
+      <h3>Market (r<sub>M</sub> − r<sub>f</sub>)</h3>
+      <p class="small">Same as CAPM — reward for bearing market risk</p>
+    </div>
+    <div class="card">
+      <h3>SMB (Small − Big)</h3>
+      <p class="small">Size premium: small stocks tend to outperform large stocks</p>
+    </div>
+    <div class="card">
+      <h3>HML (High − Low B/M)</h3>
+      <p class="small">Value premium: high book-to-market (value) stocks outperform growth stocks</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:10px;">
+    <h3>Example: Multifactor Model</h3>
+    <p class="small">Factor risk premiums: Industrial Production = 6%, Inflation = −2%</p>
+    <p class="small">Stock X: β<sub>IP</sub> = 1.0, β<sub>INF</sub> = 0.4, r<sub>f</sub> = 6%</p>
+    <p class="small">E(r) = 6 + 1.0(6) + 0.4(−2) = 6 + 6 − 0.8 = <strong>11.2%</strong></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s16: CAPM Limitations ==================== -->
+<div class="slide" id="s16" data-notes="Roll's critique: the market portfolio is unobservable. Fama-French show that beta alone doesn't explain cross-sectional returns. CAPM is wrong in detail but useful as framework.">
+  <span class="label">Limitations</span>
+  <h2>CAPM in the Real World</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>Roll's Critique (1977)</h3>
+      <ul>
+        <li class="small">The "true" market portfolio includes <em>all</em> assets (real estate, human capital, etc.)</li>
+        <li class="small">Any test of CAPM is really a joint test: is the model right <em>and</em> is our proxy for M correct?</li>
+        <li class="small">CAPM is <strong>not strictly testable</strong></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Fama-French Evidence</h3>
+      <ul>
+        <li class="small">Beta alone has <strong>weak explanatory power</strong> for cross-sectional returns</li>
+        <li class="small">Size and book-to-market ratio explain returns better than beta</li>
+        <li class="small">CAPM "works" for broad asset classes but fails for individual stocks</li>
+      </ul>
+    </div>
+  </div>
+  <div class="analogy">
+    <p class="small"><strong>Bottom line:</strong> CAPM is like Newtonian physics — it's wrong in detail (Einstein was more accurate), but it's simple, intuitive, and good enough for most practical purposes. Most of finance still uses it as a first approximation.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== sCB: Checkpoint B — NPV with CAPM ==================== -->
+<div class="slide" id="sCB" data-notes="Checkpoint B: NPV calculation using CAPM discount rate. From Stop Point 1 question 2.">
+  <span class="label" style="color:var(--amber);">Checkpoint B</span>
+  <h2>Challenge: Project Valuation with CAPM</h2>
+  <p>A project has β = 1.7, r<sub>f</sub> = 9%, E(r<sub>M</sub>) = 19%. Cash flows (in $M):</p>
+  <table class="data-table compact-table" style="max-width:400px;">
+    <tr><th>Year</th><th class="num">0</th><th class="num">1</th><th class="num">2</th><th class="num">3</th></tr>
+    <tr><td>CF</td><td class="num">−$20</td><td class="num">$10</td><td class="num">$10</td><td class="num">$10</td></tr>
+  </table>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:10px;">
+    <div class="card">
+      <h3>1. Discount Rate (%)</h3>
+      <p class="small">k = r<sub>f</sub> + β(E(r<sub>M</sub>)−r<sub>f</sub>)</p>
+      <input type="text" id="sCBin1" placeholder="%" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCBr1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>2. NPV ($M)</h3>
+      <p class="small">PV of CFs − initial cost</p>
+      <input type="text" id="sCBin2" placeholder="$M" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCBr2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>3. Max β before NPV &lt; 0</h3>
+      <p class="small">Hint: at what k does NPV=0?</p>
+      <input type="text" id="sCBin3" placeholder="β" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCBr3" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sCBCheck()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sCBReveal()">Show Solution</button>
+  </div>
+  <div id="sCBsol" style="display:none;margin-top:10px;" class="key-idea">
+    <p class="small"><strong>1.</strong> k = 9 + 1.7(19−9) = 9 + 17 = <strong>26%</strong></p>
+    <p class="small"><strong>2.</strong> NPV = 10/1.26 + 10/1.26² + 10/1.26³ − 20 = 7.94 + 6.30 + 5.00 − 20 = <strong>−$0.75M</strong> → Reject</p>
+    <p class="small"><strong>3.</strong> IRR ≈ 23.4% (from 10/1.234 + 10/1.234² + 10/1.234³ = 20). β<sub>max</sub> = (23.4 − 9)/10 = <strong>1.44</strong></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // k=26%, NPV=-0.75, max beta: IRR≈23.4%, so beta_max=(23.4-9)/10=1.44
+  const ans=[{id:'sCBin1',rid:'sCBr1',val:26,tol:1},{id:'sCBin2',rid:'sCBr2',val:-0.75,tol:0.3},{id:'sCBin3',rid:'sCBr3',val:1.44,tol:0.15}];
+  window.sCBCheck=function(){
+    ans.forEach(a=>{const v=parseFloat(document.getElementById(a.id).value);const r=document.getElementById(a.rid);
+    if(isNaN(v)){r.textContent='';return;}
+    if(Math.abs(v-a.val)<a.tol){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+    else{r.textContent='✗ Try again';r.style.color='#ef4444';}});
+  };
+  window.sCBReveal=function(){const el=document.getElementById('sCBsol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== s17: Section IV ==================== -->
+<div class="slide section-slide" id="s17" data-notes="Section IV: EMH — do prices actually reflect available information?">
+  <div class="section-num">IV</div>
+  <h2>Efficient Market Hypothesis</h2>
+  <p class="subtitle">Are markets smarter than you?</p>
+</div>
+
+<!-- ==================== s18: EMH Definition ==================== -->
+<div class="slide" id="s18" data-notes="EMH core definition: prices fully reflect available information. Three nested forms based on what 'available information' means.">
+  <span class="label">EMH</span>
+  <span class="source-tag">Bodie Ch. 8</span>
+  <h2>What is Market Efficiency?</h2>
+  <p>A market is <strong>efficient with respect to an information set</strong> if it is impossible to make economic profits by trading on that information.</p>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:12px;">
+    <div class="card" style="border-color:var(--green);">
+      <h3 style="color:var(--green);">Weak Form</h3>
+      <p class="small">Prices reflect all <strong>past trading data</strong> (prices, volume, short interest).</p>
+      <p class="small" style="margin-top:6px;"><strong>Implication:</strong> Technical analysis is useless.</p>
+    </div>
+    <div class="card" style="border-color:var(--amber);">
+      <h3 style="color:var(--amber);">Semi-Strong Form</h3>
+      <p class="small">Prices reflect all <strong>publicly available information</strong> (financials, news, analyst reports).</p>
+      <p class="small" style="margin-top:6px;"><strong>Implication:</strong> Fundamental analysis is useless.</p>
+    </div>
+    <div class="card" style="border-color:var(--red);">
+      <h3 style="color:var(--red);">Strong Form</h3>
+      <p class="small">Prices reflect <strong>all information</strong>, including private/insider info.</p>
+      <p class="small" style="margin-top:6px;"><strong>Implication:</strong> Even insiders can't profit.</p>
+    </div>
+  </div>
+  <div class="key-idea">
+    <p class="small"><strong>Hierarchy:</strong> Strong ⊃ Semi-Strong ⊃ Weak. Evidence generally supports weak and semi-strong forms; strong form is rejected (insiders <em>do</em> earn abnormal returns).</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s19: Quick Poll — EMH ==================== -->
+<div class="slide" id="s19" data-notes="Quick poll on EMH forms. Tests whether students understand which information set each form covers.">
+  <span class="label">EMH</span>
+  <h2>Quick Poll: Which Form of EMH?</h2>
+  <div class="think-prompt">
+    <p style="font-size:1.1rem;">If a company announces higher-than-expected earnings and the stock doesn't move, which form of EMH does this support?</p>
+  </div>
+  <div style="margin-top:14px; text-align:center;">
+    <button class="btn" onclick="s19Reveal()">Reveal Answer</button>
+  </div>
+  <div id="s19answer" style="display:none; margin-top:14px;">
+    <div class="key-idea">
+      <p><strong>Semi-strong form.</strong> The earnings announcement is <em>public information</em>. If the price doesn't move, it means the market had already incorporated this information before the announcement (perhaps from analyst estimates, industry trends, or management guidance).</p>
+      <p class="small" style="margin-top:6px;">This does <strong>not</strong> support strong form — it's about public info, not insider info.</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s19Reveal=function(){const el=document.getElementById('s19answer');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== s20: Anomalies ==================== -->
+<div class="slide" id="s20" data-notes="Market anomalies that challenge EMH: size effect, value premium, momentum. These have persisted for decades, though some have weakened.">
+  <span class="label">EMH Challenges</span>
+  <span class="source-tag">Bodie Ch. 8</span>
+  <h2>Market Anomalies</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS20" width="480" height="300"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Size Effect (SMB)</h3>
+        <p class="small">Small-cap stocks earn ~3% more per year than large-cap (1927–2020). Has weakened since discovery.</p>
+      </div>
+      <div class="card">
+        <h3>Value Premium (HML)</h3>
+        <p class="small">High book-to-market (value) stocks outperform low B/M (growth) by ~4% per year.</p>
+      </div>
+      <div class="card">
+        <h3>Momentum</h3>
+        <p class="small">Past winners continue to win for 3–12 months; past losers continue to lose.</p>
+      </div>
+    </div>
+  </div>
+  <div class="warning">
+    <p class="small"><strong>Are these real?</strong> Debate continues: (1) Data mining / look-ahead bias? (2) Risk premiums for bearing these exposures? (3) Behavioral mispricing? Fama argues risk; Shiller argues behavior.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS20');
+  const ctx=canvas.getContext('2d');
+  const W=480,H=300;
+  function gc(n){return{text:'#e2e8f0',muted:'#94a3b8',accent:'#38bdf8',accent2:'#6366f1',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',border:'#334155'}[n]||'#e2e8f0';}
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const L=50,R=W-20,T=20,B=H-40;
+    const labels=['SMB\n(Size)','HML\n(Value)','MOM\n(Momentum)','Market\n(Mkt-Rf)'];
+    const values=[3.2,4.1,6.5,8.3];
+    const colors=[gc('accent'),gc('amber'),gc('green'),gc('accent2')];
+    const barW=(R-L)/labels.length*0.6;
+    const gap=(R-L)/labels.length;
+
+    // axes
+    ctx.strokeStyle=gc('border'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,B); ctx.lineTo(R,B); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,B); ctx.stroke();
+
+    // y-axis
+    ctx.fillStyle=gc('muted'); ctx.font='10px monospace'; ctx.textAlign='right';
+    for(let v=0;v<=10;v+=2){
+      const y=B-(v/10)*(B-T);
+      ctx.fillText(v+'%',L-5,y+3);
+      ctx.strokeStyle='rgba(148,163,184,0.08)'; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(R,y); ctx.stroke();
+    }
+
+    ctx.save(); ctx.translate(12,(T+B)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillStyle=gc('muted'); ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('Avg Annual Premium (%)',0,0); ctx.restore();
+
+    // bars
+    labels.forEach((label,i)=>{
+      const x=L+gap*i+gap*0.2;
+      const h=(values[i]/10)*(B-T);
+      const y=B-h;
+
+      // bar
+      const grad=ctx.createLinearGradient(x,y,x,B);
+      grad.addColorStop(0,colors[i]);
+      grad.addColorStop(1,colors[i]+'40');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.roundRect(x,y,barW,h,[4,4,0,0]);
+      ctx.fill();
+
+      // value
+      ctx.fillStyle=gc('text'); ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(values[i]+'%',x+barW/2,y-8);
+
+      // label
+      ctx.fillStyle=gc('muted'); ctx.font='10px sans-serif';
+      const lines=label.split('\n');
+      lines.forEach((line,j)=>{
+        ctx.fillText(line,x+barW/2,B+14+j*12);
+      });
+    });
+
+    ctx.fillStyle=gc('text'); ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Factor Risk Premiums (1927–2020)',W/2,T-2);
+  }
+
+  draw();
+  const obs=new MutationObserver(()=>{if(document.getElementById('s20').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s20'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s21: Technical vs Fundamental ==================== -->
+<div class="slide" id="s21" data-notes="Technical analysis uses past prices/volume to predict. Fundamental analysis uses financial statements and valuation models. EMH says technical is useless (weak form), fundamental is useless (semi-strong).">
+  <span class="label">EMH Implications</span>
+  <h2>Technical vs. Fundamental Analysis</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>Technical Analysis</h3>
+      <p class="small">Uses <strong>past price patterns</strong>, volume, momentum indicators to predict future prices.</p>
+      <ul>
+        <li class="small">Charts, moving averages, support/resistance</li>
+        <li class="small">Assumes patterns repeat</li>
+      </ul>
+      <div class="warning" style="margin-top:6px;">
+        <p class="small"><strong>EMH says:</strong> Useless if weak form holds. Past prices already reflected in current price.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Fundamental Analysis</h3>
+      <p class="small">Uses <strong>financial data</strong> (earnings, growth, valuation ratios) to find mispriced stocks.</p>
+      <ul>
+        <li class="small">DCF models, P/E analysis, industry research</li>
+        <li class="small">Assumes market sometimes gets it wrong</li>
+      </ul>
+      <div class="warning" style="margin-top:6px;">
+        <p class="small"><strong>EMH says:</strong> Useless if semi-strong form holds. Public info already in price.</p>
+      </div>
+    </div>
+  </div>
+  <div class="key-idea">
+    <p class="small"><strong>Paradox:</strong> If nobody does fundamental analysis because markets are efficient... who keeps them efficient? Grossman-Stiglitz (1980) argued there must be enough profit to compensate analysts for the cost of research.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s22: EMH Tests ==================== -->
+<div class="slide" id="s22" data-notes="Testing each form of EMH. Weak: serial correlation, filter rules. Semi-strong: event studies. Strong: insider trading studies.">
+  <span class="label">EMH Testing</span>
+  <h2>Testing the Three Forms</h2>
+  <table class="data-table">
+    <tr><th>Form</th><th>Test Method</th><th>Evidence</th><th>Verdict</th></tr>
+    <tr>
+      <td><strong>Weak</strong></td>
+      <td class="small">Serial correlation, filter rules, trading rules</td>
+      <td class="small">Autocorrelation ≈ 0; some short-term momentum</td>
+      <td style="color:var(--green);">Mostly supported</td>
+    </tr>
+    <tr>
+      <td><strong>Semi-Strong</strong></td>
+      <td class="small">Event studies (earnings, splits, M&A)</td>
+      <td class="small">Prices adjust within minutes of announcements</td>
+      <td style="color:var(--green);">Mostly supported</td>
+    </tr>
+    <tr>
+      <td><strong>Strong</strong></td>
+      <td class="small">Insider trading studies, SEC filings</td>
+      <td class="small">Insiders earn significant abnormal returns</td>
+      <td style="color:var(--red);">Rejected</td>
+    </tr>
+  </table>
+  <div class="analogy" style="margin-top:10px;">
+    <p class="small"><strong>The mutual fund test:</strong> ~50% of actively managed funds beat the S&P 500 in any given year — exactly what you'd expect from <em>chance</em>. And winners don't repeat consistently. This is strong evidence for semi-strong efficiency.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s23: Active vs Passive ==================== -->
+<div class="slide" id="s23" data-notes="The practical implication: should you pick stocks or buy an index? Evidence increasingly favors passive management for most investors.">
+  <span class="label">Investment Implications</span>
+  <h2>Active vs. Passive Management</h2>
+  <div class="cols">
+    <div>
+      <h3>Passive Strategy</h3>
+      <ul>
+        <li class="small">Buy and hold a broad market index</li>
+        <li class="small">Low fees (0.03–0.10% for index funds)</li>
+        <li class="small">Consistent with EMH</li>
+        <li class="small">Tax-efficient (low turnover)</li>
+      </ul>
+      <div class="key-idea" style="margin-top:6px;">
+        <p class="small"><strong>Bogle's insight:</strong> After fees and taxes, most active managers underperform the index.</p>
+      </div>
+    </div>
+    <div>
+      <h3>Active Strategy</h3>
+      <ul>
+        <li class="small">Research and select individual securities</li>
+        <li class="small">Higher fees (0.5–2.0% for active funds)</li>
+        <li class="small">Requires α > fees to be worthwhile</li>
+        <li class="small">May be justified in less efficient markets</li>
+      </ul>
+      <div class="warning" style="margin-top:6px;">
+        <p class="small"><strong>The hurdle:</strong> An active manager charging 1% needs to generate >1% alpha <em>consistently</em> to justify their fee.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s24: Portfolio Management ==================== -->
+<div class="slide" id="s24" data-notes="Even in efficient markets, portfolio management still matters: asset allocation, diversification, tax management, rebalancing.">
+  <span class="label">Practical Takeaways</span>
+  <h2>Portfolio Management in Efficient Markets</h2>
+  <p>Even if you can't beat the market, portfolio management still adds value:</p>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>1. Diversification</h3>
+      <p class="small">Eliminate firm-specific risk for free. The market doesn't reward unsystematic risk.</p>
+    </div>
+    <div class="card">
+      <h3>2. Asset Allocation</h3>
+      <p class="small">The split between stocks, bonds, and cash matters more than stock picking. Match risk to your horizon and risk aversion.</p>
+    </div>
+    <div class="card">
+      <h3>3. Tax Management</h3>
+      <p class="small">Tax-loss harvesting, asset location (taxable vs. tax-deferred accounts), and minimizing turnover.</p>
+    </div>
+    <div class="card">
+      <h3>4. Rebalancing</h3>
+      <p class="small">Periodically restore target weights to maintain your desired risk level.</p>
+    </div>
+  </div>
+  <div class="key-idea">
+    <p class="small"><strong>The efficient market investor:</strong> Hold a diversified index, choose an appropriate stock/bond mix, minimize taxes and fees, rebalance periodically. Simple — but most investors don't do it.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== sCC: Checkpoint C — EMH Classification ==================== -->
+<div class="slide" id="sCC" data-notes="Checkpoint C: EMH classification exercise. From Stop Point 2 — students classify scenarios as consistent or violation of EMH.">
+  <span class="label" style="color:var(--amber);">Checkpoint C</span>
+  <h2>Challenge: EMH — Consistent or Violation?</h2>
+  <p class="small">For each scenario, decide if it is <strong>consistent with</strong> or a <strong>violation of</strong> EMH:</p>
+  <div class="card-grid" style="grid-template-columns: 1fr;">
+    <div class="card">
+      <p class="small"><strong>A.</strong> Nearly half of professionally managed mutual funds beat the S&P 500 in a typical year.</p>
+      <p class="small"><strong>B.</strong> Money managers who outperform one year are likely to outperform the next.</p>
+      <p class="small"><strong>C.</strong> Stock prices are more volatile in January than other months.</p>
+      <p class="small"><strong>D.</strong> Stocks announcing increased earnings in January outperform in February.</p>
+      <p class="small"><strong>E.</strong> Stocks that perform well one week perform poorly the next.</p>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:10px;">
+    <button class="btn" onclick="sCCReveal()">Reveal Answers</button>
+  </div>
+  <div id="sCCsol" style="display:none;margin-top:10px;" class="key-idea">
+    <p class="small"><strong>A. Consistent.</strong> ~50% beating the index is what chance predicts. No skill required.</p>
+    <p class="small"><strong>B. Violation.</strong> Persistent outperformance suggests skill, not luck — violates semi-strong EMH.</p>
+    <p class="small"><strong>C. Consistent.</strong> Higher volatility ≠ predictable returns. Volatility clustering doesn't create profit opportunities.</p>
+    <p class="small"><strong>D. Violation.</strong> If the earnings surprise is public in Jan, prices should adjust immediately — not drift into Feb (semi-strong violation).</p>
+    <p class="small"><strong>E. Violation (weak form).</strong> This predictable reversal pattern could be exploited using past price data.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCCReveal=function(){const el=document.getElementById('sCCsol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== s25: So Are Markets Efficient? ==================== -->
+<div class="slide" id="s25" data-notes="Summary slide: the nuanced answer to market efficiency. Markets are mostly efficient, with small pockets of inefficiency.">
+  <span class="label">Summary</span>
+  <h2>So, Are Markets Efficient?</h2>
+  <div class="card" style="border-color:var(--accent);">
+    <h3>The Nuanced Answer</h3>
+    <p>Markets are <strong>mostly efficient, most of the time</strong>. But:</p>
+    <ul>
+      <li>Anomalies exist (size, value, momentum) — but they may be risk premiums, not mispricing</li>
+      <li>Prices occasionally deviate from fundamentals (bubbles, crashes)</li>
+      <li>Professional analysts collectively keep markets efficient — their competition drives prices to fair value</li>
+      <li>Small/illiquid markets may be less efficient than large/liquid ones</li>
+    </ul>
+  </div>
+  <div class="analogy" style="margin-top:10px;">
+    <p class="small"><strong>The $100 bill on the sidewalk:</strong> An economist says "It can't be real — someone would have picked it up." A finance professor says "It might be real, but by the time you bend down, someone else will grab it." The truth: $100 bills do appear sometimes, but you can't build a reliable strategy around finding them.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s26: Key Formulas Summary ==================== -->
+<div class="slide" id="s26" data-notes="All key formulas from Chapters 7 and 8 on one slide for reference.">
+  <span class="label">Reference</span>
+  <h2>Key Formulas: Chapters 7 &amp; 8</h2>
+  <table class="data-table compact-table">
+    <tr><th>Formula</th><th>Name</th><th>Use</th></tr>
+    <tr>
+      <td><span style="font-family:Georgia;">E(r<sub>i</sub>) = r<sub>f</sub> + β<sub>i</sub>[E(r<sub>M</sub>) − r<sub>f</sub>]</span></td>
+      <td>CAPM / SML</td>
+      <td>Expected return given beta</td>
+    </tr>
+    <tr>
+      <td><span style="font-family:Georgia;">α<sub>i</sub> = r<sub>i</sub> − {r<sub>f</sub> + β<sub>i</sub>[r<sub>M</sub> − r<sub>f</sub>]}</span></td>
+      <td>Jensen's Alpha</td>
+      <td>Abnormal return vs. CAPM</td>
+    </tr>
+    <tr>
+      <td><span style="font-family:Georgia;">E(r<sub>C</sub>) = r<sub>f</sub> + [E(r<sub>M</sub>)−r<sub>f</sub>]/σ<sub>M</sub> × σ<sub>C</sub></span></td>
+      <td>CML</td>
+      <td>Efficient portfolio pricing</td>
+    </tr>
+    <tr>
+      <td><span style="font-family:Georgia;">E(r<sub>i</sub>) = r<sub>f</sub> + Σ β<sub>ij</sub>RP<sub>j</sub></span></td>
+      <td>APT / Multifactor</td>
+      <td>Multi-factor expected return</td>
+    </tr>
+    <tr>
+      <td><span style="font-family:Georgia;">E(r)−r<sub>f</sub> = β<sub>M</sub>(r<sub>M</sub>−r<sub>f</sub>) + β<sub>S</sub>SMB + β<sub>V</sub>HML</span></td>
+      <td>Fama-French 3-Factor</td>
+      <td>Size + value adjusted return</td>
+    </tr>
+  </table>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== sQ1: Quiz 1 — CAPM Calculation ==================== -->
+<div class="slide" id="sQ1" data-notes="Quiz 1: Full CAPM calculation exercise. Given market parameters, compute expected return, alpha, and fair price.">
+  <span class="label" style="color:var(--green);">Quiz</span>
+  <h2>Quiz: CAPM Calculation</h2>
+  <p>Given: r<sub>f</sub> = 3%, E(r<sub>M</sub>) = 11%, Stock X has β = 1.4 and actual return = 15%</p>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:10px;">
+    <div class="card">
+      <h3>1. E(r<sub>X</sub>) %</h3>
+      <p class="small">CAPM expected return</p>
+      <input type="text" id="sQ1in1" placeholder="%" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ1r1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>2. Alpha (%)</h3>
+      <p class="small">α = actual − expected</p>
+      <input type="text" id="sQ1in2" placeholder="%" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ1r2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>3. Is Stock X...</h3>
+      <p class="small">Overpriced, Underpriced, or Fair?</p>
+      <select id="sQ1in3" style="padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+        <option value="">Select...</option>
+        <option value="under">Underpriced</option>
+        <option value="over">Overpriced</option>
+        <option value="fair">Fairly Priced</option>
+      </select>
+      <span id="sQ1r3" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:10px;">
+    <button class="btn" onclick="sQ1Check()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sQ1Reveal()">Show Solution</button>
+  </div>
+  <div id="sQ1sol" style="display:none;margin-top:8px;" class="key-idea">
+    <p class="small"><strong>1.</strong> E(r) = 3 + 1.4(11−3) = 3 + 11.2 = <strong>14.2%</strong></p>
+    <p class="small"><strong>2.</strong> α = 15 − 14.2 = <strong>0.8%</strong></p>
+    <p class="small"><strong>3.</strong> α > 0 → stock plots <em>above</em> SML → <strong>Underpriced</strong> (buy signal)</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // E(r) = 3 + 1.4*8 = 14.2, alpha = 0.8, underpriced
+  window.sQ1Check=function(){
+    const v1=parseFloat(document.getElementById('sQ1in1').value);
+    const r1=document.getElementById('sQ1r1');
+    if(!isNaN(v1)){
+      if(Math.abs(v1-14.2)<0.5){r1.textContent='✓ Correct!';r1.style.color='#22c55e';}
+      else{r1.textContent='✗ Try again';r1.style.color='#ef4444';}
+    }
+    const v2=parseFloat(document.getElementById('sQ1in2').value);
+    const r2=document.getElementById('sQ1r2');
+    if(!isNaN(v2)){
+      if(Math.abs(v2-0.8)<0.3){r2.textContent='✓ Correct!';r2.style.color='#22c55e';}
+      else{r2.textContent='✗ Try again';r2.style.color='#ef4444';}
+    }
+    const v3=document.getElementById('sQ1in3').value;
+    const r3=document.getElementById('sQ1r3');
+    if(v3){
+      if(v3==='under'){r3.textContent='✓ Correct!';r3.style.color='#22c55e';}
+      else{r3.textContent='✗ Try again';r3.style.color='#ef4444';}
+    }
+  };
+  window.sQ1Reveal=function(){const el=document.getElementById('sQ1sol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== sQ2: Quiz 2 — Multifactor Model ==================== -->
+<div class="slide" id="sQ2" data-notes="Quiz 2: Multifactor model calculation. Apply the Fama-French or APT formula with given factor betas and risk premiums.">
+  <span class="label" style="color:var(--green);">Quiz</span>
+  <h2>Quiz: Multifactor Model</h2>
+  <p>Given: r<sub>f</sub> = 5%, Factor premiums: Industrial Production RP = 8%, Inflation RP = −3%</p>
+  <p>Stock Y: β<sub>IP</sub> = 1.2, β<sub>INF</sub> = 0.6. Actual return = 16%.</p>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:10px;">
+    <div class="card">
+      <h3>1. Expected Return (%)</h3>
+      <p class="small">E(r) = r<sub>f</sub> + β<sub>IP</sub>·RP<sub>IP</sub> + β<sub>INF</sub>·RP<sub>INF</sub></p>
+      <input type="text" id="sQ2in1" placeholder="%" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ2r1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>2. Alpha (%)</h3>
+      <p class="small">α = actual − expected</p>
+      <input type="text" id="sQ2in2" placeholder="%" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ2r2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:10px;">
+    <button class="btn" onclick="sQ2Check()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sQ2Reveal()">Show Solution</button>
+  </div>
+  <div id="sQ2sol" style="display:none;margin-top:8px;" class="key-idea">
+    <p class="small"><strong>1.</strong> E(r) = 5 + 1.2(8) + 0.6(−3) = 5 + 9.6 − 1.8 = <strong>12.8%</strong></p>
+    <p class="small"><strong>2.</strong> α = 16 − 12.8 = <strong>3.2%</strong></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // E(r) = 5 + 1.2*8 + 0.6*(-3) = 5 + 9.6 - 1.8 = 12.8, alpha = 3.2
+  const ans=[{id:'sQ2in1',rid:'sQ2r1',val:12.8,tol:0.5},{id:'sQ2in2',rid:'sQ2r2',val:3.2,tol:0.3}];
+  window.sQ2Check=function(){
+    ans.forEach(a=>{const v=parseFloat(document.getElementById(a.id).value);const r=document.getElementById(a.rid);
+    if(isNaN(v)){r.textContent='';return;}
+    if(Math.abs(v-a.val)<a.tol){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+    else{r.textContent='✗ Try again';r.style.color='#ef4444';}});
+  };
+  window.sQ2Reveal=function(){const el=document.getElementById('sQ2sol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== s27: Key Takeaways ==================== -->
+<div class="slide" id="s27" data-notes="Summary of both chapters. The big ideas students should take away.">
+  <span class="label">Summary</span>
+  <h2>Key Takeaways: Chapters 7 &amp; 8</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card" style="border-color:var(--accent);">
+      <h3>Chapter 7: CAPM &amp; APT</h3>
+      <ol>
+        <li class="small">CAPM: expected return = r<sub>f</sub> + β × market risk premium</li>
+        <li class="small">SML prices <strong>all</strong> assets; CML only efficient portfolios</li>
+        <li class="small">Alpha = actual − CAPM-predicted return</li>
+        <li class="small">APT uses multiple factors but doesn't identify them</li>
+        <li class="small">Fama-French adds size (SMB) and value (HML) factors</li>
+        <li class="small">CAPM is imperfect but remains the standard first approximation</li>
+      </ol>
+    </div>
+    <div class="card" style="border-color:var(--amber);">
+      <h3>Chapter 8: EMH</h3>
+      <ol>
+        <li class="small">Three forms: weak, semi-strong, strong</li>
+        <li class="small">Weak + semi-strong generally supported; strong rejected</li>
+        <li class="small">Anomalies exist but may reflect risk, not mispricing</li>
+        <li class="small">Technical analysis has little support; fundamental analysis is a tougher call</li>
+        <li class="small">Most active managers don't beat the index after fees</li>
+        <li class="small">Even in efficient markets: diversify, allocate wisely, minimize costs</li>
+      </ol>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+</div><!-- end #deck -->
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav"></div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','sCA','s12','s13','s14','s15','s16','sCB','s17','s18','s19','s20','s21','s22','s23','s24','sCC','s25','s26','sQ1','sQ2','s27'];
+let currentIdx = 0;
+let transitioning = false;
+
+function showSlide(idx) {
+  if (idx < 0 || idx >= slideOrder.length || idx === currentIdx || transitioning) return;
+  transitioning = true;
+  const dir = idx > currentIdx ? 1 : -1;
+  const oldEl = document.getElementById(slideOrder[currentIdx]);
+  const newEl = document.getElementById(slideOrder[idx]);
+
+  oldEl.classList.remove('active');
+  if (dir > 0) { oldEl.classList.add('exit-left'); }
+  else { oldEl.style.transform = 'translateX(60px)'; oldEl.style.opacity = '0'; }
+
+  newEl.style.transition = 'none';
+  newEl.style.transform = dir > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+  newEl.style.opacity = '0';
+  void newEl.offsetWidth;
+
+  newEl.style.transition = '';
+  newEl.style.transform = '';
+  newEl.style.opacity = '';
+  newEl.classList.add('active');
+
+  currentIdx = idx;
+  updateNav();
+
+  setTimeout(function() {
+    oldEl.classList.remove('exit-left');
+    oldEl.style.transform = '';
+    oldEl.style.opacity = '';
+    transitioning = false;
+  }, 480);
+}
+
+function updateNav() {
+  const pct = slideOrder.length > 1 ? (currentIdx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+  document.getElementById('slide-counter').textContent = (currentIdx + 1) + ' / ' + slideOrder.length;
+  const noteData = document.getElementById(slideOrder[currentIdx]).getAttribute('data-notes') || '';
+  document.getElementById('notes-text').textContent = noteData || '(No notes)';
+}
+
+function navigate(dir) { showSlide(currentIdx + dir); }
+
+document.addEventListener('keydown', function(e) {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  switch (e.key) {
+    case 'ArrowRight': case ' ': case 'PageDown': e.preventDefault(); navigate(1); break;
+    case 'ArrowLeft': case 'PageUp': e.preventDefault(); navigate(-1); break;
+    case 'Home': e.preventDefault(); showSlide(0); break;
+    case 'End': e.preventDefault(); showSlide(slideOrder.length - 1); break;
+    case 'n': case 'N':
+      document.getElementById('notes-panel').classList.toggle('visible'); break;
+    case 't': case 'T':
+      var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      if (isLight) { document.documentElement.removeAttribute('data-theme'); document.getElementById('theme-toggle').textContent = 'Light'; }
+      else { document.documentElement.setAttribute('data-theme', 'light'); document.getElementById('theme-toggle').textContent = 'Dark'; }
+      break;
+  }
+});
+
+document.getElementById('nav-prev').addEventListener('click', function() { navigate(-1); });
+document.getElementById('nav-next').addEventListener('click', function() { navigate(1); });
+document.getElementById('theme-toggle').addEventListener('click', function() {
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) { document.documentElement.removeAttribute('data-theme'); this.textContent = 'Light'; }
+  else { document.documentElement.setAttribute('data-theme', 'light'); this.textContent = 'Dark'; }
+});
+document.getElementById('notes-btn').addEventListener('click', function() {
+  document.getElementById('notes-panel').classList.toggle('visible');
+});
+
+// Touch/swipe
+var touchStartX = 0, touchStartY = 0;
+document.addEventListener('touchstart', function(e) {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, { passive: true });
+document.addEventListener('touchend', function(e) {
+  var dx = e.changedTouches[0].screenX - touchStartX;
+  var dy = e.changedTouches[0].screenY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    if (dx < 0) navigate(1); else navigate(-1);
+  }
+}, { passive: true });
+
+updateNav();
+</script>
+</body>
+</html>

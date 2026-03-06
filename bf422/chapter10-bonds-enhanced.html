@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BF422 — Chapter 10: Bond Prices and Yields — Enhanced</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f172a; --bg-slide: #1e293b; --text: #e2e8f0; --text-muted: #94a3b8;
+  --accent: #38bdf8; --accent2: #6366f1; --accent3: #a78bfa; --amber: #f59e0b;
+  --green: #22c55e; --red: #ef4444; --pink: #f472b6; --border: #334155; --border2: #475569;
+  --card-bg: rgba(255,255,255,0.05); --code-bg: rgba(0,0,0,0.2); --shadow: rgba(0,0,0,0.4);
+}
+[data-theme="light"] {
+  --bg: #f1f5f9; --bg-slide: #ffffff; --text: #1e293b; --text-muted: #64748b;
+  --accent: #0284c7; --accent2: #4f46e5; --accent3: #7c3aed; --amber: #d97706;
+  --green: #16a34a; --red: #dc2626; --pink: #db2777; --border: #cbd5e1; --border2: #94a3b8;
+  --card-bg: rgba(0,0,0,0.03); --code-bg: rgba(0,0,0,0.05); --shadow: rgba(0,0,0,0.1);
+}
+html, body { height: 100%; overflow: hidden; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 1000; background: var(--border); }
+#progress { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 0.4s ease; }
+#controls { position: fixed; top: 12px; right: 16px; z-index: 1000; display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--text-muted); }
+#slide-counter { font-variant-numeric: tabular-nums; font-weight: 600; }
+.ctrl-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-muted); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; transition: all 0.2s; font-family: inherit; }
+.ctrl-btn:hover { background: rgba(99,102,241,0.15); border-color: var(--accent2); color: var(--text); }
+#deck { width: 100%; height: 100%; display: grid; place-items: center; }
+.slide { grid-row: 1; grid-column: 1; width: 96%; max-width: 1280px; padding: 44px 52px; border-radius: 14px; background: var(--bg-slide); box-shadow: 0 8px 32px var(--shadow); opacity: 0; transform: translateX(60px); transition: opacity 0.45s ease, transform 0.45s ease; pointer-events: none; max-height: 88vh; overflow-y: auto; }
+.slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.slide.exit-left { opacity: 0; transform: translateX(-60px); }
+.slide::-webkit-scrollbar { width: 6px; } .slide::-webkit-scrollbar-track { background: transparent; } .slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.slide h1 { font-size: 2.2rem; color: var(--accent); margin-bottom: 8px; line-height: 1.2; }
+.slide h2 { font-size: 1.7rem; color: var(--accent); margin-bottom: 14px; line-height: 1.25; }
+.slide h3 { font-size: 1.15rem; color: var(--accent3); margin-bottom: 8px; margin-top: 12px; }
+.slide p, .slide li { font-size: 1.05rem; line-height: 1.6; }
+.slide p { margin-bottom: 8px; } .slide ul, .slide ol { margin: 6px 0 12px 24px; } .slide li { margin-bottom: 4px; }
+.subtitle { font-size: 1.1rem; color: var(--text-muted); margin-top: 8px; }
+.small { font-size: 0.88rem; color: var(--text-muted); }
+.label { display: inline-block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent2); margin-bottom: 6px; }
+strong { color: var(--accent); } [data-theme="light"] strong { color: var(--accent2); }
+.source-tag { font-size: 0.68rem; color: var(--text-muted); float: right; opacity: 0.6; font-style: italic; }
+.title-slide { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 420px; }
+.title-slide h1 { font-size: 2.3rem; margin-bottom: 4px; }
+.title-slide .course-code { font-size: 0.9rem; color: var(--text-muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+.title-slide .divider { width: 80px; height: 3px; background: linear-gradient(90deg, var(--accent2), var(--accent)); margin: 16px auto; border-radius: 2px; }
+.section-slide { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; }
+.section-slide h2 { font-size: 2rem; margin-bottom: 10px; }
+.section-num { font-size: 3.5rem; font-weight: 800; color: var(--accent2); opacity: 0.3; margin-bottom: -10px; }
+.btn { background: linear-gradient(135deg, var(--accent2), #8b5cf6); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.88rem; font-weight: 600; font-family: inherit; transition: all 0.2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+.btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+.btn-secondary { background: var(--border); color: var(--text); } .btn-secondary:hover { background: var(--border2); box-shadow: none; }
+.key-idea { background: rgba(34,197,94,0.08); border-left: 4px solid var(--green); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0; }
+.warning { background: rgba(239,68,68,0.08); border-left: 4px solid var(--red); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0; }
+.analogy { background: rgba(167,139,250,0.08); border-left: 4px solid var(--accent3); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0; }
+.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin: 6px 0; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
+.formula { display: block; background: var(--code-bg); border-left: 3px solid var(--accent2); border-radius: 0 8px 8px 0; padding: 12px 20px; margin: 10px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 1.1rem; }
+.formula-center { text-align: center; border-left: none; border: 1px solid var(--border); border-radius: 8px; }
+.data-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.95rem; }
+.data-table th { background: rgba(99,102,241,0.1); color: var(--accent); padding: 7px 10px; text-align: left; border-bottom: 2px solid var(--border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.data-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.data-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .highlight-row td { background: rgba(99,102,241,0.08); font-weight: 700; }
+.compact-table { font-size: 0.85rem; } .compact-table th { padding: 5px 8px; font-size: 0.72rem; } .compact-table td { padding: 4px 8px; }
+.cols { display: flex; gap: 18px; margin: 10px 0; } .cols > div { flex: 1; }
+.think-prompt { background: rgba(99,102,241,0.08); border: 2px dashed var(--accent2); border-radius: 10px; padding: 12px 16px; margin: 10px 0; text-align: center; }
+.think-prompt p { font-weight: 600; color: var(--accent2); margin-bottom: 0; }
+.canvas-wrap { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px; display: inline-block; width: 100%; }
+.canvas-wrap canvas { width: 100%; display: block; }
+.nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); z-index: 500; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-muted); width: 36px; height: 52px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; opacity: 0.4; }
+.nav-arrow:hover { opacity: 1; background: rgba(99,102,241,0.15); color: var(--accent); }
+#nav-prev { left: 10px; } #nav-next { right: 10px; }
+#notes-panel { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 2px solid var(--border); padding: 10px 20px; font-size: 0.9rem; color: var(--text-muted); transform: translateY(100%); transition: transform 0.3s ease; z-index: 999; max-height: 110px; overflow-y: auto; }
+#notes-panel.visible { transform: translateY(0); }
+#notes-label { font-weight: 700; color: var(--accent2); margin-right: 8px; }
+@media print { body { background: #fff !important; color: #000 !important; overflow: visible !important; } #progress-bar, #controls, .nav-arrow, #notes-panel { display: none !important; } #deck { display: block !important; height: auto !important; } .slide { position: relative !important; opacity: 1 !important; transform: none !important; pointer-events: auto !important; page-break-after: always; box-shadow: none !important; border: 1px solid #ccc; margin: 20px auto; max-height: none !important; overflow: visible !important; background: #fff !important; } }
+@media (max-width: 700px) { .slide { padding: 24px 18px; width: 97%; } .slide h1 { font-size: 1.6rem; } .slide h2 { font-size: 1.35rem; } .cols { flex-direction: column; gap: 8px; } .card-grid { grid-template-columns: 1fr; } .nav-arrow { display: none; } }
+</style>
+</head>
+<body>
+<div id="progress-bar"><div id="progress"></div></div>
+<div id="controls">
+  <span id="slide-counter">1 / 28</span>
+  <button class="ctrl-btn" id="theme-toggle" title="Toggle theme (T)">Light</button>
+  <button class="ctrl-btn" id="notes-btn" title="Toggle notes (N)">Notes</button>
+</div>
+<button class="nav-arrow" id="nav-prev" title="Previous">&lsaquo;</button>
+<button class="nav-arrow" id="nav-next" title="Next">&rsaquo;</button>
+<div id="notes-panel"><span id="notes-label">Notes:</span><span id="notes-text"></span></div>
+
+<div id="deck">
+
+<!-- ==================== s1: Title ==================== -->
+<div class="slide title-slide active" id="s1" data-notes="Chapter 10: Bond Prices and Yields. Covers bond features, pricing, yield measures, price-yield relationship, and default risk.">
+  <div class="course-code">BF422 — Investments</div>
+  <h1>Bond Prices and Yields</h1>
+  <div class="divider"></div>
+  <p class="subtitle">Chapter 10 — Bodie, Kane &amp; Marcus</p>
+  <p class="small" style="margin-top:12px;"><strong>Monmouth University</strong></p>
+</div>
+
+<!-- ==================== s2: Road Map ==================== -->
+<div class="slide" id="s2" data-notes="Overview of the chapter structure.">
+  <span class="label">Overview</span>
+  <h2>Road Map</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card"><h3>I. Bond Basics</h3><p class="small">Par value, coupon rate, maturity, types of bonds</p></div>
+    <div class="card"><h3>II. Bond Pricing</h3><p class="small">PV formula, price-yield inverse relationship, interest rate risk</p></div>
+    <div class="card"><h3>III. Bond Yields</h3><p class="small">YTM, YTC, current yield, holding period return</p></div>
+    <div class="card"><h3>IV. Default Risk</h3><p class="small">Credit ratings, yield spreads, financial ratios</p></div>
+  </div>
+  <div class="key-idea">
+    <p><strong>Core idea:</strong> Bond prices and yields move in <em>opposite directions</em>. Understanding this inverse relationship is the foundation of fixed-income analysis.</p>
+  </div>
+</div>
+
+<!-- ==================== s3: Section I ==================== -->
+<div class="slide section-slide" id="s3" data-notes="Section I: Bond features and characteristics.">
+  <div class="section-num">I</div>
+  <h2>Bond Basics</h2>
+  <p class="subtitle">The building blocks of fixed income</p>
+</div>
+
+<!-- ==================== s4: Bond Characteristics ==================== -->
+<div class="slide" id="s4" data-notes="Key bond characteristics: par value, coupon rate, maturity date, indenture. These define the cash flows.">
+  <span class="label">Bond Features</span>
+  <span class="source-tag">Bodie Ch. 10, Sec 10.1</span>
+  <h2>Bond Characteristics</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3>Par (Face) Value</h3>
+      <p class="small">The principal repaid at maturity, typically <strong>$1,000</strong>.</p>
+    </div>
+    <div class="card">
+      <h3>Coupon Rate</h3>
+      <p class="small">Annual interest rate. Payment = Coupon Rate × Par Value. Usually paid <strong>semiannually</strong>.</p>
+    </div>
+    <div class="card">
+      <h3>Maturity Date</h3>
+      <p class="small">The date the bondholder receives the face value. Notes: 1–10 yrs. Bonds: 10–30 yrs.</p>
+    </div>
+    <div class="card">
+      <h3>Indenture</h3>
+      <p class="small">Legal contract specifying all terms between issuer and bondholder.</p>
+    </div>
+  </div>
+  <div class="analogy">
+    <p class="small"><strong>Think of it as a loan:</strong> You lend $1,000 (par). The borrower pays you interest (coupon) twice a year, then returns your $1,000 at maturity.</p>
+  </div>
+</div>
+
+<!-- ==================== s5: Bond Types ==================== -->
+<div class="slide" id="s5" data-notes="Special bond types: callable, convertible, puttable, floating rate, zero-coupon, catastrophe bonds.">
+  <span class="label">Bond Features</span>
+  <h2>Types of Bonds</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="card">
+      <h3>Callable</h3>
+      <p class="small">Issuer can repurchase at a specified call price. Benefits issuer when rates fall.</p>
+    </div>
+    <div class="card">
+      <h3>Convertible</h3>
+      <p class="small">Bondholder can exchange for a specified number of common stock shares.</p>
+    </div>
+    <div class="card">
+      <h3>Puttable</h3>
+      <p class="small">Bondholder can sell back at par. Benefits holder when rates rise.</p>
+    </div>
+    <div class="card">
+      <h3>Floating Rate</h3>
+      <p class="small">Coupon resets periodically to a market benchmark (e.g., SOFR + spread).</p>
+    </div>
+    <div class="card">
+      <h3>Zero-Coupon</h3>
+      <p class="small">No coupon payments. Sold at deep discount; all return comes from price appreciation.</p>
+    </div>
+    <div class="card">
+      <h3>Catastrophe</h3>
+      <p class="small">Higher coupon to compensate for risk of loss triggered by natural disasters.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== s6: Section II ==================== -->
+<div class="slide section-slide" id="s6" data-notes="Section II: Bond pricing — the PV formula and the price-yield relationship.">
+  <div class="section-num">II</div>
+  <h2>Bond Pricing</h2>
+  <p class="subtitle">Present value of future cash flows</p>
+</div>
+
+<!-- ==================== s7: Bond Pricing Formula ==================== -->
+<div class="slide" id="s7" data-notes="The fundamental bond pricing formula: PV of coupons + PV of face value. For semiannual bonds, divide coupon and YTM by 2, multiply periods by 2.">
+  <span class="label">Pricing</span>
+  <span class="source-tag">Bodie Ch. 10, Sec 10.2</span>
+  <h2>The Bond Pricing Formula</h2>
+  <div class="formula formula-center" style="font-size:1rem;line-height:2;">
+    P = Σ<sub>t=1</sub><sup>T</sup> C/(1+y)<sup>t</sup> + FV/(1+y)<sup>T</sup>
+  </div>
+  <div class="cols" style="margin-top:10px;">
+    <div>
+      <h3>For Semiannual Bonds:</h3>
+      <ul>
+        <li class="small">C = (Coupon Rate × Par) / 2</li>
+        <li class="small">y = YTM / 2 (semiannual yield)</li>
+        <li class="small">T = Years × 2 (number of periods)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Calculator Inputs:</h3>
+      <div class="formula" style="font-size:0.9rem;">
+        N = periods, I/Y = periodic rate<br>
+        PMT = coupon payment, FV = par<br>
+        CPT PV → bond price
+      </div>
+    </div>
+  </div>
+  <div class="key-idea">
+    <p class="small"><strong>Key insight:</strong> Bond price = PV of <em>all</em> future cash flows, discounted at the market's required yield (YTM).</p>
+  </div>
+</div>
+
+<!-- ==================== s8: Price-Yield Relationship ==================== -->
+<div class="slide" id="s8" data-notes="Interactive: the inverse relationship between bond price and yield. As yield rises, price falls — and the relationship is convex.">
+  <span class="label">Pricing</span>
+  <h2>Price-Yield Relationship</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS8" width="480" height="340"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">YTM: <strong id="s8yLabel">8.0%</strong></label>
+        <input type="range" id="s8slider" min="10" max="200" value="80" style="width:100%;accent-color:var(--accent2);" oninput="s8Update()">
+      </div>
+    </div>
+    <div>
+      <div id="s8detail" class="card" style="font-size:0.9rem;line-height:1.7;"></div>
+      <div class="card" style="margin-top:8px;">
+        <h3>Premium, Par, or Discount?</h3>
+        <p class="small"><strong>YTM &lt; Coupon:</strong> Price &gt; Par → Premium</p>
+        <p class="small"><strong>YTM = Coupon:</strong> Price = Par → At Par</p>
+        <p class="small"><strong>YTM &gt; Coupon:</strong> Price &lt; Par → Discount</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS8');
+  const ctx=canvas.getContext('2d');
+  const W=480,H=340;
+  function gc(n){return{text:'#e2e8f0',muted:'#94a3b8',accent:'#38bdf8',accent2:'#6366f1',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',border:'#334155'}[n]||'#e2e8f0';}
+
+  const coupon=80, par=1000, T=60; // 8% semi, 30yr
+
+  function bondPrice(ytmAnnual){
+    const y=ytmAnnual/200; // semiannual
+    let pv=0;
+    for(let t=1;t<=T;t++) pv+=(coupon/2)/Math.pow(1+y,t);
+    pv+=par/Math.pow(1+y,T);
+    return pv;
+  }
+
+  function draw(){
+    const ytm=parseInt(document.getElementById('s8slider').value)/10;
+    document.getElementById('s8yLabel').textContent=ytm.toFixed(1)+'%';
+
+    const price=bondPrice(ytm);
+    const status=ytm<8?'Premium':ytm>8?'Discount':'At Par';
+    const statusColor=ytm<8?gc('green'):ytm>8?gc('red'):gc('amber');
+    document.getElementById('s8detail').innerHTML=
+      '<h3>30-Year, 8% Coupon Bond</h3>'+
+      '<p>YTM = <strong>'+ytm.toFixed(1)+'%</strong></p>'+
+      '<p>Price = <strong style="color:'+statusColor+'">$'+price.toFixed(2)+'</strong></p>'+
+      '<p>Status: <strong style="color:'+statusColor+'">'+status+'</strong></p>'+
+      '<p class="small" style="margin-top:6px;">Coupon rate = 8%, Par = $1,000</p>';
+
+    ctx.clearRect(0,0,W,H);
+    const L=60,R=W-15,T2=20,B=H-35,cW=R-L,cH=B-T2;
+
+    // axes
+    ctx.strokeStyle=gc('border'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,T2); ctx.lineTo(L,B); ctx.lineTo(R,B); ctx.stroke();
+    ctx.fillStyle=gc('muted'); ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('YTM (%)',(L+R)/2,H-5);
+    ctx.save(); ctx.translate(14,(T2+B)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('Price ($)',0,0); ctx.restore();
+
+    // grid
+    const maxY=20, minP=400, maxP=2200;
+    for(let v=500;v<=2000;v+=500){
+      const y=B-((v-minP)/(maxP-minP))*cH;
+      ctx.strokeStyle='rgba(148,163,184,0.08)'; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(R,y); ctx.stroke();
+      ctx.fillStyle=gc('muted'); ctx.textAlign='right'; ctx.font='10px monospace';
+      ctx.fillText('$'+v,L-5,y+3);
+    }
+    for(let v=2;v<=20;v+=2){
+      const x=L+(v/maxY)*cW;
+      ctx.fillStyle=gc('muted'); ctx.textAlign='center'; ctx.font='10px monospace';
+      ctx.fillText(v+'%',x,B+14);
+    }
+
+    // par line
+    const parY=B-((1000-minP)/(maxP-minP))*cH;
+    ctx.setLineDash([5,4]); ctx.strokeStyle='rgba(245,158,11,0.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,parY); ctx.lineTo(R,parY); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle=gc('amber'); ctx.font='10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('Par = $1,000',R-80,parY-6);
+
+    // price-yield curve
+    ctx.strokeStyle=gc('accent'); ctx.lineWidth=2.5;
+    ctx.beginPath();
+    for(let yy=1;yy<=maxY;yy+=0.2){
+      const p=bondPrice(yy);
+      const x=L+(yy/maxY)*cW;
+      const y2=B-((p-minP)/(maxP-minP))*cH;
+      if(yy===1)ctx.moveTo(x,y2);else ctx.lineTo(x,y2);
+    }
+    ctx.stroke();
+
+    // current point
+    const px=L+(ytm/maxY)*cW;
+    const py=B-((price-minP)/(maxP-minP))*cH;
+    ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2);
+    ctx.fillStyle=gc('accent2'); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=2; ctx.stroke();
+  }
+
+  window.s8Update=function(){draw();};
+  draw();
+  const obs=new MutationObserver(()=>{if(document.getElementById('s8').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s8'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s9: Pricing Examples ==================== -->
+<div class="slide" id="s9" data-notes="Two bonds with same characteristics but different discount rates. Shows premium vs at-par pricing.">
+  <span class="label">Pricing</span>
+  <h2>Bond Pricing: Premium vs. Par</h2>
+  <table class="data-table">
+    <tr><th></th><th>Bond A</th><th>Bond B</th></tr>
+    <tr><td>Maturity</td><td>10 years</td><td>10 years</td></tr>
+    <tr><td>Coupon (annual)</td><td>5%</td><td>5%</td></tr>
+    <tr><td>YTM</td><td>3%</td><td>5%</td></tr>
+    <tr><td>Par Value</td><td>$1,000</td><td>$1,000</td></tr>
+  </table>
+  <div class="cols" style="margin-top:10px;">
+    <div class="card">
+      <h3>Bond A (YTM=3% &lt; Coupon=5%)</h3>
+      <p class="small">N=10, PMT=50, I/Y=3, FV=1000</p>
+      <p class="small">PV = <strong>$1,170.60</strong> → <strong style="color:var(--green);">Premium bond</strong></p>
+    </div>
+    <div class="card">
+      <h3>Bond B (YTM=5% = Coupon=5%)</h3>
+      <p class="small">N=10, PMT=50, I/Y=5, FV=1000</p>
+      <p class="small">PV = <strong>$1,000.00</strong> → <strong style="color:var(--amber);">At par</strong></p>
+    </div>
+  </div>
+  <div class="key-idea">
+    <p class="small"><strong>Why?</strong> Bond A's 5% coupon is <em>generous</em> compared to the 3% market rate. Investors will pay a premium for those above-market cash flows.</p>
+  </div>
+</div>
+
+<!-- ==================== sCA: Checkpoint A — Bond Pricing ==================== -->
+<div class="slide" id="sCA" data-notes="Checkpoint A: Bond pricing calculation from the stop point exercises.">
+  <span class="label" style="color:var(--amber);">Checkpoint A</span>
+  <h2>Challenge: Bond Pricing</h2>
+  <p>An 8% semiannual coupon bond, $1,000 par, 30-year maturity, YTM = 8%.</p>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:10px;">
+    <div class="card">
+      <h3>1. Bond Price ($)</h3>
+      <p class="small">N=60, I/Y=4, PMT=40, FV=1000</p>
+      <input type="text" id="sCAin1" placeholder="$" style="width:110px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCAr1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>2. Why this price?</h3>
+      <p class="small">When YTM equals the coupon rate, what happens to the price?</p>
+      <select id="sCAin2" style="padding:5px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+        <option value="">Select...</option>
+        <option value="premium">Premium (> $1,000)</option>
+        <option value="par">At Par (= $1,000)</option>
+        <option value="discount">Discount (< $1,000)</option>
+      </select>
+      <span id="sCAr2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sCACheck()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sCAReveal()">Show Solution</button>
+  </div>
+  <div id="sCAsol" style="display:none;margin-top:10px;" class="key-idea">
+    <p class="small"><strong>1.</strong> PV = <strong>$1,000</strong> (exactly par)</p>
+    <p class="small"><strong>2.</strong> When YTM = coupon rate, the bond trades <strong>at par</strong>. The coupon exactly compensates for the required yield.</p>
+  </div>
+</div>
+<script>
+(function(){
+  window.sCACheck=function(){
+    const v=parseFloat(document.getElementById('sCAin1').value);
+    const r=document.getElementById('sCAr1');
+    if(!isNaN(v)){
+      if(Math.abs(v-1000)<5){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+      else{r.textContent='✗ Try again';r.style.color='#ef4444';}
+    }
+    const v2=document.getElementById('sCAin2').value;
+    const r2=document.getElementById('sCAr2');
+    if(v2){
+      if(v2==='par'){r2.textContent='✓ Correct!';r2.style.color='#22c55e';}
+      else{r2.textContent='✗ Try again';r2.style.color='#ef4444';}
+    }
+  };
+  window.sCAReveal=function(){const el=document.getElementById('sCAsol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== s10: Section III ==================== -->
+<div class="slide section-slide" id="s10" data-notes="Section III: Different yield measures and their uses.">
+  <div class="section-num">III</div>
+  <h2>Bond Yields</h2>
+  <p class="subtitle">Measuring bond returns</p>
+</div>
+
+<!-- ==================== s11: Yield Measures ==================== -->
+<div class="slide" id="s11" data-notes="Three yield measures: YTM, YTC, and current yield. Each answers a different question about bond returns.">
+  <span class="label">Yields</span>
+  <span class="source-tag">Bodie Ch. 10, Sec 10.3</span>
+  <h2>Yield Measures</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="card" style="border-color:var(--accent);">
+      <h3>Yield to Maturity (YTM)</h3>
+      <p class="small">The discount rate that makes PV of all cash flows = bond price. <strong>Most important measure.</strong></p>
+      <p class="small" style="margin-top:4px;">Assumes bond held to maturity and coupons reinvested at YTM.</p>
+    </div>
+    <div class="card" style="border-color:var(--amber);">
+      <h3>Yield to Call (YTC)</h3>
+      <p class="small">Like YTM, but uses <strong>call date</strong> instead of maturity and <strong>call price</strong> instead of par.</p>
+      <p class="small" style="margin-top:4px;">Relevant for premium bonds that are likely to be called.</p>
+    </div>
+    <div class="card" style="border-color:var(--green);">
+      <h3>Current Yield</h3>
+      <p class="small"><strong>Annual coupon / Price</strong></p>
+      <p class="small" style="margin-top:4px;">Simple income measure. Ignores capital gains/losses.</p>
+    </div>
+  </div>
+  <div class="warning">
+    <p class="small"><strong>Trap:</strong> For premium bonds, Current Yield > YTM (because you'll lose money at maturity when price falls to par). For discount bonds, the opposite.</p>
+  </div>
+</div>
+
+<!-- ==================== s12: YTM Example ==================== -->
+<div class="slide" id="s12" data-notes="Worked example: finding YTM when given a bond price. Requires financial calculator or iterative solving.">
+  <span class="label">Yields</span>
+  <h2>Finding YTM: Worked Example</h2>
+  <div class="card">
+    <h3>Example: 8% semiannual coupon, 30-year bond selling at $1,276.76</h3>
+    <p class="small"><strong>Calculator inputs:</strong></p>
+    <div class="formula" style="font-size:0.9rem;">
+      PMT = 40, N = 60, PV = −1276.76, FV = 1000<br>
+      CPT I/Y → <strong>3.0%</strong> (semiannual)<br>
+      YTM = 3.0% × 2 = <strong>6.0%</strong>
+    </div>
+    <p class="small" style="margin-top:6px;">Current Yield = 80/1276.76 = <strong>6.27%</strong></p>
+  </div>
+  <div class="key-idea">
+    <p class="small"><strong>Notice:</strong> YTM (6.0%) &lt; Current Yield (6.27%) &lt; Coupon Rate (8.0%). This is a <strong>premium bond</strong> — the YTM accounts for the capital loss at maturity when price falls from $1,276 to $1,000.</p>
+  </div>
+</div>
+
+<!-- ==================== s13: YTC Example ==================== -->
+<div class="slide" id="s13" data-notes="YTC example: callable bond. If the bond is likely to be called, YTC is more relevant than YTM.">
+  <span class="label">Yields</span>
+  <h2>Yield to Call (YTC)</h2>
+  <div class="card">
+    <h3>Example: 8% semi coupon, 30-yr bond at $1,150. Callable in 10 years at $1,100.</h3>
+    <div class="cols">
+      <div>
+        <p class="small"><strong>YTM:</strong></p>
+        <div class="formula" style="font-size:0.85rem;">
+          PMT=40, N=60, FV=1000<br>PV=−1150, I/Y → 3.41%<br>YTM = <strong>6.82%</strong>
+        </div>
+      </div>
+      <div>
+        <p class="small"><strong>YTC:</strong></p>
+        <div class="formula" style="font-size:0.85rem;">
+          PMT=40, N=20, FV=1100<br>PV=−1150, I/Y → 3.32%<br>YTC = <strong>6.64%</strong>
+        </div>
+      </div>
+    </div>
+    <p class="small" style="margin-top:6px;">Current Yield = 80/1150 = <strong>6.96%</strong></p>
+  </div>
+  <div class="analogy">
+    <p class="small"><strong>Which yield matters?</strong> For premium bonds (price > par), the issuer has incentive to call — refinance at lower rates. So YTC is the more <em>conservative</em> (and realistic) yield estimate.</p>
+  </div>
+</div>
+
+<!-- ==================== s14: HPR vs YTM ==================== -->
+<div class="slide" id="s14" data-notes="YTM assumes you hold to maturity. HPR depends on what happens to yields during your holding period.">
+  <span class="label">Yields</span>
+  <h2>YTM vs. Holding Period Return (HPR)</h2>
+  <div class="cols">
+    <div>
+      <h3>YTM</h3>
+      <p class="small">Average return <strong>if held to maturity</strong> and coupons reinvested at YTM rate.</p>
+      <p class="small">Known at time of purchase.</p>
+    </div>
+    <div>
+      <h3>HPR</h3>
+      <p class="small">Actual return over your <strong>holding period</strong>. Depends on selling price (which depends on yields at sale date).</p>
+      <div class="formula" style="font-size:0.85rem;">
+        HPR = (P<sub>end</sub> + Coupon − P<sub>begin</sub>) / P<sub>begin</sub>
+      </div>
+    </div>
+  </div>
+  <div class="warning">
+    <p class="small"><strong>If yields rise:</strong> Bond price falls → HPR &lt; initial YTM</p>
+    <p class="small"><strong>If yields fall:</strong> Bond price rises → HPR &gt; initial YTM</p>
+  </div>
+</div>
+
+<!-- ==================== s15: Price Over Time ==================== -->
+<div class="slide" id="s15" data-notes="Price convergence to par: premium bonds decline toward par, discount bonds rise toward par, at-par bonds stay flat. This is 'pull to par'.">
+  <span class="label">Price Dynamics</span>
+  <h2>Bond Prices Over Time</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS15" width="480" height="300"></canvas>
+      </div>
+    </div>
+    <div>
+      <h3>Pull to Par</h3>
+      <p class="small">As maturity approaches, <strong>all bonds converge to par value</strong> — regardless of whether they started as premium or discount.</p>
+      <div class="card" style="margin-top:8px;">
+        <p class="small"><strong style="color:var(--green);">Premium:</strong> Price declines gradually to $1,000</p>
+        <p class="small"><strong style="color:var(--amber);">At Par:</strong> Price stays at $1,000</p>
+        <p class="small"><strong style="color:var(--red);">Discount:</strong> Price rises gradually to $1,000</p>
+      </div>
+      <p class="small" style="margin-top:8px;">This assumes <strong>constant market interest rates</strong>. In reality, rate changes cause price fluctuations around this path.</p>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS15');
+  const ctx=canvas.getContext('2d');
+  const W=480,H=300;
+  function gc(n){return{text:'#e2e8f0',muted:'#94a3b8',accent:'#38bdf8',accent2:'#6366f1',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',border:'#334155'}[n]||'#e2e8f0';}
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const L=55,R=W-15,T=20,B=H-35,cW=R-L,cH=B-T;
+    const minP=700,maxP=1400;
+
+    ctx.strokeStyle=gc('border'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,B); ctx.lineTo(R,B); ctx.stroke();
+    ctx.fillStyle=gc('muted'); ctx.font='10px monospace'; ctx.textAlign='center';
+    ctx.fillText('Years to Maturity',(L+R)/2,H-5);
+
+    // y-axis
+    for(let v=800;v<=1300;v+=100){
+      const y=B-((v-minP)/(maxP-minP))*cH;
+      ctx.strokeStyle='rgba(148,163,184,0.08)'; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(R,y); ctx.stroke();
+      ctx.fillStyle=gc('muted'); ctx.textAlign='right'; ctx.font='10px monospace';
+      ctx.fillText('$'+v,L-5,y+3);
+    }
+
+    // x-axis (30 down to 0)
+    for(let v=0;v<=30;v+=5){
+      const x=L+(v/30)*cW;
+      ctx.fillStyle=gc('muted'); ctx.textAlign='center'; ctx.font='10px monospace';
+      ctx.fillText((30-v)+'',x,B+14);
+    }
+
+    // par line
+    const parY=B-((1000-minP)/(maxP-minP))*cH;
+    ctx.setLineDash([5,4]); ctx.strokeStyle='rgba(245,158,11,0.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,parY); ctx.lineTo(R,parY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // curves: premium (coupon=8%, ytm=5%), par (ytm=8%), discount (ytm=12%)
+    const scenarios=[
+      {ytm:0.05,color:gc('green'),label:'Premium (YTM=5%)'},
+      {ytm:0.08,color:gc('amber'),label:'At Par (YTM=8%)'},
+      {ytm:0.12,color:gc('red'),label:'Discount (YTM=12%)'},
+    ];
+
+    scenarios.forEach(s=>{
+      ctx.strokeStyle=s.color; ctx.lineWidth=2;
+      ctx.beginPath();
+      for(let yr=0;yr<=30;yr+=0.5){
+        const remaining=30-yr;
+        const n=remaining*2;
+        let pv=0;
+        const y2=s.ytm/2;
+        for(let t=1;t<=n;t++) pv+=40/Math.pow(1+y2,t);
+        pv+=1000/Math.pow(1+y2,n);
+        if(n===0) pv=1000;
+        const x=L+(yr/30)*cW;
+        const y=B-((pv-minP)/(maxP-minP))*cH;
+        if(yr===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      // label at start
+      const n0=60; let pv0=0; const y20=s.ytm/2;
+      for(let t=1;t<=n0;t++) pv0+=40/Math.pow(1+y20,t);
+      pv0+=1000/Math.pow(1+y20,n0);
+      ctx.fillStyle=s.color; ctx.font='bold 10px sans-serif'; ctx.textAlign='left';
+      ctx.fillText(s.label,L+6,B-((pv0-minP)/(maxP-minP))*cH-8);
+    });
+  }
+
+  draw();
+  const obs=new MutationObserver(()=>{if(document.getElementById('s15').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s15'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== sCB: Checkpoint B — YTM/YTC ==================== -->
+<div class="slide" id="sCB" data-notes="Checkpoint B: YTM and YTC calculation from stop point exercises.">
+  <span class="label" style="color:var(--amber);">Checkpoint B</span>
+  <h2>Challenge: Convertible Bond &amp; Zero-Coupon</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:8px;">
+    <div class="card">
+      <h3>Q1: Convertible Bond</h3>
+      <p class="small">You bought a convertible bond for $1,093.76. It converts into 58 shares. Current stock price = $15.60.</p>
+      <p class="small"><strong>At what stock price will you convert?</strong></p>
+      <input type="text" id="sCBin1" placeholder="$" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCBr1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+      <p class="small" style="margin-top:6px;"><strong>Conversion premium ($)?</strong></p>
+      <input type="text" id="sCBin2" placeholder="$" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCBr2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>Q2: Zero-Coupon Bond</h3>
+      <p class="small">20-year zero-coupon, par=$1,000, semiannual compounding, required return=12%.</p>
+      <p class="small"><strong>What is the price?</strong></p>
+      <input type="text" id="sCBin3" placeholder="$" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCBr3" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sCBCheck()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sCBReveal()">Show Solution</button>
+  </div>
+  <div id="sCBsol" style="display:none;margin-top:10px;" class="key-idea">
+    <p class="small"><strong>Q1:</strong> Convert when stock price > 1093.76/58 = <strong>$18.86</strong></p>
+    <p class="small">Market conversion value = 58 × $15.60 = $904.80. Premium = $1,093.76 − $904.80 = <strong>$188.96</strong></p>
+    <p class="small"><strong>Q2:</strong> PV = 1000/(1.06)<sup>40</sup> = 1000/10.286 = <strong>$97.22</strong></p>
+  </div>
+</div>
+<script>
+(function(){
+  // Convert at $18.86, premium=$188.96, zero=$97.22
+  const ans=[
+    {id:'sCBin1',rid:'sCBr1',val:18.86,tol:0.5},
+    {id:'sCBin2',rid:'sCBr2',val:188.96,tol:5},
+    {id:'sCBin3',rid:'sCBr3',val:97.22,tol:3}
+  ];
+  window.sCBCheck=function(){
+    ans.forEach(a=>{const v=parseFloat(document.getElementById(a.id).value);const r=document.getElementById(a.rid);
+    if(isNaN(v)){r.textContent='';return;}
+    if(Math.abs(v-a.val)<a.tol){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+    else{r.textContent='✗ Try again';r.style.color='#ef4444';}});
+  };
+  window.sCBReveal=function(){const el=document.getElementById('sCBsol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== s16: Section IV ==================== -->
+<div class="slide section-slide" id="s16" data-notes="Section IV: Default risk and credit analysis.">
+  <div class="section-num">IV</div>
+  <h2>Default Risk</h2>
+  <p class="subtitle">What if the borrower can't pay?</p>
+</div>
+
+<!-- ==================== s17: Credit Ratings ==================== -->
+<div class="slide" id="s17" data-notes="Credit ratings from S&P and Moody's. Investment grade vs speculative grade. BBB/Baa is the dividing line.">
+  <span class="label">Default Risk</span>
+  <span class="source-tag">Bodie Ch. 10, Sec 10.5</span>
+  <h2>Credit Ratings</h2>
+  <table class="data-table compact-table">
+    <tr><th>S&amp;P</th><th>Moody's</th><th>Grade</th><th>Description</th></tr>
+    <tr><td>AAA</td><td>Aaa</td><td rowspan="4" style="color:var(--green);font-weight:700;">Investment Grade</td><td>Highest quality, minimal risk</td></tr>
+    <tr><td>AA</td><td>Aa</td><td>High quality, very low risk</td></tr>
+    <tr><td>A</td><td>A</td><td>Upper-medium quality</td></tr>
+    <tr style="border-bottom:3px solid var(--amber);"><td>BBB</td><td>Baa</td><td>Medium quality (lowest investment grade)</td></tr>
+    <tr><td>BB</td><td>Ba</td><td rowspan="3" style="color:var(--red);font-weight:700;">Speculative (Junk)</td><td>Speculative elements</td></tr>
+    <tr><td>B</td><td>B</td><td>Highly speculative</td></tr>
+    <tr><td>CCC–D</td><td>Caa–C</td><td>Substantial risk to default/in default</td></tr>
+  </table>
+  <div class="key-idea">
+    <p class="small"><strong>The BBB/Baa line matters:</strong> Many institutional investors (pension funds, insurance companies) can only hold investment-grade bonds. A downgrade from BBB to BB triggers forced selling — "fallen angels."</p>
+  </div>
+</div>
+
+<!-- ==================== s18: Yield Spreads ==================== -->
+<div class="slide" id="s18" data-notes="Yield spreads widen during recessions and crises (flight to quality). The spread = credit risk premium.">
+  <span class="label">Default Risk</span>
+  <h2>Yield Spreads &amp; Default Premiums</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS18" width="480" height="280"></canvas>
+      </div>
+    </div>
+    <div>
+      <h3>Yield Spread</h3>
+      <div class="formula" style="font-size:0.9rem;">
+        Spread = Corporate Yield − Treasury Yield
+      </div>
+      <p class="small" style="margin-top:8px;">Compensates for:</p>
+      <ul>
+        <li class="small">Expected default loss</li>
+        <li class="small">Illiquidity premium</li>
+        <li class="small">Risk premium (systematic)</li>
+      </ul>
+      <div class="warning" style="margin-top:8px;">
+        <p class="small"><strong>Spreads widen in crises:</strong> During 2008, investment-grade spreads hit 600+ bps. Junk spreads exceeded 2,000 bps.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS18');
+  const ctx=canvas.getContext('2d');
+  const W=480,H=280;
+  function gc(n){return{text:'#e2e8f0',muted:'#94a3b8',accent:'#38bdf8',accent2:'#6366f1',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',border:'#334155'}[n]||'#e2e8f0';}
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const L=50,R=W-15,T=20,B=H-35,cW=R-L,cH=B-T;
+    const ratings=['AAA','AA','A','BBB','BB','B','CCC'];
+    const yields=[3.5,3.8,4.2,4.8,6.2,8.5,12.0];
+    const treasury=3.2;
+    const barW=cW/ratings.length*0.65;
+    const gap=cW/ratings.length;
+
+    ctx.strokeStyle=gc('border'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,B); ctx.lineTo(R,B); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(L,T); ctx.lineTo(L,B); ctx.stroke();
+
+    // y-axis
+    for(let v=0;v<=14;v+=2){
+      const y=B-(v/14)*cH;
+      ctx.strokeStyle='rgba(148,163,184,0.08)'; ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(R,y); ctx.stroke();
+      ctx.fillStyle=gc('muted'); ctx.textAlign='right'; ctx.font='10px monospace';
+      ctx.fillText(v+'%',L-5,y+3);
+    }
+
+    // treasury baseline
+    const tY=B-(treasury/14)*cH;
+    ctx.setLineDash([5,4]); ctx.strokeStyle='rgba(56,189,248,0.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,tY); ctx.lineTo(R,tY); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle=gc('accent'); ctx.font='9px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('Treasury = 3.2%',R-100,tY-6);
+
+    ratings.forEach((label,i)=>{
+      const x=L+gap*i+gap*0.175;
+      const h=(yields[i]/14)*cH;
+      const y=B-h;
+      const isJunk=i>=4;
+      const color=isJunk?gc('red'):gc('green');
+
+      const grad=ctx.createLinearGradient(x,y,x,B);
+      grad.addColorStop(0,color);
+      grad.addColorStop(1,color+'30');
+      ctx.fillStyle=grad;
+      ctx.beginPath(); ctx.roundRect(x,y,barW,h,[4,4,0,0]); ctx.fill();
+
+      // spread label
+      const spread=((yields[i]-treasury)*100).toFixed(0);
+      ctx.fillStyle=gc('text'); ctx.font='bold 10px monospace'; ctx.textAlign='center';
+      ctx.fillText(yields[i]+'%',x+barW/2,y-16);
+      ctx.fillStyle=gc('muted'); ctx.font='9px monospace';
+      ctx.fillText('+'+spread+'bp',x+barW/2,y-4);
+
+      ctx.fillStyle=gc('text'); ctx.font='10px sans-serif';
+      ctx.fillText(label,x+barW/2,B+14);
+    });
+
+    // dividing line
+    const divX=L+gap*3.5+gap*0.175;
+    ctx.setLineDash([3,3]); ctx.strokeStyle=gc('amber'); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(divX,T); ctx.lineTo(divX,B); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=gc('green'); ctx.font='bold 9px sans-serif';
+    ctx.fillText('Investment Grade',L+gap*1.5,T+10);
+    ctx.fillStyle=gc('red');
+    ctx.fillText('Junk',L+gap*5,T+10);
+  }
+
+  draw();
+  const obs=new MutationObserver(()=>{if(document.getElementById('s18').classList.contains('active'))draw();});
+  obs.observe(document.getElementById('s18'),{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<!-- ==================== s19: Financial Ratios ==================== -->
+<div class="slide" id="s19" data-notes="Key financial ratios that determine bond safety. Rating agencies use these to assess creditworthiness.">
+  <span class="label">Credit Analysis</span>
+  <h2>Determinants of Bond Safety</h2>
+  <table class="data-table">
+    <tr><th>Ratio Category</th><th>What It Measures</th><th>Safer Bonds Have...</th></tr>
+    <tr><td><strong>Coverage ratios</strong></td><td>Earnings relative to fixed costs (interest, lease payments)</td><td>Higher coverage</td></tr>
+    <tr><td><strong>Leverage ratio</strong></td><td>Debt relative to equity</td><td>Lower leverage</td></tr>
+    <tr><td><strong>Liquidity ratios</strong></td><td>Current assets vs. current liabilities</td><td>Higher liquidity</td></tr>
+    <tr><td><strong>Profitability ratios</strong></td><td>ROA, ROE, profit margins</td><td>Higher profitability</td></tr>
+    <tr><td><strong>Cash flow-to-debt</strong></td><td>Operating cash flow vs. total debt</td><td>Higher cash flow</td></tr>
+  </table>
+  <div class="analogy">
+    <p class="small"><strong>Think like a lender:</strong> Would you lend money to a company with declining earnings, high debt, and low cash? The same logic applies to bond investors.</p>
+  </div>
+</div>
+
+<!-- ==================== s20: Accrued Interest ==================== -->
+<div class="slide" id="s20" data-notes="Accrued interest: the invoice price = quoted price + accrued interest. Buyer compensates seller for interest earned since last coupon.">
+  <span class="label">Pricing Detail</span>
+  <h2>Accrued Interest &amp; Invoice Price</h2>
+  <div class="formula formula-center" style="font-size:0.95rem;line-height:2;">
+    Invoice Price = Quoted Price + Accrued Interest
+  </div>
+  <div class="formula" style="font-size:0.9rem;margin-top:8px;">
+    Accrued Interest = (Annual Coupon / 2) × (Days since last coupon / Days in coupon period)
+  </div>
+  <div class="card" style="margin-top:10px;">
+    <h3>Example</h3>
+    <p class="small">8% semiannual bond, quoted at $990. 30 days since last coupon, 182-day period.</p>
+    <p class="small">Accrued = (80/2) × (30/182) = 40 × 0.1648 = <strong>$6.59</strong></p>
+    <p class="small">Invoice Price = $990 + $6.59 = <strong>$996.59</strong></p>
+  </div>
+  <div class="key-idea">
+    <p class="small"><strong>Why?</strong> The seller held the bond for 30 days since the last coupon and earned interest during that time. The buyer must compensate them for it.</p>
+  </div>
+</div>
+
+<!-- ==================== s21: Key Formulas ==================== -->
+<div class="slide" id="s21" data-notes="All key formulas from Chapter 10 for reference.">
+  <span class="label">Reference</span>
+  <h2>Key Formulas: Chapter 10</h2>
+  <table class="data-table compact-table">
+    <tr><th>Formula</th><th>Name</th></tr>
+    <tr><td style="font-family:Georgia;">P = Σ C/(1+y)<sup>t</sup> + FV/(1+y)<sup>T</sup></td><td>Bond Price</td></tr>
+    <tr><td style="font-family:Georgia;">Current Yield = Annual Coupon / Price</td><td>Current Yield</td></tr>
+    <tr><td style="font-family:Georgia;">HPR = (P<sub>end</sub> + Coupon − P<sub>begin</sub>) / P<sub>begin</sub></td><td>Holding Period Return</td></tr>
+    <tr><td style="font-family:Georgia;">Invoice = Quoted + Accrued Interest</td><td>Invoice Price</td></tr>
+    <tr><td style="font-family:Georgia;">Accrued = (C/2) × (days / period)</td><td>Accrued Interest</td></tr>
+    <tr><td style="font-family:Georgia;">Zero Price = FV / (1+y/2)<sup>2T</sup></td><td>Zero-Coupon Pricing</td></tr>
+  </table>
+</div>
+
+<!-- ==================== sQ1: Quiz ==================== -->
+<div class="slide" id="sQ1" data-notes="Quiz: HPR calculation from stop point exercise Q7.">
+  <span class="label" style="color:var(--green);">Quiz</span>
+  <h2>Quiz: Holding Period Return</h2>
+  <p>You hold a 30-year bond with an 8% annual coupon, initially priced at par (YTM=8%). After 1 year, the yield falls and the price rises to $1,050.</p>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:10px;">
+    <div class="card">
+      <h3>1. Total Income ($)</h3>
+      <p class="small">Price change + coupon received</p>
+      <input type="text" id="sQ1in1" placeholder="$" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ1r1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>2. HPR (%)</h3>
+      <p class="small">Total income / initial price</p>
+      <input type="text" id="sQ1in2" placeholder="%" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ1r2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sQ1Check()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sQ1Reveal()">Show Solution</button>
+  </div>
+  <div id="sQ1sol" style="display:none;margin-top:10px;" class="key-idea">
+    <p class="small"><strong>1.</strong> Capital gain = $1,050 − $1,000 = $50. Coupon = $80. Total = <strong>$130</strong></p>
+    <p class="small"><strong>2.</strong> HPR = $130 / $1,000 = <strong>13.0%</strong> (much higher than initial YTM of 8% because yields fell!)</p>
+  </div>
+</div>
+<script>
+(function(){
+  const ans=[{id:'sQ1in1',rid:'sQ1r1',val:130,tol:3},{id:'sQ1in2',rid:'sQ1r2',val:13,tol:0.5}];
+  window.sQ1Check=function(){
+    ans.forEach(a=>{const v=parseFloat(document.getElementById(a.id).value);const r=document.getElementById(a.rid);
+    if(isNaN(v)){r.textContent='';return;}
+    if(Math.abs(v-a.val)<a.tol){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+    else{r.textContent='✗ Try again';r.style.color='#ef4444';}});
+  };
+  window.sQ1Reveal=function(){const el=document.getElementById('sQ1sol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== s22: Key Takeaways ==================== -->
+<div class="slide" id="s22" data-notes="Summary of Chapter 10.">
+  <span class="label">Summary</span>
+  <h2>Key Takeaways: Chapter 10</h2>
+  <div class="card" style="border-color:var(--accent);">
+    <ol>
+      <li class="small">Bond price = PV of coupons + PV of face value, discounted at YTM</li>
+      <li class="small"><strong>Price and yield move in opposite directions</strong> — the fundamental fixed-income relationship</li>
+      <li class="small">YTM = Coupon Rate → At Par; YTM &lt; Coupon → Premium; YTM &gt; Coupon → Discount</li>
+      <li class="small">Longer maturity = more sensitive to interest rate changes (duration)</li>
+      <li class="small">YTC matters for callable premium bonds; Current Yield ignores capital gains/losses</li>
+      <li class="small">HPR depends on yield changes during holding period — not known in advance</li>
+      <li class="small">Credit ratings (AAA to CCC) determine yield spread over Treasuries</li>
+      <li class="small">Spreads widen during crises — flight to quality</li>
+    </ol>
+  </div>
+</div>
+
+</div><!-- end #deck -->
+
+<div class="nav"></div>
+<script>
+const slideOrder = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','sCA','s10','s11','s12','s13','s14','s15','sCB','s16','s17','s18','s19','s20','s21','sQ1','s22'];
+let currentIdx = 0;
+let transitioning = false;
+function showSlide(idx){if(idx<0||idx>=slideOrder.length||idx===currentIdx||transitioning)return;transitioning=true;const dir=idx>currentIdx?1:-1;const oldEl=document.getElementById(slideOrder[currentIdx]);const newEl=document.getElementById(slideOrder[idx]);oldEl.classList.remove('active');if(dir>0){oldEl.classList.add('exit-left');}else{oldEl.style.transform='translateX(60px)';oldEl.style.opacity='0';}newEl.style.transition='none';newEl.style.transform=dir>0?'translateX(60px)':'translateX(-60px)';newEl.style.opacity='0';void newEl.offsetWidth;newEl.style.transition='';newEl.style.transform='';newEl.style.opacity='';newEl.classList.add('active');currentIdx=idx;updateNav();setTimeout(function(){oldEl.classList.remove('exit-left');oldEl.style.transform='';oldEl.style.opacity='';transitioning=false;},480);}
+function updateNav(){const pct=slideOrder.length>1?(currentIdx/(slideOrder.length-1))*100:0;document.getElementById('progress').style.width=pct+'%';document.getElementById('slide-counter').textContent=(currentIdx+1)+' / '+slideOrder.length;const noteData=document.getElementById(slideOrder[currentIdx]).getAttribute('data-notes')||'';document.getElementById('notes-text').textContent=noteData||'(No notes)';}
+function navigate(dir){showSlide(currentIdx+dir);}
+document.addEventListener('keydown',function(e){const tag=document.activeElement.tagName;if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA')return;switch(e.key){case'ArrowRight':case' ':case'PageDown':e.preventDefault();navigate(1);break;case'ArrowLeft':case'PageUp':e.preventDefault();navigate(-1);break;case'Home':e.preventDefault();showSlide(0);break;case'End':e.preventDefault();showSlide(slideOrder.length-1);break;case'n':case'N':document.getElementById('notes-panel').classList.toggle('visible');break;case't':case'T':var isLight=document.documentElement.getAttribute('data-theme')==='light';if(isLight){document.documentElement.removeAttribute('data-theme');document.getElementById('theme-toggle').textContent='Light';}else{document.documentElement.setAttribute('data-theme','light');document.getElementById('theme-toggle').textContent='Dark';}break;}});
+document.getElementById('nav-prev').addEventListener('click',function(){navigate(-1);});
+document.getElementById('nav-next').addEventListener('click',function(){navigate(1);});
+document.getElementById('theme-toggle').addEventListener('click',function(){var isLight=document.documentElement.getAttribute('data-theme')==='light';if(isLight){document.documentElement.removeAttribute('data-theme');this.textContent='Light';}else{document.documentElement.setAttribute('data-theme','light');this.textContent='Dark';}});
+document.getElementById('notes-btn').addEventListener('click',function(){document.getElementById('notes-panel').classList.toggle('visible');});
+var touchStartX=0,touchStartY=0;
+document.addEventListener('touchstart',function(e){touchStartX=e.changedTouches[0].screenX;touchStartY=e.changedTouches[0].screenY;},{passive:true});
+document.addEventListener('touchend',function(e){var dx=e.changedTouches[0].screenX-touchStartX;var dy=e.changedTouches[0].screenY-touchStartY;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>50){if(dx<0)navigate(1);else navigate(-1);}},{passive:true});
+updateNav();
+</script>
+</body>
+</html>

@@ -1,0 +1,3486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BF422 — Chapter 6: Efficient Diversification — Enhanced</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f172a;
+  --bg-slide: #1e293b;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent: #38bdf8;
+  --accent2: #6366f1;
+  --accent3: #a78bfa;
+  --amber: #f59e0b;
+  --green: #22c55e;
+  --red: #ef4444;
+  --pink: #f472b6;
+  --border: #334155;
+  --border2: #475569;
+  --card-bg: rgba(255,255,255,0.05);
+  --code-bg: rgba(0,0,0,0.2);
+  --shadow: rgba(0,0,0,0.4);
+}
+
+[data-theme="light"] {
+  --bg: #f1f5f9;
+  --bg-slide: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --accent: #0284c7;
+  --accent2: #4f46e5;
+  --accent3: #7c3aed;
+  --amber: #d97706;
+  --green: #16a34a;
+  --red: #dc2626;
+  --pink: #db2777;
+  --border: #cbd5e1;
+  --border2: #94a3b8;
+  --card-bg: rgba(0,0,0,0.03);
+  --code-bg: rgba(0,0,0,0.05);
+  --shadow: rgba(0,0,0,0.1);
+}
+
+html, body {
+  height: 100%; overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ===== PROGRESS BAR ===== */
+#progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 1000; background: var(--border); }
+#progress { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 0.4s ease; }
+
+/* ===== CONTROLS ===== */
+#controls {
+  position: fixed; top: 12px; right: 16px; z-index: 1000;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.82rem; color: var(--text-muted);
+}
+#slide-counter { font-variant-numeric: tabular-nums; font-weight: 600; }
+.ctrl-btn {
+  background: var(--card-bg); border: 1px solid var(--border);
+  color: var(--text-muted); padding: 5px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 0.78rem; transition: all 0.2s;
+  font-family: inherit;
+}
+.ctrl-btn:hover { background: rgba(99,102,241,0.15); border-color: var(--accent2); color: var(--text); }
+
+/* ===== SLIDE CONTAINER ===== */
+#deck {
+  width: 100%; height: 100%;
+  display: grid; place-items: center;
+}
+.slide {
+  grid-row: 1; grid-column: 1;
+  width: 96%; max-width: 1280px;
+  padding: 44px 52px; border-radius: 14px;
+  background: var(--bg-slide);
+  box-shadow: 0 8px 32px var(--shadow);
+  opacity: 0; transform: translateX(60px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
+  max-height: 88vh; overflow-y: auto;
+}
+.slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.slide.exit-left { opacity: 0; transform: translateX(-60px); }
+.slide::-webkit-scrollbar { width: 6px; }
+.slide::-webkit-scrollbar-track { background: transparent; }
+.slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== TYPOGRAPHY ===== */
+.slide h1 { font-size: 2.2rem; color: var(--accent); margin-bottom: 8px; line-height: 1.2; }
+.slide h2 { font-size: 1.7rem; color: var(--accent); margin-bottom: 14px; line-height: 1.25; }
+.slide h3 { font-size: 1.15rem; color: var(--accent3); margin-bottom: 8px; margin-top: 12px; }
+.slide p, .slide li { font-size: 1.05rem; line-height: 1.6; }
+.slide p { margin-bottom: 8px; }
+.slide ul, .slide ol { margin: 6px 0 12px 24px; }
+.slide li { margin-bottom: 4px; }
+.subtitle { font-size: 1.1rem; color: var(--text-muted); margin-top: 8px; }
+.small { font-size: 0.88rem; color: var(--text-muted); }
+.label { display: inline-block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent2); margin-bottom: 6px; }
+strong { color: var(--accent); }
+[data-theme="light"] strong { color: var(--accent2); }
+.source-tag { font-size: 0.68rem; color: var(--text-muted); float: right; opacity: 0.6; font-style: italic; }
+
+/* ===== TITLE SLIDE ===== */
+.title-slide { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 420px; }
+.title-slide h1 { font-size: 2.3rem; margin-bottom: 4px; }
+.title-slide .course-code { font-size: 0.9rem; color: var(--text-muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+.title-slide .divider { width: 80px; height: 3px; background: linear-gradient(90deg, var(--accent2), var(--accent)); margin: 16px auto; border-radius: 2px; }
+
+/* ===== SECTION DIVIDER ===== */
+.section-slide { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; }
+.section-slide h2 { font-size: 2rem; margin-bottom: 10px; }
+.section-num { font-size: 3.5rem; font-weight: 800; color: var(--accent2); opacity: 0.3; margin-bottom: -10px; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  background: linear-gradient(135deg, var(--accent2), #8b5cf6);
+  color: #fff; border: none; padding: 8px 20px; border-radius: 8px;
+  cursor: pointer; font-size: 0.88rem; font-weight: 600;
+  font-family: inherit; transition: all 0.2s;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+.btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-secondary:hover { background: var(--border2); box-shadow: none; }
+
+/* ===== CALLOUTS ===== */
+.key-idea {
+  background: rgba(34,197,94,0.08); border-left: 4px solid var(--green);
+  padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0;
+}
+.warning {
+  background: rgba(239,68,68,0.08); border-left: 4px solid var(--red);
+  padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0;
+}
+.analogy {
+  background: rgba(167,139,250,0.08); border-left: 4px solid var(--accent3);
+  padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0;
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px; margin: 6px 0;
+}
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0; }
+
+/* ===== FORMULA ===== */
+.formula {
+  display: block; background: var(--code-bg); border-left: 3px solid var(--accent2);
+  border-radius: 0 8px 8px 0; padding: 12px 20px; margin: 10px 0;
+  font-family: Georgia, 'Times New Roman', serif; font-size: 1.1rem;
+}
+.formula-center { text-align: center; border-left: none; border: 1px solid var(--border); border-radius: 8px; }
+
+/* ===== TABLE ===== */
+.data-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.95rem; }
+.data-table th { background: rgba(99,102,241,0.1); color: var(--accent); padding: 7px 10px; text-align: left; border-bottom: 2px solid var(--border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.data-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.data-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .highlight-row td { background: rgba(99,102,241,0.08); font-weight: 700; }
+.compact-table { font-size: 0.85rem; }
+.compact-table th { padding: 5px 8px; font-size: 0.72rem; }
+.compact-table td { padding: 4px 8px; }
+
+/* ===== COLUMNS ===== */
+.cols { display: flex; gap: 18px; margin: 10px 0; }
+.cols > div { flex: 1; }
+
+/* ===== REVEAL ===== */
+.reveal-area { margin-top: 12px; }
+.reveal-answer { display: none; margin-top: 10px; }
+.reveal-answer.show { display: block; }
+
+/* ===== THINK PROMPT ===== */
+.think-prompt {
+  background: rgba(99,102,241,0.08); border: 2px dashed var(--accent2);
+  border-radius: 10px; padding: 12px 16px; margin: 10px 0; text-align: center;
+}
+.think-prompt p { font-weight: 600; color: var(--accent2); margin-bottom: 0; }
+
+/* ===== CODE BLOCK ===== */
+.code-block {
+  background: var(--code-bg); border-radius: 10px; padding: 14px 18px;
+  margin: 10px 0; overflow-x: auto;
+}
+.code-content { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem; line-height: 1.6; }
+.line { padding: 1px 6px; border-left: 3px solid transparent; }
+.line.active { background: rgba(99,102,241,0.15); border-left-color: var(--accent2); }
+
+/* ===== CANVAS CONTAINER ===== */
+.canvas-wrap {
+  background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px;
+  display: inline-block; width: 100%;
+}
+.canvas-wrap canvas { width: 100%; display: block; }
+
+/* ===== LOG PANEL ===== */
+.log-panel {
+  background: rgba(0,0,0,0.25); border-radius: 8px; padding: 8px 10px;
+  font-family: monospace; font-size: 0.78rem; max-height: 120px;
+  overflow-y: auto; color: var(--text-muted); line-height: 1.5;
+}
+
+/* ===== NAV ARROWS ===== */
+.nav-arrow {
+  position: fixed; top: 50%; transform: translateY(-50%); z-index: 500;
+  background: var(--card-bg); border: 1px solid var(--border);
+  color: var(--text-muted); width: 36px; height: 52px; border-radius: 8px;
+  cursor: pointer; font-size: 1.2rem; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s; opacity: 0.4;
+}
+.nav-arrow:hover { opacity: 1; background: rgba(99,102,241,0.15); color: var(--accent); }
+#nav-prev { left: 10px; }
+#nav-next { right: 10px; }
+
+/* ===== SPEAKER NOTES ===== */
+#notes-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg); border-top: 2px solid var(--border);
+  padding: 10px 20px; font-size: 0.9rem; color: var(--text-muted);
+  transform: translateY(100%); transition: transform 0.3s ease; z-index: 999;
+  max-height: 110px; overflow-y: auto;
+}
+#notes-panel.visible { transform: translateY(0); }
+#notes-label { font-weight: 700; color: var(--accent2); margin-right: 8px; }
+
+/* ===== SLIDE NUMBER ===== */
+.slide-number { }
+
+/* ===== PRINT ===== */
+@media print {
+  body { background: #fff !important; color: #000 !important; overflow: visible !important; }
+  #progress-bar, #controls, .nav-arrow, #notes-panel { display: none !important; }
+  #deck { display: block !important; height: auto !important; }
+  .slide {
+    position: relative !important; opacity: 1 !important; transform: none !important;
+    pointer-events: auto !important; page-break-after: always;
+    box-shadow: none !important; border: 1px solid #ccc; margin: 20px auto;
+    max-height: none !important; overflow: visible !important; background: #fff !important;
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 700px) {
+  .slide { padding: 24px 18px; width: 97%; }
+  .slide h1 { font-size: 1.6rem; }
+  .slide h2 { font-size: 1.35rem; }
+  .cols { flex-direction: column; gap: 8px; }
+  .card-grid { grid-template-columns: 1fr; }
+  .nav-arrow { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"><div id="progress"></div></div>
+
+<div id="controls">
+  <span id="slide-counter">1 / 8</span>
+  <button class="ctrl-btn" id="theme-toggle" title="Toggle theme (T)">Light</button>
+  <button class="ctrl-btn" id="notes-btn" title="Toggle notes (N)">Notes</button>
+</div>
+
+<button class="nav-arrow" id="nav-prev" title="Previous (←)">&#8249;</button>
+<button class="nav-arrow" id="nav-next" title="Next (→)">&#8250;</button>
+
+<div id="notes-panel">
+  <span id="notes-label">Notes:</span>
+  <span id="notes-text"></span>
+</div>
+
+<div id="deck">
+
+<!-- ==================== s1: Title ==================== -->
+<div class="slide title-slide active" id="s1" data-notes="Comprehensive enhanced deck covering all Bodie Ch. 6 topics + BF422 web app content. Interactive Canvas visualizations throughout.">
+  <div class="course-code">BF422 — Investments</div>
+  <h1>Chapter 6: Efficient Diversification</h1>
+  <div class="divider"></div>
+  <p class="subtitle">Interactive Comprehensive Overview</p>
+  <p class="small" style="margin-top: 14px;"><strong>Dr. Yulin Li</strong></p>
+  <p class="small">School of Business · Monmouth University</p>
+  <p class="small" style="margin-top: 12px;">Bodie, Kane &amp; Marcus · <em>Essentials of Investments</em></p>
+  <p class="small" style="margin-top: 22px; color: var(--accent2);">Arrow keys or swipe to navigate · <strong>N</strong> = notes · <strong>T</strong> = theme</p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s2: Road Map ==================== -->
+<div class="slide" id="s2" data-notes="Five major blocks in this chapter. Each section builds on the previous one, culminating in the Capital Market Line and optimal portfolio selection.">
+  <span class="label">Overview</span>
+  <h2>Chapter Road Map</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: 8px;">
+    <div class="card" style="border-left: 4px solid var(--accent2);">
+      <h3 style="color: var(--accent2);">I. Diversification</h3>
+      <p class="small">Market vs. unique risk, power of diversification, 20-30 stock rule</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--accent);">
+      <h3 style="color: var(--accent);">II. Scenario Analysis</h3>
+      <p class="small">Stock/bond fund example, variance, covariance, correlation</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--accent3);">
+      <h3 style="color: var(--accent3);">III. Two-Asset Math</h3>
+      <p class="small">Return &amp; variance formulas, correlation effects, matrix form</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--amber);">
+      <h3 style="color: var(--amber);">IV. Efficient Frontier</h3>
+      <p class="small">Opportunity set, mean-variance criterion, Markowitz optimization</p>
+    </div>
+  </div>
+  <div class="card" style="border-left: 4px solid var(--green); margin-top: 8px;">
+    <h3 style="color: var(--green);">V. Risk-Free Asset &amp; Optimal Portfolio</h3>
+    <p class="small">CAL, CML, tangency portfolio, separation theorem, complete portfolio</p>
+  </div>
+  <div class="key-idea" style="margin-top: 12px;">
+    <p><strong>Core insight:</strong> Diversification is the only "free lunch" in finance — reduce risk without sacrificing expected return.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s3: Section Divider I ==================== -->
+<div class="slide section-slide" id="s3" data-notes="Section I covers the fundamental distinction between market and unique risk, and the empirical evidence on how diversification reduces portfolio risk.">
+  <div class="section-num">I</div>
+  <h2>Diversification &amp; Portfolio Risk</h2>
+  <p class="subtitle">Why not all risk is created equal</p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s4: Market vs Unique Risk — Canvas ==================== -->
+<div class="slide" id="s4" data-notes="Textbook Slides 1 & 4. Market risk cannot be diversified away — investors are compensated for bearing it. Unique risk can be eliminated. The Canvas shows total risk decomposing into its two components.">
+  <span class="label">Diversification Fundamentals</span>
+  <span class="source-tag">Bodie Ch. 6, Slides 1 &amp; 4</span>
+  <h2>Market Risk vs. Unique Risk</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 8px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS4" width="440" height="320"></canvas>
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-top:8px; flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s4Animate()">Animate</button>
+        <button class="btn btn-sm btn-secondary" onclick="s4Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="border-left: 4px solid var(--red);">
+        <h3 style="color: var(--red);">Market (Systematic) Risk</h3>
+        <ul class="small">
+          <li>Common to the <strong>whole economy</strong></li>
+          <li>Interest rates, GDP, inflation, geopolitics</li>
+          <li><em>Cannot</em> be eliminated by diversification</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left: 4px solid var(--accent);">
+        <h3 style="color: var(--accent);">Unique (Firm-Specific) Risk</h3>
+        <ul class="small">
+          <li>Specific to <strong>individual companies</strong></li>
+          <li>CEO departure, lawsuits, product failures</li>
+          <li><em>Can</em> be <strong>eliminated</strong> by diversification</li>
+        </ul>
+      </div>
+      <div class="formula formula-center" style="font-size: 1rem; margin-top: 10px;">
+        σ²<sub>total</sub> = σ²<sub>market</sub> + σ²<sub>firm</sub>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS4');
+  const ctx = canvas.getContext('2d');
+  const W = 440, H = 320;
+  let animFrame = 0;
+  let timer = null;
+
+  const cs = getComputedStyle(document.documentElement);
+  function getColor(name) {
+    const map = {
+      text: '#e2e8f0', muted: '#94a3b8', accent: '#38bdf8',
+      red: '#ef4444', green: '#22c55e', border: '#334155',
+      bg: '#0f172a', accent2: '#6366f1'
+    };
+    return map[name] || '#e2e8f0';
+  }
+
+  function draw(frame) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Chart area
+    const left = 55, right = W - 20, top = 25, bottom = H - 40;
+    const chartW = right - left, chartH = bottom - top;
+
+    // Axes
+    ctx.strokeStyle = getColor('border');
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom);
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = getColor('muted');
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Number of stocks in portfolio', (left + right) / 2, H - 8);
+    ctx.save();
+    ctx.translate(14, (top + bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Portfolio Std. Dev. (%)', 0, 0);
+    ctx.restore();
+
+    // Y-axis ticks
+    ctx.textAlign = 'right';
+    ctx.font = '10px monospace';
+    for (let v = 10; v <= 50; v += 10) {
+      const y = bottom - (v / 55) * chartH;
+      ctx.fillStyle = getColor('muted');
+      ctx.fillText(v + '', left - 6, y + 3);
+      ctx.strokeStyle = 'rgba(148,163,184,0.1)';
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    }
+
+    // X-axis ticks
+    ctx.textAlign = 'center';
+    const xTicks = [1, 5, 10, 20, 30, 50, 100];
+    xTicks.forEach(n => {
+      const x = left + (Math.log(n) / Math.log(100)) * chartW;
+      ctx.fillStyle = getColor('muted');
+      ctx.fillText(n + '', x, bottom + 14);
+    });
+
+    // Market risk floor at ~20%
+    const floorY = bottom - (20 / 55) * chartH;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = getColor('accent2');
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(left, floorY); ctx.lineTo(right, floorY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = getColor('accent2');
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Market risk floor ≈ 20%', right - 140, floorY + 14);
+
+    // Data points: (n, SD%)
+    const data = [
+      [1, 49], [2, 37], [4, 29], [6, 26], [8, 24],
+      [10, 23], [15, 21.5], [20, 21], [30, 20.5], [50, 20.2], [100, 20]
+    ];
+
+    // How many points to show based on animation frame
+    const showCount = frame >= 0 ? Math.min(frame + 1, data.length) : data.length;
+
+    // Draw unique risk area (filled)
+    if (showCount > 1) {
+      ctx.beginPath();
+      for (let i = 0; i < showCount; i++) {
+        const x = left + (Math.log(data[i][0]) / Math.log(100)) * chartW;
+        const y = bottom - (data[i][1] / 55) * chartH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      // Close back along the floor
+      const lastX = left + (Math.log(data[showCount - 1][0]) / Math.log(100)) * chartW;
+      ctx.lineTo(lastX, floorY);
+      ctx.lineTo(left + (Math.log(data[0][0]) / Math.log(100)) * chartW, floorY);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(56,189,248,0.12)';
+      ctx.fill();
+    }
+
+    // Draw market risk area (filled below floor)
+    if (showCount > 0) {
+      ctx.beginPath();
+      const firstX = left + (Math.log(data[0][0]) / Math.log(100)) * chartW;
+      const lastX2 = left + (Math.log(data[showCount - 1][0]) / Math.log(100)) * chartW;
+      ctx.moveTo(firstX, floorY);
+      ctx.lineTo(lastX2, floorY);
+      ctx.lineTo(lastX2, bottom);
+      ctx.lineTo(firstX, bottom);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(239,68,68,0.1)';
+      ctx.fill();
+    }
+
+    // Draw curve
+    if (showCount > 1) {
+      ctx.beginPath();
+      ctx.strokeStyle = getColor('accent');
+      ctx.lineWidth = 3;
+      for (let i = 0; i < showCount; i++) {
+        const x = left + (Math.log(data[i][0]) / Math.log(100)) * chartW;
+        const y = bottom - (data[i][1] / 55) * chartH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Draw points
+    for (let i = 0; i < showCount; i++) {
+      const x = left + (Math.log(data[i][0]) / Math.log(100)) * chartW;
+      const y = bottom - (data[i][1] / 55) * chartH;
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = i === showCount - 1 ? getColor('accent') : 'rgba(56,189,248,0.6)';
+      ctx.fill();
+      ctx.strokeStyle = getColor('accent');
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Label for key points
+      if (data[i][0] === 1 || data[i][0] === 20 || data[i][0] === 100) {
+        ctx.fillStyle = getColor('text');
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(data[i][1] + '%', x, y - 10);
+      }
+    }
+
+    // Legend labels
+    if (showCount > 2) {
+      const midIdx = Math.floor(showCount / 2);
+      const midX = left + (Math.log(data[midIdx][0]) / Math.log(100)) * chartW;
+      const midY = bottom - (data[midIdx][1] / 55) * chartH;
+
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(56,189,248,0.7)';
+      ctx.fillText('Unique risk', midX + 10, (midY + floorY) / 2);
+      ctx.fillText('(diversifiable)', midX + 10, (midY + floorY) / 2 + 14);
+
+      ctx.fillStyle = 'rgba(239,68,68,0.7)';
+      ctx.fillText('Market risk', midX + 10, (floorY + bottom) / 2);
+      ctx.fillText('(non-diversifiable)', midX + 10, (floorY + bottom) / 2 + 14);
+    }
+  }
+
+  window.s4Animate = function() {
+    if (timer) return;
+    animFrame = 0;
+    draw(animFrame);
+    timer = setInterval(() => {
+      animFrame++;
+      if (animFrame >= 11) { clearInterval(timer); timer = null; return; }
+      draw(animFrame);
+    }, 400);
+  };
+
+  window.s4Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    animFrame = -1;
+    draw(11);
+  };
+
+  function init() { draw(11); }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s4').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s4'), { attributes: true, attributeFilter: ['class'] });
+  init();
+})();
+</script>
+
+<!-- ==================== s5: Interactive Diversification Demo ==================== -->
+<div class="slide" id="s5" data-notes="Textbook Slides 2 & 4. Interactive demo: click 'Add Stock' to see how portfolio standard deviation drops. Most benefit from first 20-30 stocks. Beyond 30, you're just approaching the market risk floor.">
+  <span class="label">Diversification Fundamentals</span>
+  <span class="source-tag">Bodie Fig. 7.2</span>
+  <h2>Interactive: Risk vs. Diversification</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS5" width="520" height="340"></canvas>
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-top:8px; flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s5Add()">Add Stock</button>
+        <button class="btn btn-sm" onclick="s5Add5()">Add 5</button>
+        <button class="btn btn-sm" onclick="s5Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s5Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>Current Portfolio</h3>
+        <p>Stocks: <strong id="s5count">0</strong></p>
+        <p>Portfolio SD: <strong id="s5sd">—</strong></p>
+        <p>Risk Reduction: <strong id="s5reduction">—</strong></p>
+      </div>
+      <div id="s5Log" class="log-panel" style="margin-top:8px;"></div>
+      <div class="key-idea" style="margin-top:8px;">
+        <p class="small"><strong>Key insight:</strong> ~80% of diversification benefit comes from the first 20 stocks. Beyond 30, you're just asymptotically approaching the market risk floor (~20%).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS5');
+  const ctx = canvas.getContext('2d');
+  const W = 520, H = 340;
+  let nStocks = 0;
+  let timer = null;
+  let history = [];
+
+  // Model: SD(n) = 20 + 29 * exp(-0.12 * n) + small noise
+  function portfolioSD(n) {
+    if (n === 0) return 0;
+    if (n === 1) return 49;
+    return 20 + 29 * Math.exp(-0.12 * (n - 1)) + (Math.sin(n * 0.7) * 0.3);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const left = 55, right = W - 25, top = 20, bottom = H - 40;
+    const chartW = right - left, chartH = bottom - top;
+    const maxN = 50, maxSD = 55;
+
+    // Grid
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom); ctx.stroke();
+
+    // Y-axis
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    for (let v = 10; v <= 50; v += 10) {
+      const y = bottom - (v / maxSD) * chartH;
+      ctx.fillText(v + '%', left - 6, y + 3);
+      ctx.strokeStyle = 'rgba(148,163,184,0.08)';
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    }
+
+    // X-axis
+    ctx.textAlign = 'center';
+    for (let n = 5; n <= 50; n += 5) {
+      const x = left + (n / maxN) * chartW;
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(n + '', x, bottom + 14);
+    }
+    ctx.fillText('# Stocks', (left + right) / 2, H - 6);
+
+    // Axis labels
+    ctx.save();
+    ctx.translate(14, (top + bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('Portfolio Std. Dev. (%)', 0, 0);
+    ctx.restore();
+
+    // Market risk floor
+    const floorY = bottom - (20 / maxSD) * chartH;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(left, floorY); ctx.lineTo(right, floorY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#6366f1';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Market risk ≈ 20%', right, floorY + 14);
+
+    // Reference curve (faint)
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(56,189,248,0.15)';
+    ctx.lineWidth = 2;
+    for (let n = 1; n <= maxN; n++) {
+      const x = left + (n / maxN) * chartW;
+      const y = bottom - (portfolioSD(n) / maxSD) * chartH;
+      if (n === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw history points and line
+    if (history.length > 1) {
+      ctx.beginPath();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      history.forEach((pt, i) => {
+        const x = left + (pt.n / maxN) * chartW;
+        const y = bottom - (pt.sd / maxSD) * chartH;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    // Points
+    history.forEach((pt, i) => {
+      const x = left + (pt.n / maxN) * chartW;
+      const y = bottom - (pt.sd / maxSD) * chartH;
+      const isLast = i === history.length - 1;
+      ctx.beginPath();
+      ctx.arc(x, y, isLast ? 6 : 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = isLast ? '#f59e0b' : '#38bdf8';
+      ctx.fill();
+      if (isLast) {
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Label
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(pt.sd.toFixed(1) + '%', x, y - 12);
+      }
+    });
+
+    // Milestone markers
+    [20, 30].forEach(n => {
+      if (nStocks >= n) {
+        const x = left + (n / maxN) * chartW;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = 'rgba(245,158,11,0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '9px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(n + ' stocks', x, top + 12);
+      }
+    });
+  }
+
+  function updateUI() {
+    document.getElementById('s5count').textContent = nStocks;
+    if (nStocks === 0) {
+      document.getElementById('s5sd').textContent = '—';
+      document.getElementById('s5reduction').textContent = '—';
+    } else {
+      const sd = portfolioSD(nStocks);
+      document.getElementById('s5sd').textContent = sd.toFixed(1) + '%';
+      const reduction = ((49 - sd) / 49 * 100);
+      document.getElementById('s5reduction').textContent = reduction.toFixed(0) + '%';
+    }
+  }
+
+  function addLog(msg) {
+    const log = document.getElementById('s5Log');
+    log.innerHTML += msg + '<br>';
+    log.scrollTop = log.scrollHeight;
+  }
+
+  window.s5Add = function() {
+    if (nStocks >= 50) return;
+    nStocks++;
+    const sd = portfolioSD(nStocks);
+    history.push({ n: nStocks, sd: sd });
+    draw();
+    updateUI();
+    if (nStocks === 1) addLog('1 stock: SD = 49.0% (all risk)');
+    else if (nStocks === 20) addLog('<span style="color:#f59e0b">★ 20 stocks: SD = ' + sd.toFixed(1) + '% — ~80% of benefit achieved</span>');
+    else if (nStocks === 30) addLog('<span style="color:#22c55e">★ 30 stocks: SD = ' + sd.toFixed(1) + '% — near market floor</span>');
+    else if (nStocks % 5 === 0) addLog(nStocks + ' stocks: SD = ' + sd.toFixed(1) + '%');
+  };
+
+  window.s5Add5 = function() {
+    for (let i = 0; i < 5; i++) { if (nStocks < 50) s5Add(); }
+  };
+
+  window.s5Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (nStocks >= 50) { clearInterval(timer); timer = null; return; }
+      s5Add();
+    }, 300);
+  };
+
+  window.s5Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    nStocks = 0;
+    history = [];
+    document.getElementById('s5Log').innerHTML = '';
+    draw();
+    updateUI();
+  };
+
+  function init() { draw(); updateUI(); }
+
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s5').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s5'), { attributes: true, attributeFilter: ['class'] });
+  init();
+})();
+</script>
+
+<!-- ==================== s6: Quick Poll ==================== -->
+<div class="slide" id="s6" data-notes="Textbook Slide 3. Interactive poll — let students guess before revealing. Answer: ~20-30 stocks for adequate diversification.">
+  <span class="label">Diversification Fundamentals</span>
+  <span class="source-tag">Bodie Ch. 6, Slide 3</span>
+  <h2>Quick Poll</h2>
+  <div class="think-prompt" style="margin-top: 20px;">
+    <p style="font-size: 1.2rem;">How many securities do you need to make a diversified portfolio?</p>
+  </div>
+  <div style="margin-top: 16px; text-align: center;">
+    <button class="btn" onclick="s6Reveal()">Reveal Answer</button>
+  </div>
+  <div id="s6answer" style="display:none; margin-top: 16px;">
+    <div class="key-idea">
+      <p><strong>Answer: ~20–30 stocks</strong></p>
+      <ul>
+        <li>Going from 1 → 20 stocks reduces portfolio SD from ~49% to ~21%</li>
+        <li>Beyond 30 stocks, additional diversification benefit is <strong>minimal</strong></li>
+        <li>You cannot eliminate <strong>market risk</strong> no matter how many stocks you add</li>
+      </ul>
+    </div>
+    <div class="analogy" style="margin-top: 8px;">
+      <p><strong>Analogy:</strong> Think of insurance — insuring one house is risky, but insuring 1,000 houses in different cities means individual fires cancel out. But you can't diversify against nationwide floods (market risk).</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s6Reveal = function() {
+    const el = document.getElementById('s6answer');
+    const showing = el.style.display === 'none';
+    el.style.display = showing ? 'block' : 'none';
+  };
+})();
+</script>
+
+<!-- ==================== s7: 401(k) Application ==================== -->
+<div class="slide" id="s7" data-notes="Textbook Slide 7. Real-world diversification application. Mention Enron — employees held company stock in 401(k) and lost everything.">
+  <span class="label">Application</span>
+  <span class="source-tag">Bodie Ch. 6, Slide 7</span>
+  <h2>Diversification for Your 401(k)</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="card" style="text-align:center;">
+      <h3>Employee</h3>
+      <p class="small">5% of $35K salary</p>
+      <p style="font-size: 1.6rem; font-weight: 800; color: var(--accent);">$1,750</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <h3>Employer Match</h3>
+      <p class="small">50% on up to 6%</p>
+      <p style="font-size: 1.6rem; font-weight: 800; color: var(--green);">$875</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <h3>Total Annual</h3>
+      <p class="small">Free money!</p>
+      <p style="font-size: 1.6rem; font-weight: 800; color: var(--amber);">$2,625</p>
+    </div>
+  </div>
+  <div class="key-idea">
+    <p><strong>Target-date funds</strong> = the Separation Theorem in practice:</p>
+    <ul>
+      <li>One fund holds the "optimal risky portfolio" (diversified stocks + bonds)</li>
+      <li>Automatically adjusts allocation as you age (more bonds near retirement)</li>
+    </ul>
+  </div>
+  <div class="warning" style="margin-top: 6px;">
+    <p><strong>Never</strong> concentrate your 401(k) in employer stock. Remember Enron: employees lost both their jobs <em>and</em> their retirement savings simultaneously.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s8: Section Divider II ==================== -->
+<div class="slide section-slide" id="s8" data-notes="Section II builds intuition through the Bodie stock/bond fund scenario example. We'll calculate expected returns, variances, covariance, and correlation step by step.">
+  <div class="section-num">II</div>
+  <h2>Scenario Analysis &amp; Risk Measurement</h2>
+  <p class="subtitle">Building intuition with a stock/bond fund example</p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s9: Scenario Analysis Interactive ==================== -->
+<div class="slide" id="s9" data-notes="Textbook Slide 5. Four economic scenarios with assigned probabilities. Click scenarios to highlight. Toggle between stock fund, bond fund, and 40/60 portfolio views.">
+  <span class="label">Scenario Analysis</span>
+  <span class="source-tag">Bodie Ch. 6, Slide 5</span>
+  <h2>Scenario Analysis: Stock &amp; Bond Funds</h2>
+  <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS9" width="500" height="320"></canvas>
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-top:8px; flex-wrap:wrap;">
+        <button class="btn btn-sm" id="s9btnStock" onclick="s9Toggle('stock')" style="opacity:1;">Stock Fund</button>
+        <button class="btn btn-sm" id="s9btnBond" onclick="s9Toggle('bond')" style="opacity:0.5;">Bond Fund</button>
+        <button class="btn btn-sm" id="s9btnPort" onclick="s9Toggle('portfolio')" style="opacity:0.5;">40/60 Portfolio</button>
+        <button class="btn btn-sm btn-secondary" onclick="s9Toggle('all')">Show All</button>
+      </div>
+    </div>
+    <div>
+      <table class="data-table compact-table">
+        <thead><tr><th>Scenario</th><th>Prob</th><th>Stock</th><th>Bond</th><th>40/60</th></tr></thead>
+        <tbody>
+          <tr id="s9row0" style="cursor:pointer" onclick="s9Highlight(0)"><td>Severe Rec.</td><td class="num">.05</td><td class="num">−37</td><td class="num">−9</td><td class="num">−20.2</td></tr>
+          <tr id="s9row1" style="cursor:pointer" onclick="s9Highlight(1)"><td>Mild Rec.</td><td class="num">.25</td><td class="num">−11</td><td class="num">15</td><td class="num">4.6</td></tr>
+          <tr id="s9row2" style="cursor:pointer" onclick="s9Highlight(2)"><td>Normal</td><td class="num">.40</td><td class="num">14</td><td class="num">8</td><td class="num">10.4</td></tr>
+          <tr id="s9row3" style="cursor:pointer" onclick="s9Highlight(3)"><td>Boom</td><td class="num">.30</td><td class="num">30</td><td class="num">−5</td><td class="num">9.0</td></tr>
+          <tr class="highlight-row"><td colspan="2"><strong>E(r)</strong></td><td class="num"><strong>10.0</strong></td><td class="num"><strong>5.0</strong></td><td class="num"><strong>7.0</strong></td></tr>
+          <tr class="highlight-row"><td colspan="2"><strong>σ</strong></td><td class="num"><strong>18.6</strong></td><td class="num"><strong>8.3</strong></td><td class="num"><strong>6.7</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="key-idea" style="margin-top:8px;">
+        <p class="small"><strong>Key observation:</strong> When stocks do poorly, bonds often do well — and vice versa. The 40/60 portfolio has σ = 6.7%, far below either fund alone!</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS9');
+  const ctx = canvas.getContext('2d');
+  const W = 500, H = 320;
+
+  const scenarios = ['Severe\nRec.', 'Mild\nRec.', 'Normal', 'Boom'];
+  const probs = [0.05, 0.25, 0.40, 0.30];
+  const stock = [-37, -11, 14, 30];
+  const bond = [-9, 15, 8, -5];
+  const port = [-20.2, 4.6, 10.4, 9.0];
+
+  let mode = 'stock'; // stock, bond, portfolio, all
+  let highlightIdx = -1;
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const left = 55, right = W - 20, top = 30, bottom = H - 45;
+    const chartW = right - left, chartH = bottom - top;
+    const barGroupW = chartW / 4;
+    const zeroY = top + (40 / 80) * chartH; // range -40 to +40
+
+    // Axes
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom); ctx.stroke();
+
+    // Zero line
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(left, zeroY); ctx.lineTo(right, zeroY); ctx.stroke();
+
+    // Y-axis labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    for (let v = -30; v <= 30; v += 10) {
+      const y = zeroY - (v / 40) * (chartH / 2);
+      ctx.fillText(v + '%', left - 6, y + 3);
+      if (v !== 0) {
+        ctx.strokeStyle = 'rgba(148,163,184,0.06)';
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+      }
+    }
+
+    // Y-axis title
+    ctx.save();
+    ctx.translate(12, (top + bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Return (%)', 0, 0);
+    ctx.restore();
+
+    // Draw bars
+    function drawBar(scenIdx, val, color, offsetX, barW) {
+      const x = left + scenIdx * barGroupW + offsetX;
+      const barH = (val / 40) * (chartH / 2);
+      const y = val >= 0 ? zeroY - barH : zeroY;
+      const h = Math.abs(barH);
+
+      const isHighlighted = highlightIdx === scenIdx;
+      ctx.globalAlpha = isHighlighted ? 1 : (highlightIdx === -1 ? 0.85 : 0.3);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      const r = 3;
+      if (val >= 0) {
+        ctx.moveTo(x, y + h); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.lineTo(x + barW - r, y); ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+        ctx.lineTo(x + barW, y + h); ctx.closePath();
+      } else {
+        ctx.moveTo(x, y); ctx.lineTo(x, y + h - r); ctx.quadraticCurveTo(x, y + h, x + r, y + h);
+        ctx.lineTo(x + barW - r, y + h); ctx.quadraticCurveTo(x + barW, y + h, x + barW, y + h - r);
+        ctx.lineTo(x + barW, y); ctx.closePath();
+      }
+      ctx.fill();
+
+      // Value label
+      if (isHighlighted || highlightIdx === -1) {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(val > 0 ? '+' + val : val, x + barW / 2, val >= 0 ? y - 5 : y + h + 12);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    const sets = [];
+    if (mode === 'stock' || mode === 'all') sets.push({ data: stock, color: '#6366f1', label: 'Stock' });
+    if (mode === 'bond' || mode === 'all') sets.push({ data: bond, color: '#38bdf8', label: 'Bond' });
+    if (mode === 'portfolio' || mode === 'all') sets.push({ data: port, color: '#22c55e', label: 'Portfolio' });
+
+    const nSets = sets.length;
+    const totalBarW = barGroupW * 0.7;
+    const singleBarW = totalBarW / nSets;
+    const groupOffset = (barGroupW - totalBarW) / 2;
+
+    for (let s = 0; s < 4; s++) {
+      sets.forEach((set, si) => {
+        drawBar(s, set.data[s], set.color, groupOffset + si * singleBarW, singleBarW - 2);
+      });
+    }
+
+    // X-axis scenario labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    const labels = ['Severe Rec.', 'Mild Rec.', 'Normal', 'Boom'];
+    for (let s = 0; s < 4; s++) {
+      const x = left + s * barGroupW + barGroupW / 2;
+      ctx.fillText(labels[s], x, bottom + 15);
+      // Probability
+      ctx.fillStyle = '#64748b';
+      ctx.font = '9px monospace';
+      ctx.fillText('p=' + probs[s], x, bottom + 27);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px Inter, sans-serif';
+    }
+
+    // Legend
+    const legendX = right - 120, legendY = top + 5;
+    sets.forEach((set, i) => {
+      ctx.fillStyle = set.color;
+      ctx.fillRect(legendX, legendY + i * 18, 12, 12);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(set.label, legendX + 16, legendY + i * 18 + 10);
+    });
+  }
+
+  window.s9Toggle = function(m) {
+    mode = m;
+    highlightIdx = -1;
+    // Update button opacity
+    document.getElementById('s9btnStock').style.opacity = (m === 'stock' || m === 'all') ? '1' : '0.5';
+    document.getElementById('s9btnBond').style.opacity = (m === 'bond' || m === 'all') ? '1' : '0.5';
+    document.getElementById('s9btnPort').style.opacity = (m === 'portfolio' || m === 'all') ? '1' : '0.5';
+    draw();
+  };
+
+  window.s9Highlight = function(idx) {
+    highlightIdx = highlightIdx === idx ? -1 : idx;
+    // Highlight table row
+    for (let i = 0; i < 4; i++) {
+      const row = document.getElementById('s9row' + i);
+      row.style.background = i === highlightIdx ? 'rgba(99,102,241,0.12)' : '';
+    }
+    draw();
+  };
+
+  function init() { draw(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s9').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s9'), { attributes: true, attributeFilter: ['class'] });
+  init();
+})();
+</script>
+
+<!-- ==================== s10: Step-Through Variance/Covariance ==================== -->
+<div class="slide" id="s10" data-notes="Textbook Slides 5-6. Step through the full calculation: individual fund variances → 40/60 portfolio risk → covariance → correlation. This is the heart of the numerical example.">
+  <span class="label">Scenario Analysis</span>
+  <span class="source-tag">Bodie Ch. 6, Slides 5–6</span>
+  <h2>Step-Through: Risk &amp; Covariance</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS10" width="460" height="340"></canvas>
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-top:8px; flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s10Step()">Step</button>
+        <button class="btn btn-sm" onclick="s10Auto()">Auto Play</button>
+        <button class="btn btn-sm btn-secondary" onclick="s10Reset()">Reset</button>
+      </div>
+    </div>
+    <div>
+      <div id="s10Status" style="font-weight:600; color:var(--accent); margin-bottom:6px;">Click Step to begin</div>
+      <div id="s10Log" class="log-panel" style="max-height:220px;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS10');
+  const ctx = canvas.getContext('2d');
+  const W = 460, H = 340;
+  let stepIdx = 0;
+  let timer = null;
+
+  // Data
+  const scenarios = ['Severe Rec.', 'Mild Rec.', 'Normal', 'Boom'];
+  const probs = [0.05, 0.25, 0.40, 0.30];
+  const stockR = [-37, -11, 14, 30];
+  const bondR = [-9, 15, 8, -5];
+  const stockMean = 10, bondMean = 5;
+  const stockDev = [-47, -21, 4, 20];
+  const bondDev = [-14, 10, 3, -10];
+  const stockDevSq = [2209, 441, 16, 400];
+  const bondDevSq = [196, 100, 9, 100];
+  const stockProbSq = [110.45, 110.25, 6.40, 120.00];
+  const bondProbSq = [9.80, 25.00, 3.60, 30.00];
+  const products = [658, -210, 12, -200];
+  const probProducts = [32.9, -52.5, 4.8, -60.0];
+
+  const steps = [
+    { phase: 'stock_mean', label: 'Stock Fund: E(r) = 10%', detail: 'E(r<sub>S</sub>) = .05(−37) + .25(−11) + .40(14) + .30(30) = <strong>10.0%</strong>' },
+    { phase: 'bond_mean', label: 'Bond Fund: E(r) = 5%', detail: 'E(r<sub>B</sub>) = .05(−9) + .25(15) + .40(8) + .30(−5) = <strong>5.0%</strong>' },
+    { phase: 'stock_var', label: 'Stock Variance = 347.1', detail: 'Σ p·(r−10)² = 110.45 + 110.25 + 6.40 + 120.00 = <strong>347.10</strong>' },
+    { phase: 'stock_sd', label: 'Stock SD = 18.63%', detail: 'σ<sub>S</sub> = √347.10 = <strong>18.63%</strong>' },
+    { phase: 'bond_var', label: 'Bond Variance = 68.4', detail: 'Σ p·(r−5)² = 9.80 + 25.00 + 3.60 + 30.00 = <strong>68.40</strong>' },
+    { phase: 'bond_sd', label: 'Bond SD = 8.27%', detail: 'σ<sub>B</sub> = √68.40 = <strong>8.27%</strong>' },
+    { phase: 'cov', label: 'Covariance = −74.8', detail: 'Cov = Σ p·(r<sub>S</sub>−10)(r<sub>B</sub>−5) = 32.9 − 52.5 + 4.8 − 60.0 = <strong>−74.8</strong>' },
+    { phase: 'corr', label: 'ρ = −0.49', detail: 'ρ = Cov / (σ<sub>S</sub>·σ<sub>B</sub>) = −74.8 / (18.63 × 8.27) = <strong>−0.49</strong>' },
+    { phase: 'port_return', label: 'Portfolio E(r) = 7.0%', detail: 'E(r<sub>P</sub>) = 0.40(10) + 0.60(5) = <strong>7.0%</strong>' },
+    { phase: 'port_var', label: 'Portfolio σ = 6.65%', detail: 'σ²<sub>P</sub> = (.4)²(347.1) + (.6)²(68.4) + 2(.4)(.6)(−74.8) = <strong>44.26</strong> → σ = <strong>6.65%</strong>' },
+    { phase: 'done', label: 'Complete!', detail: 'Diversification cuts risk from weighted avg 12.4% down to just <strong>6.65%</strong> — nearly half!' }
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const left = 50, right = W - 20, top = 25, bottom = H - 30;
+
+    // Title based on phase
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 13px Inter, sans-serif';
+    ctx.textAlign = 'left';
+
+    const phase = stepIdx > 0 ? steps[stepIdx - 1].phase : 'init';
+
+    if (phase === 'init' || phase.startsWith('stock') || phase.startsWith('bond') || phase === 'cov' || phase === 'corr') {
+      drawBarComparison(left, top, right, bottom, phase);
+    } else {
+      drawPortfolioResult(left, top, right, bottom, phase);
+    }
+  }
+
+  function drawBarComparison(left, top, right, bottom, phase) {
+    const chartH = bottom - top;
+    const barW = 40;
+
+    // Draw stock and bond SD bars
+    const maxVal = 20;
+    const categories = [
+      { label: 'Stock\nE(r)', val: 10, color: '#6366f1', x: left + 30 },
+      { label: 'Bond\nE(r)', val: 5, color: '#38bdf8', x: left + 90 },
+      { label: 'Stock\nσ', val: 18.63, color: '#6366f1', x: left + 180 },
+      { label: 'Bond\nσ', val: 8.27, color: '#38bdf8', x: left + 240 },
+      { label: 'Cov', val: -74.8, color: '#ef4444', x: left + 320, scale: 100 },
+      { label: 'ρ', val: -0.49, color: '#f59e0b', x: left + 380, scale: 1 }
+    ];
+
+    // Determine which to show based on phase
+    let showCount = 0;
+    if (phase === 'init') showCount = 0;
+    else if (phase === 'stock_mean') showCount = 1;
+    else if (phase === 'bond_mean') showCount = 2;
+    else if (phase === 'stock_var' || phase === 'stock_sd') showCount = 3;
+    else if (phase === 'bond_var' || phase === 'bond_sd') showCount = 4;
+    else if (phase === 'cov') showCount = 5;
+    else showCount = 6;
+
+    // Section labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    if (showCount >= 1) ctx.fillText('Expected Return (%)', left + 70, top + 8);
+    if (showCount >= 3) ctx.fillText('Std. Deviation (%)', left + 220, top + 8);
+    if (showCount >= 5) ctx.fillText('Co-movement', left + 360, top + 8);
+
+    // Baseline
+    const baseY = bottom - 40;
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, baseY); ctx.lineTo(right, baseY); ctx.stroke();
+
+    for (let i = 0; i < showCount && i < categories.length; i++) {
+      const c = categories[i];
+      const scale = c.scale || maxVal;
+      let barH = (Math.abs(c.val) / scale) * (chartH - 80);
+      barH = Math.min(barH, chartH - 80);
+      const isNeg = c.val < 0;
+      const y = isNeg ? baseY : baseY - barH;
+
+      // Animate: pulse the latest bar
+      const isLatest = i === showCount - 1;
+      ctx.globalAlpha = isLatest ? 1 : 0.7;
+
+      ctx.fillStyle = c.color;
+      ctx.beginPath();
+      const r = 4;
+      ctx.moveTo(c.x, baseY);
+      if (!isNeg) {
+        ctx.lineTo(c.x, y + r);
+        ctx.quadraticCurveTo(c.x, y, c.x + r, y);
+        ctx.lineTo(c.x + barW - r, y);
+        ctx.quadraticCurveTo(c.x + barW, y, c.x + barW, y + r);
+        ctx.lineTo(c.x + barW, baseY);
+      } else {
+        ctx.lineTo(c.x, baseY + barH - r);
+        ctx.quadraticCurveTo(c.x, baseY + barH, c.x + r, baseY + barH);
+        ctx.lineTo(c.x + barW - r, baseY + barH);
+        ctx.quadraticCurveTo(c.x + barW, baseY + barH, c.x + barW, baseY + barH - r);
+        ctx.lineTo(c.x + barW, baseY);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Value label
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      const valStr = c.val > 0 ? c.val.toFixed(c.scale === 1 ? 2 : 1) : c.val.toFixed(c.scale === 1 ? 2 : 1);
+      ctx.fillText(valStr, c.x + barW / 2, isNeg ? baseY + barH + 16 : y - 8);
+
+      // Label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.fillText(c.label.split('\n')[0], c.x + barW / 2, bottom - 14);
+      if (c.label.includes('\n')) {
+        ctx.fillText(c.label.split('\n')[1], c.x + barW / 2, bottom - 2);
+      }
+
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawPortfolioResult(left, top, right, bottom, phase) {
+    const centerX = (left + right) / 2;
+    const centerY = (top + bottom) / 2 - 10;
+
+    // Three portfolio bars: Stock, Bond, 40/60
+    const data = [
+      { label: 'Stock Fund', er: 10, sd: 18.63, color: '#6366f1' },
+      { label: 'Bond Fund', er: 5, sd: 8.27, color: '#38bdf8' },
+      { label: '40/60 Portfolio', er: 7, sd: 6.65, color: '#22c55e' }
+    ];
+
+    const barW = 80, gap = 30;
+    const startX = centerX - (data.length * barW + (data.length - 1) * gap) / 2;
+    const maxSD = 20;
+
+    // Section label
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Standard Deviation (Risk)', centerX, top + 12);
+
+    const baseY = bottom - 60;
+
+    data.forEach((d, i) => {
+      const x = startX + i * (barW + gap);
+      const barH = (d.sd / maxSD) * (baseY - top - 40);
+      const y = baseY - barH;
+
+      const showPort = phase === 'port_var' || phase === 'port_return' || phase === 'done';
+      if (i === 2 && !showPort) { ctx.globalAlpha = 0.15; }
+      const isHighlight = (phase === 'done' && i === 2);
+
+      ctx.fillStyle = d.color;
+      if (isHighlight) ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      const r = 5;
+      ctx.moveTo(x, baseY); ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.lineTo(x + barW - r, y);
+      ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+      ctx.lineTo(x + barW, baseY);
+      ctx.closePath();
+      ctx.fill();
+
+      // SD value
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(d.sd.toFixed(1) + '%', x + barW / 2, y - 10);
+
+      // E(r)
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText('E(r)=' + d.er + '%', x + barW / 2, y - 28);
+
+      // Label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText(d.label, x + barW / 2, baseY + 16);
+
+      ctx.globalAlpha = 1;
+    });
+
+    // Weighted average line
+    const wavgSD = 0.4 * 18.63 + 0.6 * 8.27; // 12.41
+    const wavgY = baseY - (wavgSD / maxSD) * (baseY - top - 40);
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(startX - 10, wavgY); ctx.lineTo(startX + 3 * (barW + gap) - gap + 10, wavgY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Weighted avg SD = 12.4%', startX + 3 * (barW + gap) - gap + 10, wavgY - 6);
+
+    if (phase === 'done') {
+      // Arrow showing reduction
+      const portX = startX + 2 * (barW + gap) + barW / 2;
+      const portSD = 6.65;
+      const portY = baseY - (portSD / maxSD) * (baseY - top - 40);
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('↑ 46% risk reduction!', portX, baseY + 36);
+    }
+  }
+
+  function addLog(html) {
+    const log = document.getElementById('s10Log');
+    log.innerHTML += '<div style="margin-bottom:4px;">' + html + '</div>';
+    log.scrollTop = log.scrollHeight;
+  }
+
+  window.s10Step = function() {
+    if (stepIdx >= steps.length) return;
+    const step = steps[stepIdx];
+    document.getElementById('s10Status').innerHTML = step.label;
+    addLog('<span style="color:#38bdf8">Step ' + (stepIdx + 1) + ':</span> ' + step.detail);
+    stepIdx++;
+    draw();
+  };
+
+  window.s10Auto = function() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (stepIdx >= steps.length) { clearInterval(timer); timer = null; return; }
+      s10Step();
+    }, 1200);
+  };
+
+  window.s10Reset = function() {
+    if (timer) { clearInterval(timer); timer = null; }
+    stepIdx = 0;
+    document.getElementById('s10Status').innerHTML = 'Click Step to begin';
+    document.getElementById('s10Log').innerHTML = '';
+    draw();
+  };
+
+  function init() { draw(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s10').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s10'), { attributes: true, attributeFilter: ['class'] });
+  init();
+})();
+</script>
+
+<!-- ==================== sCA: Challenge — Predict Portfolio Return ==================== -->
+<div class="slide" id="sCA" data-notes="Challenge slide. Students apply the portfolio return and risk formulas with different weights (60/40 instead of 40/60).">
+  <span class="label" style="color:var(--amber);">Challenge A</span>
+  <h2>Challenge: Predict the 60/40 Portfolio</h2>
+  <p>Using the same stock fund (E(r)=10%, σ=18.63%) and bond fund (E(r)=5%, σ=8.27%, ρ=−0.49), now invest <strong>60% stocks / 40% bonds</strong>:</p>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top: 12px;">
+    <div class="card">
+      <h3>1. Portfolio Expected Return</h3>
+      <p class="small">E(r<sub>P</sub>) = w<sub>S</sub>·E(r<sub>S</sub>) + w<sub>B</sub>·E(r<sub>B</sub>)</p>
+      <div style="margin-top:8px;">
+        <input type="text" id="sCAinput1" placeholder="Enter E(rP) %" style="padding:6px 10px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;width:120px;">
+        <span id="sCAresult1" style="margin-left:8px;font-weight:600;"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>2. Portfolio Std. Deviation</h3>
+      <p class="small">σ²<sub>P</sub> = w<sub>S</sub>²σ<sub>S</sub>² + w<sub>B</sub>²σ<sub>B</sub>² + 2w<sub>S</sub>w<sub>B</sub>ρσ<sub>S</sub>σ<sub>B</sub></p>
+      <div style="margin-top:8px;">
+        <input type="text" id="sCAinput2" placeholder="Enter σP %" style="padding:6px 10px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;width:120px;">
+        <span id="sCAresult2" style="margin-left:8px;font-weight:600;"></span>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center; margin-top: 14px;">
+    <button class="btn" onclick="sCACheck()">Check Answers</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sCAReveal()">Show Solution</button>
+  </div>
+  <div id="sCAsolution" style="display:none; margin-top: 12px;">
+    <div class="key-idea">
+      <p><strong>E(r<sub>P</sub>)</strong> = 0.60(10) + 0.40(5) = <strong>8.0%</strong></p>
+      <p><strong>σ²<sub>P</sub></strong> = (0.6)²(347.1) + (0.4)²(68.4) + 2(0.6)(0.4)(−74.8)</p>
+      <p>= 124.96 + 10.94 + (−35.90) = <strong>100.0</strong></p>
+      <p><strong>σ<sub>P</sub></strong> = √100.0 = <strong>10.0%</strong></p>
+      <p class="small" style="margin-top:6px;">Note: more stock → higher return (8% vs 7%) but also higher risk (10% vs 6.65%). The trade-off is real!</p>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCACheck = function() {
+    const v1 = parseFloat(document.getElementById('sCAinput1').value);
+    const v2 = parseFloat(document.getElementById('sCAinput2').value);
+    const r1 = document.getElementById('sCAresult1');
+    const r2 = document.getElementById('sCAresult2');
+
+    if (!isNaN(v1)) {
+      if (Math.abs(v1 - 8.0) < 0.2) { r1.textContent = '✓ Correct!'; r1.style.color = '#22c55e'; }
+      else { r1.textContent = '✗ Try again'; r1.style.color = '#ef4444'; }
+    }
+    if (!isNaN(v2)) {
+      if (Math.abs(v2 - 10.0) < 0.5) { r2.textContent = '✓ Correct!'; r2.style.color = '#22c55e'; }
+      else { r2.textContent = '✗ Try again'; r2.style.color = '#ef4444'; }
+    }
+  };
+
+  window.sCAReveal = function() {
+    const el = document.getElementById('sCAsolution');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+})();
+</script>
+
+<!-- ==================== s11: Section Divider III ==================== -->
+<div class="slide section-slide" id="s11" data-notes="Section III covers the formal two-asset portfolio math — the formulas that quantify why diversification works.">
+  <div class="section-num">III</div>
+  <h2>Two-Asset Portfolio Math</h2>
+  <p class="subtitle">The formulas that make diversification work</p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s12: Portfolio Return Formula ==================== -->
+<div class="slide" id="s12" data-notes="Textbook Slides 8-9. Portfolio return is a simple linear weighted average. Key: return is linear in weights — no free lunch on the return side. The Canvas shows this linearity.">
+  <span class="label">Two-Asset Portfolios</span>
+  <span class="source-tag">Bodie Ch. 6, Slides 8–9</span>
+  <h2>Portfolio Return: Linear in Weights</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="formula formula-center" style="font-size: 1.2rem;">
+        E(r<sub>P</sub>) = w<sub>D</sub> E(r<sub>D</sub>) + w<sub>E</sub> E(r<sub>E</sub>)
+      </div>
+      <ul style="margin-top:10px;">
+        <li>w<sub>D</sub> = weight in <strong>bond fund</strong> (debt)</li>
+        <li>w<sub>E</sub> = weight in <strong>stock fund</strong> (equity)</li>
+        <li>w<sub>D</sub> + w<sub>E</sub> = 1 (budget constraint)</li>
+      </ul>
+      <div class="key-idea" style="margin-top: 10px;">
+        <p class="small"><strong>Key:</strong> Expected return is <em>linear</em> — no interaction effects. The "free lunch" of diversification shows up only in <strong>risk</strong>, not return.</p>
+      </div>
+    </div>
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS12" width="400" height="280"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small" style="color:var(--text-muted);">w<sub>E</sub> (stocks): <strong id="s12wLabel">50%</strong></label>
+        <input type="range" id="s12slider" min="0" max="100" value="50" style="width:100%;accent-color:var(--accent2);" oninput="s12Update()">
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS12');
+  const ctx = canvas.getContext('2d');
+  const W = 400, H = 280;
+  let wE = 0.5;
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const left = 50, right = W - 20, top = 20, bottom = H - 35;
+    const chartW = right - left, chartH = bottom - top;
+
+    // Data: Bond E(r)=5, Stock E(r)=10
+    const erD = 5, erE = 10;
+    const minR = 3, maxR = 12;
+
+    // Axes
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom); ctx.stroke();
+
+    // Y-axis labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    for (let v = 4; v <= 11; v += 1) {
+      const y = bottom - ((v - minR) / (maxR - minR)) * chartH;
+      ctx.fillText(v + '%', left - 6, y + 3);
+      ctx.strokeStyle = 'rgba(148,163,184,0.06)';
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    }
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px Inter, sans-serif';
+    for (let w = 0; w <= 100; w += 20) {
+      const x = left + (w / 100) * chartW;
+      ctx.fillText(w + '%', x, bottom + 13);
+    }
+    ctx.fillText('Weight in Stocks (wE)', (left + right) / 2, bottom + 27);
+
+    // Axis title
+    ctx.save();
+    ctx.translate(12, (top + bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('E(rP) %', 0, 0);
+    ctx.restore();
+
+    // Linear line from (0%, 5%) to (100%, 10%)
+    const x0 = left, y0 = bottom - ((erD - minR) / (maxR - minR)) * chartH;
+    const x1 = right, y1 = bottom - ((erE - minR) / (maxR - minR)) * chartH;
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth = 2.5;
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.stroke();
+
+    // Endpoint labels
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('D (Bonds)', x0 + 30, y0 - 10);
+    ctx.fillText('E (Stocks)', x1 - 30, y1 - 10);
+
+    // Current point
+    const curER = (1 - wE) * erD + wE * erE;
+    const curX = left + wE * chartW;
+    const curY = bottom - ((curER - minR) / (maxR - minR)) * chartH;
+
+    ctx.beginPath();
+    ctx.arc(curX, curY, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('E(rP) = ' + curER.toFixed(1) + '%', curX, curY - 14);
+  }
+
+  window.s12Update = function() {
+    wE = parseInt(document.getElementById('s12slider').value) / 100;
+    document.getElementById('s12wLabel').textContent = Math.round(wE * 100) + '%';
+    draw();
+  };
+
+  function init() { draw(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s12').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s12'), { attributes: true, attributeFilter: ['class'] });
+  init();
+})();
+</script>
+
+<!-- ==================== s13: Portfolio Variance — 3-Term Decomposition ==================== -->
+<div class="slide" id="s13" data-notes="Textbook Slide 10. THE key formula. The cross-term (2 wD wE Cov) is where diversification lives. Interactive: adjust weight and see how the three terms change.">
+  <span class="label">Two-Asset Portfolios</span>
+  <span class="source-tag">Bodie Ch. 6, Slide 10</span>
+  <h2>Portfolio Variance: THE Key Formula</h2>
+  <div class="formula formula-center" style="font-size: 1.1rem;">
+    σ²<sub>P</sub> = w<sub>D</sub>²σ<sub>D</sub>² + w<sub>E</sub>²σ<sub>E</sub>² + 2w<sub>D</sub>w<sub>E</sub>Cov(r<sub>D</sub>,r<sub>E</sub>)
+  </div>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS13" width="480" height="300"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">w<sub>E</sub> (stocks): <strong id="s13wLabel">40%</strong></label>
+        <input type="range" id="s13slider" min="0" max="100" value="40" style="width:100%;accent-color:var(--accent2);" oninput="s13Update()">
+      </div>
+    </div>
+    <div>
+      <div id="s13detail" class="card" style="font-size:0.88rem; line-height:1.7;">
+        <!-- Filled by JS -->
+      </div>
+      <div class="analogy" style="margin-top:8px;">
+        <p class="small"><strong>Diversification lives in the cross-term!</strong> When Cov &lt; 0, the green bar <em>subtracts</em> from portfolio variance.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS13');
+  const ctx = canvas.getContext('2d');
+  const W = 480, H = 300;
+
+  // Data
+  const varD = 68.40, varE = 347.10, cov = -74.8;
+  const sdD = 8.27, sdE = 18.63;
+
+  function draw() {
+    const wE = parseInt(document.getElementById('s13slider').value) / 100;
+    const wD = 1 - wE;
+
+    const termD = wD * wD * varD;
+    const termE = wE * wE * varE;
+    const termCross = 2 * wD * wE * cov;
+    const portVar = termD + termE + termCross;
+    const portSD = Math.sqrt(Math.max(portVar, 0));
+
+    ctx.clearRect(0, 0, W, H);
+    const left = 60, right = W - 20, top = 30, bottom = H - 45;
+    const chartW = right - left, chartH = bottom - top;
+
+    // Max for scaling
+    const maxVal = 400;
+
+    // Axes
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom); ctx.stroke();
+
+    // Zero line
+    const zeroY = bottom;
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1;
+
+    // Y-axis labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    for (let v = -100; v <= 350; v += 50) {
+      const y = bottom - (v / maxVal) * chartH;
+      if (y > top - 5 && y < bottom + 5) {
+        ctx.fillText(v.toFixed(0), left - 6, y + 3);
+        ctx.strokeStyle = 'rgba(148,163,184,0.06)';
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+      }
+    }
+
+    // Labels
+    ctx.save();
+    ctx.translate(12, (top + bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Variance contribution', 0, 0);
+    ctx.restore();
+
+    // Draw stacked bars
+    const barW = 90;
+    const terms = [
+      { label: 'Bond term\nwD²σD²', val: termD, color: '#38bdf8' },
+      { label: 'Stock term\nwE²σE²', val: termE, color: '#6366f1' },
+      { label: 'Cross-term\n2wDwECov', val: termCross, color: termCross < 0 ? '#22c55e' : '#ef4444' }
+    ];
+
+    // Individual bars
+    terms.forEach((t, i) => {
+      const x = left + 20 + i * (barW + 30);
+      const barH = (Math.abs(t.val) / maxVal) * chartH;
+      const isNeg = t.val < 0;
+      const y = isNeg ? bottom : bottom - barH;
+
+      ctx.fillStyle = t.color;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      const r = 4;
+      if (!isNeg) {
+        ctx.moveTo(x, bottom); ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.lineTo(x + barW - r, y);
+        ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+        ctx.lineTo(x + barW, bottom);
+      } else {
+        ctx.moveTo(x, bottom); ctx.lineTo(x, bottom + barH - r);
+        ctx.quadraticCurveTo(x, bottom + barH, x + r, bottom + barH);
+        ctx.lineTo(x + barW - r, bottom + barH);
+        ctx.quadraticCurveTo(x + barW, bottom + barH, x + barW, bottom + barH - r);
+        ctx.lineTo(x + barW, bottom);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Value
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(t.val.toFixed(1), x + barW / 2, isNeg ? bottom + barH + 14 : y - 8);
+
+      // Label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px Inter, sans-serif';
+      const lines = t.label.split('\n');
+      lines.forEach((ln, li) => ctx.fillText(ln, x + barW / 2, bottom - (isNeg ? barH + 16 + li * 12 : -30 - li * 12)));
+    });
+
+    // Total bar
+    const totalX = left + 20 + 3 * (barW + 30);
+    const totalBarH = (Math.abs(portVar) / maxVal) * chartH;
+    const totalY = portVar >= 0 ? bottom - totalBarH : bottom;
+    ctx.fillStyle = '#f59e0b';
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    const r = 4;
+    ctx.moveTo(totalX, bottom);
+    ctx.lineTo(totalX, totalY + r);
+    ctx.quadraticCurveTo(totalX, totalY, totalX + r, totalY);
+    ctx.lineTo(totalX + barW - r, totalY);
+    ctx.quadraticCurveTo(totalX + barW, totalY, totalX + barW, totalY + r);
+    ctx.lineTo(totalX + barW, bottom);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(portVar.toFixed(1), totalX + barW / 2, totalY - 8);
+    ctx.fillText('σP=' + portSD.toFixed(1) + '%', totalX + barW / 2, totalY - 24);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText('Total σ²P', totalX + barW / 2, bottom + 14);
+
+    // Update detail panel
+    document.getElementById('s13detail').innerHTML =
+      '<strong style="color:var(--accent);">Weights:</strong> w<sub>D</sub>=' + (wD * 100).toFixed(0) + '%, w<sub>E</sub>=' + (wE * 100).toFixed(0) + '%<br>' +
+      '<span style="color:#38bdf8">■</span> Bond: (' + wD.toFixed(2) + ')²(68.4) = <strong>' + termD.toFixed(1) + '</strong><br>' +
+      '<span style="color:#6366f1">■</span> Stock: (' + wE.toFixed(2) + ')²(347.1) = <strong>' + termE.toFixed(1) + '</strong><br>' +
+      '<span style="color:' + (termCross < 0 ? '#22c55e' : '#ef4444') + '">■</span> Cross: 2(' + wD.toFixed(2) + ')(' + wE.toFixed(2) + ')(−74.8) = <strong>' + termCross.toFixed(1) + '</strong><br>' +
+      '<hr style="border-color:var(--border);margin:4px 0;">' +
+      '<span style="color:#f59e0b">■</span> σ²<sub>P</sub> = <strong>' + portVar.toFixed(1) + '</strong><br>' +
+      'σ<sub>P</sub> = <strong>' + portSD.toFixed(1) + '%</strong>';
+  }
+
+  window.s13Update = function() {
+    const wE = parseInt(document.getElementById('s13slider').value) / 100;
+    document.getElementById('s13wLabel').textContent = Math.round(wE * 100) + '%';
+    draw();
+  };
+
+  function init() { draw(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s13').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s13'), { attributes: true, attributeFilter: ['class'] });
+  init();
+})();
+</script>
+
+<!-- ==================== s14: Correlation Effects — Interactive ρ Slider ==================== -->
+<div class="slide" id="s14" data-notes="Textbook Slides 11-12. Interactive: drag the ρ slider from −1 to +1 and watch the opportunity set curve morph. At ρ=+1: straight line. At ρ=−1: V-shape touching y-axis.">
+  <span class="label">Two-Asset Portfolios</span>
+  <span class="source-tag">Bodie Ch. 6, Slides 11–12</span>
+  <h2>Interactive: How Correlation Shapes Risk</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS14" width="480" height="340"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">Correlation ρ: <strong id="s14rhoLabel" style="color:var(--amber);">−0.49</strong></label>
+        <input type="range" id="s14slider" min="-100" max="100" value="-49" style="width:100%;accent-color:var(--amber);" oninput="s14Update()">
+      </div>
+    </div>
+    <div>
+      <table class="data-table compact-table" id="s14table">
+        <thead><tr><th>w<sub>E</sub></th><th>E(r)</th><th>σ<sub>P</sub></th></tr></thead>
+        <tbody id="s14tbody"></tbody>
+      </table>
+      <div id="s14insight" class="card" style="margin-top:8px; font-size:0.88rem;"></div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS14');
+  const ctx = canvas.getContext('2d');
+  const W = 480, H = 340;
+
+  const erD = 5, erE = 10, sdD = 8.27, sdE = 18.63;
+  const varD = sdD * sdD, varE = sdE * sdE;
+
+  function portSD(wE, rho) {
+    const wD = 1 - wE;
+    const cov = rho * sdD * sdE;
+    const v = wD * wD * varD + wE * wE * varE + 2 * wD * wE * cov;
+    return Math.sqrt(Math.max(v, 0));
+  }
+  function portER(wE) { return (1 - wE) * erD + wE * erE; }
+
+  function draw() {
+    const rho = parseInt(document.getElementById('s14slider').value) / 100;
+    ctx.clearRect(0, 0, W, H);
+    const left = 55, right = W - 20, top = 20, bottom = H - 35;
+    const chartW = right - left, chartH = bottom - top;
+    const minSD = 0, maxSD = 22, minER = 3, maxER = 12;
+
+    // Grid
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom); ctx.stroke();
+
+    // Y labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    for (let v = 4; v <= 11; v++) {
+      const y = bottom - ((v - minER) / (maxER - minER)) * chartH;
+      ctx.fillText(v + '%', left - 6, y + 3);
+      ctx.strokeStyle = 'rgba(148,163,184,0.06)';
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    }
+
+    // X labels
+    ctx.textAlign = 'center';
+    for (let v = 0; v <= 20; v += 4) {
+      const x = left + ((v - minSD) / (maxSD - minSD)) * chartW;
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(v + '%', x, bottom + 13);
+    }
+    ctx.fillText('Standard Deviation (%)', (left + right) / 2, bottom + 28);
+
+    ctx.save();
+    ctx.translate(12, (top + bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('E(rP) %', 0, 0);
+    ctx.restore();
+
+    // Ghost curves for reference (ρ = -1, 0, +1)
+    const ghosts = [
+      { rho: -1, dash: [4, 4], color: 'rgba(148,163,184,0.15)' },
+      { rho: 0, dash: [6, 3], color: 'rgba(148,163,184,0.12)' },
+      { rho: 1, dash: [2, 2], color: 'rgba(148,163,184,0.1)' }
+    ];
+    ghosts.forEach(g => {
+      ctx.setLineDash(g.dash);
+      ctx.strokeStyle = g.color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let w = 0; w <= 100; w++) {
+        const wE = w / 100;
+        const sd = portSD(wE, g.rho);
+        const er = portER(wE);
+        const x = left + ((sd - minSD) / (maxSD - minSD)) * chartW;
+        const y = bottom - ((er - minER) / (maxER - minER)) * chartH;
+        if (w === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // Main curve
+    ctx.beginPath();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    let mvpSD = Infinity, mvpER = 0, mvpWE = 0;
+    for (let w = 0; w <= 100; w++) {
+      const wE = w / 100;
+      const sd = portSD(wE, rho);
+      const er = portER(wE);
+      if (sd < mvpSD) { mvpSD = sd; mvpER = er; mvpWE = wE; }
+      const x = left + ((sd - minSD) / (maxSD - minSD)) * chartW;
+      const y = bottom - ((er - minER) / (maxER - minER)) * chartH;
+      if (w === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Endpoint D
+    const dX = left + ((sdD - minSD) / (maxSD - minSD)) * chartW;
+    const dY = bottom - ((erD - minER) / (maxER - minER)) * chartH;
+    ctx.beginPath(); ctx.arc(dX, dY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#38bdf8'; ctx.fill();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px Inter, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('D (Bonds)', dX + 8, dY - 4);
+
+    // Endpoint E
+    const eX = left + ((sdE - minSD) / (maxSD - minSD)) * chartW;
+    const eY = bottom - ((erE - minER) / (maxER - minER)) * chartH;
+    ctx.beginPath(); ctx.arc(eX, eY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#6366f1'; ctx.fill();
+    ctx.fillStyle = '#e2e8f0'; ctx.textAlign = 'right';
+    ctx.fillText('E (Stocks)', eX - 8, eY - 4);
+
+    // MVP point
+    const mvpX = left + ((mvpSD - minSD) / (maxSD - minSD)) * chartW;
+    const mvpY = bottom - ((mvpER - minER) / (maxER - minER)) * chartH;
+    ctx.beginPath(); ctx.arc(mvpX, mvpY, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#22c55e'; ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('MVP σ=' + mvpSD.toFixed(1) + '%', mvpX + 10, mvpY + 4);
+
+    // ρ label
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('ρ = ' + rho.toFixed(2), left + 10, top + 18);
+
+    // Update table
+    const tbody = document.getElementById('s14tbody');
+    let html = '';
+    for (let w = 0; w <= 100; w += 20) {
+      const wE = w / 100;
+      const sd = portSD(wE, rho);
+      const er = portER(wE);
+      const isMVP = Math.abs(wE - mvpWE) < 0.1;
+      html += '<tr' + (isMVP ? ' style="background:rgba(34,197,94,0.1)"' : '') + '>' +
+        '<td class="num">' + w + '%</td>' +
+        '<td class="num">' + er.toFixed(1) + '%</td>' +
+        '<td class="num">' + sd.toFixed(1) + '%</td></tr>';
+    }
+    tbody.innerHTML = html;
+
+    // Insight text
+    let insight = '';
+    if (rho <= -0.9) insight = 'Near ρ=−1: V-shape. Zero risk is possible! MVP has σ ≈ ' + mvpSD.toFixed(1) + '%.';
+    else if (rho <= -0.3) insight = 'Negative ρ: strong diversification. Portfolio risk drops well below either asset.';
+    else if (rho <= 0.3) insight = 'Low ρ: moderate diversification benefit. The curve bows left.';
+    else if (rho <= 0.7) insight = 'Positive ρ: limited diversification. Curve is nearly straight.';
+    else insight = 'Near ρ=+1: straight line — no diversification benefit at all.';
+    document.getElementById('s14insight').innerHTML = '<strong style="color:var(--amber);">Insight:</strong> ' + insight;
+  }
+
+  window.s14Update = function() {
+    const rho = parseInt(document.getElementById('s14slider').value) / 100;
+    document.getElementById('s14rhoLabel').textContent = rho.toFixed(2);
+    draw();
+  };
+
+  function init() { draw(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s14').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s14'), { attributes: true, attributeFilter: ['class'] });
+  init();
+})();
+</script>
+
+<!-- ==================== sCB: Challenge — Which Portfolio Dominates? ==================== -->
+<div class="slide" id="sCB" data-notes="Challenge: test mean-variance dominance. Students identify which portfolios are efficient and which are dominated.">
+  <span class="label" style="color:var(--amber);">Challenge B</span>
+  <h2>Challenge: Mean-Variance Dominance</h2>
+  <p>Four portfolios are plotted below. Using the <strong>mean-variance criterion</strong>, identify which are efficient and which are dominated.</p>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 10px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cCB" width="400" height="300"></canvas>
+      </div>
+    </div>
+    <div>
+      <table class="data-table compact-table">
+        <thead><tr><th>Portfolio</th><th>E(r)</th><th>σ</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong style="color:#6366f1;">A</strong></td><td class="num">9%</td><td class="num">12%</td><td><select id="sCBa" style="background:var(--code-bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px;"><option value="">—</option><option value="e">Efficient</option><option value="d">Dominated</option></select></td></tr>
+          <tr><td><strong style="color:#38bdf8;">B</strong></td><td class="num">7%</td><td class="num">14%</td><td><select id="sCBb" style="background:var(--code-bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px;"><option value="">—</option><option value="e">Efficient</option><option value="d">Dominated</option></select></td></tr>
+          <tr><td><strong style="color:#22c55e;">C</strong></td><td class="num">11%</td><td class="num">15%</td><td><select id="sCBc" style="background:var(--code-bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px;"><option value="">—</option><option value="e">Efficient</option><option value="d">Dominated</option></select></td></tr>
+          <tr><td><strong style="color:#f59e0b;">D</strong></td><td class="num">9%</td><td class="num">16%</td><td><select id="sCBd" style="background:var(--code-bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px;"><option value="">—</option><option value="e">Efficient</option><option value="d">Dominated</option></select></td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px; text-align:center;">
+        <button class="btn" onclick="sCBCheck()">Check All</button>
+        <button class="btn btn-secondary" style="margin-left:6px;" onclick="sCBReveal()">Show Answer</button>
+      </div>
+      <div id="sCBresult" style="margin-top:8px; font-weight:600; text-align:center;"></div>
+      <div id="sCBexplain" style="display:none; margin-top:8px;" class="key-idea">
+        <p class="small"><strong>A (9%, 12%):</strong> Efficient — no other portfolio has ≥9% return with ≤12% risk</p>
+        <p class="small"><strong>B (7%, 14%):</strong> Dominated by A — A has higher return AND lower risk</p>
+        <p class="small"><strong>C (11%, 15%):</strong> Efficient — highest return, only slightly more risk than A</p>
+        <p class="small"><strong>D (9%, 16%):</strong> Dominated by A — same return but much more risk</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cCB');
+  const ctx = canvas.getContext('2d');
+  const W = 400, H = 300;
+
+  const portfolios = [
+    { id: 'A', er: 9, sd: 12, color: '#6366f1' },
+    { id: 'B', er: 7, sd: 14, color: '#38bdf8' },
+    { id: 'C', er: 11, sd: 15, color: '#22c55e' },
+    { id: 'D', er: 9, sd: 16, color: '#f59e0b' }
+  ];
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const left = 50, right = W - 20, top = 20, bottom = H - 35;
+    const chartW = right - left, chartH = bottom - top;
+    const minSD = 8, maxSD = 20, minER = 5, maxER = 13;
+
+    // Axes
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom); ctx.stroke();
+
+    // Grid
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    for (let v = 6; v <= 12; v += 2) {
+      const y = bottom - ((v - minER) / (maxER - minER)) * chartH;
+      ctx.fillText(v + '%', left - 6, y + 3);
+      ctx.strokeStyle = 'rgba(148,163,184,0.06)';
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    }
+    ctx.textAlign = 'center';
+    for (let v = 10; v <= 18; v += 2) {
+      const x = left + ((v - minSD) / (maxSD - minSD)) * chartW;
+      ctx.fillText(v + '%', x, bottom + 13);
+    }
+    ctx.fillText('σ (%)', (left + right) / 2, bottom + 28);
+    ctx.save();
+    ctx.translate(12, (top + bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('E(r) %', 0, 0);
+    ctx.restore();
+
+    // "Northwest is best" arrow
+    ctx.fillStyle = 'rgba(148,163,184,0.2)';
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('↖', left + 30, top + 30);
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText('Best', left + 30, top + 44);
+
+    // Portfolios
+    portfolios.forEach(p => {
+      const x = left + ((p.sd - minSD) / (maxSD - minSD)) * chartW;
+      const y = bottom - ((p.er - minER) / (maxER - minER)) * chartH;
+
+      ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = p.color; ctx.fill();
+      ctx.strokeStyle = p.color; ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(p.id, x, y);
+      ctx.textBaseline = 'alphabetic';
+
+      // Label
+      ctx.fillStyle = p.color;
+      ctx.font = '10px monospace';
+      ctx.fillText('(' + p.sd + '%, ' + p.er + '%)', x, y - 14);
+    });
+  }
+
+  // Answers: A=efficient, B=dominated, C=efficient, D=dominated
+  window.sCBCheck = function() {
+    const ans = { a: 'e', b: 'd', c: 'e', d: 'd' };
+    let correct = 0;
+    ['a', 'b', 'c', 'd'].forEach(k => {
+      const sel = document.getElementById('sCB' + k);
+      if (sel.value === ans[k]) {
+        sel.style.borderColor = '#22c55e';
+        correct++;
+      } else if (sel.value) {
+        sel.style.borderColor = '#ef4444';
+      }
+    });
+    document.getElementById('sCBresult').innerHTML =
+      correct === 4 ? '<span style="color:#22c55e">All correct!</span>' :
+      '<span style="color:#f59e0b">' + correct + '/4 correct — try again!</span>';
+  };
+
+  window.sCBReveal = function() {
+    const el = document.getElementById('sCBexplain');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  function init() { draw(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('sCB').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('sCB'), { attributes: true, attributeFilter: ['class'] });
+  init();
+})();
+</script>
+
+<!-- ==================== s15: Correlation in Practice ==================== -->
+<div class="slide" id="s15" data-notes="Web app Module 2. Real-world correlation examples help build intuition. SPY/TLT/GLD matrix shows how practitioners think about diversification.">
+  <span class="label">Two-Asset Portfolios</span>
+  <span class="source-tag">Web App: Module 2</span>
+  <h2>Correlation in Practice</h2>
+  <div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="card" style="text-align:center;">
+      <p style="font-size: 2rem; font-weight: 800; color: var(--red);">+0.85</p>
+      <p><strong>AAPL &amp; MSFT</strong></p>
+      <p class="small">Same industry, similar drivers — weak diversification</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-size: 2rem; font-weight: 800; color: var(--accent);">−0.30</p>
+      <p><strong>Stocks &amp; Gold</strong></p>
+      <p class="small">Flight to safety — good diversifier</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="font-size: 2rem; font-weight: 800; color: var(--text-muted);">≈ 0</p>
+      <p><strong>Uncorrelated</strong></p>
+      <p class="small">No linear relationship — moderate benefit</p>
+    </div>
+  </div>
+  <h3>Correlation Matrix: ETFs</h3>
+  <table class="data-table compact-table" style="max-width: 380px;">
+    <thead><tr><th></th><th>SPY</th><th>TLT</th><th>GLD</th></tr></thead>
+    <tbody>
+      <tr><td><strong>SPY</strong></td><td class="num">1.00</td><td class="num" style="color:var(--accent);">−0.40</td><td class="num">0.05</td></tr>
+      <tr><td><strong>TLT</strong></td><td class="num" style="color:var(--accent);">−0.40</td><td class="num">1.00</td><td class="num">0.30</td></tr>
+      <tr><td><strong>GLD</strong></td><td class="num">0.05</td><td class="num">0.30</td><td class="num">1.00</td></tr>
+    </tbody>
+  </table>
+  <div class="analogy" style="margin-top:8px;">
+    <p><strong>Rule of thumb:</strong> For diversification, seek assets with ρ ≤ 0.3. Negative correlations are even better — but they're rare among equities.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s16: Matrix Form — N Assets ==================== -->
+<div class="slide" id="s16" data-notes="Web app Module 2. Shows how the 2-asset formula scales to N assets using matrix notation. Curse of dimensionality: N=50 needs 1,225 covariance estimates.">
+  <span class="label">Multi-Asset Extension</span>
+  <span class="source-tag">Web App: Module 2</span>
+  <h2>Matrix Form: N-Asset Portfolio</h2>
+  <p>For <strong>N assets</strong>, portfolio variance generalizes to:</p>
+  <div class="formula formula-center" style="font-size: 1.3rem;">
+    σ²<sub>P</sub> = <strong>w</strong>ʹ <strong>Σ</strong> <strong>w</strong>
+  </div>
+  <div class="cols">
+    <div>
+      <p>Where <strong>Σ</strong> is the N × N <strong>covariance matrix</strong>:</p>
+      <ul>
+        <li>Diagonal: individual variances (σ²<sub>i</sub>)</li>
+        <li>Off-diagonal: pairwise covariances</li>
+        <li>Symmetric: Cov<sub>ij</sub> = Cov<sub>ji</sub></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Curse of Dimensionality</h3>
+      <table class="data-table compact-table">
+        <thead><tr><th>N assets</th><th>Covariances needed</th></tr></thead>
+        <tbody>
+          <tr><td class="num">2</td><td class="num">1</td></tr>
+          <tr><td class="num">10</td><td class="num">45</td></tr>
+          <tr><td class="num">50</td><td class="num">1,225</td></tr>
+          <tr><td class="num">500</td><td class="num">124,750</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="key-idea" style="margin-top:8px;">
+    <p><strong>At scale, covariances dominate:</strong> In an equal-weighted portfolio, individual variances shrink to zero as N → ∞, but <strong>average covariance persists</strong>. This is why market risk cannot be diversified away.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s17: Section Divider IV ==================== -->
+<div class="slide section-slide" id="s17" data-notes="Section IV: the efficient frontier — Markowitz's key contribution. We'll build the frontier interactively and find the minimum variance portfolio.">
+  <div class="section-num">IV</div>
+  <h2>Efficient Frontier &amp; Optimization</h2>
+  <p class="subtitle">Markowitz mean-variance optimization</p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s18: Interactive Opportunity Set ==================== -->
+<div class="slide" id="s18" data-notes="Textbook Slides 13-14. Interactive: drag the weight slider and watch the portfolio point trace along the opportunity set hyperbola. Efficient portion is above MVP.">
+  <span class="label">Efficient Frontier</span>
+  <span class="source-tag">Bodie Ch. 6, Slides 13–14</span>
+  <h2>Interactive: Investment Opportunity Set</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS18" width="480" height="340"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">w<sub>E</sub> (stocks): <strong id="s18wLabel">50%</strong></label>
+        <input type="range" id="s18slider" min="0" max="100" value="50" style="width:100%;accent-color:var(--accent2);" oninput="s18Update()">
+      </div>
+    </div>
+    <div>
+      <div id="s18detail" class="card" style="font-size:0.92rem; line-height:1.7;"></div>
+      <div class="key-idea" style="margin-top:8px;">
+        <p class="small"><strong>Mean-Variance Criterion:</strong> A dominates B if E(r<sub>A</sub>) ≥ E(r<sub>B</sub>) and σ<sub>A</sub> ≤ σ<sub>B</sub>. Move <strong>northwest</strong> for the best portfolios!</p>
+      </div>
+      <div class="warning" style="margin-top:6px;">
+        <p class="small">The <strong>downward-sloping</strong> portion (below MVP) is <strong>inefficient</strong> — for every point there, a point directly above offers the same risk with higher return.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS18');
+  const ctx = canvas.getContext('2d');
+  const W = 480, H = 340;
+
+  const erD = 5, erE = 10, sdD = 8.27, sdE = 18.63, rho = -0.49;
+  const varD = sdD*sdD, varE = sdE*sdE, cov = rho*sdD*sdE;
+
+  function pSD(wE) {
+    const wD = 1 - wE;
+    return Math.sqrt(Math.max(wD*wD*varD + wE*wE*varE + 2*wD*wE*cov, 0));
+  }
+  function pER(wE) { return (1-wE)*erD + wE*erE; }
+
+  // Find MVP
+  let mvpWE = 0, mvpSD = 999;
+  for (let w = 0; w <= 100; w++) {
+    const sd = pSD(w/100);
+    if (sd < mvpSD) { mvpSD = sd; mvpWE = w/100; }
+  }
+  const mvpER = pER(mvpWE);
+
+  function draw() {
+    const wE = parseInt(document.getElementById('s18slider').value) / 100;
+    ctx.clearRect(0, 0, W, H);
+    const left = 55, right = W - 20, top = 20, bottom = H - 35;
+    const chartW = right - left, chartH = bottom - top;
+    const minSD = 0, maxSD = 22, minER = 3, maxER = 12;
+
+    function toX(sd) { return left + ((sd - minSD)/(maxSD - minSD))*chartW; }
+    function toY(er) { return bottom - ((er - minER)/(maxER - minER))*chartH; }
+
+    // Axes
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, bottom); ctx.lineTo(right, bottom); ctx.stroke();
+
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    for (let v = 4; v <= 11; v++) {
+      ctx.fillText(v+'%', left-6, toY(v)+3);
+      ctx.strokeStyle = 'rgba(148,163,184,0.06)';
+      ctx.beginPath(); ctx.moveTo(left, toY(v)); ctx.lineTo(right, toY(v)); ctx.stroke();
+    }
+    ctx.textAlign = 'center';
+    for (let v = 0; v <= 20; v += 4) {
+      ctx.fillStyle = '#94a3b8'; ctx.fillText(v+'%', toX(v), bottom+13);
+    }
+    ctx.fillText('Standard Deviation (%)', (left+right)/2, bottom+28);
+    ctx.save(); ctx.translate(12,(top+bottom)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillStyle='#94a3b8'; ctx.font='11px Inter, sans-serif'; ctx.fillText('E(rP) %',0,0);
+    ctx.restore();
+
+    // Draw full curve — inefficient part dashed, efficient part solid
+    // Inefficient: wE from 0 to mvpWE
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle = 'rgba(99,102,241,0.4)'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let w = 0; w <= Math.round(mvpWE*100); w++) {
+      const sd = pSD(w/100), er = pER(w/100);
+      if (w === 0) ctx.moveTo(toX(sd), toY(er)); else ctx.lineTo(toX(sd), toY(er));
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Efficient: wE from mvpWE to 1
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let w = Math.round(mvpWE*100); w <= 100; w++) {
+      const sd = pSD(w/100), er = pER(w/100);
+      if (w === Math.round(mvpWE*100)) ctx.moveTo(toX(sd), toY(er)); else ctx.lineTo(toX(sd), toY(er));
+    }
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = 'rgba(99,102,241,0.5)'; ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('Inefficient', toX(4), toY(4.5));
+    ctx.fillStyle = '#6366f1';
+    ctx.fillText('Efficient Frontier', toX(12), toY(10.5));
+
+    // Endpoint D
+    ctx.beginPath(); ctx.arc(toX(sdD), toY(erD), 5, 0, Math.PI*2);
+    ctx.fillStyle = '#38bdf8'; ctx.fill();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.textAlign = 'left'; ctx.fillText('D (Bonds)', toX(sdD)+8, toY(erD)-2);
+
+    // Endpoint E
+    ctx.beginPath(); ctx.arc(toX(sdE), toY(erE), 5, 0, Math.PI*2);
+    ctx.fillStyle = '#6366f1'; ctx.fill();
+    ctx.fillStyle = '#e2e8f0'; ctx.textAlign = 'right';
+    ctx.fillText('E (Stocks)', toX(sdE)-8, toY(erE)-2);
+
+    // MVP
+    ctx.beginPath(); ctx.arc(toX(mvpSD), toY(mvpER), 5, 0, Math.PI*2);
+    ctx.fillStyle = '#22c55e'; ctx.fill();
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#22c55e'; ctx.font = '9px Inter, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('MVP', toX(mvpSD)+8, toY(mvpER)+3);
+
+    // Current point
+    const curSD = pSD(wE), curER = pER(wE);
+    const isEfficient = wE >= mvpWE;
+
+    ctx.beginPath(); ctx.arc(toX(curSD), toY(curER), 8, 0, Math.PI*2);
+    ctx.fillStyle = isEfficient ? '#f59e0b' : '#ef4444'; ctx.fill();
+    ctx.strokeStyle = isEfficient ? '#f59e0b' : '#ef4444'; ctx.lineWidth = 2; ctx.stroke();
+
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('(' + curSD.toFixed(1) + '%, ' + curER.toFixed(1) + '%)', toX(curSD), toY(curER)-14);
+
+    // Detail panel
+    document.getElementById('s18detail').innerHTML =
+      '<strong style="color:var(--accent)">Current Portfolio:</strong><br>' +
+      'w<sub>D</sub> = ' + ((1-wE)*100).toFixed(0) + '% bonds, w<sub>E</sub> = ' + (wE*100).toFixed(0) + '% stocks<br>' +
+      'E(r<sub>P</sub>) = <strong>' + curER.toFixed(1) + '%</strong><br>' +
+      'σ<sub>P</sub> = <strong>' + curSD.toFixed(1) + '%</strong><br>' +
+      '<span style="color:' + (isEfficient ? '#22c55e' : '#ef4444') + ';font-weight:600;">' +
+      (isEfficient ? '✓ Efficient' : '✗ Inefficient — dominated by a portfolio above MVP') + '</span>';
+  }
+
+  window.s18Update = function() {
+    document.getElementById('s18wLabel').textContent = document.getElementById('s18slider').value + '%';
+    draw();
+  };
+
+  function init() { draw(); }
+  const obs = new MutationObserver(() => {
+    if (document.getElementById('s18').classList.contains('active')) init();
+  });
+  obs.observe(document.getElementById('s18'), {attributes:true, attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s19: Multi-Correlation Frontier ==================== -->
+<div class="slide" id="s19" data-notes="Textbook Slides 15-16. Interactive ρ slider overlays multiple frontier curves. Shows complete table of portfolio SDs for different weights and correlations.">
+  <span class="label">Efficient Frontier</span>
+  <span class="source-tag">Bodie Ch. 6, Slides 15–16</span>
+  <h2>Frontier Shape by Correlation</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS19" width="480" height="340"></canvas>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="s19AddRho()">Add Current ρ</button>
+        <button class="btn btn-sm btn-secondary" onclick="s19Clear()">Clear Overlays</button>
+      </div>
+      <div style="margin-top:4px;">
+        <label class="small">ρ: <strong id="s19rhoLabel" style="color:var(--amber);">0.30</strong></label>
+        <input type="range" id="s19slider" min="-100" max="100" value="30" style="width:100%;accent-color:var(--amber);" oninput="s19Update()">
+      </div>
+    </div>
+    <div>
+      <table class="data-table compact-table" style="font-size:0.78rem;">
+        <thead><tr><th>w<sub>E</sub></th><th>E(r)</th><th>ρ=−1</th><th>ρ=0</th><th>ρ=.30</th><th>ρ=1</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0%</td><td class="num">5.0</td><td class="num">8.3</td><td class="num">8.3</td><td class="num">8.3</td><td class="num">8.3</td></tr>
+          <tr><td class="num">20%</td><td class="num">6.0</td><td class="num">4.3</td><td class="num">7.0</td><td class="num">7.6</td><td class="num">10.3</td></tr>
+          <tr><td class="num">40%</td><td class="num">7.0</td><td class="num">0.4</td><td class="num">7.8</td><td class="num">8.8</td><td class="num">12.4</td></tr>
+          <tr><td class="num">60%</td><td class="num">8.0</td><td class="num">4.0</td><td class="num">10.1</td><td class="num">11.2</td><td class="num">14.5</td></tr>
+          <tr><td class="num">80%</td><td class="num">9.0</td><td class="num">8.4</td><td class="num">13.2</td><td class="num">14.2</td><td class="num">16.5</td></tr>
+          <tr><td class="num">100%</td><td class="num">10.0</td><td class="num">18.6</td><td class="num">18.6</td><td class="num">18.6</td><td class="num">18.6</td></tr>
+        </tbody>
+      </table>
+      <div class="analogy" style="margin-top:8px;">
+        <p class="small"><strong>Lower ρ → more curvature → more diversification.</strong> At ρ = −1 the frontier touches the y-axis (zero risk). At ρ = +1 it's a straight line (no benefit).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS19');
+  const ctx = canvas.getContext('2d');
+  const W = 480, H = 340;
+  const erD=5, erE=10, sdD=8.27, sdE=18.63;
+  const varD=sdD*sdD, varE=sdE*sdE;
+  let overlays = [];
+  const colors = ['#ef4444','#f59e0b','#22c55e','#38bdf8','#a78bfa','#f472b6'];
+
+  function pSD(wE,rho) {
+    const wD=1-wE, c=rho*sdD*sdE;
+    return Math.sqrt(Math.max(wD*wD*varD+wE*wE*varE+2*wD*wE*c,0));
+  }
+  function pER(wE) { return (1-wE)*erD+wE*erE; }
+
+  function draw() {
+    const rho = parseInt(document.getElementById('s19slider').value)/100;
+    ctx.clearRect(0,0,W,H);
+    const left=55,right=W-20,top=20,bottom=H-35;
+    const chartW=right-left, chartH=bottom-top;
+    const minSD=0,maxSD=22,minER=3,maxER=12;
+    function toX(sd){return left+((sd-minSD)/(maxSD-minSD))*chartW;}
+    function toY(er){return bottom-((er-minER)/(maxER-minER))*chartH;}
+
+    // Axes
+    ctx.strokeStyle='#334155';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='right';
+    for(let v=4;v<=11;v++){ctx.fillText(v+'%',left-6,toY(v)+3);ctx.strokeStyle='rgba(148,163,184,0.06)';ctx.beginPath();ctx.moveTo(left,toY(v));ctx.lineTo(right,toY(v));ctx.stroke();}
+    ctx.textAlign='center';
+    for(let v=0;v<=20;v+=4){ctx.fillStyle='#94a3b8';ctx.fillText(v+'%',toX(v),bottom+13);}
+    ctx.fillText('σ (%)',(left+right)/2,bottom+28);
+    ctx.save();ctx.translate(12,(top+bottom)/2);ctx.rotate(-Math.PI/2);ctx.fillStyle='#94a3b8';ctx.font='11px Inter, sans-serif';ctx.fillText('E(rP) %',0,0);ctx.restore();
+
+    // Reference ghosts ρ = -1, 0, +1
+    [{r:-1,d:[3,3]},{r:0,d:[6,3]},{r:1,d:[2,2]}].forEach(g => {
+      ctx.setLineDash(g.d);ctx.strokeStyle='rgba(148,163,184,0.12)';ctx.lineWidth=1;
+      ctx.beginPath();
+      for(let w=0;w<=100;w++){const sd=pSD(w/100,g.r),er=pER(w/100);if(w===0)ctx.moveTo(toX(sd),toY(er));else ctx.lineTo(toX(sd),toY(er));}
+      ctx.stroke();
+      // tiny label
+      ctx.setLineDash([]);ctx.fillStyle='rgba(148,163,184,0.3)';ctx.font='9px Inter, sans-serif';ctx.textAlign='left';
+      const lsd=pSD(0.9,g.r),ler=pER(0.9);
+      ctx.fillText('ρ='+g.r,toX(lsd)+4,toY(ler));
+    });
+    ctx.setLineDash([]);
+
+    // Saved overlays
+    overlays.forEach((o,i) => {
+      ctx.strokeStyle=o.color;ctx.lineWidth=2;ctx.globalAlpha=0.6;
+      ctx.beginPath();
+      for(let w=0;w<=100;w++){const sd=pSD(w/100,o.rho),er=pER(w/100);if(w===0)ctx.moveTo(toX(sd),toY(er));else ctx.lineTo(toX(sd),toY(er));}
+      ctx.stroke();
+      ctx.globalAlpha=1;
+      ctx.fillStyle=o.color;ctx.font='bold 10px monospace';ctx.textAlign='left';
+      ctx.fillText('ρ='+o.rho.toFixed(2),toX(pSD(0.05,o.rho))+4,toY(pER(0.05)));
+    });
+
+    // Current curve
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=3;
+    ctx.beginPath();
+    let mvpSD2=999,mvpER2=0;
+    for(let w=0;w<=100;w++){
+      const sd=pSD(w/100,rho),er=pER(w/100);
+      if(sd<mvpSD2){mvpSD2=sd;mvpER2=er;}
+      if(w===0)ctx.moveTo(toX(sd),toY(er));else ctx.lineTo(toX(sd),toY(er));
+    }
+    ctx.stroke();
+
+    // MVP
+    ctx.beginPath();ctx.arc(toX(mvpSD2),toY(mvpER2),5,0,Math.PI*2);
+    ctx.fillStyle='#22c55e';ctx.fill();
+    ctx.fillStyle='#22c55e';ctx.font='9px Inter, sans-serif';ctx.textAlign='left';
+    ctx.fillText('MVP σ='+mvpSD2.toFixed(1)+'%',toX(mvpSD2)+8,toY(mvpER2)+3);
+
+    // Endpoints
+    ctx.beginPath();ctx.arc(toX(sdD),toY(erD),4,0,Math.PI*2);ctx.fillStyle='#38bdf8';ctx.fill();
+    ctx.beginPath();ctx.arc(toX(sdE),toY(erE),4,0,Math.PI*2);ctx.fillStyle='#6366f1';ctx.fill();
+
+    // ρ label
+    ctx.fillStyle='#f59e0b';ctx.font='bold 14px Inter, sans-serif';ctx.textAlign='left';
+    ctx.fillText('ρ = '+rho.toFixed(2),left+10,top+16);
+  }
+
+  window.s19Update = function(){
+    document.getElementById('s19rhoLabel').textContent=(parseInt(document.getElementById('s19slider').value)/100).toFixed(2);
+    draw();
+  };
+  window.s19AddRho = function(){
+    const rho=parseInt(document.getElementById('s19slider').value)/100;
+    if(overlays.length>=6) overlays.shift();
+    overlays.push({rho:rho,color:colors[overlays.length%colors.length]});
+    draw();
+  };
+  window.s19Clear = function(){ overlays=[]; draw(); };
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s19').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s19'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s20: Markowitz & MVP ==================== -->
+<div class="slide" id="s20" data-notes="Web app Modules 2-4. Markowitz 1952 paper + MVP formula. Interactive: change σD, σE, ρ and see MVP weight update instantly.">
+  <span class="label">Efficient Frontier</span>
+  <span class="source-tag">Web App: Modules 2–4</span>
+  <h2>Markowitz Optimization &amp; MVP</h2>
+  <div class="cols">
+    <div>
+      <h3>The 1952 Revolution</h3>
+      <p class="small">Harry Markowitz showed portfolio selection should be based on <strong>mean and variance</strong>. Nobel Prize 1990.</p>
+      <div class="formula" style="font-size:0.95rem;margin-top:8px;">
+        <strong>Minimize:</strong> σ²<sub>P</sub> = <strong>w</strong>ʹ<strong>Σw</strong><br>
+        <strong>Subject to:</strong> <strong>w</strong>ʹ<strong>μ</strong> = target, <strong>w</strong>ʹ<strong>1</strong> = 1
+      </div>
+      <h3 style="margin-top:12px;">MVP Weight Formula</h3>
+      <div class="formula" style="font-size:0.9rem;">
+        w<sub>D</sub>* = (σ²<sub>E</sub> − Cov) / (σ²<sub>D</sub> + σ²<sub>E</sub> − 2·Cov)
+      </div>
+      <div class="key-idea" style="margin-top:8px;">
+        <p class="small"><strong>Key insight:</strong> MVP depends <em>only</em> on risk parameters — not expected returns. It's purely defensive.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>MVP Calculator</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.85rem;">
+          <label class="small">σ<sub>D</sub> (%): <input type="number" id="s20sdD" value="8.27" style="width:70px;padding:3px 6px;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:monospace;" onchange="s20Calc()"></label>
+          <label class="small">σ<sub>E</sub> (%): <input type="number" id="s20sdE" value="18.63" style="width:70px;padding:3px 6px;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:monospace;" onchange="s20Calc()"></label>
+          <label class="small" style="grid-column:span 2;">ρ: <input type="number" id="s20rho" value="-0.49" step="0.1" min="-1" max="1" style="width:70px;padding:3px 6px;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:monospace;" onchange="s20Calc()"></label>
+        </div>
+        <div id="s20result" style="margin-top:10px;font-size:0.9rem;line-height:1.7;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.s20Calc = function(){
+    const sdD=parseFloat(document.getElementById('s20sdD').value);
+    const sdE=parseFloat(document.getElementById('s20sdE').value);
+    const rho=parseFloat(document.getElementById('s20rho').value);
+    if(isNaN(sdD)||isNaN(sdE)||isNaN(rho))return;
+    const varD=sdD*sdD,varE=sdE*sdE,cov=rho*sdD*sdE;
+    const wD=(varE-cov)/(varD+varE-2*cov);
+    const wE=1-wD;
+    const portVar=wD*wD*varD+wE*wE*varE+2*wD*wE*cov;
+    const portSD=Math.sqrt(Math.max(portVar,0));
+    document.getElementById('s20result').innerHTML=
+      '<strong style="color:var(--accent)">MVP Weights:</strong><br>'+
+      'w<sub>D</sub>* = <strong>'+wD.toFixed(4)+'</strong> ('+(wD*100).toFixed(1)+'%)<br>'+
+      'w<sub>E</sub>* = <strong>'+wE.toFixed(4)+'</strong> ('+(wE*100).toFixed(1)+'%)<br>'+
+      'σ<sub>MVP</sub> = <strong>'+portSD.toFixed(2)+'%</strong>';
+  };
+  const obs=new MutationObserver(()=>{if(document.getElementById('s20').classList.contains('active'))s20Calc();});
+  obs.observe(document.getElementById('s20'),{attributes:true,attributeFilter:['class']});
+  s20Calc();
+})();
+</script>
+
+<!-- ==================== sCC: Challenge — Calculate MVP & Sharpe ==================== -->
+<div class="slide" id="sCC" data-notes="Challenge: given new parameters, calculate MVP weight, portfolio SD, and Sharpe ratio.">
+  <span class="label" style="color:var(--amber);">Challenge C</span>
+  <h2>Challenge: MVP &amp; Sharpe Ratio</h2>
+  <p>Given: σ<sub>D</sub>=12%, σ<sub>E</sub>=20%, ρ=0.10, E(r<sub>D</sub>)=6%, E(r<sub>E</sub>)=12%, r<sub>f</sub>=3%</p>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:12px;">
+    <div class="card">
+      <h3>1. MVP w<sub>D</sub>*</h3>
+      <input type="text" id="sCCin1" placeholder="e.g. 0.65" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCCr1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>2. MVP σ<sub>P</sub></h3>
+      <input type="text" id="sCCin2" placeholder="e.g. 10.5%" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCCr2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>3. Tangency Sharpe</h3>
+      <p class="small">If tangency has E(r)=10.2%, σ=14.8%</p>
+      <input type="text" id="sCCin3" placeholder="e.g. 0.48" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sCCr3" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sCCCheck()">Check Answers</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sCCReveal()">Show Solution</button>
+  </div>
+  <div id="sCCsol" style="display:none;margin-top:10px;" class="key-idea">
+    <p class="small"><strong>1.</strong> Cov = 0.10(12)(20) = 24. w<sub>D</sub>* = (400−24)/(144+400−48) = 376/496 = <strong>0.7581</strong></p>
+    <p class="small"><strong>2.</strong> σ² = (.758)²(144)+(.242)²(400)+2(.758)(.242)(24) = 82.73+23.43+8.81 = 114.97 → σ = <strong>10.72%</strong></p>
+    <p class="small"><strong>3.</strong> S = (10.2−3)/14.8 = 7.2/14.8 = <strong>0.486</strong></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  window.sCCCheck = function(){
+    const pairs = [
+      {id:'sCCin1',rid:'sCCr1',ans:0.758,tol:0.02},
+      {id:'sCCin2',rid:'sCCr2',ans:10.72,tol:0.5},
+      {id:'sCCin3',rid:'sCCr3',ans:0.486,tol:0.02}
+    ];
+    pairs.forEach(p => {
+      const v = parseFloat(document.getElementById(p.id).value);
+      const r = document.getElementById(p.rid);
+      if(isNaN(v)){r.textContent='';return;}
+      if(Math.abs(v-p.ans)<p.tol){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+      else{r.textContent='✗ Try again';r.style.color='#ef4444';}
+    });
+  };
+  window.sCCReveal = function(){
+    const el=document.getElementById('sCCsol');
+    el.style.display=el.style.display==='none'?'block':'none';
+  };
+})();
+</script>
+
+<!-- ==================== s21: Section Divider V ==================== -->
+<div class="slide section-slide" id="s21" data-notes="Section V: adding the risk-free asset transforms the curved frontier into a straight line — the Capital Allocation Line.">
+  <div class="section-num">V</div>
+  <h2>Risk-Free Asset &amp; Optimal Portfolio</h2>
+  <p class="subtitle">From curves to lines — the Capital Allocation Line</p>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s22: Interactive CAL & Tangency ==================== -->
+<div class="slide" id="s22" data-notes="Textbook Slides 17-19. THE key visual: the CAL tangent to the efficient frontier. Interactive: drag the tangent point along the frontier and see the Sharpe ratio change. Optimal P maximizes S.">
+  <span class="label">CAL &amp; Tangency</span>
+  <span class="source-tag">Bodie Ch. 6, Slides 17–19</span>
+  <h2>Interactive: CAL &amp; Tangency Portfolio</h2>
+  <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS22" width="500" height="350"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">Tangent point w<sub>E</sub>: <strong id="s22wLabel">60%</strong></label>
+        <input type="range" id="s22slider" min="20" max="100" value="60" style="width:100%;accent-color:var(--amber);" oninput="s22Update()">
+      </div>
+    </div>
+    <div>
+      <div id="s22detail" class="card" style="font-size:0.88rem;line-height:1.7;"></div>
+      <div style="margin-top:8px;text-align:center;">
+        <button class="btn btn-sm" onclick="s22FindOptimal()">Find Optimal P</button>
+      </div>
+      <div class="key-idea" style="margin-top:8px;">
+        <p class="small"><strong>The steepest CAL wins!</strong> The tangent point that maximizes the Sharpe ratio is the optimal risky portfolio P.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('cS22');
+  const ctx = canvas.getContext('2d');
+  const W = 500, H = 350;
+
+  const erD=5,erE=10,sdD=8.27,sdE=18.63,rho=-0.49,rf=5;
+  const varD=sdD*sdD,varE=sdE*sdE,cov=rho*sdD*sdE;
+
+  function pSD(wE){const wD=1-wE;return Math.sqrt(Math.max(wD*wD*varD+wE*wE*varE+2*wD*wE*cov,0));}
+  function pER(wE){return(1-wE)*erD+wE*erE;}
+
+  // Find true optimal (max Sharpe)
+  let optWE=0,optS=-999;
+  for(let w=1;w<=100;w++){
+    const wE=w/100,sd=pSD(wE),er=pER(wE);
+    if(sd>0){const s=(er-rf)/sd;if(s>optS){optS=s;optWE=wE;}}
+  }
+
+  function draw(){
+    const wE=parseInt(document.getElementById('s22slider').value)/100;
+    ctx.clearRect(0,0,W,H);
+    const left=55,right=W-20,top=20,bottom=H-35;
+    const chartW=right-left,chartH=bottom-top;
+    const minSD=0,maxSD=24,minER=3,maxER=14;
+    function toX(sd){return left+((sd-minSD)/(maxSD-minSD))*chartW;}
+    function toY(er){return bottom-((er-minER)/(maxER-minER))*chartH;}
+
+    // Axes
+    ctx.strokeStyle='#334155';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='right';
+    for(let v=4;v<=13;v++){ctx.fillText(v+'%',left-6,toY(v)+3);ctx.strokeStyle='rgba(148,163,184,0.06)';ctx.beginPath();ctx.moveTo(left,toY(v));ctx.lineTo(right,toY(v));ctx.stroke();}
+    ctx.textAlign='center';
+    for(let v=0;v<=22;v+=4){ctx.fillStyle='#94a3b8';ctx.fillText(v+'%',toX(v),bottom+13);}
+    ctx.fillText('σ (%)',(left+right)/2,bottom+28);
+    ctx.save();ctx.translate(12,(top+bottom)/2);ctx.rotate(-Math.PI/2);ctx.fillStyle='#94a3b8';ctx.font='11px Inter, sans-serif';ctx.fillText('E(rP) %',0,0);ctx.restore();
+
+    // Efficient frontier
+    let mvpWE2=0,mvpSD2=999;
+    for(let w=0;w<=100;w++){const sd=pSD(w/100);if(sd<mvpSD2){mvpSD2=sd;mvpWE2=w/100;}}
+    // Inefficient
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(99,102,241,0.3)';ctx.lineWidth=2;
+    ctx.beginPath();
+    for(let w=0;w<=Math.round(mvpWE2*100);w++){const sd=pSD(w/100),er=pER(w/100);if(w===0)ctx.moveTo(toX(sd),toY(er));else ctx.lineTo(toX(sd),toY(er));}
+    ctx.stroke();ctx.setLineDash([]);
+    // Efficient
+    ctx.strokeStyle='#6366f1';ctx.lineWidth=2.5;
+    ctx.beginPath();
+    for(let w=Math.round(mvpWE2*100);w<=100;w++){const sd=pSD(w/100),er=pER(w/100);if(w===Math.round(mvpWE2*100))ctx.moveTo(toX(sd),toY(er));else ctx.lineTo(toX(sd),toY(er));}
+    ctx.stroke();
+
+    // rf point
+    ctx.beginPath();ctx.arc(toX(0),toY(rf),5,0,Math.PI*2);
+    ctx.fillStyle='#f59e0b';ctx.fill();
+    ctx.fillStyle='#f59e0b';ctx.font='10px Inter, sans-serif';ctx.textAlign='left';
+    ctx.fillText('rf='+rf+'%',toX(0)+8,toY(rf)+3);
+
+    // CAL from rf through tangent point, extended
+    const tangSD=pSD(wE),tangER=pER(wE);
+    const sharpe=tangSD>0?(tangER-rf)/tangSD:0;
+    // Line: er = rf + sharpe * sd
+    const calEndSD=maxSD;
+    const calEndER=rf+sharpe*calEndSD;
+
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.globalAlpha=0.8;
+    ctx.beginPath();ctx.moveTo(toX(0),toY(rf));ctx.lineTo(toX(calEndSD),toY(Math.min(calEndER,maxER)));
+    ctx.stroke();ctx.globalAlpha=1;
+
+    // Optimal CAL ghost if not at optimal
+    if(Math.abs(wE-optWE)>0.05){
+      const optSD=pSD(optWE),optER2=pER(optWE);
+      const optEndER=rf+optS*maxSD;
+      ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(34,197,94,0.3)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(toX(0),toY(rf));ctx.lineTo(toX(calEndSD),toY(Math.min(optEndER,maxER)));
+      ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='rgba(34,197,94,0.4)';ctx.font='9px Inter, sans-serif';ctx.textAlign='left';
+      ctx.fillText('Optimal CAL',toX(calEndSD)-70,toY(Math.min(optEndER,maxER))-4);
+    }
+
+    // Tangent point
+    ctx.beginPath();ctx.arc(toX(tangSD),toY(tangER),7,0,Math.PI*2);
+    ctx.fillStyle='#f59e0b';ctx.fill();
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 10px monospace';ctx.textAlign='center';
+    ctx.fillText('P',toX(tangSD),toY(tangER)+4);
+
+    // Endpoints
+    ctx.beginPath();ctx.arc(toX(sdD),toY(erD),4,0,Math.PI*2);ctx.fillStyle='#38bdf8';ctx.fill();
+    ctx.fillStyle='#94a3b8';ctx.font='9px Inter, sans-serif';ctx.textAlign='left';ctx.fillText('D',toX(sdD)+6,toY(erD));
+    ctx.beginPath();ctx.arc(toX(sdE),toY(erE),4,0,Math.PI*2);ctx.fillStyle='#6366f1';ctx.fill();
+    ctx.textAlign='right';ctx.fillText('E',toX(sdE)-6,toY(erE));
+
+    // Sharpe label
+    ctx.fillStyle='#f59e0b';ctx.font='bold 14px Inter, sans-serif';ctx.textAlign='left';
+    ctx.fillText('S = '+sharpe.toFixed(3),left+10,top+16);
+    const isOpt=Math.abs(wE-optWE)<0.05;
+    if(isOpt){ctx.fillStyle='#22c55e';ctx.fillText(' ★ Optimal!',left+110,top+16);}
+
+    // Detail panel
+    document.getElementById('s22detail').innerHTML=
+      '<strong style="color:var(--amber)">Tangency Portfolio P:</strong><br>'+
+      'w<sub>E</sub> = '+(wE*100).toFixed(0)+'%, w<sub>D</sub> = '+((1-wE)*100).toFixed(0)+'%<br>'+
+      'E(r<sub>P</sub>) = <strong>'+tangER.toFixed(1)+'%</strong><br>'+
+      'σ<sub>P</sub> = <strong>'+tangSD.toFixed(1)+'%</strong><br>'+
+      '<hr style="border-color:var(--border);margin:4px 0;">'+
+      'Sharpe Ratio = ('+tangER.toFixed(1)+' − '+rf+') / '+tangSD.toFixed(1)+' = <strong style="color:var(--amber)">'+sharpe.toFixed(3)+'</strong><br>'+
+      (isOpt?'<span style="color:#22c55e;font-weight:600;">★ This is the optimal risky portfolio!</span>':
+      '<span style="color:var(--text-muted)">Optimal Sharpe = '+optS.toFixed(3)+' at w<sub>E</sub> = '+(optWE*100).toFixed(0)+'%</span>');
+  }
+
+  window.s22Update = function(){
+    document.getElementById('s22wLabel').textContent=document.getElementById('s22slider').value+'%';
+    draw();
+  };
+  window.s22FindOptimal = function(){
+    document.getElementById('s22slider').value=Math.round(optWE*100);
+    document.getElementById('s22wLabel').textContent=Math.round(optWE*100)+'%';
+    draw();
+  };
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s22').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s22'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s23: Tangency Portfolio Formula ==================== -->
+<div class="slide" id="s23" data-notes="Textbook Slide 20. Closed-form tangency portfolio weights. Walk through the numerical example with our stock/bond fund data.">
+  <span class="label">CAL &amp; Tangency</span>
+  <span class="source-tag">Bodie Ch. 6, Slide 20</span>
+  <h2>Tangency Portfolio Formula</h2>
+  <p>The weight in bonds that <strong>maximizes the Sharpe ratio</strong>:</p>
+  <div class="formula formula-center" style="font-size:0.95rem;line-height:2;">
+    w<sub>D</sub> = { [E(r<sub>D</sub>)−r<sub>f</sub>]σ²<sub>E</sub> − [E(r<sub>E</sub>)−r<sub>f</sub>]Cov } / { [E(r<sub>D</sub>)−r<sub>f</sub>]σ²<sub>E</sub> + [E(r<sub>E</sub>)−r<sub>f</sub>]σ²<sub>D</sub> − [E(r<sub>D</sub>)−r<sub>f</sub>+E(r<sub>E</sub>)−r<sub>f</sub>]Cov }
+  </div>
+  <div class="formula" style="font-size:0.9rem;margin-top:6px;text-align:center;">
+    where &nbsp; <strong>Cov(r<sub>D</sub>, r<sub>E</sub>) = ρ<sub>DE</sub> · σ<sub>D</sub> · σ<sub>E</sub></strong>
+  </div>
+  <div class="card" style="margin-top:10px;">
+    <h3>Numerical Example</h3>
+    <p class="small">E(r<sub>D</sub>)=5%, E(r<sub>E</sub>)=10%, r<sub>f</sub>=5%, σ<sub>D</sub>=8.27%, σ<sub>E</sub>=18.63%, ρ<sub>DE</sub>=−0.49</p>
+    <div class="formula" style="font-size:0.9rem;">
+      Cov = ρ·σ<sub>D</sub>·σ<sub>E</sub> = −0.49 × 8.27 × 18.63 = <strong>−74.8</strong><br>
+      Numerator = (5−5)(347.1) − (10−5)(−74.8) = 0 + 374 = 374<br>
+      Denominator = (5−5)(347.1) + (10−5)(68.4) − (0+5)(−74.8) = 0 + 342 + 374 = 716<br>
+      w<sub>D</sub> = 374/716 = <strong>0.5223</strong>, w<sub>E</sub> = <strong>0.4777</strong>
+    </div>
+    <p class="small" style="margin-top:6px;">→ E(r<sub>P</sub>) = 0.52(5) + 0.48(10) = <strong>7.39%</strong>, σ<sub>P</sub> = <strong>5.62%</strong>, <strong>S = 0.42</strong></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s24: Risk-Free & CML ==================== -->
+<div class="slide" id="s24" data-notes="Web app Module 6. The CML is the optimal CAL using the market portfolio. Interactive: slider adjusts allocation between rf and the risky portfolio.">
+  <span class="label">CML &amp; Complete Portfolio</span>
+  <span class="source-tag">Web App: Module 6</span>
+  <h2>Capital Market Line (CML)</h2>
+  <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="cS24" width="480" height="320"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">Allocation to risky portfolio (y): <strong id="s24yLabel">70%</strong></label>
+        <input type="range" id="s24slider" min="-30" max="150" value="70" style="width:100%;accent-color:var(--green);" oninput="s24Update()">
+      </div>
+    </div>
+    <div>
+      <div id="s24detail" class="card" style="font-size:0.88rem;line-height:1.7;"></div>
+      <div class="formula" style="font-size:0.9rem;margin-top:8px;">
+        E(r<sub>C</sub>) = r<sub>f</sub> + y·[E(r<sub>P</sub>) − r<sub>f</sub>]<br>
+        σ<sub>C</sub> = y · σ<sub>P</sub>
+      </div>
+      <div class="analogy" style="margin-top:6px;">
+        <p class="small"><strong>y &gt; 100%</strong> means <em>borrowing</em> at r<sub>f</sub> to invest more than your wealth in the risky portfolio (leverage).</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS24');
+  const ctx=canvas.getContext('2d');
+  const W=480,H=320;
+  const rf=5,erP=7.39,sdP=5.62;
+  // Also draw frontier ghost
+  const erD=5,erE=10,sdD=8.27,sdE=18.63,rho=-0.49;
+  const varD=sdD*sdD,varE=sdE*sdE,covDE=rho*sdD*sdE;
+  function fSD(wE){const wD=1-wE;return Math.sqrt(Math.max(wD*wD*varD+wE*wE*varE+2*wD*wE*covDE,0));}
+  function fER(wE){return(1-wE)*erD+wE*erE;}
+
+  function draw(){
+    const y=parseInt(document.getElementById('s24slider').value)/100;
+    ctx.clearRect(0,0,W,H);
+    const left=55,right=W-20,top=20,bottom=H-30;
+    const chartW=right-left,chartH=bottom-top;
+    const minSD=0,maxSD=22,minER=3,maxER=14;
+    function toX(sd){return left+((sd-minSD)/(maxSD-minSD))*chartW;}
+    function toY(er){return bottom-((er-minER)/(maxER-minER))*chartH;}
+
+    // Axes
+    ctx.strokeStyle='#334155';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='right';
+    for(let v=4;v<=13;v+=2){ctx.fillText(v+'%',left-6,toY(v)+3);ctx.strokeStyle='rgba(148,163,184,0.06)';ctx.beginPath();ctx.moveTo(left,toY(v));ctx.lineTo(right,toY(v));ctx.stroke();}
+    ctx.textAlign='center';
+    for(let v=0;v<=20;v+=4){ctx.fillStyle='#94a3b8';ctx.fillText(v+'%',toX(v),bottom+13);}
+
+    // Frontier ghost
+    ctx.strokeStyle='rgba(99,102,241,0.25)';ctx.lineWidth=2;
+    ctx.beginPath();
+    for(let w=0;w<=100;w++){const sd=fSD(w/100),er=fER(w/100);if(w===0)ctx.moveTo(toX(sd),toY(er));else ctx.lineTo(toX(sd),toY(er));}
+    ctx.stroke();
+
+    // CML line
+    const sharpe=(erP-rf)/sdP;
+    const cmlEndSD=maxSD;
+    const cmlEndER=rf+sharpe*cmlEndSD;
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(toX(0),toY(rf));ctx.lineTo(toX(cmlEndSD),toY(Math.min(cmlEndER,maxER)));ctx.stroke();
+    ctx.fillStyle='#22c55e';ctx.font='bold 11px Inter, sans-serif';ctx.textAlign='left';
+    ctx.fillText('CML',toX(cmlEndSD)-35,toY(Math.min(cmlEndER,maxER))-6);
+
+    // Tangency point P
+    ctx.beginPath();ctx.arc(toX(sdP),toY(erP),5,0,Math.PI*2);
+    ctx.fillStyle='#f59e0b';ctx.fill();
+    ctx.fillStyle='#f59e0b';ctx.font='bold 10px Inter, sans-serif';ctx.textAlign='left';
+    ctx.fillText('P (tangency)',toX(sdP)+8,toY(erP)-2);
+
+    // rf point
+    ctx.beginPath();ctx.arc(toX(0),toY(rf),4,0,Math.PI*2);
+    ctx.fillStyle='#f59e0b';ctx.fill();
+
+    // Current point on CML
+    const curSD=y*sdP;
+    const curER=rf+y*(erP-rf);
+    ctx.beginPath();ctx.arc(toX(Math.abs(curSD)),toY(curER),8,0,Math.PI*2);
+    const isLev=y>1;
+    ctx.fillStyle=isLev?'#ef4444':y<0?'#94a3b8':'#38bdf8';
+    ctx.fill();ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=2;ctx.stroke();
+
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.fillText('C',toX(Math.abs(curSD)),toY(curER)+4);
+    ctx.fillText('('+Math.abs(curSD).toFixed(1)+'%, '+curER.toFixed(1)+'%)',toX(Math.abs(curSD)),toY(curER)-14);
+
+    // Labels
+    let investorType='';
+    if(y<=0)investorType='100% risk-free (or short risky)';
+    else if(y<=0.5)investorType='Conservative';
+    else if(y<=1)investorType='Moderate';
+    else investorType='Leveraged (borrowing '+(((y-1)*100).toFixed(0))+'%)';
+
+    document.getElementById('s24detail').innerHTML=
+      '<strong style="color:var(--green)">Complete Portfolio C:</strong><br>'+
+      'y = '+(y*100).toFixed(0)+'% in risky P, '+(((1-y)*100).toFixed(0))+'% in r<sub>f</sub><br>'+
+      'E(r<sub>C</sub>) = '+rf+' + '+(y).toFixed(2)+'('+erP.toFixed(1)+'−'+rf+') = <strong>'+curER.toFixed(1)+'%</strong><br>'+
+      'σ<sub>C</sub> = '+(y).toFixed(2)+' × '+sdP.toFixed(1)+' = <strong>'+Math.abs(curSD).toFixed(1)+'%</strong><br>'+
+      '<hr style="border-color:var(--border);margin:4px 0;">'+
+      'Sharpe = <strong>'+(Math.abs(curSD)>0?((curER-rf)/Math.abs(curSD)).toFixed(3):'—')+'</strong> (constant along CML)<br>'+
+      '<span style="color:var(--accent3);">Type: '+investorType+'</span>';
+  }
+
+  window.s24Update=function(){
+    document.getElementById('s24yLabel').textContent=document.getElementById('s24slider').value+'%';
+    draw();
+  };
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s24').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s24'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s25: Separation Theorem & Leverage ==================== -->
+<div class="slide" id="s25" data-notes="Web app Module 6. Tobin's Separation Theorem + leverage. All investors hold the same risky portfolio, differing only in how much they allocate to it.">
+  <span class="label">CML &amp; Complete Portfolio</span>
+  <span class="source-tag">Web App: Module 6</span>
+  <h2>Separation Theorem &amp; Leverage</h2>
+  <div class="cols">
+    <div>
+      <div class="card" style="text-align:center; border-color:var(--accent);">
+        <h3 style="color:var(--accent);">1. Investment Decision</h3>
+        <p class="small">Find <strong>optimal risky portfolio</strong> P (tangency). Same for ALL investors.</p>
+      </div>
+      <div class="card" style="text-align:center; border-color:var(--green);">
+        <h3 style="color:var(--green);">2. Financing Decision</h3>
+        <p class="small">Choose position on CML (mix of P and r<sub>f</sub>). Depends on <strong>risk aversion</strong>.</p>
+      </div>
+    </div>
+    <div>
+      <table class="data-table compact-table">
+        <thead><tr><th>Investor</th><th>y</th><th>E(r<sub>C</sub>)</th><th>σ<sub>C</sub></th></tr></thead>
+        <tbody>
+          <tr><td>Conservative</td><td class="num">30%</td><td class="num">5.7%</td><td class="num">1.7%</td></tr>
+          <tr><td>Moderate</td><td class="num">70%</td><td class="num">6.7%</td><td class="num">3.9%</td></tr>
+          <tr><td>Aggressive</td><td class="num">100%</td><td class="num">7.4%</td><td class="num">5.6%</td></tr>
+          <tr style="color:var(--red)"><td>Leveraged</td><td class="num">150%</td><td class="num">8.6%</td><td class="num">8.4%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="warning" style="margin-top:8px;">
+    <p><strong>Leverage caveat:</strong> In practice, borrowing rates exceed r<sub>f</sub>, so the CML kinks downward beyond y=100%. The Sharpe ratio is <em>not</em> preserved when borrowing costs are higher.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== s26: Utility & Complete Portfolio — Interactive ==================== -->
+<div class="slide" id="s26" data-notes="Web app Module 6. Interactive: adjust risk aversion A and see how the optimal allocation y* and portfolio position change on the CML.">
+  <span class="label">Complete Portfolio</span>
+  <span class="source-tag">Web App: Module 6</span>
+  <h2>Interactive: Utility &amp; Optimal Allocation</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 6px;">
+    <div>
+      <div class="formula formula-center" style="font-size:1.15rem;">
+        U = E(r) − ½ A σ²
+      </div>
+      <div class="formula formula-center" style="font-size:1.15rem;">
+        y* = [E(r<sub>P</sub>) − r<sub>f</sub>] / (A · σ²<sub>P</sub>)
+      </div>
+      <div class="canvas-wrap" style="margin-top:8px;">
+        <canvas id="cS26" width="420" height="240"></canvas>
+      </div>
+      <div style="margin-top:6px;">
+        <label class="small">Risk Aversion A: <strong id="s26aLabel" style="color:var(--amber);">4.0</strong></label>
+        <input type="range" id="s26slider" min="10" max="100" value="40" style="width:100%;accent-color:var(--amber);" oninput="s26Update()">
+      </div>
+    </div>
+    <div>
+      <div id="s26detail" class="card" style="font-size:0.9rem;line-height:1.7;"></div>
+      <table class="data-table compact-table" style="margin-top:8px;">
+        <thead><tr><th>A</th><th>y*</th><th>E(r<sub>C</sub>)</th><th>σ<sub>C</sub></th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td class="num">2</td><td class="num">149%</td><td class="num">8.6%</td><td class="num">8.4%</td><td>Very aggressive</td></tr>
+          <tr><td class="num">4</td><td class="num">75%</td><td class="num">6.8%</td><td class="num">4.2%</td><td>Moderate</td></tr>
+          <tr><td class="num">6</td><td class="num">50%</td><td class="num">6.2%</td><td class="num">2.8%</td><td>Conservative</td></tr>
+          <tr><td class="num">8</td><td class="num">37%</td><td class="num">5.9%</td><td class="num">2.1%</td><td>Very conserv.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS26');
+  const ctx=canvas.getContext('2d');
+  const W=420,H=240;
+  const rf=5,erP=7.39,sdP=5.62,varP=sdP*sdP;
+
+  function draw(){
+    const A=parseInt(document.getElementById('s26slider').value)/10;
+    const yStar=(erP-rf)/(A*varP/100); // note: varP in %² so divide
+    // Actually: y* = (E(rP)-rf) / (A * σP²)
+    // With σP in %, E(r) in %: y* = (7.39-5)/(A * 31.58) = 2.39/(A*31.58)
+    const yS = (erP - rf) / (A * varP / 100);
+    const curSD = yS * sdP;
+    const curER = rf + yS * (erP - rf);
+
+    ctx.clearRect(0,0,W,H);
+    const left=45,right=W-15,top=15,bottom=H-25;
+    const chartW=right-left,chartH=bottom-top;
+    const minSD=0,maxSD=12,minER=4,maxER=10;
+    function toX(sd){return left+((sd-minSD)/(maxSD-minSD))*chartW;}
+    function toY(er){return bottom-((er-minER)/(maxER-minER))*chartH;}
+
+    // Axes
+    ctx.strokeStyle='#334155';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.font='9px monospace';ctx.textAlign='right';
+    for(let v=5;v<=9;v++){ctx.fillText(v+'%',left-4,toY(v)+3);}
+    ctx.textAlign='center';
+    for(let v=0;v<=10;v+=2){ctx.fillStyle='#94a3b8';ctx.fillText(v+'%',toX(v),bottom+12);}
+
+    // CML
+    const sharpe=(erP-rf)/sdP;
+    ctx.strokeStyle='#22c55e';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(toX(0),toY(rf));
+    ctx.lineTo(toX(maxSD),toY(rf+sharpe*maxSD));ctx.stroke();
+
+    // Tangency P
+    ctx.beginPath();ctx.arc(toX(sdP),toY(erP),4,0,Math.PI*2);ctx.fillStyle='#f59e0b';ctx.fill();
+    ctx.fillStyle='#f59e0b';ctx.font='9px Inter, sans-serif';ctx.textAlign='left';ctx.fillText('P',toX(sdP)+6,toY(erP)-2);
+
+    // rf
+    ctx.beginPath();ctx.arc(toX(0),toY(rf),3,0,Math.PI*2);ctx.fillStyle='#f59e0b';ctx.fill();
+
+    // Current point
+    const cx=toX(Math.max(0,Math.min(curSD,maxSD)));
+    const cy=toY(Math.max(minER,Math.min(curER,maxER)));
+    ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);
+    ctx.fillStyle='#38bdf8';ctx.fill();ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 9px monospace';ctx.textAlign='center';
+    ctx.fillText('C',cx,cy+3);
+
+    // Indifference curve through C
+    // U = curER - 0.5*A*(curSD/100)²*10000 → hmm let's simplify
+    // U = E(r) - 0.5*A*σ² (all in %)
+    const U = curER - 0.5 * A * (curSD * curSD) / 100;
+    ctx.setLineDash([4,3]);ctx.strokeStyle='rgba(56,189,248,0.4)';ctx.lineWidth=1.5;
+    ctx.beginPath();
+    for(let sd=0;sd<=maxSD;sd+=0.5){
+      const er = U + 0.5 * A * (sd*sd) / 100;
+      const x=toX(sd),yy=toY(er);
+      if(sd===0)ctx.moveTo(x,yy);else if(yy>top-10&&yy<bottom+10)ctx.lineTo(x,yy);
+    }
+    ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(56,189,248,0.5)';ctx.font='9px Inter, sans-serif';ctx.textAlign='left';
+    ctx.fillText('Indifference curve',toX(8),toY(U+0.5*A*64/100)-6);
+
+    let investorType='';
+    if(yS>1.2)investorType='Very aggressive (leveraged)';
+    else if(yS>0.8)investorType='Aggressive';
+    else if(yS>0.5)investorType='Moderate';
+    else if(yS>0.3)investorType='Conservative';
+    else investorType='Very conservative';
+
+    document.getElementById('s26detail').innerHTML=
+      '<strong style="color:var(--amber)">A = '+A.toFixed(1)+'</strong><br>'+
+      'y* = ('+erP.toFixed(1)+' − '+rf+') / ('+A.toFixed(1)+' × '+(varP/100).toFixed(2)+') = <strong>'+(yS*100).toFixed(0)+'%</strong><br>'+
+      'E(r<sub>C</sub>) = <strong>'+curER.toFixed(1)+'%</strong><br>'+
+      'σ<sub>C</sub> = <strong>'+curSD.toFixed(1)+'%</strong><br>'+
+      'U = '+curER.toFixed(1)+' − 0.5('+A.toFixed(1)+')('+(curSD*curSD/100).toFixed(2)+') = <strong>'+U.toFixed(2)+'</strong><br>'+
+      '<span style="color:var(--accent3)">'+investorType+'</span>';
+  }
+
+  window.s26Update=function(){
+    document.getElementById('s26aLabel').textContent=(parseInt(document.getElementById('s26slider').value)/10).toFixed(1);
+    draw();
+  };
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s26').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s26'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s27: Historical Performance — Canvas Bar Chart ==================== -->
+<div class="slide" id="s27" data-notes="Web app Module 1. Historical Ibbotson SBBI data 1926-2023. Canvas bar chart comparing returns and risk across asset classes.">
+  <span class="label">Historical Context</span>
+  <span class="source-tag">Web App: Module 1</span>
+  <h2>Historical Asset Class Performance (1926–2023)</h2>
+  <div class="canvas-wrap" style="margin-top:8px;">
+    <canvas id="cS27" width="800" height="300"></canvas>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-top:8px;justify-content:center;">
+    <button class="btn btn-sm" id="s27btnRet" onclick="s27Toggle('return')" style="opacity:1;">Returns</button>
+    <button class="btn btn-sm" id="s27btnSD" onclick="s27Toggle('sd')" style="opacity:0.5;">Std. Dev.</button>
+    <button class="btn btn-sm" id="s27btnBoth" onclick="s27Toggle('both')" style="opacity:0.5;">Both</button>
+  </div>
+  <div class="key-idea" style="margin-top:8px;">
+    <p><strong>The risk-return trade-off is real:</strong> Higher average returns come with higher volatility. The equity risk premium (~8.9%) is the reward for bearing market risk.</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('cS27');
+  const ctx=canvas.getContext('2d');
+  const W=800,H=300;
+  let mode='return';
+
+  const data=[
+    {name:'Small-Cap',ret:16.1,sd:31.2,color:'#6366f1'},
+    {name:'Large-Cap\n(S&P 500)',ret:12.2,sd:20.0,color:'#38bdf8'},
+    {name:'LT Corp\nBonds',ret:6.5,sd:8.5,color:'#a78bfa'},
+    {name:'LT Gov\'t\nBonds',ret:5.9,sd:9.8,color:'#22c55e'},
+    {name:'T-Bills',ret:3.3,sd:3.1,color:'#f59e0b'},
+    {name:'Inflation',ret:2.9,sd:4.0,color:'#94a3b8'}
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const left=60,right=W-20,top=25,bottom=H-45;
+    const n=data.length;
+    const groupW=(right-left)/n;
+    const maxVal=35;
+
+    // Axes
+    ctx.strokeStyle='#334155';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();
+
+    // Y labels
+    ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='right';
+    for(let v=0;v<=30;v+=5){
+      const y=bottom-(v/maxVal)*(bottom-top);
+      ctx.fillText(v+'%',left-6,y+3);
+      ctx.strokeStyle='rgba(148,163,184,0.06)';ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();
+    }
+
+    data.forEach((d,i)=>{
+      const gx=left+i*groupW;
+      const barW=mode==='both'?groupW*0.35:groupW*0.6;
+      const gap=groupW*0.05;
+
+      if(mode==='return'||mode==='both'){
+        const bx=mode==='both'?gx+gap:gx+(groupW-barW)/2;
+        const bh=(d.ret/maxVal)*(bottom-top);
+        const by=bottom-bh;
+        ctx.fillStyle=d.color;ctx.globalAlpha=0.85;
+        ctx.beginPath();const r=3;
+        ctx.moveTo(bx,bottom);ctx.lineTo(bx,by+r);ctx.quadraticCurveTo(bx,by,bx+r,by);
+        ctx.lineTo(bx+barW-r,by);ctx.quadraticCurveTo(bx+barW,by,bx+barW,by+r);
+        ctx.lineTo(bx+barW,bottom);ctx.closePath();ctx.fill();
+        ctx.globalAlpha=1;
+        ctx.fillStyle='#e2e8f0';ctx.font='bold 10px monospace';ctx.textAlign='center';
+        ctx.fillText(d.ret+'%',bx+barW/2,by-6);
+      }
+
+      if(mode==='sd'||mode==='both'){
+        const bx=mode==='both'?gx+gap+barW+gap:gx+(groupW-barW)/2;
+        const bh=(d.sd/maxVal)*(bottom-top);
+        const by=bottom-bh;
+        ctx.fillStyle=mode==='both'?'rgba(239,68,68,0.5)':d.color;ctx.globalAlpha=0.7;
+        ctx.beginPath();const r=3;
+        ctx.moveTo(bx,bottom);ctx.lineTo(bx,by+r);ctx.quadraticCurveTo(bx,by,bx+r,by);
+        ctx.lineTo(bx+barW-r,by);ctx.quadraticCurveTo(bx+barW,by,bx+barW,by+r);
+        ctx.lineTo(bx+barW,bottom);ctx.closePath();ctx.fill();
+        ctx.globalAlpha=1;
+        ctx.fillStyle=mode==='both'?'#ef4444':'#e2e8f0';ctx.font='bold 10px monospace';ctx.textAlign='center';
+        ctx.fillText(d.sd+'%',bx+barW/2,by-6);
+      }
+
+      // Label
+      ctx.fillStyle='#94a3b8';ctx.font='10px Inter, sans-serif';ctx.textAlign='center';
+      const lines=d.name.split('\n');
+      lines.forEach((ln,li)=>ctx.fillText(ln,gx+groupW/2,bottom+14+li*12));
+    });
+
+    // Legend for both mode
+    if(mode==='both'){
+      ctx.fillStyle='#38bdf8';ctx.fillRect(right-130,top,12,12);
+      ctx.fillStyle='#e2e8f0';ctx.font='10px Inter, sans-serif';ctx.textAlign='left';ctx.fillText('Return',right-114,top+10);
+      ctx.fillStyle='rgba(239,68,68,0.5)';ctx.fillRect(right-130,top+16,12,12);
+      ctx.fillStyle='#e2e8f0';ctx.fillText('Std. Dev.',right-114,top+26);
+    }
+  }
+
+  window.s27Toggle=function(m){
+    mode=m;
+    document.getElementById('s27btnRet').style.opacity=(m==='return'||m==='both')?'1':'0.5';
+    document.getElementById('s27btnSD').style.opacity=(m==='sd'||m==='both')?'1':'0.5';
+    document.getElementById('s27btnBoth').style.opacity=m==='both'?'1':'0.5';
+    draw();
+  };
+
+  function init(){draw();}
+  const obs=new MutationObserver(()=>{if(document.getElementById('s27').classList.contains('active'))init();});
+  obs.observe(document.getElementById('s27'),{attributes:true,attributeFilter:['class']});
+  init();
+})();
+</script>
+
+<!-- ==================== s28: Summary ==================== -->
+<div class="slide" id="s28" data-notes="Final summary. Nine key takeaways covering all five sections.">
+  <span class="label">Summary</span>
+  <h2>Chapter 6: Key Takeaways</h2>
+  <ol style="font-size:0.95rem;">
+    <li><strong>Diversification works</strong> — unique risk eliminated with 20–30 stocks; market risk remains</li>
+    <li><strong>Covariance &amp; Correlation</strong> drive diversification; ρ &lt; +1 reduces portfolio risk below weighted average</li>
+    <li><strong>Portfolio Variance:</strong> σ²<sub>P</sub> = w²<sub>D</sub>σ²<sub>D</sub> + w²<sub>E</sub>σ²<sub>E</sub> + 2w<sub>D</sub>w<sub>E</sub>Cov — the cross-term is key</li>
+    <li><strong>Efficient Frontier</strong> — "northwest" portfolios dominate; lower ρ = more curvature</li>
+    <li><strong>MVP</strong> depends only on risk parameters (not returns)</li>
+    <li><strong>Adding r<sub>f</sub></strong> creates linear CAL; steepest CAL = CML tangent to frontier</li>
+    <li><strong>Tangency Portfolio</strong> maximizes Sharpe ratio S = [E(r)−r<sub>f</sub>]/σ</li>
+    <li><strong>Separation Theorem</strong> — all investors hold the same risky mix; differ only in y*</li>
+    <li><strong>Utility</strong> U = E(r) − ½Aσ² determines y* = [E(r<sub>P</sub>)−r<sub>f</sub>] / (A·σ²<sub>P</sub>)</li>
+  </ol>
+  <div class="card" style="text-align:center; margin-top:10px;">
+    <p class="small">Sources: Bodie, Kane &amp; Marcus, <em>Essentials of Investments</em> Ch. 6 · BF422 Web App Modules 1–6</p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+
+<!-- ==================== sQ1: Quiz — Multiple Choice ==================== -->
+<div class="slide" id="sQ1" data-notes="Quiz 1: Three multiple-choice questions covering diversification, correlation, and Sharpe ratio.">
+  <span class="label" style="color:var(--green);">Quiz</span>
+  <h2>Quiz: Multiple Choice</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:10px;">
+    <div class="card">
+      <h3>Q1: Diversification</h3>
+      <p class="small">Adding stocks to a portfolio primarily reduces:</p>
+      <div style="margin-top:6px;">
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q1" value="a"> a) Market risk</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q1" value="b"> b) Unique risk</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q1" value="c"> c) Total return</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q1" value="d"> d) Systematic risk</label>
+      </div>
+      <div id="sQ1f1" class="small" style="margin-top:4px;font-weight:600;"></div>
+    </div>
+    <div class="card">
+      <h3>Q2: Correlation</h3>
+      <p class="small">Maximum diversification benefit occurs when ρ equals:</p>
+      <div style="margin-top:6px;">
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q2" value="a"> a) +1.0</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q2" value="b"> b) 0.0</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q2" value="c"> c) −0.5</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q2" value="d"> d) −1.0</label>
+      </div>
+      <div id="sQ1f2" class="small" style="margin-top:4px;font-weight:600;"></div>
+    </div>
+    <div class="card">
+      <h3>Q3: Sharpe Ratio</h3>
+      <p class="small">The Sharpe ratio measures:</p>
+      <div style="margin-top:6px;">
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q3" value="a"> a) Total return</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q3" value="b"> b) Excess return per unit of risk</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q3" value="c"> c) Portfolio variance</label>
+        <label style="display:block;cursor:pointer;padding:3px 0;font-size:0.85rem;"><input type="radio" name="sQ1q3" value="d"> d) Risk-free rate</label>
+      </div>
+      <div id="sQ1f3" class="small" style="margin-top:4px;font-weight:600;"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="btn" onclick="sQ1Check()">Check Answers</button>
+    <span id="sQ1score" style="margin-left:12px;font-weight:700;font-size:1.1rem;"></span>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const answers = {sQ1q1:'b', sQ1q2:'d', sQ1q3:'b'};
+  const explanations = {
+    sQ1q1:'Correct! Unique (firm-specific) risk is eliminated by diversification.',
+    sQ1q2:'Correct! ρ = −1 allows zero-risk portfolio — maximum benefit.',
+    sQ1q3:'Correct! S = [E(r)−rf]/σ = excess return per unit of total risk.'
+  };
+  window.sQ1Check = function(){
+    let score = 0;
+    Object.keys(answers).forEach((q,i) => {
+      const sel = document.querySelector('input[name="'+q+'"]:checked');
+      const fb = document.getElementById('sQ1f'+(i+1));
+      if(!sel){fb.textContent='No answer selected';fb.style.color='var(--text-muted)';return;}
+      if(sel.value===answers[q]){score++;fb.textContent='✓ '+explanations[q];fb.style.color='#22c55e';}
+      else{fb.textContent='✗ Incorrect — answer is '+answers[q]+')';fb.style.color='#ef4444';}
+    });
+    document.getElementById('sQ1score').innerHTML=
+      '<span style="color:'+(score===3?'#22c55e':'#f59e0b')+'">'+score+'/3</span>';
+  };
+})();
+</script>
+
+<!-- ==================== sQ2: Quiz — Portfolio Calculation ==================== -->
+<div class="slide" id="sQ2" data-notes="Quiz 2: Step-through portfolio calculation. Given weights and parameters, compute σP.">
+  <span class="label" style="color:var(--green);">Quiz</span>
+  <h2>Quiz: Portfolio Calculation</h2>
+  <p>Given: E(r<sub>S</sub>)=12%, σ<sub>S</sub>=20%, E(r<sub>B</sub>)=6%, σ<sub>B</sub>=10%, ρ=−0.20, weights w<sub>S</sub>=50%, w<sub>B</sub>=50%</p>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr;margin-top:10px;">
+    <div class="card">
+      <h3>Step 1: E(r<sub>P</sub>)</h3>
+      <input type="text" id="sQ2in1" placeholder="%" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ2r1" style="margin-left:6px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>Step 2: Cov(r<sub>S</sub>,r<sub>B</sub>)</h3>
+      <input type="text" id="sQ2in2" placeholder="value" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ2r2" style="margin-left:6px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>Step 3: σ²<sub>P</sub></h3>
+      <input type="text" id="sQ2in3" placeholder="value" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ2r3" style="margin-left:6px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>Step 4: σ<sub>P</sub></h3>
+      <input type="text" id="sQ2in4" placeholder="%" style="width:100px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ2r4" style="margin-left:6px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:10px;">
+    <button class="btn" onclick="sQ2Check()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sQ2Reveal()">Show Solution</button>
+  </div>
+  <div id="sQ2sol" style="display:none;margin-top:8px;" class="key-idea">
+    <p class="small"><strong>1.</strong> E(r<sub>P</sub>) = 0.5(12) + 0.5(6) = <strong>9.0%</strong></p>
+    <p class="small"><strong>2.</strong> Cov = ρ·σ<sub>S</sub>·σ<sub>B</sub> = (−0.20)(20)(10) = <strong>−40</strong></p>
+    <p class="small"><strong>3.</strong> σ² = (.5)²(400) + (.5)²(100) + 2(.5)(.5)(−40) = 100 + 25 − 20 = <strong>105</strong></p>
+    <p class="small"><strong>4.</strong> σ<sub>P</sub> = √105 = <strong>10.25%</strong></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  const ans=[{id:'sQ2in1',rid:'sQ2r1',val:9,tol:0.2},{id:'sQ2in2',rid:'sQ2r2',val:-40,tol:2},{id:'sQ2in3',rid:'sQ2r3',val:105,tol:3},{id:'sQ2in4',rid:'sQ2r4',val:10.25,tol:0.5}];
+  window.sQ2Check=function(){
+    ans.forEach(a=>{
+      const v=parseFloat(document.getElementById(a.id).value);
+      const r=document.getElementById(a.rid);
+      if(isNaN(v)){r.textContent='';return;}
+      if(Math.abs(v-a.val)<a.tol){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+      else{r.textContent='✗ Try again';r.style.color='#ef4444';}
+    });
+  };
+  window.sQ2Reveal=function(){const el=document.getElementById('sQ2sol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+<!-- ==================== sQ3: Quiz — Tangency Portfolio ==================== -->
+<div class="slide" id="sQ3" data-notes="Quiz 3: Given two-asset parameters, compute Cov, then tangency weights using the formula from slide s23.">
+  <span class="label" style="color:var(--green);">Quiz</span>
+  <h2>Quiz: Tangency Portfolio Formula</h2>
+  <p>Given: E(r<sub>D</sub>)=6%, E(r<sub>E</sub>)=12%, r<sub>f</sub>=3%, σ<sub>D</sub>=10%, σ<sub>E</sub>=20%, ρ<sub>DE</sub>=0.30</p>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:10px;">
+    <div class="card">
+      <h3>1. Cov(r<sub>D</sub>,r<sub>E</sub>)</h3>
+      <p class="small">Cov = ρ · σ<sub>D</sub> · σ<sub>E</sub></p>
+      <input type="text" id="sQ3in1" placeholder="e.g. 60" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ3r1" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>2. w<sub>D</sub> (%)</h3>
+      <p class="small">Tangency weight in bonds</p>
+      <input type="text" id="sQ3in2" placeholder="%" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ3r2" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+    <div class="card">
+      <h3>3. w<sub>E</sub> (%)</h3>
+      <p class="small">Tangency weight in equity</p>
+      <input type="text" id="sQ3in3" placeholder="%" style="width:90px;padding:5px 8px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;">
+      <span id="sQ3r3" style="display:block;margin-top:4px;font-weight:600;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:10px;">
+    <button class="btn" onclick="sQ3Check()">Check</button>
+    <button class="btn btn-secondary" style="margin-left:8px;" onclick="sQ3Reveal()">Show Solution</button>
+  </div>
+  <div id="sQ3sol" style="display:none;margin-top:8px;" class="key-idea">
+    <p class="small"><strong>1.</strong> Cov = 0.30 × 10 × 20 = <strong>60</strong></p>
+    <p class="small"><strong>2.</strong> Num = (6−3)(400) − (12−3)(60) = 1200 − 540 = 660</p>
+    <p class="small" style="margin-left:24px;">Den = (6−3)(400) + (12−3)(100) − (3+9)(60) = 1200 + 900 − 720 = 1380</p>
+    <p class="small" style="margin-left:24px;">w<sub>D</sub> = 660/1380 = <strong>47.8%</strong></p>
+    <p class="small"><strong>3.</strong> w<sub>E</sub> = 1 − 0.478 = <strong>52.2%</strong></p>
+  </div>
+  <div class="slide-number"></div>
+</div>
+<script>
+(function(){
+  // Cov = 0.30 * 10 * 20 = 60
+  // Num = (6-3)*400 - (12-3)*60 = 1200 - 540 = 660
+  // Den = (6-3)*400 + (12-3)*100 - (3+9)*60 = 1200 + 900 - 720 = 1380
+  // wD = 660/1380 = 0.4783 = 47.8%
+  // wE = 1 - 0.4783 = 0.5217 = 52.2%
+  const ans=[{id:'sQ3in1',rid:'sQ3r1',val:60,tol:2},{id:'sQ3in2',rid:'sQ3r2',val:47.8,tol:1.5},{id:'sQ3in3',rid:'sQ3r3',val:52.2,tol:1.5}];
+  window.sQ3Check=function(){
+    ans.forEach(a=>{
+      const v=parseFloat(document.getElementById(a.id).value);
+      const r=document.getElementById(a.rid);
+      if(isNaN(v)){r.textContent='';return;}
+      if(Math.abs(v-a.val)<a.tol){r.textContent='✓ Correct!';r.style.color='#22c55e';}
+      else{r.textContent='✗ Try again';r.style.color='#ef4444';}
+    });
+  };
+  window.sQ3Reveal=function(){const el=document.getElementById('sQ3sol');el.style.display=el.style.display==='none'?'block':'none';};
+})();
+</script>
+
+</div><!-- end #deck -->
+
+<!-- ==================== NAVIGATION ==================== -->
+<div class="nav"></div>
+
+<!-- ==================== NAVIGATION JS ==================== -->
+<script>
+const slideOrder = ['s1','s2','s3','s4','s6','s5','s7','s8','s9','s10','sCA','s11','s12','s13','s14','sCB','s15','s16','s17','s18','s19','s20','sCC','s21','s22','s23','s24','s25','s26','s27','s28','sQ1','sQ2','sQ3'];
+let currentIdx = 0;
+let transitioning = false;
+
+function showSlide(idx) {
+  if (idx < 0 || idx >= slideOrder.length || idx === currentIdx || transitioning) return;
+  transitioning = true;
+  const dir = idx > currentIdx ? 1 : -1;
+  const oldEl = document.getElementById(slideOrder[currentIdx]);
+  const newEl = document.getElementById(slideOrder[idx]);
+
+  oldEl.classList.remove('active');
+  if (dir > 0) { oldEl.classList.add('exit-left'); }
+  else { oldEl.style.transform = 'translateX(60px)'; oldEl.style.opacity = '0'; }
+
+  newEl.style.transition = 'none';
+  newEl.style.transform = dir > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+  newEl.style.opacity = '0';
+  void newEl.offsetWidth;
+
+  newEl.style.transition = '';
+  newEl.style.transform = '';
+  newEl.style.opacity = '';
+  newEl.classList.add('active');
+
+  currentIdx = idx;
+  updateNav();
+
+  setTimeout(function() {
+    oldEl.classList.remove('exit-left');
+    oldEl.style.transform = '';
+    oldEl.style.opacity = '';
+    transitioning = false;
+  }, 480);
+}
+
+function updateNav() {
+  const pct = slideOrder.length > 1 ? (currentIdx / (slideOrder.length - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+  document.getElementById('slide-counter').textContent = (currentIdx + 1) + ' / ' + slideOrder.length;
+  const noteData = document.getElementById(slideOrder[currentIdx]).getAttribute('data-notes') || '';
+  document.getElementById('notes-text').textContent = noteData || '(No notes)';
+}
+
+function navigate(dir) { showSlide(currentIdx + dir); }
+
+document.addEventListener('keydown', function(e) {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  switch (e.key) {
+    case 'ArrowRight': case ' ': case 'PageDown': e.preventDefault(); navigate(1); break;
+    case 'ArrowLeft': case 'PageUp': e.preventDefault(); navigate(-1); break;
+    case 'Home': e.preventDefault(); showSlide(0); break;
+    case 'End': e.preventDefault(); showSlide(slideOrder.length - 1); break;
+    case 'n': case 'N':
+      document.getElementById('notes-panel').classList.toggle('visible'); break;
+    case 't': case 'T':
+      var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      if (isLight) { document.documentElement.removeAttribute('data-theme'); document.getElementById('theme-toggle').textContent = 'Light'; }
+      else { document.documentElement.setAttribute('data-theme', 'light'); document.getElementById('theme-toggle').textContent = 'Dark'; }
+      break;
+  }
+});
+
+document.getElementById('nav-prev').addEventListener('click', function() { navigate(-1); });
+document.getElementById('nav-next').addEventListener('click', function() { navigate(1); });
+document.getElementById('theme-toggle').addEventListener('click', function() {
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) { document.documentElement.removeAttribute('data-theme'); this.textContent = 'Light'; }
+  else { document.documentElement.setAttribute('data-theme', 'light'); this.textContent = 'Dark'; }
+});
+document.getElementById('notes-btn').addEventListener('click', function() {
+  document.getElementById('notes-panel').classList.toggle('visible');
+});
+
+// Touch/swipe
+var touchStartX = 0, touchStartY = 0;
+document.addEventListener('touchstart', function(e) {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, { passive: true });
+document.addEventListener('touchend', function(e) {
+  var dx = e.changedTouches[0].screenX - touchStartX;
+  var dy = e.changedTouches[0].screenY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    if (dx < 0) navigate(1); else navigate(-1);
+  }
+}, { passive: true });
+
+updateNav();
+</script>
+</body>
+</html>
